@@ -1,0 +1,269 @@
+{
+  "version": "13.0",
+  "fechaRevision": "2026-09-06",
+  "proposito": "Registro histórico de vigencias y cambios normativos relevantes para impedir que una fórmula vigente se aplique automáticamente a una obligación de un año con régimen diferente.",
+  "fuentes": [
+    "Normograma DIAN — normativa tributaria",
+    "Ley 1819 de 2016",
+    "Decreto 2701 de 2013",
+    "Ley 1739 de 2014",
+    "Ley 2277 de 2022",
+    "Decreto 2229 de 2023",
+    "Decretos Legislativos 173 y 0240 de 2026"
+  ],
+  "reglas": [
+    {
+      "concepto": "VENTAS",
+      "desde": 2017,
+      "hasta": null,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "IVA general 19% desde 2017-01-01",
+      "fuente": "Ley 1819 de 2016, art. 184; doctrina DIAN 2017",
+      "formulaCompatible": true,
+      "cambios": [
+        "La tarifa general pasó de 16% a 19% desde el 1 de enero de 2017."
+      ]
+    },
+    {
+      "concepto": "VENTAS",
+      "desde": 2013,
+      "hasta": 2016,
+      "estado": "REGIMEN_HISTORICO_IDENTIFICADO",
+      "regla": "IVA general 16%",
+      "fuente": "Régimen anterior a Ley 1819 de 2016; doctrina DIAN sobre cambio 16% a 19%",
+      "formulaCompatible": false,
+      "cambios": [
+        "No se debe aplicar automáticamente la tarifa general 19% a hechos causados antes de 2017."
+      ]
+    },
+    {
+      "concepto": "RENTA CREE",
+      "desde": 2013,
+      "hasta": 2015,
+      "estado": "REGIMEN_HISTORICO_IDENTIFICADO",
+      "regla": "CREE tarifa general 9%",
+      "fuente": "Decreto 2701 de 2013, art. 4",
+      "formulaCompatible": false,
+      "cambios": [
+        "CREE existió como impuesto separado del impuesto de renta."
+      ]
+    },
+    {
+      "concepto": "RENTA CREE",
+      "desde": 2016,
+      "hasta": 2016,
+      "estado": "REGIMEN_HISTORICO_IDENTIFICADO",
+      "regla": "CREE tarifa general 8%",
+      "fuente": "Decreto 2701 de 2013, art. 4",
+      "formulaCompatible": false,
+      "cambios": [
+        "Desde 2016 la tarifa general del CREE fue 8%."
+      ]
+    },
+    {
+      "concepto": "RENTA CREE",
+      "desde": 2017,
+      "hasta": null,
+      "estado": "NO_APLICABLE",
+      "regla": "No usar CREE como obligación ordinaria vigente",
+      "fuente": "Reforma tributaria posterior y régimen compilado",
+      "formulaCompatible": false,
+      "cambios": [
+        "Debe tratarse como obligación histórica, no como renta ordinaria vigente."
+      ]
+    },
+    {
+      "concepto": "RIQUEZA",
+      "desde": 2015,
+      "hasta": 2018,
+      "estado": "REGIMEN_HISTORICO_IDENTIFICADO",
+      "regla": "Impuesto a la riqueza transitorio",
+      "fuente": "Ley 1739 de 2014; Sentencia C-551 de 2015",
+      "formulaCompatible": false,
+      "cambios": [
+        "No debe confundirse con el impuesto al patrimonio posterior.",
+        "La duración y sujetos varían según persona jurídica o natural y año."
+      ]
+    },
+    {
+      "concepto": "RIQUEZA",
+      "desde": 2019,
+      "hasta": null,
+      "estado": "NO_APLICABLE",
+      "regla": "No existe como obligación ordinaria vigente bajo esta denominación",
+      "fuente": "Régimen posterior al impuesto a la riqueza",
+      "formulaCompatible": false,
+      "cambios": [
+        "No reutilizar automáticamente las reglas históricas de riqueza para patrimonio vigente."
+      ]
+    },
+    {
+      "concepto": "SIMPLE",
+      "desde": 2019,
+      "hasta": null,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Régimen SIMPLE desde 2019",
+      "fuente": "Estatuto Tributario, arts. 903 y siguientes",
+      "formulaCompatible": false,
+      "cambios": [
+        "La determinación depende de grupo, actividad, ingresos, municipio/ICA y demás reglas del régimen."
+      ]
+    },
+    {
+      "concepto": "SIMPLE",
+      "desde": 2018,
+      "hasta": 2018,
+      "estado": "NO_APLICABLE",
+      "regla": "No aplicar SIMPLE",
+      "fuente": "Régimen creado para vigencias posteriores",
+      "formulaCompatible": false,
+      "cambios": [
+        "No debe calcularse SIMPLE para un año anterior a su vigencia."
+      ]
+    },
+    {
+      "concepto": "PRODUCTOS PLASTICOS",
+      "desde": 2023,
+      "hasta": 2025,
+      "estado": "REGIMEN_HISTORICO_REQUIERE_REVISION",
+      "regla": "Impuesto nacional sobre productos plásticos de un solo uso",
+      "fuente": "Ley 2277 de 2022 y normativa posterior",
+      "formulaCompatible": false,
+      "cambios": [
+        "La obligación existe desde 2023, pero la tarifa y las reglas deben reconstruirse por cada vigencia antes de reutilizar el cálculo 2026."
+      ]
+    },
+    {
+      "concepto": "PRODUCTOS PLASTICOS",
+      "desde": 2026,
+      "hasta": 2026,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Impuesto nacional sobre productos plásticos de un solo uso",
+      "fuente": "Ley 2277 de 2022 y normativa posterior",
+      "formulaCompatible": true,
+      "cambios": [
+        "La vigencia inicia en 2023; deben revisarse hecho generador y exclusiones."
+      ]
+    },
+    {
+      "concepto": "PRODUCTOS PLASTICOS",
+      "desde": 2022,
+      "hasta": 2022,
+      "estado": "NO_APLICABLE",
+      "regla": "No aplicar impuesto a productos plásticos",
+      "fuente": "Ley 2277 de 2022",
+      "formulaCompatible": false,
+      "cambios": [
+        "No existía esta obligación bajo la estructura introducida por la Ley 2277 de 2022."
+      ]
+    },
+    {
+      "concepto": "PRODUCTOS ULTRAPROCESADOS",
+      "desde": 2023,
+      "hasta": null,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Impuestos saludables sobre productos ultraprocesados",
+      "fuente": "Ley 2277 de 2022",
+      "formulaCompatible": true,
+      "cambios": [
+        "Las tarifas de productos comestibles y bebidas han cambiado por año y deben consultarse en la regla anual."
+      ]
+    },
+    {
+      "concepto": "PRODUCTOS ULTRAPROCESADOS",
+      "desde": 2022,
+      "hasta": 2022,
+      "estado": "NO_APLICABLE",
+      "regla": "No aplicar impuesto saludable introducido por Ley 2277",
+      "fuente": "Ley 2277 de 2022",
+      "formulaCompatible": false,
+      "cambios": [
+        "No aplicar retroactivamente el impuesto a vigencias anteriores."
+      ]
+    },
+    {
+      "concepto": "PATRIMONIO",
+      "desde": 2023,
+      "hasta": 2025,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Impuesto al patrimonio según Ley 2277 de 2022 y modificaciones vigentes",
+      "fuente": "Estatuto Tributario, artículos 292-3 y siguientes",
+      "formulaCompatible": false,
+      "cambios": [
+        "La calidad de sujeto, base y tarifa deben revisarse para cada año."
+      ]
+    },
+    {
+      "concepto": "PATRIMONIO",
+      "desde": 2026,
+      "hasta": 2026,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Régimen 2026 con modificaciones de los Decretos Legislativos 173 y 0240 de 2026",
+      "fuente": "Decreto Legislativo 173 de 2026 y Decreto Legislativo 0240 de 2026",
+      "formulaCompatible": true,
+      "cambios": [
+        "No debe reutilizarse sin revisión el régimen 2023-2025."
+      ]
+    },
+    {
+      "concepto": "GMF",
+      "desde": 1999,
+      "hasta": null,
+      "estado": "REGIMEN_HISTORICO_REQUIERE_TARIFA",
+      "regla": "GMF con evolución histórica de tarifas y exenciones",
+      "fuente": "Estatuto Tributario, artículos 870 y siguientes",
+      "formulaCompatible": false,
+      "cambios": [
+        "La fase 13 identifica que GMF requiere tarifa y exenciones históricas por vigencia; no presume una única tasa para todos los años."
+      ]
+    },
+    {
+      "concepto": "CONSUMO",
+      "desde": 2013,
+      "hasta": null,
+      "estado": "REGIMEN_HISTORICO_REQUIERE_REVISION",
+      "regla": "Impuesto nacional al consumo con modificaciones por año",
+      "fuente": "Ley 1607 de 2012, Ley 1819 de 2016 y normas posteriores",
+      "formulaCompatible": false,
+      "cambios": [
+        "No asumir que todas las bases, responsables, bienes y tarifas actuales existían en años anteriores."
+      ]
+    },
+    {
+      "concepto": "RETENCIÓN",
+      "desde": 2017,
+      "hasta": null,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Retención con múltiples procedimientos y conceptos",
+      "fuente": "Estatuto Tributario y doctrina DIAN",
+      "formulaCompatible": false,
+      "cambios": [
+        "La fase 13 no autoriza a usar una única tarifa para todos los conceptos de retención."
+      ]
+    },
+    {
+      "concepto": "RENTA",
+      "desde": 2017,
+      "hasta": 2025,
+      "estado": "REGIMEN_HISTORICO_REQUIERE_REVISION",
+      "regla": "Renta con cambios estructurales y tarifarios por año",
+      "fuente": "Estatuto Tributario y reformas tributarias",
+      "formulaCompatible": false,
+      "cambios": [
+        "Las reglas de renta cambiaron por reformas y la tabla actual no se reutiliza automáticamente para 2017-2025."
+      ]
+    },
+    {
+      "concepto": "RENTA",
+      "desde": 2026,
+      "hasta": 2026,
+      "estado": "REGIMEN_VIGENTE_REGISTRADO",
+      "regla": "Renta con cambios estructurales y tarifarios por año",
+      "fuente": "Estatuto Tributario y reformas tributarias",
+      "formulaCompatible": true,
+      "cambios": [
+        "La fórmula matemática disponible corresponde a una referencia general para 2026 y sigue requiriendo depuración jurídica previa."
+      ]
+    }
+  ]
+}

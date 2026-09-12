@@ -1,0 +1,252 @@
+:root{--azul:#003b5c;--azul2:#005b7f;--azul3:#007f9e;--borde:#cbd5df;--fondo:#eef3f7;--blanco:#fff;--rojo:#a52a2a}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--fondo);color:#173047;font-size:13px}.topbar{background:linear-gradient(90deg,var(--azul),var(--azul2),var(--azul3));color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px}.topbar h1{margin:0;font-size:20px}.topbar p{margin:3px 0 0;opacity:.9}.badge{padding:6px 10px;border-radius:14px;background:#ffffff22;border:1px solid #ffffff55}.badge.ok{background:#ffffff30}.badge.error{background:#7b1111}.contenedor{max-width:1500px;margin:12px auto;padding:0 12px}.panel{background:#fff;border:1px solid var(--borde);border-radius:8px;margin-bottom:10px;box-shadow:0 1px 3px #0000000d;overflow:hidden}.panel-title{font-weight:700;color:#fff;background:linear-gradient(90deg,var(--azul),var(--azul2));padding:8px 10px}.grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:8px;padding:10px}.grid label{font-weight:700}.grid input,.grid select,.tabla-scroll input,.tabla-scroll select,textarea{display:block;width:100%;margin-top:4px;border:1px solid #aebbc8;border-radius:5px;padding:7px;background:#fff;color:#172b3b}.span-2{grid-column:span 2}.money{text-align:right}.tabla-scroll{overflow:auto}.tabla-scroll table,.tabla-informe{width:100%;border-collapse:collapse;min-width:780px}.tabla-scroll th,.tabla-scroll td,.tabla-informe th,.tabla-informe td{border:1px solid var(--borde);padding:5px;text-align:left;vertical-align:middle}.tabla-scroll th,.tabla-informe th{background:#e8eef3;color:#173047}.tabla-scroll input,.tabla-scroll select{margin:0;min-width:95px;padding:5px}.fila-titulo,.informe-cabecera{display:flex;justify-content:space-between;align-items:center;gap:12px}.acciones{display:flex;gap:6px}.importador{padding:10px;display:flex;gap:8px}.importador textarea{flex:1;margin:0}.primario,.secundario,.peligro{border:0;border-radius:5px;padding:7px 11px;cursor:pointer;font-weight:700}.primario{background:#006b8f;color:#fff}.secundario{background:#e7edf2;color:#173047}.peligro{background:#a52a2a;color:#fff}.grande{padding:10px 18px}.botonera{display:flex;justify-content:flex-end;gap:8px;margin:12px 0}.informe-cabecera{padding:12px;background:#f7fafc}.informe-subtitulo{font-weight:700;color:var(--azul)}.valor-pago{display:flex;gap:10px;align-items:baseline;margin-top:5px}.valor-pago strong{font-size:20px}.informe-meta{display:flex;gap:22px}.informe-meta span{display:block;color:#6a7782;font-size:11px}.tabla-informe-wrap{overflow:auto;padding:10px}.detalle{padding:0 10px 10px}.detalle-item{padding:6px 8px;border-left:3px solid var(--azul3);background:#f4f8fa;margin-top:5px}.detalle-alerta{padding:8px;background:#fff2d8;border:1px solid #e2c477;margin-top:8px}.nota{padding:8px 10px;color:#596875;font-size:12px}footer{text-align:center;color:#687783;padding:12px}@media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(150px,1fr))}.span-2{grid-column:span 2}}@media(max-width:650px){.topbar,.fila-titulo,.informe-cabecera,.importador{flex-direction:column;align-items:stretch}.grid{grid-template-columns:1fr}.span-2{grid-column:auto}.botonera{flex-direction:column}.botonera button{width:100%}}
+
+.regla-panel{border:1px solid #8CAAC2}.regla-info{padding:8px 10px;font-size:10px;line-height:1.45;background:#F7FAFC;color:#273747}.regla-info strong{color:var(--dian-azul);font-size:11px}.regla-info span{color:#4C5B67}
+
+/* Fase 9 */
+.resultado-determinacion{margin-top:10px;padding:10px;border:1px solid var(--borde);background:#f7fafc}.det-grid{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:8px;margin-bottom:8px}.det-grid>div{border:1px solid var(--borde);background:#fff;padding:8px}.det-grid span{display:block;color:#687783;font-size:11px}.det-grid strong{display:block;margin-top:3px;color:#173047;font-size:15px}label[data-det-concepto][hidden]{display:none!important}@media(max-width:650px){.det-grid{grid-template-columns:1fr}}
+
+/* Fase 10 — Calendario DIAN */
+.calendario-panel{border:1px solid #8CAAC2}.resultado-calendario{margin:10px;padding:10px;border:1px solid var(--borde);background:#f7fafc}.cal-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:8px;margin-bottom:8px}.cal-grid>div{border:1px solid var(--borde);background:#fff;padding:8px}.cal-grid span{display:block;color:#687783;font-size:11px}.cal-grid strong{display:block;margin-top:3px;color:#173047;font-size:17px}@media(max-width:650px){.cal-grid{grid-template-columns:1fr}}
+
+/* Fase 12 — Depuración jurídica asistida */
+.depuracion-panel{border:1px solid #c99b3a}.dep-grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:8px;padding:10px}.dep-check{display:flex;gap:8px;align-items:flex-start;padding:9px;border:1px solid var(--borde);background:#fff;font-weight:600;border-radius:5px}.dep-check input{margin-top:2px;accent-color:var(--azul2)}.dep-ok,.dep-pendiente{font-size:11px;padding:4px 8px;border-radius:12px}.dep-ok{background:#dff3e4;color:#17652b}.dep-pendiente{background:#fff2d8;color:#7a5300}@media(max-width:650px){.dep-grid{grid-template-columns:1fr}}
+.normativo-historico-panel{border:1px solid #7d9bb1}.resultado-normativa-historica{padding:10px}.norm-grid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:8px}.norm-grid>div{background:#f7fafc;border:1px solid var(--borde);border-radius:6px;padding:8px}.norm-grid span{display:block;color:#687783;font-size:11px}.norm-grid strong{display:block;margin-top:3px;color:#173047}.norm-ok{color:#176b3a!important}.norm-revision{color:#9a6700!important}.norm-no{color:#a52a2a!important}.norm-cambios{margin:6px 10px;padding-left:20px;color:#596875;font-size:12px}@media(max-width:1000px){.norm-grid{grid-template-columns:1fr}}
+
+
+/* Fase 15 — Auditoría y trazabilidad */
+.auditoria-panel{border:1px solid #6f8ca0}.resultado-auditoria{padding:10px}.audit-cabecera{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:8px;margin-bottom:10px}.audit-cabecera>div{background:#f7fafc;border:1px solid var(--borde);padding:9px;border-radius:6px}.audit-cabecera span{display:block;color:#687783;font-size:11px}.audit-cabecera strong{display:block;margin-top:3px;color:#173047}.audit-ok{color:#176b3a!important}.audit-parcial{color:#7a5b00!important}.audit-revision{color:#a52a2a!important}.audit-pasos{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:7px}.audit-step{border:1px solid var(--borde);background:#fff;padding:8px;border-radius:6px}.audit-step>div{display:flex;justify-content:space-between;align-items:center;gap:8px}.audit-step small{display:block;margin-top:5px;color:#7a5b00}.audit-badge-ok,.audit-badge-info,.audit-badge-revision{font-size:10px;padding:3px 7px;border-radius:10px;white-space:nowrap}.audit-badge-ok{background:#dff3e4;color:#17652b}.audit-badge-info{background:#e8eef3;color:#385365}.audit-badge-revision{background:#fff2d8;color:#7a5300}.audit-confirmacion{padding:8px;background:#e7f5eb;border:1px solid #b8d9c0;color:#17652b;margin-top:8px}.audit-acciones{display:flex;gap:7px;margin-top:9px}@media(max-width:1000px){.audit-cabecera{grid-template-columns:1fr}.audit-pasos{grid-template-columns:1fr}}@media(max-width:650px){.audit-acciones{flex-direction:column}.audit-acciones button{width:100%}}
+
+/* Reajuste 16.2 — interfaz compacta basada en el Liquidador V9.5.2 */
+.mini-badge{font-size:10px;padding:4px 8px;border-radius:12px;background:#e8eef3;color:#385365}.simple-panel{border:1px solid #6f8ca0}.simple-panel .tabla-scroll table{min-width:1250px}.simple-panel th{white-space:nowrap}.simple-panel td{text-align:right}.simple-panel td:first-child,.simple-panel td:nth-child(2){text-align:left}.simple-panel input{min-width:110px}.simple-panel tfoot th{background:#e8eef3}.simple-fecha{text-align:left!important}.resultado-determinacion{margin:10px;padding:10px;border:1px solid var(--borde);background:#f7fafc}.det-grid{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:8px}.det-grid>div{border:1px solid var(--borde);background:#fff;padding:8px}.det-grid span{display:block;color:#687783;font-size:11px}.det-grid strong{display:block;margin-top:3px;color:#173047;font-size:15px}.audit-cabecera{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:8px}.audit-cabecera>div{background:#f7fafc;border:1px solid var(--borde);padding:9px;border-radius:6px}.audit-cabecera span{display:block;color:#687783;font-size:11px}.audit-cabecera strong{display:block;margin-top:3px;color:#173047}.audit-pasos{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:7px;margin-top:8px}.audit-step{border:1px solid var(--borde);background:#fff;padding:8px;border-radius:6px}.audit-step strong{display:inline-block;margin-right:8px}.audit-step small{display:block;margin-top:5px;color:#7a5b00}.audit-badge-ok{font-size:10px;padding:3px 7px;border-radius:10px;background:#dff3e4;color:#17652b}.auditoria-panel summary{cursor:pointer;padding:9px 10px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--azul),var(--azul2))}.auditoria-panel[open] summary{border-bottom:1px solid var(--borde)}
+@media(max-width:1000px){.det-grid{grid-template-columns:1fr}.audit-pasos{grid-template-columns:1fr}}
+
+
+/* FASE 17 — soportes */
+.soporte-panel .soporte-contenido{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.soporte-acciones{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.soporte-badge{font-size:11px;padding:4px 9px}
+#estadoExportacion{width:100%;margin-top:4px}
+
+/* Vista de impresión/PDF */
+@media print{
+  body{background:#fff!important}
+  body > *{display:none!important}
+}
+.pdf-soporte{font-family:Arial,Helvetica,sans-serif;color:#17324d;background:#fff;padding:12mm;font-size:10pt}
+.pdf-hoja{page-break-after:always;border:1px solid #8aa0b2;background:#fff;min-height:245mm}
+.pdf-hoja:last-child{page-break-after:auto}
+.pdf-marca{display:grid;grid-template-columns:72px 1fr 150px;align-items:center;border-bottom:1px solid #7f9aae;background:#f5f8fa}
+.pdf-logo{font-weight:700;color:#007f9e;font-size:17px;text-align:center;padding:8px;border-right:1px solid #9aadb9}
+.pdf-titulo{text-align:center;font-weight:700;font-size:16px;letter-spacing:.4px;padding:8px}
+.pdf-generado{text-align:right;font-size:9px;padding:8px 10px}
+.pdf-datos{display:grid;grid-template-columns:1.1fr 1fr 1.4fr .7fr 1.1fr;gap:0;border-bottom:1px solid #9aadb9}
+.pdf-dato{padding:5px 7px;border-right:1px solid #9aadb9;border-bottom:1px solid #d1dbe1;min-height:34px}
+.pdf-dato b{display:block;font-size:8.5px;color:#4b6578;margin-bottom:2px}
+.pdf-dato strong{font-size:10.5px}
+.pdf-dato.ancho-2{grid-column:span 2}
+.pdf-tasa{font-size:15px!important}
+.pdf-obligacion{margin:8px;border:1px solid #8da6b7}
+.pdf-fila{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-bottom:1px solid #aebdc7}
+.pdf-fila:last-child{border-bottom:0}
+.pdf-celda{padding:6px 8px;border-right:1px solid #aebdc7}
+.pdf-celda:last-child{border-right:0}
+.pdf-celda b{display:block;font-size:8.5px;color:#50697b;margin-bottom:2px}
+.pdf-celda strong{font-size:11px}
+.pdf-observaciones{min-height:42px}
+.pdf-pago{margin:10px 8px 0;border:1px solid #78a2bc}
+.pdf-pago-titulo{text-align:center;font-weight:700;font-size:16px;padding:5px;background:#e8f1f6;border-bottom:1px solid #78a2bc}
+.pdf-tabla{width:100%;border-collapse:collapse}
+.pdf-tabla th,.pdf-tabla td{border:1px solid #8da6b7;padding:5px 7px;text-align:right}
+.pdf-tabla th{font-size:9px;background:#e9eff3}
+.pdf-tabla td:first-child,.pdf-tabla th:first-child{text-align:left}
+.pdf-tabla .total td{font-weight:700;background:#edf3f6}
+.pdf-nota{text-align:center;font-weight:700;padding:8px;font-size:9px}
+.pdf-aplicaciones{margin:10px 8px;border:1px solid #9db1bf}
+.pdf-aplicaciones h3{font-size:11px;margin:0;padding:6px;background:#edf3f6}
+.pdf-aplicaciones table{width:100%;border-collapse:collapse}
+.pdf-aplicaciones th,.pdf-aplicaciones td{border:1px solid #b7c4cc;padding:4px;font-size:8.5px}
+.pdf-alerta{margin:8px;padding:6px;border:1px solid #d2a84a;background:#fff8df;font-size:8.5px}
+@media(max-width:800px){.pdf-datos{grid-template-columns:1fr 1fr}.pdf-fila{grid-template-columns:1fr 1fr}.pdf-hoja{min-height:auto}.pdf-soporte{padding:5mm}}
+
+/* REAJUSTE 16.6 — actualización de tasas */
+.tasas-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr 2fr;gap:10px;align-items:end}
+.tasas-grid label{display:flex;flex-direction:column;gap:4px;font-weight:600}
+.tasas-acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.tasas-acciones button{white-space:nowrap}
+#tablaTasasPersonalizadas td,#tablaTasasPersonalizadas th{font-size:.9rem}
+@media(max-width:900px){.tasas-grid{grid-template-columns:1fr 1fr}.tasas-acciones{grid-column:1/-1}}
+@media(max-width:600px){.tasas-grid{grid-template-columns:1fr}.tasas-acciones{grid-column:auto}}
+
+/* REAJUSTE 16.7 — importación sin títulos y excedentes */
+.excedente-box{display:inline-flex;align-items:center;gap:8px;margin-left:14px;padding:4px 9px;border:1px solid #c58a1a;background:#fff6d8;border-radius:5px;vertical-align:middle}
+.excedente-box span{font-size:10px;font-weight:700;color:#7a5200}
+.excedente-box strong{font-size:15px;color:#7a5200}
+.texto-excedente{color:#7a5200}
+.pdf-excedente{margin-top:6px;padding:6px 8px;border:1px solid #c58a1a;background:#fff6d8;color:#7a5200;font-size:9px}
+@media(max-width:650px){.excedente-box{display:flex;margin:6px 0 0}}
+.beneficio-panel .resultado-calendario{margin-top:10px}
+.beneficio-panel .panel-title{display:flex;justify-content:space-between;align-items:center}
+
+.pdf-beneficio{margin:8px 0;padding:7px;border:1px solid #9fb4c5;background:#eef5f9;font-size:10px;color:#17324a}.pdf-beneficio b{font-weight:700}
+
+/* REAJUSTE 16.9 — selección manual de tratamiento */
+.beneficios-lista{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.beneficios-lista span{padding:7px 10px;border:1px solid #c9d6df;border-radius:999px;background:#f7fafc;font-size:.82rem;font-weight:700}
+
+
+/* REAJUSTE 16.15 — fechas con calendario nativo + exportaciones compactas */
+.fecha-dual{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:5px;align-items:center}
+.fecha-dual .fecha-campo{min-width:0}
+.fecha-native{width:42px;height:38px;padding:4px;border:1px solid #b8c7d3;border-radius:6px;background:#fff;cursor:pointer}
+.fecha-native:focus,.fecha-dual .fecha-campo:focus{outline:2px solid #8ab7d3;outline-offset:1px}
+#valorSancion.money{font-variant-numeric:tabular-nums}
+#tieneSancion:invalid{border-color:#c58a1a}
+
+/* La selección de tratamiento permanece funcional en cada pago, pero el panel explicativo ya no ocupa pantalla. */
+.beneficio-panel{display:none!important}
+
+/* Soporte PDF: dos liquidaciones por hoja, espaciado compacto. */
+.pdf-soporte{padding:5mm;font-size:8.5pt}
+.pdf-hoja{page-break-after:always;border:0;min-height:0}
+.pdf-pagina{display:grid;grid-template-columns:1fr 1fr;gap:4mm;align-items:start}
+.pdf-liquidacion{border:1px solid #8aa0b2;background:#fff;break-inside:avoid;page-break-inside:avoid;overflow:hidden}
+.pdf-liquidacion .pdf-marca{grid-template-columns:44px 1fr 88px}
+.pdf-liquidacion .pdf-logo{font-size:12px;padding:5px}
+.pdf-liquidacion .pdf-titulo{font-size:10px;padding:5px}
+.pdf-liquidacion .pdf-generado{font-size:6.5px;padding:5px}
+.pdf-liquidacion .pdf-dato{padding:3px 4px;min-height:22px}
+.pdf-liquidacion .pdf-dato b{font-size:6.2px;margin-bottom:1px}
+.pdf-liquidacion .pdf-dato strong{font-size:7.8px}
+.pdf-liquidacion .pdf-tasa{font-size:10px!important}
+.pdf-liquidacion .pdf-obligacion{margin:4px}
+.pdf-liquidacion .pdf-celda{padding:3px 4px}
+.pdf-liquidacion .pdf-celda b{font-size:6.2px}
+.pdf-liquidacion .pdf-celda strong{font-size:7.8px}
+.pdf-liquidacion .pdf-observaciones{min-height:25px}
+.pdf-liquidacion .pdf-beneficio{margin:4px 0;padding:4px;font-size:6.8px}
+.pdf-liquidacion .pdf-pago{margin:4px;border-color:#78a2bc}
+.pdf-liquidacion .pdf-pago-titulo{font-size:10px;padding:4px}
+.pdf-liquidacion .pdf-tabla th,.pdf-liquidacion .pdf-tabla td{padding:3px 4px;font-size:6.8px}
+.pdf-liquidacion .pdf-aplicaciones{margin:4px}
+.pdf-liquidacion .pdf-aplicaciones h3{font-size:7px;padding:4px}
+.pdf-liquidacion .pdf-aplicaciones th,.pdf-liquidacion .pdf-aplicaciones td{padding:2px;font-size:6.2px}
+.pdf-liquidacion .pdf-nota{padding:4px;font-size:6.5px}
+.pdf-intereses{margin:4px;border:1px solid #8da6b7;break-inside:avoid;page-break-inside:avoid}
+.pdf-intereses h3{margin:0;padding:4px;background:#dceaf4;color:#17324d;font-size:7.2px}
+.pdf-intereses table{width:100%;border-collapse:collapse}
+.pdf-intereses th,.pdf-intereses td{border:1px solid #b4c4cf;padding:2.5px 3px;text-align:right;font-size:6.2px}
+.pdf-intereses th:first-child,.pdf-intereses td:first-child{text-align:center}
+.pdf-intereses thead th{background:#eef4f8;font-size:6px}
+.pdf-intereses tfoot th{background:#e8f1f6;font-weight:700}
+.pdf-alerta{font-size:7px;margin:4px;padding:4px}
+@page{size:A4 portrait;margin:5mm}
+@media print{body{margin:0!important}.pdf-soporte{padding:0}.pdf-pagina{gap:4mm}.pdf-hoja{break-after:page}.pdf-hoja:last-child{break-after:auto}}
+@media(max-width:900px){.pdf-pagina{grid-template-columns:1fr}.pdf-liquidacion{page-break-inside:auto}.fecha-dual{grid-template-columns:minmax(0,1fr) 40px}}
+
+/* REAJUSTE 16.20 — Interfaz opción B: navegación por pestañas, compacta y profesional.
+   Solo afecta la presentación de la interfaz; no modifica la lógica tributaria ni los estilos PDF. */
+.tabs-nav{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0 0 10px;background:#dfe8ee;border:1px solid #b9c9d5;border-radius:8px 8px 0 0;overflow:hidden;box-shadow:0 2px 5px #00000012}
+.tab-btn{appearance:none;border:0;border-right:1px solid #c1ced7;background:#edf3f7;color:#173047;font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;min-height:42px;transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.tab-btn:last-child{border-right:0}
+.tab-btn:hover{background:#e2edf4}
+.tab-btn.active{background:#0076a3;color:#fff;box-shadow:inset 0 -3px 0 #004f6d}
+.tab-pane{display:none}
+.tab-pane.active{display:block;animation:tabFade .12s ease-out}
+.tab-pane-inner{display:flex;flex-direction:column;gap:8px}
+.tab-pane-inner>.panel{margin-bottom:0}
+@keyframes tabFade{from{opacity:.92;transform:translateY(1px)}to{opacity:1;transform:none}}
+/* Compactación de la pantalla sin alterar componentes ni IDs existentes. */
+.contenedor{margin:8px auto;padding:0 10px}
+.panel{margin-bottom:8px;border-radius:7px}
+.panel-title{padding:7px 10px}
+.grid{gap:6px;padding:8px}
+.grid input,.grid select{padding:6px}
+.nota{padding:6px 9px;font-size:11px}
+.resultado-calendario{margin:7px;padding:7px}
+.tabla-scroll th,.tabla-scroll td,.tabla-informe th,.tabla-informe td{padding:4px}
+.importador{padding:7px}
+.importador textarea{min-height:68px}
+.botonera{position:sticky;bottom:8px;z-index:19;background:#ffffffee;border:1px solid #c5d1da;border-radius:8px;padding:7px;margin:9px 0 0;box-shadow:0 3px 10px #00000018;backdrop-filter:blur(4px)}
+.botonera .grande{padding:8px 16px}
+.tasas-panel .tasas-grid{gap:7px}
+.soporte-panel .soporte-contenido{gap:10px}
+.auditoria-panel summary{padding:8px 10px}
+/* En escritorio se aprovecha mejor el ancho, manteniendo legibilidad. */
+@media(min-width:1200px){.contenedor{max-width:1600px}.grid{grid-template-columns:repeat(6,minmax(150px,1fr))}.tabla-scroll{max-height:52vh}.tabla-scroll table{min-width:0}.tasas-panel .tabla-scroll{max-height:32vh}}
+@media(max-width:850px){.tabs-nav{position:static;grid-template-columns:repeat(2,1fr)}.tab-btn:nth-child(2){border-right:0}.tab-btn{border-bottom:1px solid #c1ced7}.botonera{position:static;flex-direction:column}.botonera button{width:100%}}
+@media(max-width:600px){.tabs-nav{grid-template-columns:1fr}.tab-btn{border-right:0}.tab-pane-inner{gap:6px}.contenedor{padding:0 7px}.grid{padding:7px}}
+
+/* REAJUSTE 16.22 — Compactación de Datos generales + Sanción.
+   Solo afecta la interfaz; no altera estilos de PDF ni lógica de cálculo. */
+.datos-unificados-panel{border:1px solid #b9c9d5}
+.datos-unificados{padding:7px 9px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.datos-bloque{border:1px solid #d0dbe3;border-radius:6px;background:#fbfdfe;overflow:hidden}
+.datos-bloque-titulo{padding:5px 8px;background:#e8f0f5;color:#173047;font-size:11px;font-weight:700;border-bottom:1px solid #d0dbe3}
+.datos-grid{display:flex;flex-wrap:wrap;align-items:end;gap:6px;padding:7px}
+.datos-grid label{display:flex;flex-direction:column;gap:3px;font-weight:700;font-size:11px;width:max-content;max-width:100%}
+.datos-grid label>input,.datos-grid label>select{width:auto;min-width:88px;max-width:220px;height:32px;margin:0;padding:5px 7px}
+.datos-grid label.dato-razon{min-width:190px;flex:1 1 190px}
+.datos-grid label.dato-razon>input{width:100%;max-width:280px}
+.datos-grid .fecha-dual{display:grid;grid-template-columns:minmax(110px,1fr) 36px;gap:4px;align-items:center}
+.datos-grid .fecha-native{width:36px;height:32px;padding:3px}
+.datos-grid .money{text-align:right}
+.sancion-grid label>input,.sancion-grid label>select{max-width:205px}
+.sancion-grid label:nth-child(2){min-width:135px}
+.sancion-grid label:nth-child(3){min-width:145px}
+.sancion-grid label:nth-child(4),.sancion-grid label:nth-child(5){min-width:175px}
+.datos-unificados-panel>.nota{padding-top:5px;padding-bottom:7px}
+@media(max-width:1100px){.datos-unificados{grid-template-columns:1fr}.datos-grid label.dato-razon{flex:0 1 280px}}
+@media(max-width:650px){.datos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.datos-grid label,.datos-grid label.dato-razon{min-width:0;flex:auto;width:100%}.datos-grid label>input,.datos-grid label>select,.datos-grid label.dato-razon>input{width:100%;max-width:none}.datos-grid .fecha-dual{grid-template-columns:minmax(0,1fr) 36px}.sancion-grid{grid-template-columns:1fr}}
+
+/* REAJUSTE 16.23 — Datos y vencimientos en una sola pestaña.
+   Solo presentación de interfaz. No modifica PDF ni lógica tributaria. */
+.tabs-nav{grid-template-columns:repeat(3,1fr)}
+.panel-vencimientos-integrado{margin-top:8px}
+.panel-vencimientos-integrado .panel-title{padding:7px 10px}
+#tablaVencimientos{min-width:0;table-layout:auto}
+#tablaVencimientos th,#tablaVencimientos td{white-space:nowrap;padding:4px 6px}
+#tablaVencimientos th:nth-child(1),#tablaVencimientos td:nth-child(1){width:42px;text-align:center}
+#tablaVencimientos th:nth-child(2),#tablaVencimientos td:nth-child(2){width:72px}
+#tablaVencimientos th:nth-child(3),#tablaVencimientos td:nth-child(3){width:170px}
+#tablaVencimientos th:nth-child(4),#tablaVencimientos td:nth-child(4){width:190px}
+#tablaVencimientos th:nth-child(5),#tablaVencimientos td:nth-child(5){width:90px;text-align:center}
+#tablaVencimientos td input{width:auto;min-width:0}
+#tablaVencimientos td input[data-v="periodo"]{width:58px;max-width:58px;text-align:center}
+#tablaVencimientos td .fecha-dual{width:160px;grid-template-columns:120px 36px}
+#tablaVencimientos td .fecha-campo{width:120px}
+#tablaVencimientos td .fecha-native{width:36px}
+#tablaVencimientos td input[data-v="impuesto"]{width:155px;max-width:155px;text-align:right}
+#tablaVencimientos .secundario{padding:5px 8px}
+@media(min-width:1200px){
+  .tab-pane[data-pane="datos"] .tab-pane-inner{gap:7px}
+  .datos-unificados{gap:7px}
+  .datos-grid{gap:5px;padding:6px}
+  .panel-vencimientos-integrado .nota{padding:5px 9px}
+}
+@media(max-width:850px){.tabs-nav{grid-template-columns:1fr 1fr 1fr}}
+@media(max-width:600px){.tabs-nav{grid-template-columns:1fr}.panel-vencimientos-integrado .tabla-scroll{overflow-x:auto}}
+
+/* REAJUSTE 16.24 — Reconocimiento opcional desde imagen (OCR).
+   Solo agrega una vía de entrada; no sustituye importación ni digitación. */
+.ocr-panel{border:1px solid #8aa7bb;background:#fbfdff}
+.ocr-zone{min-height:92px;margin:8px;padding:14px;border:2px dashed #9db4c4;border-radius:7px;background:#f7fafc;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;position:relative;overflow:hidden}
+.ocr-zone:hover,.ocr-zone.drag-over,.ocr-zone.has-image{border-color:#287ca5;background:#eef7fb}
+.ocr-placeholder{display:flex;flex-direction:column;gap:5px;color:#36536a;font-size:12px}
+.ocr-placeholder strong{font-size:13px;color:#173f5f}
+.ocr-preview{max-height:210px;max-width:100%;object-fit:contain;border-radius:5px}
+.ocr-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:0 8px 8px}
+.ocr-status{font-size:11px;color:#536775}
+.ocr-results{margin:0 8px 8px;border:1px solid #b9cbd7;background:#fff;padding:7px;max-height:230px;overflow:auto}
+.ocr-results[hidden]{display:none}
+.ocr-results-head{font-weight:700;color:#173f5f;padding-bottom:5px;border-bottom:1px solid #d5e0e7;margin-bottom:5px}
+.ocr-item{font-size:11px;padding:4px 5px;border-bottom:1px solid #edf1f4}
+.ocr-confirm-row{display:flex;justify-content:flex-end;margin-top:7px}.ocr-confirmar{margin-top:0}.ocr-confirmar.confirmado{opacity:.75;cursor:default}
+.ocr-empty{font-size:11px;color:#7b5c00;padding:5px}
+@media(max-width:700px){.ocr-actions{flex-direction:column;align-items:stretch}.ocr-actions button{width:100%}}
+
+.ocr-warning{margin:7px 10px;padding:7px 9px;background:#FFF4CC;border:1px solid #E2C66B;color:#6B5300;font-size:10px;font-weight:700}
+
+/* REAJUSTE 16.28 — importación inteligente de datos de obligación */
+.importador-obligacion textarea{min-height:88px;font-family:Arial,Helvetica,sans-serif;line-height:1.35}
+.importacion-resumen{padding:8px 10px;background:#f4f8fa;border-top:1px solid var(--borde);font-size:11px}
+.importacion-alerta{color:#7a5300;font-weight:700}
