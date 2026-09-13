@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liquidador DIAN — Reajuste 16.28</title>
-<link rel="stylesheet" href="estilos.css?v=16.28">
+<title>Liquidador DIAN — Reajuste 16.30</title>
+<link rel="stylesheet" href="estilos.css?v=16.30">
 </head>
 <body>
 <header class="topbar">
@@ -92,16 +92,27 @@
 </section>
 
 <section class="panel tasas-panel">
-  <div class="panel-title fila-titulo"><span>Actualización de tasas moratorias</span><span class="badge">PARÁMETROS</span></div>
-  <div class="tasas-grid">
-    <label>Mes<select id="tasaMes"><option value="1">ENERO</option><option value="2">FEBRERO</option><option value="3">MARZO</option><option value="4">ABRIL</option><option value="5">MAYO</option><option value="6">JUNIO</option><option value="7">JULIO</option><option value="8">AGOSTO</option><option value="9">SEPTIEMBRE</option><option value="10">OCTUBRE</option><option value="11">NOVIEMBRE</option><option value="12">DICIEMBRE</option></select></label>
-    <label>Año<input id="tasaAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label>
-    <label>Tasa DIAN (%)<input id="tasaValor" type="text" inputmode="decimal" placeholder="Ej. 27,66"></label>
-    <div class="tasas-acciones"><button id="btnGuardarTasa" type="button" class="secundario">Guardar tasa manual</button><button id="btnActualizarTasaDian" type="button" class="primario">Actualizar desde DIAN</button></div>
+  <div class="panel-title fila-titulo"><span>Actualización central de tasas moratorias</span><span class="badge">SUPABASE</span></div>
+  <div class="tasas-admin-bar">
+    <div><strong>Estado de tasas:</strong> <span id="estadoTasasConexion">Consultando...</span></div>
+    <div class="tasas-admin-auth">
+      <span id="estadoAdmin">Modo consulta pública</span>
+      <button id="btnIniciarAdmin" type="button" class="secundario">Ingresar como administrador</button>
+      <button id="btnCerrarAdmin" type="button" class="peligro" hidden>Cerrar sesión</button>
+    </div>
   </div>
-  <div class="nota">La tasa manual se aplica por defecto desde el día 1 hasta el último día del mes indicado y queda guardada en este navegador. “Actualizar desde DIAN” consulta la fuente oficial; si el navegador bloquea la lectura automática, abre la página oficial para verificar y permite ingresar la tasa manualmente.</div>
+  <div id="panelEdicionTasa" class="tasas-admin-editor" hidden>
+    <div class="tasas-grid">
+      <label>Mes<select id="tasaMes"><option value="1">ENERO</option><option value="2">FEBRERO</option><option value="3">MARZO</option><option value="4">ABRIL</option><option value="5">MAYO</option><option value="6">JUNIO</option><option value="7">JULIO</option><option value="8">AGOSTO</option><option value="9">SEPTIEMBRE</option><option value="10">OCTUBRE</option><option value="11">NOVIEMBRE</option><option value="12">DICIEMBRE</option></select></label>
+      <label>Año<input id="tasaAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label>
+      <label>Tasa DIAN (%)<input id="tasaValor" type="text" inputmode="decimal" placeholder="Ej. 27,24"></label>
+      <label>Norma (opcional)<input id="tasaNorma" type="text" placeholder="Ej. Resolución 1260 de 2026"></label>
+      <div class="tasas-acciones"><button id="btnGuardarTasa" type="button" class="primario">Guardar tasa central</button><button id="btnActualizarTasaDian" type="button" class="secundario">Recargar tasas centrales</button></div>
+    </div>
+    <div class="nota">Solo el administrador autorizado puede guardar tasas. Una tasa nueva queda centralizada en Supabase y todos los usuarios la reciben al abrir o recargar el liquidador. Las tasas de períodos anteriores al mes actual no se pueden modificar desde este panel.</div>
+  </div>
   <div id="estadoTasas" class="resultado-calendario"></div>
-  <div class="tabla-scroll"><table id="tablaTasasPersonalizadas"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Fuente</th><th>Acción</th></tr></thead><tbody></tbody></table></div>
+  <div class="tabla-scroll"><table id="tablaTasasPersonalizadas"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Tipo</th><th>Fuente</th><th>Norma</th></tr></thead><tbody></tbody></table></div>
 </section>
 
 <section class="panel soporte-panel">
@@ -124,8 +135,8 @@
 <section class="botonera"><button id="btnCalcular" class="primario grande">Calcular liquidación</button><button id="btnLimpiar" class="peligro grande">Limpiar</button></section>
 
 </main>
-<footer>Liquidador DIAN — versión 16.24, orientada a liquidación de obligaciones ya determinadas</footer>
-<script type="module" src="js/app.js?v=16.24"></script>
+<footer>Liquidador DIAN — versión 16.30, con tasas centralizadas en Supabase</footer>
+<script type="module" src="js/app.js?v=16.30"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){

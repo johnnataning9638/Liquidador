@@ -5,6 +5,8 @@ import {CalendarioTributario} from "./calendario-tributario.js";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js";
 import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js";
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js";
 
 const $=id=>document.getElementById(id);
 const N=6;
@@ -26,6 +28,9 @@ let motor=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
 let uvt=[],tasasMoratorias=[],tasasBase=[],ipc=[],beneficios=[],sanciones=[],reglasObligaciones=[],calendarioData=null;
 let pagos=[];
 let tasasPersonalizadas=[];
+let tasasCentrales=[];
+let supabaseClient=null;
+let adminEmail=null;
 let ultimaLiquidacion=null,ultimaAuditoria=null;
 let obligacionVencimientos=[];
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
@@ -41,13 +46,28 @@ const MESES_TASA=["","ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","A
 const MES_NUM={ENERO:1,FEBRERO:2,MARZO:3,ABRIL:4,MAYO:5,JUNIO:6,JULIO:7,AGOSTO:8,SEPTIEMBRE:9,OCTUBRE:10,NOVIEMBRE:11,DICIEMBRE:12};
 function primerDiaMes(anio,mes){return `${Number(anio)}-${String(Number(mes)).padStart(2,"0")}-01`;}
 function ultimoDiaMes(anio,mes){return new Date(Number(anio),Number(mes),0).toISOString().slice(0,10);}
+function iniciarSupabase(){
+  const url=String(SUPABASE_URL||"").trim();
+  const key=String(SUPABASE_ANON_KEY||"").trim();
+  if(!url||!key||url.includes("PEGAR_AQUI")||key.includes("PEGAR_AQUI"))return null;
+  try{return createClient(url,key);}catch(e){console.error("No se pudo inicializar Supabase",e);return null;}
+}
+function renderTasasPersonalizadas(){
+  const tbody=$("tablaTasasPersonalizadas")?.querySelector("tbody");
+  if(!tbody)return;
+  tbody.innerHTML="";
+  const filas=tasasCentrales.length?tasasCentrales:[...tasasPersonalizadas].map(t=>({fecha_inicio:t.desde,fecha_fin:t.hasta,tasa:Number(t.tasa)/100,tipo_tasa:"TASA DIAN",fuente_url:t.fuente||"LOCAL",norma:null}));
+  [...filas].sort((a,b)=>String(b.fecha_inicio).localeCompare(String(a.fecha_inicio))).forEach(t=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${fechaVisible(t.fecha_inicio)}</td><td>${fechaVisible(t.fecha_fin)}</td><td>${(Number(t.tasa)*100).toFixed(3)}%</td><td>${esc(t.tipo_tasa||"TASA DIAN")}</td><td>${esc(t.fuente_url||"SUPABASE")}</td><td>${esc(t.norma||"—")}</td>`;
+    tbody.appendChild(tr);
+  });
+}
 function leerTasasPersonalizadas(){
   try{const raw=localStorage.getItem("liquidador_dian_tasas_personalizadas");tasasPersonalizadas=raw?JSON.parse(raw):[];if(!Array.isArray(tasasPersonalizadas))tasasPersonalizadas=[];}catch{tasasPersonalizadas=[];}
 }
 function guardarTasasPersonalizadas(){localStorage.setItem("liquidador_dian_tasas_personalizadas",JSON.stringify(tasasPersonalizadas));}
-function reconstruirMotor(){
-  motor=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});
-}
+function reconstruirMotor(){motor=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});}
 function aplicarTasaEnMemoria(desde,hasta,tasa,fuente="ACTUALIZACIÓN MANUAL",reconstruir=true){
   const d=String(desde).slice(0,10),h=String(hasta).slice(0,10),valor=Number(tasa)/100;
   const filaExistente=tasasMoratorias.find(x=>String(x.desde).slice(0,10)===d&&String(x.hasta).slice(0,10)===h);
@@ -63,62 +83,88 @@ function aplicarTasaEnMemoria(desde,hasta,tasa,fuente="ACTUALIZACIÓN MANUAL",re
   tasasMoratorias.sort((a,b)=>String(a.desde).localeCompare(String(b.desde)));
   if(reconstruir)reconstruirMotor();
 }
-function renderTasasPersonalizadas(){
-  const tbody=$("tablaTasasPersonalizadas")?.querySelector("tbody");if(!tbody)return;tbody.innerHTML="";
-  [...tasasPersonalizadas].sort((a,b)=>String(b.desde).localeCompare(String(a.desde))).forEach((t,i)=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${fechaVisible(t.desde)}</td><td>${fechaVisible(t.hasta)}</td><td>${Number(t.tasa).toFixed(3)}%</td><td>${esc(t.fuente||"MANUAL")}</td><td><button type="button" class="peligro" data-del-tasa="1">Eliminar</button></td>`;
-    tr.querySelector("[data-del-tasa]").addEventListener("click",()=>{tasasPersonalizadas.splice(i,1);guardarTasasPersonalizadas();aplicarTasasGuardadas();renderTasasPersonalizadas();renderPagos();});
-    tbody.appendChild(tr);
-  });
-}
 function aplicarTasasGuardadas(){
   tasasMoratorias=JSON.parse(JSON.stringify(tasasBase));
-  for(const t of tasasPersonalizadas) aplicarTasaEnMemoria(t.desde,t.hasta,t.tasa,t.fuente||"ACTUALIZACIÓN MANUAL",false);
+  for(const t of tasasPersonalizadas)aplicarTasaEnMemoria(t.desde,t.hasta,t.tasa,t.fuente||"ACTUALIZACIÓN MANUAL",false);
   reconstruirMotor();
 }
-function guardarTasaManual(){
-  const mes=Number($("tasaMes").value),anio=Number($("tasaAnio").value),raw=String($("tasaValor").value||"").replace(",",".");
-  const tasa=Number(raw);
+function esAdministradorLogueado(){return Boolean(adminEmail);}
+async function verificarAdministrador(){
+  if(!supabaseClient)return false;
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  adminEmail=user?.email||null;
+  if(!user){actualizarUIAdmin();return false;}
+  const {data,error}=await supabaseClient.from("admin_users").select("email").eq("email",user.email).maybeSingle();
+  if(error){console.warn("No fue posible verificar administrador",error);adminEmail=null;actualizarUIAdmin();return false;}
+  if(!data)adminEmail=null;
+  actualizarUIAdmin();
+  return Boolean(adminEmail);
+}
+function actualizarUIAdmin(){
+  const estado=$("estadoAdmin"),login=$("btnIniciarAdmin"),logout=$("btnCerrarAdmin"),panel=$("panelEdicionTasa");
+  if(!estado)return;
+  const ok=Boolean(adminEmail);
+  estado.textContent=ok?`Administrador: ${adminEmail}`:"Modo consulta pública";
+  if(login)login.hidden=ok;
+  if(logout)logout.hidden=!ok;
+  if(panel)panel.hidden=!ok;
+}
+async function iniciarSesionAdmin(){
+  if(!supabaseClient)return alert("Supabase aún no está configurado en js/supabase-config.js.");
+  const email=prompt("Correo del administrador:");
+  if(email===null)return;
+  const password=prompt("Contraseña de Supabase Auth:");
+  if(password===null)return;
+  const {error}=await supabaseClient.auth.signInWithPassword({email:email.trim(),password});
+  if(error)return alert(`No fue posible iniciar sesión: ${error.message}`);
+  if(!(await verificarAdministrador())){
+    await supabaseClient.auth.signOut();
+    return alert("El usuario inició sesión, pero no está autorizado como administrador de tasas.");
+  }
+  $("estadoTasas").innerHTML="Sesión de administrador iniciada. Puede registrar una nueva tasa central.";
+}
+async function cerrarSesionAdmin(){if(supabaseClient)await supabaseClient.auth.signOut();adminEmail=null;actualizarUIAdmin();$("estadoTasas").textContent="Sesión administrativa cerrada.";}
+async function cargarTasasRemotas(){
+  if(!supabaseClient){$("estadoTasasConexion").textContent="Supabase no configurado; se usan parámetros locales.";return false;}
+  const {data,error}=await supabaseClient.from("tasas_liquidador").select("id,fecha_inicio,fecha_fin,tasa,tipo_tasa,fuente_url,norma,estado").eq("tipo_tasa","TASA DIAN").order("fecha_inicio",{ascending:true}).order("id",{ascending:true});
+  if(error){console.error(error);$("estadoTasasConexion").textContent="No fue posible leer Supabase.";return false;}
+  tasasCentrales=Array.isArray(data)?data:[];
+  for(const t of tasasCentrales)aplicarTasaEnMemoria(t.fecha_inicio,t.fecha_fin,Number(t.tasa)*100,t.fuente_url||"SUPABASE",false);
+  reconstruirMotor();
+  $("estadoTasasConexion").textContent=`Conectado · ${tasasCentrales.length} tasas centrales`;
+  renderTasasPersonalizadas();
+  return true;
+}
+function numeroTasaTexto(v){const s=String(v||"").trim().replace(/\s/g,"");if(s.includes(","))return Number(s.replace(/\./g,"").replace(",","."));return Number(s);}
+async function guardarTasaManual(){
+  if(!esAdministradorLogueado())return alert("Inicie sesión como administrador para guardar una tasa.");
+  if(!supabaseClient)return alert("Supabase no está configurado.");
+  const mes=Number($("tasaMes").value),anio=Number($("tasaAnio").value),tasa=numeroTasaTexto($("tasaValor").value),norma=String($("tasaNorma")?.value||"").trim()||null;
   if(!Number.isInteger(anio)||anio<1900||anio>2100)return alert("Ingrese un año válido.");
   if(!Number.isInteger(mes)||mes<1||mes>12)return alert("Seleccione un mes válido.");
   if(!Number.isFinite(tasa)||tasa<0||tasa>100)return alert("Ingrese una tasa entre 0 y 100%.");
   const desde=primerDiaMes(anio,mes),hasta=ultimoDiaMes(anio,mes);
-  tasasPersonalizadas=tasasPersonalizadas.filter(t=>!(t.desde===desde&&t.hasta===hasta));
-  tasasPersonalizadas.push({desde,hasta,tasa:Number(tasa.toFixed(6)),fuente:"ACTUALIZACIÓN MANUAL DEL USUARIO",actualizado:new Date().toISOString()});
-  guardarTasasPersonalizadas();aplicarTasaEnMemoria(desde,hasta,tasa,"ACTUALIZACIÓN MANUAL DEL USUARIO");renderTasasPersonalizadas();renderPagos();
-  $("estadoTasas").innerHTML=`Tasa guardada: <strong>${Number(tasa).toFixed(3)}%</strong> · ${MESES_TASA[mes]} ${anio} · desde ${fechaVisible(desde)} hasta ${fechaVisible(hasta)}.`;
-}
-function numeroTasaTexto(v){const s=String(v||"").trim().replace(/\s/g,"");if(s.includes(","))return Number(s.replace(/\./g,"").replace(",","."));return Number(s);}
-function detectarUltimaTasaDIAN(texto){
-  const t=String(texto||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/gi," ");
-  const meses={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
-  const re=/TIM\s+entre\s+el\s+1\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})\s+y\s+el\s+\d{1,2}\s+de\s+\1\s+de\s+\2\s+es\s+de\s*:?\s*([0-9.,]+)\s*%/i;
-  const m=t.match(re);
-  if(m&&meses[m[1].toLowerCase()])return {mes:meses[m[1].toLowerCase()],anio:Number(m[2]),tasa:numeroTasaTexto(m[3])};
-  const rows=[...t.matchAll(/1\/(\d{1,2})\/(\d{4})[^\d]{0,80}(\d{1,2}[.,]\d{2})/g)];
-  if(rows.length){const r=rows.map(x=>({mes:Number(x[1]),anio:Number(x[2]),tasa:numeroTasaTexto(x[3])})).filter(x=>x.mes>=1&&x.mes<=12&&x.anio>=1900&&x.tasa>0).sort((a,b)=>a.anio-b.anio||a.mes-b.mes).pop();return r||null;}
-  return null;
+  const primerDiaMesActual=primerDiaMes(Number(hoyISO().slice(0,4)),Number(hoyISO().slice(5,7)));
+  if(desde<primerDiaMesActual)return alert("Por seguridad, este panel no permite modificar períodos anteriores al mes actual.");
+  const {data:existente,error:errExist}=await supabaseClient.from("tasas_liquidador").select("id,tasa,fecha_inicio,fecha_fin,tipo_tasa").eq("fecha_inicio",desde).eq("fecha_fin",hasta).eq("tipo_tasa","TASA DIAN").maybeSingle();
+  if(errExist)return alert(`No fue posible consultar la tasa existente: ${errExist.message}`);
+  const payload={fecha_inicio:desde,fecha_fin:hasta,tasa:Number((tasa/100).toFixed(8)),tipo_tasa:"TASA DIAN",fuente_url:URL_TIM_DIAN,norma,estado:"ACTIVA"};
+  if(existente){
+    if(Math.abs(Number(existente.tasa)-payload.tasa)<1e-9){$("estadoTasas").innerHTML=`La tasa ${tasa.toFixed(3)}% para ${MESES_TASA[mes]} ${anio} ya está registrada. No se modificó nada.`;return;}
+    const {error}=await supabaseClient.from("tasas_liquidador").update(payload).eq("id",existente.id);
+    if(error)return alert(`No fue posible actualizar la tasa: ${error.message}`);
+    $("estadoTasas").innerHTML=`Tasa central actualizada: <strong>${tasa.toFixed(3)}%</strong> · ${MESES_TASA[mes]} ${anio}.`;
+  }else{
+    const {error}=await supabaseClient.from("tasas_liquidador").insert(payload);
+    if(error)return alert(`No fue posible guardar la tasa: ${error.message}`);
+    $("estadoTasas").innerHTML=`Tasa central guardada: <strong>${tasa.toFixed(3)}%</strong> · ${MESES_TASA[mes]} ${anio}.`;
+  }
+  await cargarTasasRemotas();
+  renderPagos();
 }
 async function actualizarDesdeDIAN(){
-  const estado=$("estadoTasas");
-  estado.innerHTML="Consultando la fuente oficial de la DIAN...";
-  let encontrado=null;
-  try{
-    const r=await fetch(URL_TIM_DIAN,{cache:"no-store"});
-    if(r.ok){const html=await r.text();encontrado=detectarUltimaTasaDIAN(html);}
-  }catch(e){console.warn("La consulta automática de DIAN fue bloqueada por el navegador/CORS",e);}
-  if(!encontrado){
-    window.open(URL_TIM_DIAN,"_blank","noopener,noreferrer");
-    estado.innerHTML=`No fue posible leer automáticamente la página de DIAN desde este navegador. Se abrió la <a href="${URL_TIM_DIAN}" target="_blank" rel="noopener">fuente oficial TIM de la DIAN</a>. Revise la última tasa y regístrela con la opción manual.`;
-    return;
-  }
-  const desde=primerDiaMes(encontrado.anio,encontrado.mes),hasta=ultimoDiaMes(encontrado.anio,encontrado.mes);
-  tasasPersonalizadas=tasasPersonalizadas.filter(t=>!(t.desde===desde&&t.hasta===hasta));
-  tasasPersonalizadas.push({desde,hasta,tasa:Number(encontrado.tasa.toFixed(6)),fuente:"DIAN — consulta automática",actualizado:new Date().toISOString()});
-  guardarTasasPersonalizadas();aplicarTasaEnMemoria(desde,hasta,encontrado.tasa,"DIAN — consulta automática");renderTasasPersonalizadas();renderPagos();
-  $("tasaMes").value=String(encontrado.mes);$("tasaAnio").value=String(encontrado.anio);$("tasaValor").value=String(encontrado.tasa).replace(".",",");
-  estado.innerHTML=`Última tasa encontrada en DIAN: <strong>${Number(encontrado.tasa).toFixed(3)}%</strong> · ${MESES_TASA[encontrado.mes]} ${encontrado.anio}. La tasa quedó incorporada al liquidador desde el día 1 hasta el último día del mes.`;
+  await cargarTasasRemotas();
+  $("estadoTasas").textContent="Tasas centrales recargadas desde Supabase.";
 }
 
 async function cargarDatos(){
@@ -136,9 +182,12 @@ async function cargarDatos(){
   tasasBase=JSON.parse(JSON.stringify(tasasMoratorias));
   leerTasasPersonalizadas();
   aplicarTasasGuardadas();
+  supabaseClient=iniciarSupabase();
+  await cargarTasasRemotas();
+  await verificarAdministrador();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.24"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.30"});
   $("estadoSistema").textContent="Parámetros históricos cargados";
   $("estadoSistema").classList.add("ok");
 }
@@ -797,6 +846,8 @@ function configurarBase(){
   $("btnExportarPdf").addEventListener("click",exportarPdf);
   $("btnGuardarTasa").addEventListener("click",guardarTasaManual);
   $("btnActualizarTasaDian").addEventListener("click",actualizarDesdeDIAN);
+  $("btnIniciarAdmin")?.addEventListener("click",iniciarSesionAdmin);
+  $("btnCerrarAdmin")?.addEventListener("click",cerrarSesionAdmin);
   $("btnProcesarPegado").addEventListener("click",()=>{try{aplicarImportacion(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
   $("btnImportar").addEventListener("click",()=>$("archivoImportacion").click());
   $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{aplicarImportacion(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
@@ -808,6 +859,11 @@ function configurarBase(){
       $("pegarDatosObligacion").value="";
     }catch(e){alert(e.message||"No pude reconocer los datos de la obligación.");}
   });
+}
+
+if(typeof window!=="undefined"){
+  // Mantener el estado de sesión cuando Supabase renueva/refresca la sesión.
+  // No hay credenciales privadas en el navegador.
 }
 
 window.addEventListener("DOMContentLoaded",async()=>{
