@@ -1,6 +1,7 @@
 import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js";
 import {importarDatosInteligente} from "./importador.js";
 import {MotorLiquidacion} from "./motor-liquidacion.js";
+import {ActualizadorSancion} from "./actualizacion-sancion.js";
 import {CalendarioTributario} from "./calendario-tributario.js";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js";
 import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js";
@@ -24,8 +25,8 @@ const TIPOS=[
   "ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION"
 ];
 
-let motor=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
-let uvt=[],tasasMoratorias=[],tasasBase=[],ipc=[],beneficios=[],sanciones=[],reglasObligaciones=[],calendarioData=null;
+let motor=null,actualizadorSancion=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
+let uvt=[],tasasMoratorias=[],tasasBase=[],ipc=[],ipcBase=[],ipcCentrales=[],beneficios=[],sanciones=[],reglasObligaciones=[],calendarioData=null;
 let pagos=[];
 let tasasPersonalizadas=[];
 let tasasCentrales=[];
@@ -52,6 +53,71 @@ function iniciarSupabase(){
   if(!url||!key||url.includes("PEGAR_AQUI")||key.includes("PEGAR_AQUI"))return null;
   try{return createClient(url,key);}catch(e){console.error("No se pudo inicializar Supabase",e);return null;}
 }
+function renderIPC(){
+  const tbody=$("tablaIPC")?.querySelector("tbody");
+  if(!tbody)return;
+  tbody.innerHTML="";
+  const filas=ipcCentrales.length?ipcCentrales:ipc;
+  [...filas].sort((a,b)=>Number(b.anio_inflacion??b.anioInflacion)-Number(a.anio_inflacion??a.anioInflacion)).forEach(x=>{
+    const anio=Number(x.anio_inflacion??x.anioInflacion);
+    const valor=Number(x.inflacion??0);
+    const desde=String(x.aplicable_desde??x.aplicableDesde??"").slice(0,10);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${anio}</td><td>${(valor*100).toFixed(2)}%</td><td>${fechaVisible(desde)}</td><td>${esc(x.fuente_url||x.fuente||"SUPABASE")}</td><td>${esc(x.norma||"—")}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function ipcRemotoPorAnio(anio){return ipcCentrales.find(x=>Number(x.anio_inflacion)===Number(anio));}
+function prepararIPCRemoto(){
+  ipcBase=JSON.parse(JSON.stringify(ipc));
+  if(!ipcCentrales.length){ipc=ipcBase;return;}
+  const mapa=new Map(ipcBase.map(x=>[Number(x.anioInflacion??x.anio_inflacion),x]));
+  for(const x of ipcCentrales){const y=Number(x.anio_inflacion);mapa.set(y,{anioInflacion:y,inflacion:Number(x.inflacion),aplicableDesde:String(x.aplicable_desde).slice(0,10),fuente:x.fuente_url||x.fuente||"SUPABASE"});}
+  ipc=[...mapa.values()].sort((a,b)=>a.anioInflacion-b.anioInflacion);
+  reconstruirMotor();
+}
+function mensajeActualizacionesPendientes(){
+  const box=$("avisosParametros"); if(!box)return;
+  const hoy=new Date(); const anio=hoy.getFullYear(), mes=hoy.getMonth()+1, dia=hoy.getDate();
+  const pendientes=[];
+  const timOk=tasasCentrales.some(t=>String(t.fecha_inicio).slice(0,7)===`${anio}-${String(mes).padStart(2,"0")}` && String(t.tipo_tasa)==="TASA DIAN");
+  if(dia<=7 && supabaseClient && !timOk) pendientes.push(`Actualizar TIM — ${MESES_TASA[mes]} ${anio}`);
+  const ipcObjetivo=anio-1;
+  const ipcOk=ipcObjetivo>=2003 && ipcCentrales.some(x=>Number(x.anio_inflacion)===ipcObjetivo);
+  if(ipcObjetivo>=2003 && !ipcOk && supabaseClient) pendientes.push(`Actualizar IPC — año ${ipcObjetivo}`);
+  if(!supabaseClient){box.hidden=true;return;}
+  box.hidden=!pendientes.length;
+  if(pendientes.length)box.innerHTML=`<strong>Parámetros pendientes de actualización:</strong> ${pendientes.map(x=>`<span class="aviso-parametro">${esc(x)}</span>`).join(" ")}<span class="aviso-parametro-nota">El aviso es informativo y no bloquea el liquidador.</span>`;
+}
+async function cargarIPCRemotos(){
+  if(!supabaseClient)return false;
+  const {data,error}=await supabaseClient.from("ipc_liquidador").select("id,anio_inflacion,inflacion,aplicable_desde,fuente_url,norma,estado").order("anio_inflacion",{ascending:true});
+  if(error){console.error(error);$("estadoIPCConexion").textContent="No fue posible leer Supabase.";return false;}
+  ipcCentrales=Array.isArray(data)?data:[];
+  prepararIPCRemoto();
+  $("estadoIPCConexion").textContent=`Conectado · ${ipcCentrales.length} IPC anuales`;
+  renderIPC();
+  mensajeActualizacionesPendientes();
+  return true;
+}
+async function guardarIPCManual(){
+  if(!esAdministradorLogueado())return alert("Inicie sesión como administrador para guardar un IPC.");
+  if(!supabaseClient)return alert("Supabase no está configurado.");
+  const anio=Number($("ipcAnio").value);
+  const valor=numeroTasaTexto($("ipcValor").value);
+  const norma=String($("ipcNorma")?.value||"").trim()||null;
+  if(!Number.isInteger(anio)||anio<1900||anio>2100)return alert("Ingrese un año válido.");
+  if(!Number.isFinite(valor)||valor<0||valor>100)return alert("Ingrese un IPC entre 0 y 100%.");
+  const payload={anio_inflacion:anio,inflacion:Number((valor/100).toFixed(8)),aplicable_desde:`${anio+1}-01-01`,fuente_url:"DANE / DIAN",norma,estado:"ACTIVA"};
+  const {data:existente,error:err}=await supabaseClient.from("ipc_liquidador").select("id,inflacion").eq("anio_inflacion",anio).maybeSingle();
+  if(err)return alert(`No fue posible consultar el IPC existente: ${err.message}`);
+  let error;
+  if(existente){({error}=await supabaseClient.from("ipc_liquidador").update(payload).eq("id",existente.id));}
+  else {({error}=await supabaseClient.from("ipc_liquidador").insert(payload));}
+  if(error)return alert(`No fue posible guardar el IPC: ${error.message}`);
+  $("estadoIPC").innerHTML=`IPC central guardado: <strong>${valor.toFixed(2)}%</strong> · año ${anio}.`;
+  await cargarIPCRemotos();
+}
 function renderTasasPersonalizadas(){
   const tbody=$("tablaTasasPersonalizadas")?.querySelector("tbody");
   if(!tbody)return;
@@ -67,7 +133,7 @@ function leerTasasPersonalizadas(){
   try{const raw=localStorage.getItem("liquidador_dian_tasas_personalizadas");tasasPersonalizadas=raw?JSON.parse(raw):[];if(!Array.isArray(tasasPersonalizadas))tasasPersonalizadas=[];}catch{tasasPersonalizadas=[];}
 }
 function guardarTasasPersonalizadas(){localStorage.setItem("liquidador_dian_tasas_personalizadas",JSON.stringify(tasasPersonalizadas));}
-function reconstruirMotor(){motor=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});}
+function reconstruirMotor(){actualizadorSancion=new ActualizadorSancion({ipc});motor=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});}
 function aplicarTasaEnMemoria(desde,hasta,tasa,fuente="ACTUALIZACIÓN MANUAL",reconstruir=true){
   const d=String(desde).slice(0,10),h=String(hasta).slice(0,10),valor=Number(tasa)/100;
   const filaExistente=tasasMoratorias.find(x=>String(x.desde).slice(0,10)===d&&String(x.hasta).slice(0,10)===h);
@@ -101,13 +167,14 @@ async function verificarAdministrador(){
   return Boolean(adminEmail);
 }
 function actualizarUIAdmin(){
-  const estado=$("estadoAdmin"),login=$("btnIniciarAdmin"),logout=$("btnCerrarAdmin"),panel=$("panelEdicionTasa");
+  const estado=$("estadoAdmin"),login=$("btnIniciarAdmin"),logout=$("btnCerrarAdmin"),panel=$("panelEdicionTasa"),panelIPC=$("panelEdicionIPC");
   if(!estado)return;
   const ok=Boolean(adminEmail);
   estado.textContent=ok?`Administrador: ${adminEmail}`:"Modo consulta pública";
   if(login)login.hidden=ok;
   if(logout)logout.hidden=!ok;
   if(panel)panel.hidden=!ok;
+  if(panelIPC)panelIPC.hidden=!ok;
 }
 async function iniciarSesionAdmin(){
   if(!supabaseClient)return alert("Supabase aún no está configurado en js/supabase-config.js.");
@@ -184,10 +251,12 @@ async function cargarDatos(){
   aplicarTasasGuardadas();
   supabaseClient=iniciarSupabase();
   await cargarTasasRemotas();
+  await cargarIPCRemotos();
   await verificarAdministrador();
+  mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.30"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32"});
   $("estadoSistema").textContent="Parámetros históricos cargados";
   $("estadoSistema").classList.add("ok");
 }
@@ -373,8 +442,12 @@ function pintarInforme(r){
   const excedenteBox=$("rExcedenteBox");
   if(excedenteBox){excedenteBox.hidden=excedente<=0;if($("rExcedente"))$("rExcedente").textContent=dinero(excedente);}
   const detalle=(r.detalle||[]).map((x,i)=>`<div class="detalle-item"><strong>Pago ${i+1} — ${fechaVisible(x.pago.fecha)}</strong> · ${dinero(x.pago.valor)} · <strong>${esc(x.tipoAplicado||"TASA DIAN")}</strong> · ${esc(x.notaBeneficio||"")} · interés liquidado ${dinero(x.interesLiquidado??x.interesGenerado)} · impuesto aplicado ${dinero(x.aplicado.impuesto)} · intereses aplicados ${dinero(x.aplicado.intereses)} · sanción aplicada ${dinero(x.aplicado.sancion)}${Number(x.excedente||x.aplicado?.excedente||0)>0?` · <strong class="texto-excedente">EXCEDENTE ${dinero(x.excedente??x.aplicado.excedente)}</strong>`:""}</div>`).join("");
+  const act=r.sancionActualizacion||null;
+  const resumenSancion=act&&Number(act.actualizacionAcumulada||0)>0
+    ?`<div class="detalle-item"><strong>Actualización de sanción (Art. 867-1):</strong> base ${dinero(act.saldoOriginal||0)} · actualización acumulada ${dinero(act.actualizacionAcumulada||0)} · saldo final ${dinero(act.saldoFinal||0)}</div>`
+    :"";
   const adv=[...new Set(r.advertencias||[])].join(" | ");
-  $("detalleCalculo").innerHTML=detalle+(adv?`<div class="detalle-alerta">⚠ ${esc(adv)}</div>`:"")||"Sin pagos procesados.";
+  $("detalleCalculo").innerHTML=detalle+resumenSancion+(adv?`<div class="detalle-alerta">⚠ ${esc(adv)}</div>`:"")||"Sin pagos procesados.";
   renderResultadoBeneficio(r);
 }
 
@@ -845,6 +918,7 @@ function configurarBase(){
   $("btnExportarExcel").addEventListener("click",exportarExcel);
   $("btnExportarPdf").addEventListener("click",exportarPdf);
   $("btnGuardarTasa").addEventListener("click",guardarTasaManual);
+  $("btnGuardarIPC")?.addEventListener("click",guardarIPCManual);
   $("btnActualizarTasaDian").addEventListener("click",actualizarDesdeDIAN);
   $("btnIniciarAdmin")?.addEventListener("click",iniciarSesionAdmin);
   $("btnCerrarAdmin")?.addEventListener("click",cerrarSesionAdmin);
@@ -870,7 +944,7 @@ window.addEventListener("DOMContentLoaded",async()=>{
   try{
     configurarBase();
     await cargarDatos();
-    renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();renderTasasPersonalizadas();
+    renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();renderTasasPersonalizadas();renderIPC();mensajeActualizacionesPendientes();
   }catch(e){
     console.error(e);
     $("estadoSistema").textContent="Error cargando parámetros";

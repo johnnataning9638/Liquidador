@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liquidador DIAN — Reajuste 16.30</title>
-<link rel="stylesheet" href="estilos.css?v=16.30">
+<title>Liquidador DIAN — Reajuste 16.32.1</title>
+<link rel="stylesheet" href="estilos.css?v=16.32.1">
 </head>
 <body>
 <header class="topbar">
@@ -18,6 +18,8 @@
     <button type="button" class="tab-btn" data-tab="pagos">2. Pagos</button>
     <button type="button" class="tab-btn" data-tab="resultados">3. Resultados</button>
   </nav>
+
+  <div id="avisosParametros" class="avisos-parametros" hidden></div>
 
   <section class="tab-pane active" data-pane="datos">
     <div class="tab-pane-inner">
@@ -91,29 +93,28 @@
   <div id="detalleCalculo" class="detalle"></div>
 </section>
 
-<section class="panel tasas-panel">
-  <div class="panel-title fila-titulo"><span>Actualización central de tasas moratorias</span><span class="badge">SUPABASE</span></div>
+<details class="panel tasas-panel">
+  <summary class="panel-title fila-titulo"><span>Actualización central de tasas moratorias</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · TIM</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
   <div class="tasas-admin-bar">
     <div><strong>Estado de tasas:</strong> <span id="estadoTasasConexion">Consultando...</span></div>
-    <div class="tasas-admin-auth">
-      <span id="estadoAdmin">Modo consulta pública</span>
-      <button id="btnIniciarAdmin" type="button" class="secundario">Ingresar como administrador</button>
-      <button id="btnCerrarAdmin" type="button" class="peligro" hidden>Cerrar sesión</button>
-    </div>
+    <div class="tasas-admin-auth"><span id="estadoAdmin">Modo consulta pública</span><button id="btnIniciarAdmin" type="button" class="secundario">Ingresar como administrador</button><button id="btnCerrarAdmin" type="button" class="peligro" hidden>Cerrar sesión</button></div>
   </div>
   <div id="panelEdicionTasa" class="tasas-admin-editor" hidden>
-    <div class="tasas-grid">
-      <label>Mes<select id="tasaMes"><option value="1">ENERO</option><option value="2">FEBRERO</option><option value="3">MARZO</option><option value="4">ABRIL</option><option value="5">MAYO</option><option value="6">JUNIO</option><option value="7">JULIO</option><option value="8">AGOSTO</option><option value="9">SEPTIEMBRE</option><option value="10">OCTUBRE</option><option value="11">NOVIEMBRE</option><option value="12">DICIEMBRE</option></select></label>
-      <label>Año<input id="tasaAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label>
-      <label>Tasa DIAN (%)<input id="tasaValor" type="text" inputmode="decimal" placeholder="Ej. 27,24"></label>
-      <label>Norma (opcional)<input id="tasaNorma" type="text" placeholder="Ej. Resolución 1260 de 2026"></label>
-      <div class="tasas-acciones"><button id="btnGuardarTasa" type="button" class="primario">Guardar tasa central</button><button id="btnActualizarTasaDian" type="button" class="secundario">Recargar tasas centrales</button></div>
-    </div>
-    <div class="nota">Solo el administrador autorizado puede guardar tasas. Una tasa nueva queda centralizada en Supabase y todos los usuarios la reciben al abrir o recargar el liquidador. Las tasas de períodos anteriores al mes actual no se pueden modificar desde este panel.</div>
+    <div class="tasas-grid"><label>Mes<select id="tasaMes"><option value="1">ENERO</option><option value="2">FEBRERO</option><option value="3">MARZO</option><option value="4">ABRIL</option><option value="5">MAYO</option><option value="6">JUNIO</option><option value="7">JULIO</option><option value="8">AGOSTO</option><option value="9">SEPTIEMBRE</option><option value="10">OCTUBRE</option><option value="11">NOVIEMBRE</option><option value="12">DICIEMBRE</option></select></label><label>Año<input id="tasaAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label><label>Tasa DIAN (%)<input id="tasaValor" type="text" inputmode="decimal" placeholder="Ej. 27,24"></label><label>Norma (opcional)<input id="tasaNorma" type="text" placeholder="Ej. Resolución 1260 de 2026"></label><div class="tasas-acciones"><button id="btnGuardarTasa" type="button" class="primario">Guardar tasa central</button><button id="btnActualizarTasaDian" type="button" class="secundario">Recargar tasas centrales</button></div></div>
+    <div class="nota">Solo el administrador autorizado puede guardar tasas. Una tasa nueva queda centralizada en Supabase y todos los usuarios la reciben al abrir o recargar el liquidador.</div>
   </div>
-  <div id="estadoTasas" class="resultado-calendario"></div>
-  <div class="tabla-scroll"><table id="tablaTasasPersonalizadas"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Tipo</th><th>Fuente</th><th>Norma</th></tr></thead><tbody></tbody></table></div>
-</section>
+  <div id="estadoTasas" class="resultado-calendario"></div><div class="tabla-scroll"><table id="tablaTasasPersonalizadas"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Tipo</th><th>Fuente</th><th>Norma</th></tr></thead><tbody></tbody></table></div>
+</details>
+
+<details class="panel tasas-panel ipc-panel">
+  <summary class="panel-title fila-titulo"><span>Actualización central de IPC anuales</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · IPC</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+  <div class="tasas-admin-bar"><div><strong>Estado de IPC:</strong> <span id="estadoIPCConexion">Consultando...</span></div><div class="nota">Se registra el IPC del año de inflación; su aplicación inicia el 1 de enero del año siguiente.</div></div>
+  <div id="panelEdicionIPC" class="tasas-admin-editor" hidden>
+    <div class="tasas-grid"><label>Año IPC<input id="ipcAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label><label>IPC (%)<input id="ipcValor" type="text" inputmode="decimal" placeholder="Ej. 5,10"></label><label>Norma / referencia (opcional)<input id="ipcNorma" type="text" placeholder="Ej. DANE / DIAN"></label><div class="tasas-acciones"><button id="btnGuardarIPC" type="button" class="primario">Guardar IPC central</button></div></div>
+    <div class="nota">El administrador puede incorporar el IPC anual cuando esté oficialmente disponible. La actualización es informativa y no bloquea las liquidaciones.</div>
+  </div>
+  <div id="estadoIPC" class="resultado-calendario"></div><div class="tabla-scroll"><table id="tablaIPC"><thead><tr><th>Año IPC</th><th>IPC</th><th>Aplicable desde</th><th>Fuente</th><th>Norma / referencia</th></tr></thead><tbody></tbody></table></div>
+</details>
 
 <section class="panel soporte-panel">
   <div class="panel-title fila-titulo"><span>Soportes de la liquidación</span><span class="badge soporte-badge">FASE 17</span></div>
@@ -135,8 +136,8 @@
 <section class="botonera"><button id="btnCalcular" class="primario grande">Calcular liquidación</button><button id="btnLimpiar" class="peligro grande">Limpiar</button></section>
 
 </main>
-<footer>Liquidador DIAN — versión 16.30, con tasas centralizadas en Supabase</footer>
-<script type="module" src="js/app.js?v=16.30"></script>
+<footer>Liquidador DIAN — versión 16.32, con TIM e IPC centralizados y alertas informativas</footer>
+<script type="module" src="js/app.js?v=16.32.1"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){

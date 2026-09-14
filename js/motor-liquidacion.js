@@ -1,4 +1,5 @@
 import {diasEntre,roundMil,fechaISO} from "./utilidades.js";
+import {ActualizadorSancion} from "./actualizacion-sancion.js";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -28,6 +29,7 @@ export class MotorLiquidacion{
     this.sanciones=sanciones;
     this.reglasObligaciones=reglasObligaciones;
     this.reglasCalculo=reglasCalculo||null;
+    this.actualizadorSancion=new ActualizadorSancion({ipc:this.ipc});
   }
 
 
@@ -375,23 +377,13 @@ export class MotorLiquidacion{
     return Math.min(actual,conPiso);
   }
 
+  /**
+   * Puente de compatibilidad hacia el módulo independiente de sanciones.
+   * No reconstruye la sanción ni aplica sanción mínima sobre un saldo ya
+   * determinado.
+   */
   sancionActualizada(base,fechaInicio,fechaCorte,origen=""){
-    let valor=Math.max(0,Number(base||0));
-    const inicio=fechaISO(fechaInicio),corte=fechaISO(fechaCorte);
-    if(!inicio||!corte||corte<=inicio)return {valor,fechaActualizacion:inicio};
-    let ultima=inicio;
-    const y0=Number(inicio.slice(0,4));
-    for(let y=y0+1;y<=Number(corte.slice(0,4));y++){
-      const fechaAplicacion=`${y}-01-01`;
-      if(fechaAplicacion>corte)break;
-      const fila=this.ipc.find(x=>Number(x.anioInflacion||x.anio)===y-1);
-      const ipc=Number(fila?.inflacion??fila?.inflacionTotal3??0);
-      if(ipc>0){
-        valor=Math.round(valor*(1+ipc));
-        ultima=fechaAplicacion;
-      }
-    }
-    return {valor:Math.max(0,roundMil(valor)),fechaActualizacion:ultima};
+    return this.actualizadorSancion.calcular(base,fechaInicio,fechaCorte);
   }
 
   determinarProporcion(impuesto,intereses,sancion){
@@ -562,6 +554,8 @@ export class MotorLiquidacion{
     const fechaSancion=fechaISO(datos.fechaSancion)||saldosVto[0]?.fecha||"";
     let saldoSancion=sancionBaseOriginal;
     let fechaUltimaActualizacionSancion=fechaSancion;
+    let detalleActualizacionSancion=[];
+    let advertenciasSancion=[];
 
     // En DOS VENCIMIENTOS la sanción se carga al primer vencimiento.
     const idVtoSancion=saldosVto[0]?.id||null;
@@ -657,6 +651,24 @@ export class MotorLiquidacion{
       // Interés vigente para cada vencimiento antes de imputar el pago.
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
       const intCalc=calcularInteresesAntesPago(pago);
+
+      // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
+      // La sanción base es definitiva: primero se actualiza únicamente el
+      // saldo pendiente, y después se procesa el pago. Nunca se reconstruye
+      // la sanción desde la base tributaria ni desde la sanción mínima.
+      if(saldoSancion>0 && fechaSancion && pago.fecha>fechaSancion){
+        const act=this.actualizadorSancion.calcular(
+          saldoSancion,
+          fechaSancion,
+          pago.fecha
+        );
+        if(act.valor>saldoSancion){
+          saldoSancion=act.valor;
+          fechaUltimaActualizacionSancion=act.fechaActivacion||fechaUltimaActualizacionSancion;
+        }
+        if(act.tramos?.length)detalleActualizacionSancion.push({fechaPago:pago.fecha,...act});
+        advertenciasSancion.push(...(act.advertencias||[]));
+      }
 
       // La sanción declarada es definitiva. Solo se reduce si el usuario
       // indicó expresamente que la sanción tiene beneficio; seleccionar una
@@ -913,6 +925,7 @@ export class MotorLiquidacion{
       detalle,
       advertencias:[
         ...validacion.advertencias,
+        ...advertenciasSancion,
         ...detalle.flatMap(x=>
           x.tramosInteres.filter(t=>t.advertencia).map(t=>t.advertencia)
         )
@@ -926,7 +939,15 @@ export class MotorLiquidacion{
       reglaObligacion:validacion.regla,
       validacionObligacion:validacion,
       verificacionObligacion:this.verificarImpuestoPlastico(datos),
-      fechaCorte:fechaCorte||pagos.at(-1)?.fecha||null
+      fechaCorte:fechaCorte||pagos.at(-1)?.fecha||null,
+      sancionActualizacion:{
+        fechaBase:fechaSancion,
+        fechaUltimaActualizacion:fechaUltimaActualizacionSancion,
+        saldoOriginal:roundMil(sancionBaseOriginal),
+        saldoFinal:roundMil(saldoSancion),
+        actualizacionAcumulada:roundMil(Math.max(0,saldoSancion-sancionBaseOriginal)),
+        tramos:detalleActualizacionSancion
+      }
     };
   }
 }

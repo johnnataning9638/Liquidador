@@ -1,122 +1,140 @@
 [
   {
-    "anioInflacion": 2007,
+    "anioInflacion": 2003,
+    "inflacion": 0.0649,
+    "aplicableDesde": "2004-01-01",
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
+  },
+  {
+    "anioInflacion": 2004,
+    "inflacion": 0.055,
+    "aplicableDesde": "2005-01-01",
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
+  },
+  {
+    "anioInflacion": 2005,
+    "inflacion": 0.0485,
+    "aplicableDesde": "2006-01-01",
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
+  },
+  {
+    "anioInflacion": 2006,
     "inflacion": 0.0448,
+    "aplicableDesde": "2007-01-01",
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
+  },
+  {
+    "anioInflacion": 2007,
+    "inflacion": 0.0569,
     "aplicableDesde": "2008-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2008,
-    "inflacion": 0.0569,
+    "inflacion": 0.0767,
     "aplicableDesde": "2009-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2009,
-    "inflacion": 0.0767,
+    "inflacion": 0.02,
     "aplicableDesde": "2010-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2010,
-    "inflacion": 0.02,
+    "inflacion": 0.0317,
     "aplicableDesde": "2011-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2011,
-    "inflacion": 0.0317,
+    "inflacion": 0.0373,
     "aplicableDesde": "2012-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2012,
-    "inflacion": 0.0373,
+    "inflacion": 0.0244,
     "aplicableDesde": "2013-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2013,
-    "inflacion": 0.024399999999999998,
+    "inflacion": 0.0194,
     "aplicableDesde": "2014-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2014,
-    "inflacion": 0.0194,
+    "inflacion": 0.0366,
     "aplicableDesde": "2015-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2015,
-    "inflacion": 0.0366,
+    "inflacion": 0.0677,
     "aplicableDesde": "2016-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2016,
-    "inflacion": 0.0677,
+    "inflacion": 0.0575,
     "aplicableDesde": "2017-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2017,
-    "inflacion": 0.0575,
+    "inflacion": 0.0409,
     "aplicableDesde": "2018-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2018,
-    "inflacion": 0.0409,
+    "inflacion": 0.0318,
     "aplicableDesde": "2019-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2019,
-    "inflacion": 0.0318,
+    "inflacion": 0.038,
     "aplicableDesde": "2020-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2020,
-    "inflacion": 0.038,
+    "inflacion": 0.0161,
     "aplicableDesde": "2021-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2021,
-    "inflacion": 0.0161,
+    "inflacion": 0.0562,
     "aplicableDesde": "2022-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2022,
-    "inflacion": 0.0562,
+    "inflacion": 0.1312,
     "aplicableDesde": "2023-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2023,
-    "inflacion": 0.13119999999999998,
+    "inflacion": 0.0928,
     "aplicableDesde": "2024-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2024,
-    "inflacion": 0.0928,
+    "inflacion": 0.052,
     "aplicableDesde": "2025-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   },
   {
     "anioInflacion": 2025,
-    "inflacion": 0.052,
-    "aplicableDesde": "2026-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
-  },
-  {
-    "anioInflacion": 2026,
     "inflacion": 0.051,
-    "aplicableDesde": "2027-01-01",
-    "fuente": "DANE/DIAN - serie IPC incorporada al proyecto"
+    "aplicableDesde": "2026-01-01",
+    "fuente": "Liquidadiario V 2026.14 — Act.Sancion(LP-LO) / H.Tasa"
   }
 ]
