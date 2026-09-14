@@ -20,8 +20,24 @@ import {fechaISO,roundMil,diasEntre} from "./utilidades.js";
 export class ActualizadorSancion{
   constructor({ipc=[]}={}){ this.ipc=Array.isArray(ipc)?ipc:[]; }
 
+  /**
+   * Devuelve el IPC que jurídicamente corresponde al año de aplicación.
+   *
+   * El registro identifica el año de inflación (anioInflacion), pero su
+   * aplicación comienza el 1 de enero del año siguiente (aplicableDesde).
+   * Por tanto, para un tramo de 2025 se utiliza el IPC de 2024; para 2026,
+   * el IPC de 2025, etc.
+   */
   ipcPorAnio(anio){
-    return this.ipc.find(x=>Number(x.anioInflacion??x.anio)===Number(anio))||null;
+    const objetivo=Number(anio);
+    const candidatos=this.ipc.filter(x=>{
+      const desde=fechaISO(x.aplicableDesde??x.aplicable_desde);
+      return desde===`${objetivo}-01-01`;
+    });
+    if(candidatos.length)return candidatos[candidatos.length-1];
+
+    // Compatibilidad con datos históricos que no traigan aplicableDesde.
+    return this.ipc.find(x=>Number(x.anioInflacion??x.anio)===objetivo-1)||null;
   }
 
   aniosEntre(inicio,fin){
