@@ -300,23 +300,31 @@ export class MotorLiquidacion{
     // columnas correspondientes de la hoja "Tasa de Interés" del Excel.
     if(es("DECRETO 1474") && es("ART. 20")){
       return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
-        factorSancion:0.15,reduceSancion:true,
-        nota:"ART. 20 D1474 seleccionado: interés al 4,500% anual y reducción de sanción sobre el saldo vigente, sin incrementarlo"};
+        factorSancion:1,reduceSancion:false,
+        nota:"ART. 20 D1474 seleccionado: interés al 4,500% anual; la sanción declarada no se vuelve a reducir"};
     }
     if(es("DECRETO 1474") && es("ART. 21")){
+      // OMISO / CORRECCIÓN: la sanción que llega a este motor es la que el
+      // contribuyente ya liquidó (y, cuando corresponde, ya redujo) en la
+      // declaración. El motor NO puede volver a aplicarle el 15%.
+      // El beneficio del Art. 21 sí modifica el tratamiento de intereses:
+      // no se liquidan intereses de mora.
       return {tasa:0,factor:0,tasaFija:0,beneficio,
-        factorSancion:0.15,reduceSancion:true,
-        nota:"ART. 21 D1474 seleccionado: interés 0% y reducción de sanción sobre el saldo vigente, sin incrementarlo"};
+        factorSancion:1,reduceSancion:false,
+        nota:"ART. 21 D1474 seleccionado: interés 0%; la sanción declarada no se vuelve a reducir"};
     }
     if(es("DECRETO 0240") && es("ART. 3")){
       return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
-        factorSancion:0.15,reduceSancion:true,
-        nota:"ART. 3 D0240 seleccionado: interés al 4,500% anual y reducción de sanción sobre el saldo vigente, sin incrementarlo"};
+        factorSancion:1,reduceSancion:false,
+        nota:"ART. 3 D0240 seleccionado: interés al 4,500% anual; la sanción declarada no se vuelve a reducir"};
     }
     if(es("DECRETO 0240") && es("ART. 4")){
+      // OMISO / CORRECCIÓN: la sanción ya fue liquidada/reducida por el
+      // contribuyente en la declaración. Este motor no la vuelve a reducir.
+      // El efecto del Art. 4 que corresponde a esta etapa es interés de mora = 0.
       return {tasa:0,factor:0,tasaFija:0,beneficio,
-        factorSancion:0.15,reduceSancion:true,
-        nota:"ART. 4 D0240 seleccionado: interés 0% y reducción de sanción sobre el saldo vigente, sin incrementarlo"};
+        factorSancion:1,reduceSancion:false,
+        nota:"ART. 4 D0240 seleccionado: interés 0%; la sanción declarada no se vuelve a reducir"};
     }
 
     if(es("LEY 2277") && es("ART. 91")){
@@ -552,7 +560,19 @@ export class MotorLiquidacion{
 
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancion=fechaISO(datos.fechaSancion)||saldosVto[0]?.fecha||"";
+    // La sanción que llega desde la declaración ya incorpora, cuando corresponde,
+    // la reducción que hizo el contribuyente. El motor NO vuelve a aplicar 15 %.
+    // Única excepción: si el valor declarado es inferior a la sanción mínima del
+    // año de la declaración, se eleva a esa mínima. A partir de allí se conserva
+    // la actualización anual por Art. 867-1 cuando corresponda.
     let saldoSancion=sancionBaseOriginal;
+    if(saldoSancion>0){
+      const anioMinimaInicial=Number(String(saldosVto[0]?.fecha||fechaSancion||"").slice(0,4))||Number(datos.anio||0);
+      const minimaInicial=this.sancionMinima(anioMinimaInicial);
+      if(minimaInicial>0 && saldoSancion<minimaInicial){
+        saldoSancion=minimaInicial;
+      }
+    }
     let fechaUltimaActualizacionSancion=fechaSancion;
     let detalleActualizacionSancion=[];
     let advertenciasSancion=[];
@@ -670,38 +690,12 @@ export class MotorLiquidacion{
         advertenciasSancion.push(...(act.advertencias||[]));
       }
 
-      // La sanción declarada es definitiva. Solo se reduce si el usuario
-      // indicó expresamente que la sanción tiene beneficio; seleccionar una
-      // tasa especial de interés no debe, por sí solo, reconstruir ni reducir
-      // la sanción.
-      if(
-        sancionBaseOriginal>0 &&
-        especial.reduceSancion &&
-        esBeneficioDecreto(pago.tipo) &&
-        String(datos.beneficioSancion||"").toUpperCase()==="CON BENEFICIO" &&
-        !primerBeneficioDecretoUsado
-      ){
-        const anioComparacion=Number(
-          String(saldosVto[1]?.fecha||saldosVto[0]?.fecha||"").slice(0,4)
-        )||Number(datos.anio||0);
-        const minimaComparacion=this.sancionMinima(anioComparacion);
-
-        // La condición matemática observada en el Excel se conserva para
-        // obligaciones con varios vencimientos. La sanción nunca aumenta.
-        const procedeCondicionExcel=(
-          saldosVto.length===1 ||
-          saldoSancion>=minimaComparacion
-        );
-        if(procedeCondicionExcel){
-          saldoSancion=this.sancionConBeneficio(
-            saldoSancion,
-            datos,
-            especial,
-            {habilitado:true}
-          );
-        }
-        primerBeneficioDecretoUsado=true;
-      }
+      // IMPORTANTE: Art. 20/21 D1474 y Art. 3/4 D0240 no vuelven a reducir
+      // la sanción dentro de este motor. La sanción declarada ya trae la
+      // reducción efectuada al presentar la declaración. La única intervención
+      // excepcional es el piso de sanción mínima, aplicado al iniciar la
+      // obligación cuando el valor declarado era inferior a la mínima del año.
+      // La actualización anual por Art. 867-1 se ejecuta independientemente.
 
       // Capturamos el capital vigente ANTES de aplicar el pago. Esta instantánea
       // es la fuente del detalle de intereses por cuota para pantalla, Excel y PDF.

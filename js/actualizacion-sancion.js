@@ -21,23 +21,24 @@ export class ActualizadorSancion{
   constructor({ipc=[]}={}){ this.ipc=Array.isArray(ipc)?ipc:[]; }
 
   /**
-   * Devuelve el IPC que jurídicamente corresponde al año de aplicación.
+   * IPC utilizado por el módulo Act.Sancion(LP-LO) del Excel de referencia.
    *
-   * El registro identifica el año de inflación (anioInflacion), pero su
-   * aplicación comienza el 1 de enero del año siguiente (aplicableDesde).
-   * Por tanto, para un tramo de 2025 se utiliza el IPC de 2024; para 2026,
-   * el IPC de 2025, etc.
+   * El Excel identifica cada fila por el año de inflación de la columna C
+   * (2003...2025) y toma directamente el valor de esa fila. Por ello, para
+   * reproducir el comportamiento operativo del módulo, aquí se prioriza
+   * anioInflacion/anio y no aplicableDesde.
    */
   ipcPorAnio(anio){
     const objetivo=Number(anio);
+    const directo=this.ipc.filter(x=>Number(x.anioInflacion??x.anio)===objetivo);
+    if(directo.length)return directo[directo.length-1];
+
+    // Compatibilidad si solo existe aplicableDesde.
     const candidatos=this.ipc.filter(x=>{
       const desde=fechaISO(x.aplicableDesde??x.aplicable_desde);
-      return desde===`${objetivo}-01-01`;
+      return desde===`${objetivo+1}-01-01`;
     });
-    if(candidatos.length)return candidatos[candidatos.length-1];
-
-    // Compatibilidad con datos históricos que no traigan aplicableDesde.
-    return this.ipc.find(x=>Number(x.anioInflacion??x.anio)===objetivo-1)||null;
+    return candidatos.length?candidatos[candidatos.length-1]:null;
   }
 
   aniosEntre(inicio,fin){
@@ -55,55 +56,82 @@ export class ActualizadorSancion{
   }
 
   /**
-   * Calcula la actualización acumulativa desde la fecha de aniversario
-   * (fecha base + 1 año) hasta la fecha de corte.
+   * Reproduce la mecánica de actualización observada en Act.Sancion(LP-LO)
+   * del Liquidadiario V 2026.14.
+   *
+   * Importante: el Excel no actualiza una fracción de año durante el primer
+   * tramo. La fracción se conserva en cero mientras el corte permanece en el
+   * año inmediatamente posterior a la fecha de activación; la actualización
+   * entra cuando el corte alcanza el siguiente tramo anual y este contiene
+   * 365 días o más. Una vez aplicada, se conserva sobre el saldo vigente.
    */
   calcular(saldoInicial,fechaBase,fechaCorte){
     let saldo=Math.max(0,Number(saldoInicial||0));
     const base=fechaISO(fechaBase),corte=fechaISO(fechaCorte);
     const tramos=[];
     const advertencias=[];
+    const original=saldo;
+
     if(!saldo||!base||!corte||corte<=base){
-      return {saldoInicial:saldo,valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:null,tramos,advertencias};
+      return {saldoInicial:roundMil(original),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:null,fechaCorte:corte,tramos,advertencias};
     }
 
-    const aniversario=this.sumarUnAnio(base);
-    if(corte<aniversario){
-      return {saldoInicial:saldo,valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:aniversario,tramos,advertencias};
+    // El módulo Act.Sancion(LP-LO) no prorratea el año corriente. La
+    // actualización entra por vigencias anuales completas: para una sanción
+    // cuya fecha de activación es 01/01/2025, un corte en cualquier fecha de
+    // 2025 conserva la sanción original; desde 2026 se aplica el IPC 2024
+    // correspondiente a la vigencia 2025 completa. Para cada año adicional
+    // se incorpora la vigencia anual inmediatamente anterior.
+    const activacion=this.sumarUnAnio(base);
+    const anioActivacion=Number(activacion.slice(0,4));
+    const anioCorte=Number(corte.slice(0,4));
+
+    if(corte<activacion){
+      return {saldoInicial:roundMil(original),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:activacion,fechaCorte:corte,tramos,advertencias};
     }
 
-    let desde=aniversario;
-    const limite=corte;
-    const anioInicio=Number(desde.slice(0,4));
-    const anioFin=Number(limite.slice(0,4));
-
-    for(let anio=anioInicio;anio<=anioFin;anio++){
-      const inicioTramo=anio===anioInicio?desde:`${anio}-01-01`;
-      const finTramo=anio===anioFin?limite:`${anio}-12-31`;
-      if(finTramo<inicioTramo)continue;
-      const dias=diasEntre(inicioTramo,finTramo);
+    // Solo se liquidan vigencias anuales ya cerradas antes del año del corte.
+    for(let anio=anioActivacion; anio<anioCorte; anio++){
+      const inicio=anio===anioActivacion?activacion:`${anio}-01-01`;
+      const siguiente=`${anio+1}-01-01`;
+      const dias=diasEntre(inicio,siguiente)-1;
       if(dias<=0)continue;
+
       const fila=this.ipcPorAnio(anio);
       const ipc=Number(fila?.inflacion??fila?.inflacionTotal3??0);
       const antes=saldo;
       let actualizacion=0;
-      let disponible=true;
-      if(ipc>0){
-        actualizacion=roundMil(antes*(Math.pow(1+ipc/365,dias)-1));
+      const disponible=ipc>0;
+
+      if(disponible){
+        actualizacion=roundMil(antes*(Math.pow(1+Math.round((ipc/365)*1e7)/1e7,dias)-1));
         saldo=roundMil(antes+actualizacion);
       }else{
-        disponible=false;
         advertencias.push(`No existe IPC cargado para ${anio}; no se actualizó ese tramo de la sanción.`);
       }
-      tramos.push({anio,desde:inicioTramo,hasta:finTramo,dias,ipc,ipcPorcentaje:ipc*100,saldoInicial:antes,actualizacion,saldoFinal:saldo,disponible});
+
+      tramos.push({
+        anio,
+        desde:inicio,
+        hasta:`${anio+1}-01-01`,
+        dias,
+        ipc,
+        ipcPorcentaje:ipc*100,
+        saldoInicial:antes,
+        actualizacion,
+        saldoFinal:saldo,
+        disponible,
+        aplicado:disponible
+      });
     }
 
     return {
-      saldoInicial:roundMil(saldoInicial),
+      saldoInicial:roundMil(original),
       valor:roundMil(saldo),
-      actualizacion:roundMil(saldo-Math.max(0,Number(saldoInicial||0))),
+      actualizacion:roundMil(saldo-original),
       fechaBase:base,
-      fechaActivacion:aniversario,
+      fechaActivacion:activacion,
+      fechaCorte:corte,
       tramos,
       advertencias
     };
