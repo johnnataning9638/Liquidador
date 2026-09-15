@@ -991,11 +991,15 @@ function validarVigenciaBeneficiosUI(d){
   const seleccionados=ventanas.filter(v=>tipos.some(t=>t.includes(v.clave)));
   const errores=[];
   for(const v of seleccionados){
+    const esArt20o3 = v.clave === "ART. 20 DECRETO 1474 DE 2025"
+      || v.clave === "ART. 3 DECRETO 0240 DE 2026";
     const fs=fechaISO(d.fechaSancion)||"";
-    if(!fs){
-      errores.push(`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`);
-    }else if(fs<v.desde||fs>v.hasta){
-      errores.push(`La fecha de sanción/presentación (${fechaVisible(fs)}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${fechaVisible(v.desde)} a ${fechaVisible(v.hasta)}.`);
+    if(!esArt20o3){
+      if(!fs){
+        errores.push(`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`);
+      }else if(fs<v.desde||fs>v.hasta){
+        errores.push(`La fecha de sanción/presentación (${fechaVisible(fs)}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${fechaVisible(v.desde)} a ${fechaVisible(v.hasta)}.`);
+      }
     }
     (d.pagos||[]).forEach((p,i)=>{
       const t=normalizarTipoBeneficioVigencia(p.tipo);

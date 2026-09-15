@@ -72,8 +72,10 @@ export class MotorLiquidacion{
     // RESTRICCIÓN DE VIGENCIA DE BENEFICIOS — ART. 20 Y 21 D.1474/2025; ART. 3 Y 4 D.0240/2026.
     // La validación se hace con claves amplias y normalizadas para que no dependa
     // de diferencias de tildes, guiones, espacios o del texto OMISO/CORRECCION.
-    // Tanto la fecha de sanción/presentación como CADA fecha de pago que use
-    // el beneficio deben estar dentro de la ventana correspondiente.
+    // Para los artículos 20 D.1474 y 3 D.0240 NO se valida la fecha de
+    // sanción/presentación: la vigencia temporal del beneficio se controla
+    // exclusivamente por la fecha de cada pago. Para los artículos 21 y 4
+    // se conserva la validación existente de fecha de sanción/presentación.
     const ventanasBeneficio=[
       {clave:"ART. 20 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-03-31",nombre:"ART. 20 DEL DECRETO 1474 DE 2025"},
       {clave:"ART. 21 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-04-30",nombre:"ART. 21 DEL DECRETO 1474 DE 2025"},
@@ -85,11 +87,14 @@ export class MotorLiquidacion{
     const beneficiosSeleccionados=ventanasBeneficio.filter(v=>tiposBeneficio.some(t=>t.includes(v.clave)));
     const fechaSancion=fechaISO(datos.fechaSancion)||"";
     for(const v of beneficiosSeleccionados){
-      // SIEMPRE se valida la fecha de sanción/presentación para los cuatro beneficios.
-      if(!fechaSancion){
-        errores.push(`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`);
-      }else if(fechaSancion<v.desde||fechaSancion>v.hasta){
-        errores.push(`La fecha de sanción/presentación (${fechaSancion}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${v.desde} a ${v.hasta}.`);
+      const esArt20o3 = v.clave === "ART. 20 DECRETO 1474 DE 2025"
+        || v.clave === "ART. 3 DECRETO 0240 DE 2026";
+      if(!esArt20o3){
+        if(!fechaSancion){
+          errores.push(`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`);
+        }else if(fechaSancion<v.desde||fechaSancion>v.hasta){
+          errores.push(`La fecha de sanción/presentación (${fechaSancion}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${v.desde} a ${v.hasta}.`);
+        }
       }
       // SIEMPRE se valida cada pago que tenga seleccionado ese beneficio.
       (datos.pagos||[]).forEach((p,i)=>{
