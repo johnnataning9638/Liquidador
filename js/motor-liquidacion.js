@@ -48,7 +48,7 @@ export class MotorLiquidacion{
       advertencias.push("No existe una regla normativa específica registrada para el concepto seleccionado; no se autogeneran vencimientos.");
       return {valida:false,regla:null,errores,advertencias};
     }
-    if(regla.requiereNIT&&!String(datos.nit||"").trim()) errores.push("El concepto requiere identificar el NIT para aplicar el calendario correspondiente.");
+    // NIT y demás datos generales de obligación son informativos; no bloquean la liquidación.
     // REAJUSTE 16.17: perfil del contribuyente y periodicidad son datos
     // auxiliares de referencia/calendario, pero NO son campos obligatorios
     // para la liquidación matemática cuando el funcionario ya registra la
@@ -58,7 +58,7 @@ export class MotorLiquidacion{
     // conservan, pero nunca condicionan la liquidación.
     if(regla.requiereSemana){
       const semana=Number(datos.semanaGmf||0);
-      if(!Number.isInteger(semana)||semana<1||semana>53) errores.push("Para GMF debe indicar una semana válida entre 1 y 53.");
+      if(!Number.isInteger(semana)||semana<1||semana>53) advertencias.push("Para GMF se recomienda indicar la semana cuando se requiera el calendario; no bloquea la liquidación.");
     }
     if(regla.requierePesoGramos){
       const peso=Number(datos.pesoPlastico||0);
@@ -68,6 +68,41 @@ export class MotorLiquidacion{
     if(regla.vencimientos==="NO_AUTOGENERAR"&&vencimientos.length===0) errores.push("Debe registrar al menos un vencimiento antes de calcular.");
     if(regla.periodicidad?.includes("BIMESTRAL")&&datos.periodo&&Number(datos.periodo)>6) advertencias.push("El período indicado supera seis y no corresponde a una periodicidad bimestral simple.");
     if(regla.periodicidad?.includes("MENSUAL")&&datos.periodo&&Number(datos.periodo)>12) errores.push("El período mensual debe estar entre 1 y 12.");
+
+    // RESTRICCIÓN DE VIGENCIA DE BENEFICIOS — ART. 20 Y 21 D.1474/2025; ART. 3 Y 4 D.0240/2026.
+    // La validación se hace con claves amplias y normalizadas para que no dependa
+    // de diferencias de tildes, guiones, espacios o del texto OMISO/CORRECCION.
+    // Tanto la fecha de sanción/presentación como CADA fecha de pago que use
+    // el beneficio deben estar dentro de la ventana correspondiente.
+    const ventanasBeneficio=[
+      {clave:"ART. 20 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-03-31",nombre:"ART. 20 DEL DECRETO 1474 DE 2025"},
+      {clave:"ART. 21 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-04-30",nombre:"ART. 21 DEL DECRETO 1474 DE 2025"},
+      {clave:"ART. 3 DECRETO 0240 DE 2026",desde:"2026-03-12",hasta:"2026-04-30",nombre:"ART. 3 DEL DECRETO 0240 DE 2026"},
+      {clave:"ART. 4 DECRETO 0240 DE 2026",desde:"2026-03-12",hasta:"2026-04-30",nombre:"ART. 4 DEL DECRETO 0240 DE 2026"}
+    ];
+    const normalizarTipoBeneficio=t=>String(t??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g," ").trim();
+    const tiposBeneficio=[...(datos.pagos||[])].map(p=>normalizarTipoBeneficio(p.tipo));
+    const beneficiosSeleccionados=ventanasBeneficio.filter(v=>tiposBeneficio.some(t=>t.includes(v.clave)));
+    const fechaSancion=fechaISO(datos.fechaSancion)||"";
+    for(const v of beneficiosSeleccionados){
+      // SIEMPRE se valida la fecha de sanción/presentación para los cuatro beneficios.
+      if(!fechaSancion){
+        errores.push(`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`);
+      }else if(fechaSancion<v.desde||fechaSancion>v.hasta){
+        errores.push(`La fecha de sanción/presentación (${fechaSancion}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${v.desde} a ${v.hasta}.`);
+      }
+      // SIEMPRE se valida cada pago que tenga seleccionado ese beneficio.
+      (datos.pagos||[]).forEach((p,i)=>{
+        const t=normalizarTipoBeneficio(p.tipo);
+        if(!t.includes(v.clave))return;
+        const fp=fechaISO(p.fecha)||"";
+        if(!fp){
+          errores.push(`El pago ${i+1}, seleccionado con ${v.nombre}, debe tener fecha de pago.`);
+        }else if(fp<v.desde||fp>v.hasta){
+          errores.push(`El pago ${i+1} (${fp}) seleccionado con ${v.nombre} está fuera de la vigencia. Vigencia permitida: ${v.desde} a ${v.hasta}.`);
+        }
+      });
+    }
     // SIMPLE: el período y la estructura de vencimientos se controlan con
     // los datos diligenciados por el funcionario. No se exige seleccionar una
     // periodicidad para poder liquidar.
@@ -300,8 +335,9 @@ export class MotorLiquidacion{
     // columnas correspondientes de la hoja "Tasa de Interés" del Excel.
     if(es("DECRETO 1474") && es("ART. 20")){
       return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
-        factorSancion:1,reduceSancion:false,
-        nota:"ART. 20 D1474 seleccionado: interés al 4,500% anual; la sanción declarada no se vuelve a reducir"};
+        factorSancion:0.15,reduceSancion:true,
+        actualizaSancion:true,
+        nota:"ART. 20 D1474 seleccionado: interés al 4,500% anual y sanción/actualización reducida al 15%, respetando la sanción mínima"};
     }
     if(es("DECRETO 1474") && es("ART. 21")){
       // OMISO / CORRECCIÓN: la sanción que llega a este motor es la que el
@@ -315,8 +351,9 @@ export class MotorLiquidacion{
     }
     if(es("DECRETO 0240") && es("ART. 3")){
       return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
-        factorSancion:1,reduceSancion:false,
-        nota:"ART. 3 D0240 seleccionado: interés al 4,500% anual; la sanción declarada no se vuelve a reducir"};
+        factorSancion:0.15,reduceSancion:true,
+        actualizaSancion:true,
+        nota:"ART. 3 D0240 seleccionado: interés al 4,500% anual y sanción/actualización reducida al 15%, respetando la sanción mínima"};
     }
     if(es("DECRETO 0240") && es("ART. 4")){
       // OMISO / CORRECCIÓN: la sanción ya fue liquidada/reducida por el
@@ -364,18 +401,10 @@ export class MotorLiquidacion{
     const actual=Math.max(0,Number(sancionActual||0));
     if(!actual || !especial?.reduceSancion || !habilitado)return actual;
 
-    // REGLA DEL FORMULARIO: la sanción informada en la declaración es el
-    // valor definitivo de la obligación. Por ello, una liquidación posterior
-    // nunca puede reconstruirla ni aumentarla por efecto de una sanción mínima.
-    //
-    // El beneficio se calcula sobre el SALDO DE SANCIÓN VIGENTE en el momento
-    // del pago. Si el 15% (u otro factor) queda por debajo de la mínima, la
-    // mínima opera como referencia de piso únicamente cuando ello no implique
-    // aumentar el saldo que ya venía arrastrado. En consecuencia:
-    //   nuevo = MIN(saldo vigente, MAX(saldo × factor, sanción mínima))
-    //
-    // Ejemplo: saldo $295.000, factor 15%, mínima $498.000 -> $295.000.
-    // Nunca se convierte el saldo de $295.000 en $498.000.
+    // Para Art. 20 D.1474 y Art. 3 D.0240 la norma reduce la SANCION Y
+    // ACTUALIZACION al 15%. La base para la reducción es la sanción ya
+    // actualizada a la fecha del pago. Si el 15% resulta inferior a la
+    // sanción mínima del año en que fue liquidada, se aplica la mínima.
     const vtos=this.normalizarVencimientos(datos);
     const anioMinima=Number(String(vtos[0]?.fecha||"").slice(0,4))||Number(datos.anio||0);
     const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
@@ -576,6 +605,10 @@ export class MotorLiquidacion{
     let fechaUltimaActualizacionSancion=fechaSancion;
     let detalleActualizacionSancion=[];
     let advertenciasSancion=[];
+    // Años de actualización de sanción ya aplicados. La sanción solo debe
+    // actualizarse una vez por cada vigencia anual, aunque existan varios
+    // pagos dentro del mismo año.
+    const aniosActualizacionSancionAplicados=new Set();
 
     // En DOS VENCIMIENTOS la sanción se carga al primer vencimiento.
     const idVtoSancion=saldosVto[0]?.id||null;
@@ -667,6 +700,18 @@ export class MotorLiquidacion{
 
     for(const pago of pagos){
       const especial=this.tasaEspecial(pago.tipo,pago.fecha);
+      // Trazabilidad de actualización de sanción específica de este pago.
+      // Se conserva separada del acumulado general para que PDF y Excel
+      // puedan mostrar exactamente dónde, cuándo y cuánto se actualizó.
+      const actualizacionSancionPago={
+        aplicada:false,
+        fechaPago:pago.fecha,
+        saldoAntes:roundMil(saldoSancion),
+        saldoDespues:roundMil(saldoSancion),
+        actualizacionTotal:0,
+        tramos:[],
+        eventos:[]
+      };
 
       // Interés vigente para cada vencimiento antes de imputar el pago.
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
@@ -677,20 +722,82 @@ export class MotorLiquidacion{
       // saldo pendiente, y después se procesa el pago. Nunca se reconstruye
       // la sanción desde la base tributaria ni desde la sanción mínima.
       if(saldoSancion>0 && fechaSancion && pago.fecha>fechaSancion){
+        // IMPORTANTE: se parte siempre de la fecha original de sanción, pero
+        // se excluyen las vigencias anuales ya aplicadas en pagos anteriores.
+        // Así, si P2 y P3 son del mismo año, P3 NO vuelve a actualizar la
+        // sanción; si el siguiente pago cae en un nuevo año, solo incorpora
+        // la(s) vigencia(s) nuevas que correspondan.
         const act=this.actualizadorSancion.calcular(
           saldoSancion,
           fechaSancion,
-          pago.fecha
+          pago.fecha,
+          {aniosExcluir:[...aniosActualizacionSancionAplicados]}
         );
         if(act.valor>saldoSancion){
           saldoSancion=act.valor;
-          fechaUltimaActualizacionSancion=act.fechaActivacion||fechaUltimaActualizacionSancion;
+          const ultimoTramo=act.tramos?.at(-1);
+          fechaUltimaActualizacionSancion=ultimoTramo?.hasta||fechaUltimaActualizacionSancion;
         }
-        if(act.tramos?.length)detalleActualizacionSancion.push({fechaPago:pago.fecha,...act});
+        if(act.tramos?.length){
+          act.tramos.forEach(t=>aniosActualizacionSancionAplicados.add(Number(t.anio)));
+          detalleActualizacionSancion.push({fechaPago:pago.fecha,...act});
+          actualizacionSancionPago.aplicada=true;
+          actualizacionSancionPago.tramos=act.tramos.map(t=>({
+            anio:Number(t.anio),
+            desde:t.desde,
+            hasta:t.hasta,
+            dias:Number(t.dias||0),
+            saldoAntes:roundMil(t.saldoInicial||0),
+            actualizacion:roundMil(t.actualizacion||0),
+            saldoDespues:roundMil(t.saldoFinal||0),
+            ipc:Number(t.ipc||0),
+            ipcPorcentaje:Number(t.ipcPorcentaje||0),
+            disponible:t.disponible!==false
+          }));
+          actualizacionSancionPago.actualizacionTotal=roundMil(
+            actualizacionSancionPago.tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0)
+          );
+        }
         advertenciasSancion.push(...(act.advertencias||[]));
       }
 
-      // IMPORTANTE: Art. 20/21 D1474 y Art. 3/4 D0240 no vuelven a reducir
+      // ART. 20 D.1474 / ART. 3 D.0240: actualizar primero y luego reducir
+      // sanción + actualización al 15%. Se ejecuta una sola vez, en el primer
+      // pago que seleccione uno de estos tratamientos. La sanción mínima es
+      // el piso final exigido por la norma.
+      if(!primerBeneficioDecretoUsado && especial.reduceSancion &&
+         (String(pago.tipo||"").toUpperCase().includes("ART. 20 DECRETO 1474") ||
+          String(pago.tipo||"").toUpperCase().includes("ART. 3 DECRETO 0240")) && saldoSancion>0){
+        const anioMinima=Number(String(saldosVto[0]?.fecha||fechaSancion||"").slice(0,4))||Number(datos.anio||0);
+        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
+        const saldoActualizado=Number(saldoSancion||0);
+        const reducido=roundMil(saldoActualizado*Number(especial.factorSancion||0.15));
+        const sancionFinal=Math.max(reducido,minima);
+        saldoSancion=roundMil(sancionFinal);
+        primerBeneficioDecretoUsado=true;
+        detalleActualizacionSancion.push({
+          fechaPago:pago.fecha,
+          beneficio:pago.tipo,
+          saldoAntesReduccion:roundMil(saldoActualizado),
+          porcentajeReduccion:Number(especial.factorSancion||0.15)*100,
+          valorReducido:reducido,
+          sancionMinima:minima,
+          saldoDespuesReduccion:saldoSancion,
+          actualizacionPrevia:roundMil(Math.max(0,saldoActualizado-sancionBaseOriginal))
+        });
+        actualizacionSancionPago.eventos.push({
+          tipo:'REDUCCION POR BENEFICIO',
+          beneficio:pago.tipo,
+          saldoAntes:roundMil(saldoActualizado),
+          actualizacionPrevia:roundMil(Math.max(0,saldoActualizado-sancionBaseOriginal)),
+          porcentaje:Number(especial.factorSancion||0.15)*100,
+          valorReducido:reducido,
+          sancionMinima:minima,
+          saldoDespues:roundMil(saldoSancion)
+        });
+      }
+
+      // IMPORTANTE: Art. 21 D1474 y Art. 4 D0240 no alteran la sanción en este
       // la sanción dentro de este motor. La sanción declarada ya trae la
       // reducción efectuada al presentar la declaración. La única intervención
       // excepcional es el piso de sanción mínima, aplicado al iniciar la
@@ -876,6 +983,11 @@ export class MotorLiquidacion{
       // pago, el remanente se conserva como excedente, nunca como deuda.
       aplicado.excedente=excedente;
 
+      actualizacionSancionPago.saldoDespues=roundMil(saldoSancion);
+      actualizacionSancionPago.actualizacionTotal=roundMil(
+        Number(actualizacionSancionPago.actualizacionTotal||0)
+      );
+
       detalle.push({
         pago,
         tasa:especial.tasa==null
@@ -895,6 +1007,7 @@ export class MotorLiquidacion{
         aplicado,
         excedente,
         aplicacionesVto,
+        actualizacionSancion:actualizacionSancionPago,
         saldo:{
           impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),
           intereses:saldoIntereses,

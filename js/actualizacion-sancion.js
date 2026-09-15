@@ -65,12 +65,13 @@ export class ActualizadorSancion{
    * entra cuando el corte alcanza el siguiente tramo anual y este contiene
    * 365 días o más. Una vez aplicada, se conserva sobre el saldo vigente.
    */
-  calcular(saldoInicial,fechaBase,fechaCorte){
+  calcular(saldoInicial,fechaBase,fechaCorte,{aniosExcluir=[]}={}){
     let saldo=Math.max(0,Number(saldoInicial||0));
     const base=fechaISO(fechaBase),corte=fechaISO(fechaCorte);
     const tramos=[];
     const advertencias=[];
     const original=saldo;
+    const excluidos=new Set((Array.isArray(aniosExcluir)?aniosExcluir:[]).map(Number));
 
     if(!saldo||!base||!corte||corte<=base){
       return {saldoInicial:roundMil(original),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:null,fechaCorte:corte,tramos,advertencias};
@@ -92,6 +93,9 @@ export class ActualizadorSancion{
 
     // Solo se liquidan vigencias anuales ya cerradas antes del año del corte.
     for(let anio=anioActivacion; anio<anioCorte; anio++){
+      // Cuando este método se invoca para varios pagos, los años ya actualizados
+      // se excluyen para evitar volver a capitalizar la misma actualización.
+      if(excluidos.has(anio)) continue;
       const inicio=anio===anioActivacion?activacion:`${anio}-01-01`;
       const siguiente=`${anio+1}-01-01`;
       const dias=diasEntre(inicio,siguiente)-1;
