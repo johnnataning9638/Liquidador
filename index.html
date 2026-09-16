@@ -34,8 +34,11 @@
         <label>Concepto<select id="concepto">
           <option value="">SELECCIONE...</option><option>RENTA</option><option>RENTA CREE</option><option>VENTAS</option><option>CONSUMO</option><option>RETENCIÓN</option><option>RETENCIÓN CREE</option><option>PATRIMONIO</option><option>RIQUEZA</option><option>GMF</option><option>SANCION</option><option>PRODUCTOS ULTRAPROCESADOS</option><option>PRODUCTOS PLASTICOS</option><option>SIMPLE</option><option>OTROS</option>
         </select></label>
-        <label>Período<select id="periodo"><option value="">SELECCIONE...</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></label>
+        <label>Período / Cuota<select id="periodo"><option value="">SELECCIONE...</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></label>
         <label class="dato-razon">Razón social<input id="razonSocial" type="text"></label>
+        <label>Tipo de liquidación<select id="tipoLiquidacion" required><option value="">SELECCIONE...</option><option value="PRIVADA">PRIVADA</option><option value="OFICIAL">OFICIAL</option></select></label>
+        <label id="campoFechaAutoAdmisorio" hidden>Fecha de auto admisorio<div class="fecha-dual"><input id="fechaAutoAdmisorio" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><input id="fechaAutoAdmisorioPicker" class="fecha-native" type="date" aria-label="Calendario fecha de auto admisorio" title="Abrir calendario"></div></label>
+        <label id="campoFechaProvidenciaDefinitiva" hidden>Fecha de providencia definitiva<div class="fecha-dual"><input id="fechaProvidenciaDefinitiva" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><input id="fechaProvidenciaDefinitivaPicker" class="fecha-native" type="date" aria-label="Calendario fecha de providencia definitiva" title="Abrir calendario"></div></label>
       </div>
     </div>
     <div class="datos-bloque sancion-bloque">
@@ -44,9 +47,8 @@
         <label>¿Tiene sanción?<select id="tieneSancion" required><option value="">SELECCIONE...</option><option>NO</option><option>SI</option></select></label>
         <label>Valor sanción<input id="valorSancion" class="money" inputmode="numeric" placeholder="$ 0"></label>
         <label>Fecha sanción<div class="fecha-dual"><input id="fechaSancion" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><input id="fechaSancionPicker" class="fecha-native" type="date" aria-label="Calendario fecha de sanción" title="Abrir calendario"></div></label>
-        <label>Origen sanción<select id="origenSancion"><option value="">SELECCIONE...</option><option>LIQUIDACIÓN PRIVADA</option><option>LIQUIDACIÓN OFICIAL</option></select></label>
-        <label>Beneficio sanción<select id="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
         <label>Sanción mínima del año<input id="sancionMinima" readonly value="$ 0"></label>
+        <label class="beneficio-sancion-abajo">Beneficio sanción<select id="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
       </div>
     </div>
   </div>
