@@ -682,67 +682,72 @@ function fechaMasDiasReporte(iso,dias){
 function detalleSuspensionInteresesOficial(x,d){
   const auto=fechaISO(d.fechaAutoAdmisorio)||"";
   const prov=fechaISO(d.fechaProvidenciaDefinitiva)||"";
-  if(!auto)return [];
+  const pago=fechaISO(x.pago?.fecha)||"";
+  if(!auto||!pago)return [];
+
   const finDos=fechaMasAnosReporte(auto,2);
   const inicioSusp=fechaMasDiasReporte(finDos,1);
-  const pago=fechaISO(x.pago?.fecha)||"";
   const detalleCuotas=Array.isArray(x.interesesPorCuota)?x.interesesPorCuota:[];
-  const fuente=detalleCuotas.length?detalleCuotas:[{vto:"GENERAL",tramos:Array.isArray(x.tramosInteres)?x.tramosInteres:[]}];
-  return fuente.map((cuota)=>{
+  const fuente=detalleCuotas.length?detalleCuotas:[{vto:"GENERAL",capitalBase:x.deudaAntes?.impuesto||0,fechaVencimiento:x.pago?.fecha||"",tramos:Array.isArray(x.tramosInteres)?x.tramosInteres:[]}];
+
+  const salida=[];
+  for(const cuota of fuente){
     const ts=Array.isArray(cuota.tramos)?cuota.tramos:[];
-    const normales=ts.filter(t=>t.tipo!=="SUSPENSION_INTERESES");
+    const normales=ts.filter(t=>t.tipo!=="SUSPENSION_INTERESES" && Number(t.valor||0)>=0);
     const susp=ts.find(t=>t.tipo==="SUSPENSION_INTERESES")||null;
-    const antes=normales.filter(t=>!inicioSusp||String(t.hasta||"")<=inicioSusp);
-    const despues=normales.filter(t=>prov&&String(t.desde||"")>=prov);
-    const diasAntes=antes.reduce((a,t)=>a+Number(t.dias||0),0);
-    const diasDespues=despues.reduce((a,t)=>a+Number(t.dias||0),0);
-    const interesAntes=antes.reduce((a,t)=>a+Number(t.valor||0),0);
-    const interesDespues=despues.reduce((a,t)=>a+Number(t.valor||0),0);
-    const diasSusp=susp?Number(susp.dias||0):0;
-    const suspendido=!!(susp&&inicioSusp&&prov&&prov>=inicioSusp&&pago>inicioSusp);
-    return {vto:cuota.vto||"GENERAL",auto,finDos,inicioSusp,prov,pago,suspendido,
-      inicioIntereses:antes[0]?.desde||cuota.fechaVencimiento||"",
-      finPrimerInteres:antes.length?antes[antes.length-1]?.hasta||"":"",
-      diasAntes,interesAntes,
-      inicioSuspension:susp?.desde||inicioSusp,
-      finSuspension:susp?.hasta||prov,
-      diasSusp,
-      reanudacion:despues[0]?.desde||((prov&&pago>prov)?prov:""),
-      finSegundoInteres:despues.length?despues[despues.length-1]?.hasta||pago:"",
-      diasDespues,interesDespues,
-      interesTotal:interesAntes+interesDespues};
-  });
+    const vto=cuota.fechaVencimiento||normales[0]?.desde||"";
+
+    // El motor entrega los tramos reales utilizados para calcular el interés.
+    // Se muestran en el mismo orden cronológico y se etiqueta explícitamente
+    // el período sin causación.
+    if(susp){
+      const primer=normales.filter(t=>String(t.desde||"")<inicioSusp && String(t.hasta||"")<=inicioSusp);
+      const segundo=normales.filter(t=>prov && String(t.desde||"")>=prov);
+      const interes1=Number(cuota.interes1||0)>0?Number(cuota.interes1):primer.reduce((a,t)=>a+Number(t.valor||0),0);
+      const dias1=Number(cuota.diasInteres1||0)>0?Number(cuota.diasInteres1):primer.reduce((a,t)=>a+Number(t.dias||0),0);
+      const interes2=Number(cuota.interes2||0)>0?Number(cuota.interes2):segundo.reduce((a,t)=>a+Number(t.valor||0),0);
+      const dias2=Number(cuota.diasInteres2||0)>0?Number(cuota.diasInteres2):segundo.reduce((a,t)=>a+Number(t.dias||0),0);
+      const tasa1=primer.length?Number(primer[0].tasa??0):0;
+      const tasa2=segundo.length?Number(segundo[0].tasa??0):0;
+      salida.push({vto:cuota.vto||vto||"GENERAL",cuota:cuota.cuota||"",capitalBase:Number(cuota.capitalBase||0),auto,finDos,inicioSusp,prov,pago,
+        tramo:"PRIMER TRAMO DE INTERESES",desde:primer[0]?.desde||vto,hasta:primer.length?primer[primer.length-1]?.hasta||finDos:finDos,dias:dias1,tasa:tasa1,interes:interes1,estado:"INTERESES CAUSADOS"});
+      salida.push({vto:cuota.vto||vto||"GENERAL",cuota:cuota.cuota||"",capitalBase:Number(cuota.capitalBase||0),auto,finDos,inicioSusp,prov,pago,
+        tramo:"SUSPENSIÓN DE INTERESES",desde:susp.desde||inicioSusp,hasta:susp.hasta||prov,dias:Number(susp.dias||0),tasa:null,interes:0,estado:"SIN CAUSACIÓN DE INTERESES"});
+      if(segundo.length){
+        salida.push({vto:cuota.vto||vto||"GENERAL",cuota:cuota.cuota||"",capitalBase:Number(cuota.capitalBase||0),auto,finDos,inicioSusp,prov,pago,
+          tramo:"SEGUNDO TRAMO DE INTERESES",desde:segundo[0]?.desde||prov,hasta:segundo[segundo.length-1]?.hasta||pago,dias:dias2,tasa:tasa2,interes:interes2,estado:"INTERESES REANUDADOS"});
+      }
+    }else{
+      const interes=normales.reduce((a,t)=>a+Number(t.valor||0),0);
+      const dias=normales.reduce((a,t)=>a+Number(t.dias||0),0);
+      const first=normales[0]||{};
+      const last=normales[normales.length-1]||first;
+      salida.push({vto:cuota.vto||vto||"GENERAL",cuota:cuota.cuota||"",capitalBase:Number(cuota.capitalBase||0),auto,finDos,inicioSusp,prov,pago,
+        tramo:"INTERESES — SIN SUSPENSIÓN",desde:first.desde||vto,hasta:last.hasta||pago,dias,tasa:first.tasa==null?null:Number(first.tasa),interes,estado:"INTERESES CAUSADOS"});
+    }
+  }
+  return salida;
 }
 function bloqueSuspensionInteresesPdf(x,d,i){
   const detalles=detalleSuspensionInteresesOficial(x,d);
   if(!detalles.length)return "";
-  const rows=detalles.map(t=>`<tr>
-    <td>${escPdf(t.vto)}</td>
-    <td>${escPdf(fechaVisible(t.inicioIntereses))}</td>
-    <td>${escPdf(fechaVisible(t.finPrimerInteres))}</td>
-    <td>${t.diasAntes}</td>
-    <td>${dinero(t.interesAntes)}</td>
-    <td>${escPdf(fechaVisible(t.inicioSuspension))}</td>
-    <td>${escPdf(fechaVisible(t.finSuspension))}</td>
-    <td>${t.diasSusp}</td>
-    <td>${escPdf(fechaVisible(t.reanudacion))}</td>
-    <td>${escPdf(fechaVisible(t.finSegundoInteres))}</td>
-    <td>${t.diasDespues}</td>
-    <td>${dinero(t.interesDespues)}</td>
-    <td>${dinero(t.interesTotal)}</td>
-  </tr>`).join("");
-  const haySusp=detalles.some(t=>t.suspendido);
+  const haySusp=detalles.some(t=>t.tramo==="SUSPENSIÓN DE INTERESES");
   const t0=detalles[0];
   const nota=haySusp
-    ? `Auto admisorio: ${fechaVisible(t0.auto)} · cumplimiento de 2 años: ${fechaVisible(t0.finDos)} · suspensión desde: ${fechaVisible(t0.inicioSusp)} · ejecutoria/providencia definitiva: ${fechaVisible(t0.prov)} · reanudación: ${fechaVisible(t0.reanudacion||t0.prov)}.`
-    : `No se alcanzó a configurar la suspensión de intereses para este pago. Auto admisorio: ${fechaVisible(t0.auto)} · fecha de cumplimiento de 2 años: ${fechaVisible(t0.finDos)} · providencia definitiva: ${fechaVisible(t0.prov)}.`;
-  return `<div class="pdf-suspension-intereses"><h3>DESGLOSE DE INTERESES — LIQUIDACIÓN OFICIAL — ART. 634 PARÁGRAFO 2 E.T. — PAGO ${Number(i)+1}</h3><div class="pdf-suspension-descripcion">${escPdf(nota)} Los intereses se calculan antes del corte de dos años; durante la suspensión no se causan intereses; después de la ejecutoria se reanudan hasta el pago.</div><table><thead><tr><th>VENCIMIENTO</th><th>INICIO INTERÉS</th><th>FIN PRIMER TRAMO</th><th>DÍAS 1</th><th>INTERÉS 1</th><th>INICIO SUSP.</th><th>FIN SUSP. / EJECUTORIA</th><th>DÍAS SUSP.</th><th>REANUDACIÓN</th><th>FIN SEGUNDO TRAMO</th><th>DÍAS 2</th><th>INTERÉS 2</th><th>TOTAL INTERÉS</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    ? `Auto admisorio: ${fechaVisible(t0.auto)} · cumplimiento de 2 años: ${fechaVisible(t0.finDos)} · suspensión desde: ${fechaVisible(t0.inicioSusp)} · ejecutoria de providencia definitiva: ${fechaVisible(t0.prov)} · reanudación: ${fechaVisible(t0.prov)}.`
+    : `No se configura suspensión porque el pago/providencia no alcanza el período de suspensión. Auto admisorio: ${fechaVisible(t0.auto)} · cumplimiento de 2 años: ${fechaVisible(t0.finDos)} · providencia definitiva: ${fechaVisible(t0.prov)}.`;
+  const rows=detalles.map(t=>`<tr>
+    <td>${escPdf(t.vto)}</td><td>${escPdf(t.tramo)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${escPdf(fechaVisible(t.hasta))}</td>
+    <td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes||0)}</td><td>${escPdf(t.estado)}</td>
+  </tr>`).join("");
+  const total=detalles.reduce((a,t)=>a+Number(t.interes||0),0);
+  return `<div class="pdf-suspension-intereses"><h3>DESGLOSE DE INTERESES — LIQUIDACIÓN OFICIAL — ART. 634 PARÁGRAFO 2 E.T. — PAGO ${Number(i)+1}</h3><div class="pdf-suspension-descripcion">${escPdf(nota)} Los intereses se causan hasta el cumplimiento de los dos años; desde el día siguiente se suspende su causación hasta la ejecutoria de la providencia definitiva y, cuando corresponde, se reanudan desde dicha ejecutoria hasta el pago.</div><table><thead><tr><th>VENCIMIENTO</th><th>TRAMO</th><th>DESDE</th><th>HASTA</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th><th>ESTADO</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES DEL PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table></div>`;
 }
 function detalleSuspensionInteresesExcel(r,d){
   const filas=[];
   (r.detalle||[]).forEach((x,i)=>{
     for(const t of detalleSuspensionInteresesOficial(x,d)){
-      filas.push([i+1,t.vto,t.auto,t.finDos,t.inicioIntereses,t.finPrimerInteres,t.diasAntes,t.interesAntes,t.inicioSuspension,t.finSuspension,t.diasSusp,t.reanudacion,t.finSegundoInteres,t.diasDespues,t.interesDespues,t.interesTotal]);
+      filas.push([i+1,t.vto,t.tramo,t.desde,t.hasta,Number(t.dias||0),t.tasa==null?"":Number(t.tasa)*100,Number(t.interes||0),t.estado]);
     }
   });
   return filas;
@@ -879,8 +884,8 @@ function exportarExcel(){
     if(String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"){
       push([]);
       push(["DESGLOSE DE INTERESES — LIQUIDACIÓN OFICIAL — ART. 634 PARÁGRAFO 2 E.T."],{title:true});
-      push(["PAGO","VENCIMIENTO","AUTO ADMISORIO","CUMPLE 2 AÑOS","INICIO INTERÉS","FIN PRIMER TRAMO","DÍAS 1","INTERÉS 1","INICIO SUSPENSIÓN","FIN SUSPENSIÓN / EJECUTORIA","DÍAS SUSPENSIÓN","REANUDACIÓN","FIN SEGUNDO TRAMO","DÍAS 2","INTERÉS 2","TOTAL INTERÉS"],{header:true});
-      detalleSuspensionInteresesExcel(r,d).forEach(row=>push(row,{money:[8,15,16],percent:[]}));
+      push(["PAGO","VENCIMIENTO","TRAMO","DESDE","HASTA","DÍAS","TASA","INTERÉS","ESTADO"],{header:true});
+      detalleSuspensionInteresesExcel(r,d).forEach(row=>push(row,{money:[8],percent:[7]}));
       push(["CRITERIO DE SUSPENSIÓN","Los intereses continúan desde el vencimiento hasta el cumplimiento de los dos años contados desde la admisión de la demanda; luego se suspenden hasta la ejecutoria de la providencia definitiva y se reanudan desde esa fecha hasta el pago." ]);
     }
 
@@ -919,7 +924,7 @@ function exportarExcel(){
       {name:"xl/workbook.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><fileVersion appName="xl" lastEdited="7" lowestEdited="7" rupBuild="30626"/><workbookPr defaultThemeVersion="164011"/><bookViews><workbookView xWindow="0" yWindow="0" windowWidth="18000" windowHeight="12000"/></bookViews><sheets><sheet name="Liquidación completa" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>`},
       {name:"xl/_rels/workbook.xml.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
       {name:"xl/styles.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="[$$-es-CO] #,##0"/><numFmt numFmtId="165" formatCode="0.000%"/></numFmts><fonts count="3"><font><sz val="10"/><name val="Arial"/><family val="2"/></font><font><b/><sz val="14"/><name val="Arial"/><family val="2"/></font><font><b/><sz val="10"/><name val="Arial"/><family val="2"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="DCEAF4"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="173F5F"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="A8BBC9"/></left><right style="thin"><color rgb="A8BBC9"/></right><top style="thin"><color rgb="A8BBC9"/></top><bottom style="thin"><color rgb="A8BBC9"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="1" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`},
-      {name:"xl/worksheets/sheet1.xml",data:xlsxSheet(rows,{titleRows,headerRows,rowMoneyCols,rowPercentCols,columnWidths:[10,18,18,18,20,28,14,20,20,20,20,20,18],landscape:true,fitToWidth:1,fitToHeight:0})}
+      {name:"xl/worksheets/sheet1.xml",data:xlsxSheet(rows,{titleRows,headerRows,rowMoneyCols,rowPercentCols,columnWidths:[10,18,30,18,18,12,14,20,28],landscape:true,fitToWidth:1,fitToHeight:0})}
     ];
     descargarBlob(zipStore(files),nombreBase+".xlsx");
     mostrarEstadoExportacion("Excel generado correctamente: un solo libro y una sola hoja, con resumen, vencimientos, pagos y detalle de intereses por cuota y por cada pago. La sanción no interviene en el cálculo del interés.");

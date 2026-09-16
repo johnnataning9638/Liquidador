@@ -69,8 +69,19 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         tramos.push({desde,hasta,dias:diasEntre(desde,hasta),valor:null,metodologia:ih.metodologia,advertencia:"No hay tasa histórica suficiente para cerrar este tramo."});
         return null;
       }
-      for(const t of (ih.tramos||[]))tramos.push({...t,desde:t.desde||desde,hasta:t.hasta||hasta});
-      if(!(ih.tramos||[]).length)tramos.push({desde,hasta,dias:ih.dias,tasa:ih.tasa,valor:ih.valor,metodologia:ih.metodologia});
+      const ts=ih.tramos||[];
+      if(ts.length===1){
+        tramos.push({...ts[0],desde:ts[0].desde||desde,hasta:ts[0].hasta||hasta,valor:Number(ih.valor||0)});
+      }else if(ts.length){
+        // Para tramos históricos múltiples, conserva la información temporal
+        // y distribuye el valor calculado de cada subtramo cuando la tasa está
+        // disponible. Esto evita perder el valor monetario en los informes.
+        for(const t of ts){
+          const dias=Number(t.dias||0),tasa=Number(t.tasa||0);
+          const valorSub=dias>0&&Number.isFinite(tasa)?roundMil(Number(base)*tasa/this.diasDelAnio(t.hasta||hasta)*dias):0;
+          tramos.push({...t,desde:t.desde||desde,hasta:t.hasta||hasta,valor:valorSub});
+        }
+      }else tramos.push({desde,hasta,dias:ih.dias,tasa:ih.tasa,valor:ih.valor,metodologia:ih.metodologia});
       return Number(ih.valor||0);
     };
 
@@ -213,7 +224,11 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         const primer=(tramosInteres.find(t=>t.tipo!=="SUSPENSION_INTERESES")||tramosInteres[0]||{});
         const base=Math.max(0,Number(v.saldo||0));
         const aplica=base>0&&pago.fecha>v.fecha;
-        return {cuota:Number(v.numero||0),vto:v.id,capitalBase:base,fechaVencimiento:v.fecha,fechaPago:pago.fecha,dias:aplica?Number(calc.interes?tramosInteres.filter(t=>t.tipo!=="SUSPENSION_INTERESES").reduce((a,t)=>a+Number(t.dias||0),0):0):0,tasa:primer.tasa==null?(aplica?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0):0):Number(primer.tasa),interes:Math.max(0,Number(calc.interes||0)),metodologia:tramosInteres.some(t=>t.tipo==="SUSPENSION_INTERESES")?"INTERES_OFICIAL_CON_SUSPENSION_ART_634":(primer.metodologia||(aplica?"INTERES_OFICIAL":"NO EXIGIBLE")),aplica,suspensionAplicada:tramosInteres.some(t=>t.tipo==="SUSPENSION_INTERESES")};
+        const tramosNormales=tramosInteres.filter(t=>t.tipo!=="SUSPENSION_INTERESES");
+        const tramoSuspension=tramosInteres.find(t=>t.tipo==="SUSPENSION_INTERESES")||null;
+        const tramo1=tramosNormales.length?tramosNormales.filter(t=>!tramoSuspension||String(t.hasta||"")<=String(tramoSuspension.desde||"")):[];
+        const tramo2=tramosNormales.length?tramosNormales.filter(t=>tramoSuspension&&String(t.desde||"")>=String(tramoSuspension.hasta||"") ):[];
+        return {cuota:Number(v.numero||0),vto:v.id,capitalBase:base,fechaVencimiento:v.fecha,fechaPago:pago.fecha,dias:aplica?Number(calc.interes?tramosNormales.reduce((a,t)=>a+Number(t.dias||0),0):0):0,tasa:primer.tasa==null?(aplica?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0):0):Number(primer.tasa),interes:Math.max(0,Number(calc.interes||0)),metodologia:tramosInteres.some(t=>t.tipo==="SUSPENSION_INTERESES")?"INTERES_OFICIAL_CON_SUSPENSION_ART_634":(primer.metodologia||(aplica?"INTERES_OFICIAL":"NO EXIGIBLE")),aplica,suspensionAplicada:!!tramoSuspension,tramoInteres1:tramo1,tramoSuspension:tramoSuspension,tramoInteres2:tramo2,diasInteres1:tramo1.reduce((a,t)=>a+Number(t.dias||0),0),interes1:tramo1.reduce((a,t)=>a+Number(t.valor||0),0),diasSuspension:tramoSuspension?Number(tramoSuspension.dias||0):0,diasInteres2:tramo2.reduce((a,t)=>a+Number(t.dias||0),0),interes2:tramo2.reduce((a,t)=>a+Number(t.valor||0),0)};
       });
 
       const deudaAntes={impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:intCalc.liquidado,sancion:Math.max(0,saldoSancion)};
