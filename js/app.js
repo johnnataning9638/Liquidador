@@ -1,13 +1,13 @@
-import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.16";
-import {importarDatosInteligente} from "./importador.js?v=16.32.16";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.16";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.16";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.16";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.16";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.16";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.16";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.16";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.16";
+import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.18";
+import {importarDatosInteligente} from "./importador.js?v=16.32.18";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.18";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.18";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.18";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.18";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.18";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.18";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.18";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.18";
 
 const $=id=>document.getElementById(id);
 const N=6;
@@ -297,7 +297,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.16"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.18"});
   $("estadoSistema").textContent="Parámetros históricos cargados";
   $("estadoSistema").classList.add("ok");
 }
@@ -840,12 +840,11 @@ function filasActualizacionSancionExport(r){
         x.pago?.fecha||"",
         Number(t.anio||0),
         t.desde||"",
-        t.hasta||"",
-        Number(t.dias||0),
+        Number(t.anioInflacion||Number(t.anio||0)-1),
         Number(t.saldoAntes||0),
+        Number(t.ipcPorcentaje||0),
         Number(t.actualizacion||0),
-        Number(t.saldoDespues||0),
-        Number(t.ipcPorcentaje||0)
+        Number(t.saldoDespues||0)
       ]);
     });
   });
@@ -855,9 +854,9 @@ function filasActualizacionSancionExport(r){
 function bloqueActualizacionSancionPdf(x,i){
   const tramos=Array.isArray(x.actualizacionSancion?.tramos)?x.actualizacionSancion.tramos:[];
   if(!tramos.length)return "";
-  const rows=tramos.map(t=>`<tr><td>${escPdf(t.anio)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${escPdf(fechaVisible(t.hasta))}</td><td>${Number(t.dias||0)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td></tr>`).join("");
+  const rows=tramos.map(t=>`<tr><td>${escPdf(t.anio)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion||Number(t.anio||0)-1)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td></tr>`).join("");
   const total=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
-  return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">Se actualiza la sanción únicamente por las vigencias que corresponden a este pago. El valor anterior es la sanción pendiente inmediatamente antes de aplicar cada actualización.</div><table><thead><tr><th>PERÍODO / AÑO ACTUALIZADO</th><th>DESDE</th><th>HASTA</th><th>DÍAS</th><th>VALOR ANTERIOR</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th><th>IPC</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE ESTE PAGO</th><th>${dinero(total)}</th><th colspan="2"></th></tr></tfoot></table></div>`;
+  return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica el 1 de enero de cada vigencia que corresponda, utilizando el 100 % del IPC del año inmediatamente anterior. No se prorratea por días. La fecha mostrada corresponde a la fecha efectiva de aplicación y el año IPC identifica la inflación utilizada.</div><table><thead><tr><th>AÑO DE ACTUALIZACIÓN</th><th>FECHA DE APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE ESTE PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table></div>`;
 }
 
 function resumenFinalPdf(r){
@@ -865,11 +864,11 @@ function resumenFinalPdf(r){
   (r.detalle||[]).forEach((x,i)=>{
     (x.actualizacionSancion?.tramos||[]).forEach(t=>tramos.push({pago:i+1,fechaPago:x.pago?.fecha||"",...t}));
   });
-  const filas=tramos.length?tramos.map(t=>`<tr><td>${t.pago}</td><td>${escPdf(fechaVisible(t.fechaPago))}</td><td>${t.anio}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${escPdf(fechaVisible(t.hasta))}</td><td>${Number(t.dias||0)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td></tr>`).join(""):"<tr><td colspan='9'>No se realizaron actualizaciones de sanción.</td></tr>";
+  const filas=tramos.length?tramos.map(t=>`<tr><td>${t.pago}</td><td>${escPdf(fechaVisible(t.fechaPago))}</td><td>${t.anio}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion||Number(t.anio||0)-1)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td></tr>`).join(""):"<tr><td colspan='8'>No se realizaron actualizaciones de sanción.</td></tr>";
   const excedentes=(r.detalle||[]).map((x,i)=>({pago:i+1,fecha:x.pago?.fecha||"",valor:Number(x.excedente||x.aplicado?.excedente||0)}));
   const filasExcedentes=excedentes.length?excedentes.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.valor)}</td></tr>`).join(""):"<tr><td colspan='3'>No se registraron pagos.</td></tr>";
   const excedenteTotal=excedentes.reduce((a,e)=>a+e.valor,0);
-  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO</th><th>DESDE</th><th>HASTA</th><th>DÍAS</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table></div><div class="pdf-excedentes-finales"><h3>CONSOLIDACIÓN DE EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>FECHA DE PAGO</th><th>EXCEDENTE DEL PAGO</th></tr></thead><tbody>${filasExcedentes}</tbody><tfoot><tr><th colspan="2">EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS</th><th>${dinero(excedenteTotal)}</th></tr></tfoot></table></div><div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table></div><div class="pdf-excedentes-finales"><h3>CONSOLIDACIÓN DE EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>FECHA DE PAGO</th><th>EXCEDENTE DEL PAGO</th></tr></thead><tbody>${filasExcedentes}</tbody><tfoot><tr><th colspan="2">EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS</th><th>${dinero(excedenteTotal)}</th></tr></tfoot></table></div><div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
 }
 
 function exportarExcel(){
@@ -889,7 +888,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.16"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.18"],{title:true});
     push([]);
     push(["NIT",d.nit||"","DV",dvNIT(d.nit),"RAZÓN SOCIAL",d.razonSocial||""]);
     push(["AÑO GRAVABLE",d.anio||"","CONCEPTO",d.concepto||"","PERÍODO",d.periodo||""]);
@@ -929,10 +928,10 @@ function exportarExcel(){
       if(!tramos.length)return;
       huboActualizacionExcel=true;
       push([`PAGO ${i+1}`,x.pago?.fecha||"",`ACTUALIZACIÓN DE SANCIÓN DEL PAGO ${i+1}`],{title:true});
-      push(["VIGENCIA / AÑO ACTUALIZADO","DESDE","HASTA","DÍAS","VALOR ANTERIOR","ACTUALIZACIÓN","VALOR DESPUÉS","IPC"],{header:true});
-      tramos.forEach(t=>push([Number(t.anio||0),t.desde||"",t.hasta||"",Number(t.dias||0),Number(t.saldoAntes||0),Number(t.actualizacion||0),Number(t.saldoDespues||0),Number(t.ipcPorcentaje||0)],{money:[5,6,7],percent:[8]}));
+      push(["AÑO DE ACTUALIZACIÓN","FECHA DE APLICACIÓN","AÑO IPC","VALOR ANTERIOR","IPC","ACTUALIZACIÓN","VALOR DESPUÉS"],{header:true});
+      tramos.forEach(t=>push([Number(t.anio||0),t.desde||"",Number(t.anioInflacion||Number(t.anio||0)-1),Number(t.saldoAntes||0),Number(t.ipcPorcentaje||0),Number(t.actualizacion||0),Number(t.saldoDespues||0)],{money:[4,6,7],percent:[5]}));
       const totalAct=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
-      push(["TOTAL ACTUALIZACIÓN DEL PAGO ${i+1}","","","",0,totalAct,0,""],{money:[5,6,7]});
+      push(["TOTAL ACTUALIZACIÓN DEL PAGO ${i+1}","","",0,"",totalAct,0],{money:[4,6,7]});
       push([]);
     });
     if(!huboActualizacionExcel)push(["NO SE REALIZARON ACTUALIZACIONES DE SANCIÓN."]);
@@ -946,7 +945,7 @@ function exportarExcel(){
     const excedenteTotalReporte=(r.detalle||[]).reduce((a,x)=>a+Number(x.excedente||x.aplicado?.excedente||0),0);
     push(["EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS","",excedenteTotalReporte],{money:[3]});
     push([]);
-    push(["OBSERVACIÓN","Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se muestra dentro de cada pago donde aplique y también se consolida al final, con período/año, fechas, días, valor anterior, actualización y valor después."]);
+    push(["OBSERVACIÓN","Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se aplica el 1 de enero de cada vigencia que corresponda con el IPC anual del año anterior, sin prorrateo por días. Se muestra por pago y se consolida al final."]);
     const fechaGeneracion=new Date().toISOString();
     const files=[
       {name:"[Content_Types].xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`},
