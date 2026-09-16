@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js";
-import {ActualizadorSancion} from "./actualizacion-sancion.js";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.32.16";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.16";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -1050,6 +1050,16 @@ export class MotorLiquidacion{
     const impuesto=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);
     const ultimo=detalle.at(-1)||null;
 
+    // La actualización acumulada de sanción debe sumar las actualizaciones
+    // efectivamente aplicadas antes de cada pago. No puede calcularse como
+    // saldoFinal - saldoOriginal porque los pagos posteriores reducen el
+    // saldo de sanción y podrían ocultar una actualización que sí ocurrió.
+    const actualizacionSancionAcumulada=roundMil(
+      detalle.reduce((total,x)=>
+        total+Number(x.actualizacionSancion?.actualizacionTotal||0),0
+      )
+    );
+
     return {
       vencimientos:saldosVto,
       impuesto,
@@ -1081,8 +1091,9 @@ export class MotorLiquidacion{
         fechaUltimaActualizacion:fechaUltimaActualizacionSancion,
         saldoOriginal:roundMil(sancionBaseOriginal),
         saldoFinal:roundMil(saldoSancion),
-        actualizacionAcumulada:roundMil(Math.max(0,saldoSancion-sancionBaseOriginal)),
-        tramos:detalleActualizacionSancion
+        actualizacionAcumulada:actualizacionSancionAcumulada,
+        tramos:detalleActualizacionSancion,
+        metodoAcumulacion:"SUMA_DE_ACTUALIZACIONES_APLICADAS"
       }
     };
   }

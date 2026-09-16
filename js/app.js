@@ -1,13 +1,13 @@
-import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js";
-import {importarDatosInteligente} from "./importador.js";
-import {MotorLiquidacion} from "./motor-liquidacion.js";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js";
-import {ActualizadorSancion} from "./actualizacion-sancion.js";
-import {CalendarioTributario} from "./calendario-tributario.js";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js";
+import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.16";
+import {importarDatosInteligente} from "./importador.js?v=16.32.16";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.16";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.16";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.16";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.16";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.16";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.16";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.16";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.16";
 
 const $=id=>document.getElementById(id);
 const N=6;
@@ -297,7 +297,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.9"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.16"});
   $("estadoSistema").textContent="Parámetros históricos cargados";
   $("estadoSistema").classList.add("ok");
 }
@@ -889,7 +889,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.15"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.16"],{title:true});
     push([]);
     push(["NIT",d.nit||"","DV",dvNIT(d.nit),"RAZÓN SOCIAL",d.razonSocial||""]);
     push(["AÑO GRAVABLE",d.anio||"","CONCEPTO",d.concepto||"","PERÍODO",d.periodo||""]);

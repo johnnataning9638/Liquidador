@@ -1,4 +1,4 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.32.16";
 
 /**
  * Actualización independiente de sanciones (Art. 867-1 E.T.)
@@ -6,6 +6,11 @@ import {fechaISO,roundMil,diasEntre} from "./utilidades.js";
  * La sanción original nunca se reconstruye. Este módulo recibe el saldo
  * vigente, determina el período de actualización según la fecha base y
  * devuelve el nuevo saldo junto con la trazabilidad de cada tramo.
+ *
+ * REAJUSTE 16.32.16: la vigencia anual se aplica al 100 % del IPC del año
+ * inmediatamente anterior, sin prorrateo, y la primera actualización se
+ * practica el 1 de enero del año siguiente a aquel en que se completó el año
+ * de vencimiento.
  *
  * Para Liquidación Privada, la fecha base que entrega el formulario es la
  * fecha de presentación de la declaración. Para Liquidación Oficial y
