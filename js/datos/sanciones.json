@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ET639",
+    "articulo": "639",
+    "nombre": "Sanción mínima",
+    "tipo": "MINIMA_UVT",
+    "fuente": "Estatuto Tributario art.639",
+    "nota": "La sanción mínima debe evaluarse según el año y las excepciones legales aplicables."
+  },
+  {
+    "id": "ET640",
+    "articulo": "640",
+    "nombre": "Principio de favorabilidad y gradualidad",
+    "tipo": "REGLA_REDUCCION",
+    "fuente": "Estatuto Tributario art.640",
+    "nota": "No aplicar automáticamente sin verificar conducta, reincidencia y condiciones legales."
+  },
+  {
+    "id": "ET641",
+    "articulo": "641",
+    "nombre": "Extemporaneidad antes de emplazamiento",
+    "tipo": "EXTEMPORANEIDAD",
+    "fuente": "Estatuto Tributario art.641"
+  },
+  {
+    "id": "ET642",
+    "articulo": "642",
+    "nombre": "Extemporaneidad después de emplazamiento",
+    "tipo": "EXTEMPORANEIDAD_EMPLAZAMIENTO",
+    "fuente": "Estatuto Tributario art.642"
+  },
+  {
+    "id": "ET643",
+    "articulo": "643",
+    "nombre": "Sanción por no declarar",
+    "tipo": "NO_DECLARAR",
+    "fuente": "Estatuto Tributario art.643"
+  },
+  {
+    "id": "ET644",
+    "articulo": "644",
+    "nombre": "Sanción por corrección",
+    "tipo": "CORRECCION",
+    "fuente": "Estatuto Tributario art.644"
+  },
+  {
+    "id": "ET646",
+    "articulo": "646",
+    "nombre": "Sanción por corrección aritmética",
+    "tipo": "ARITMETICA",
+    "fuente": "Estatuto Tributario art.646"
+  },
+  {
+    "id": "ET647",
+    "articulo": "647",
+    "nombre": "Sanción por inexactitud",
+    "tipo": "INEXACTITUD",
+    "fuente": "Estatuto Tributario art.647"
+  },
+  {
+    "id": "ET867_1",
+    "articulo": "867-1",
+    "nombre": "Actualización de sanciones",
+    "tipo": "ACTUALIZACION_IPC",
+    "fuente": "Estatuto Tributario art.867-1; Conceptos DIAN 9531 y 21020 de 2025",
+    "nota": "Actualización anual desde 1 de enero según las condiciones legales; para sanciones DIAN, verificar ejecutoria del acto."
+  }
+]
