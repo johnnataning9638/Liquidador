@@ -607,6 +607,15 @@ export class MotorLiquidacion{
 
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancion=fechaISO(datos.fechaSancion)||saldosVto[0]?.fecha||"";
+    // FIX: esta bandera se usa también al determinar la sanción mínima inicial.
+    // Antes se utilizaba en este alcance sin declararla, provocando en producción
+    // el error JavaScript: "esArt20o3 is not defined" y bloqueando toda
+    // liquidación privada con sanción.
+    const tiposPagoInicial=(datos?.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
+    const esArt20o3=tiposPagoInicial.some(t=>
+      t.includes("ART. 20 DECRETO 1474") ||
+      t.includes("ART. 3 DECRETO 0240")
+    );
     // La sanción que llega desde la declaración ya incorpora, cuando corresponde,
     // la reducción que hizo el contribuyente. El motor NO vuelve a aplicar 15 %.
     // Única excepción: si el valor declarado es inferior a la sanción mínima del

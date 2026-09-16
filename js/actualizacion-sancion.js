@@ -74,51 +74,77 @@ export class ActualizadorSancion{
     const excluidos=new Set((Array.isArray(aniosExcluir)?aniosExcluir:[]).map(Number));
 
     if(!saldo||!base||!corte||corte<=base){
-      return {saldoInicial:roundMil(original),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:null,fechaCorte:corte,tramos,advertencias};
+      return {saldoInicial:roundMil(original),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:null,fechaPrimeraActualizacion:null,fechaCorte:corte,tramos,advertencias};
     }
 
-    // El módulo Act.Sancion(LP-LO) no prorratea el año corriente. La
-    // actualización entra por vigencias anuales completas: para una sanción
-    // cuya fecha de activación es 01/01/2025, un corte en cualquier fecha de
-    // 2025 conserva la sanción original; desde 2026 se aplica el IPC 2024
-    // correspondiente a la vigencia 2025 completa. Para cada año adicional
-    // se incorpora la vigencia anual inmediatamente anterior.
-    const activacion=this.sumarUnAnio(base);
-    const anioActivacion=Number(activacion.slice(0,4));
+    /*
+     * ART. 867-1 E.T. — LIQUIDACIÓN PRIVADA
+     *
+     * La sanción debe llevar más de un año de vencida. Una vez cumplido ese
+     * año, la actualización no se hace en la fecha de aniversario ni se
+     * prorratea por días. La primera actualización se practica el 1 de enero
+     * del año siguiente al año en que se completó el año de vencimiento y,
+     * desde allí, se actualiza anual y acumulativamente con el 100 % del IPC
+     * del año inmediatamente anterior.
+     *
+     * Ejemplo: sanción presentada el 15/06/2023 -> cumple un año el
+     * 15/06/2024 -> primera actualización 01/01/2025 con IPC 2024 completo.
+     * Una segunda actualización, si continúa impaga, será el 01/01/2026 con
+     * IPC 2025, aplicada sobre el saldo ya actualizado.
+     *
+     * El parámetro aniosExcluir contiene AÑOS DE APLICACIÓN (2025, 2026,...),
+     * no años de inflación. Esto permite procesar varios pagos sin volver a
+     * aplicar una misma actualización anual.
+     */
+    const activacion=this.sumarUnAnio(base); // fecha en que se completa el año
+    const anioCumplimiento=Number(activacion.slice(0,4));
+    const primerAnioActualizacion=anioCumplimiento+1;
     const anioCorte=Number(corte.slice(0,4));
+    const fechaPrimeraActualizacion=`${primerAnioActualizacion}-01-01`;
 
-    if(corte<activacion){
-      return {saldoInicial:roundMil(original),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaActivacion:activacion,fechaCorte:corte,tramos,advertencias};
+    if(corte<fechaPrimeraActualizacion){
+      return {
+        saldoInicial:roundMil(original),
+        valor:roundMil(saldo),
+        actualizacion:0,
+        fechaBase:base,
+        fechaActivacion:activacion,
+        fechaPrimeraActualizacion,
+        fechaCorte:corte,
+        tramos,
+        advertencias
+      };
     }
 
-    // Solo se liquidan vigencias anuales ya cerradas antes del año del corte.
-    for(let anio=anioActivacion; anio<anioCorte; anio++){
-      // Cuando este método se invoca para varios pagos, los años ya actualizados
-      // se excluyen para evitar volver a capitalizar la misma actualización.
-      if(excluidos.has(anio)) continue;
-      const inicio=anio===anioActivacion?activacion:`${anio}-01-01`;
-      const siguiente=`${anio+1}-01-01`;
-      const dias=diasEntre(inicio,siguiente)-1;
-      if(dias<=0)continue;
+    // Cada año de aplicación cerrado corresponde al IPC del año anterior.
+    for(let anioAplicacion=primerAnioActualizacion; anioAplicacion<=anioCorte; anioAplicacion++){
+      if(excluidos.has(anioAplicacion)) continue;
 
-      const fila=this.ipcPorAnio(anio);
+      const fechaAplicacion=`${anioAplicacion}-01-01`;
+      if(fechaAplicacion>corte) continue;
+
+      const anioInflacion=anioAplicacion-1;
+      const fila=this.ipcPorAnio(anioInflacion);
       const ipc=Number(fila?.inflacion??fila?.inflacionTotal3??0);
       const antes=saldo;
       let actualizacion=0;
       const disponible=ipc>0;
 
       if(disponible){
-        actualizacion=roundMil(antes*(Math.pow(1+Math.round((ipc/365)*1e7)/1e7,dias)-1));
+        // La norma aplica el porcentaje anual completo; NO se prorratea por días.
+        actualizacion=roundMil(antes*ipc);
         saldo=roundMil(antes+actualizacion);
       }else{
-        advertencias.push(`No existe IPC cargado para ${anio}; no se actualizó ese tramo de la sanción.`);
+        advertencias.push(`No existe IPC cargado para ${anioInflacion}; no se actualizó la sanción en ${anioAplicacion}.`);
       }
 
       tramos.push({
-        anio,
-        desde:inicio,
-        hasta:`${anio+1}-01-01`,
-        dias,
+        anio:anioAplicacion,
+        anioAplicacion,
+        anioInflacion,
+        desde:fechaAplicacion,
+        hasta:fechaAplicacion,
+        dias:365,
         ipc,
         ipcPorcentaje:ipc*100,
         saldoInicial:antes,
@@ -135,6 +161,7 @@ export class ActualizadorSancion{
       actualizacion:roundMil(saldo-original),
       fechaBase:base,
       fechaActivacion:activacion,
+      fechaPrimeraActualizacion,
       fechaCorte:corte,
       tramos,
       advertencias
