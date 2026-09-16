@@ -29,7 +29,7 @@ export class AuditoriaTrazabilidad {
       })),
       sancion:{
         tiene:d.tieneSancion||"NO",valor:Number(d.valorSancion||0),fecha:d.fechaSancion||null,
-        origen:d.origenSancion||"",beneficio:d.beneficioSancion||""
+        beneficio:d.beneficioSancion||""
       }
     };
   }

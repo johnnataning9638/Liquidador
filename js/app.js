@@ -1,6 +1,7 @@
 import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js";
 import {importarDatosInteligente} from "./importador.js";
 import {MotorLiquidacion} from "./motor-liquidacion.js";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js";
 import {ActualizadorSancion} from "./actualizacion-sancion.js";
 import {CalendarioTributario} from "./calendario-tributario.js";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js";
@@ -24,7 +25,7 @@ const TIPOS=[
   "ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION"
 ];
 
-let motor=null,actualizadorSancion=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
+let motor=null,motorPrivado=null,motorOficial=null,actualizadorSancion=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
 let uvt=[],tasasMoratorias=[],tasasBase=[],ipc=[],ipcBase=[],ipcCentrales=[],beneficios=[],sanciones=[],reglasObligaciones=[],calendarioData=null;
 let pagos=[];
 let tasasPersonalizadas=[];
@@ -34,7 +35,7 @@ let adminEmail=null;
 let ultimaLiquidacion=null,ultimaAuditoria=null;
 let obligacionVencimientos=[];
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
-let estadoSancionUI={tiene:"",valor:"",fecha:"",origen:"",beneficio:""};
+let estadoSancionUI={tiene:"",valor:"",fecha:"",beneficio:""};
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const upper=v=>String(v??"").trim().toUpperCase();
@@ -153,7 +154,17 @@ function leerTasasPersonalizadas(){
   try{const raw=localStorage.getItem("liquidador_dian_tasas_personalizadas");tasasPersonalizadas=raw?JSON.parse(raw):[];if(!Array.isArray(tasasPersonalizadas))tasasPersonalizadas=[];}catch{tasasPersonalizadas=[];}
 }
 function guardarTasasPersonalizadas(){localStorage.setItem("liquidador_dian_tasas_personalizadas",JSON.stringify(tasasPersonalizadas));}
-function reconstruirMotor(){actualizadorSancion=new ActualizadorSancion({ipc});motor=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});}
+function reconstruirMotor(){
+  actualizadorSancion=new ActualizadorSancion({ipc});
+  motorPrivado=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});
+  motorOficial=new MotorLiquidacionOficial({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});
+  seleccionarMotorPorTipo();
+}
+function seleccionarMotorPorTipo(){
+  const tipo=upper($("tipoLiquidacion")?.value||"");
+  motor=tipo==="OFICIAL"?motorOficial:motorPrivado;
+  return motor;
+}
 function aplicarTasaEnMemoria(desde,hasta,tasa,fuente="ACTUALIZACIÓN MANUAL",reconstruir=true){
   const d=String(desde).slice(0,10),h=String(hasta).slice(0,10),valor=Number(tasa)/100;
   const filaExistente=tasasMoratorias.find(x=>String(x.desde).slice(0,10)===d&&String(x.hasta).slice(0,10)===h);
@@ -310,6 +321,25 @@ function montarFechaDual(root,onChange=()=>{}){
 }
 function campoFechaHtml({idText,idPicker,value="",clase=""}){const iso=fechaISO(value);return `<div class="fecha-dual"><input id="${esc(idText)}" class="fecha-campo ${esc(clase)}" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="${esc(fechaVisible(iso))}"><input id="${esc(idPicker)}" class="fecha-native" type="date" aria-label="Abrir calendario" title="Abrir calendario" value="${esc(iso)}"></div>`;}
 
+function actualizarCamposTipoLiquidacion(){
+  const tipo=upper($("tipoLiquidacion")?.value||"");
+  const esOficial=tipo==="OFICIAL";
+  const campoAuto=$("campoFechaAutoAdmisorio");
+  const campoProv=$("campoFechaProvidenciaDefinitiva");
+  if(campoAuto)campoAuto.hidden=!esOficial;
+  if(campoProv)campoProv.hidden=!esOficial;
+  ["fechaAutoAdmisorio","fechaAutoAdmisorioPicker","fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker"].forEach(id=>{
+    const el=$(id);
+    if(el)el.disabled=!esOficial;
+  });
+  if(!esOficial){
+    ["fechaAutoAdmisorio","fechaAutoAdmisorioPicker","fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker"].forEach(id=>{
+      const el=$(id);
+      if(el)el.value="";
+    });
+  }
+}
+
 function leerFormulario(){
   const concepto=upper($("concepto").value);
   const periodicidad=concepto==="SIMPLE"?"ANTICIPO BIMESTRAL":upper($("periodicidadObligacion")?.value||"");
@@ -319,6 +349,9 @@ function leerFormulario(){
     concepto,
     periodo:$("periodo").value,
     razonSocial:upper($("razonSocial").value),
+    tipoLiquidacion:upper($("tipoLiquidacion").value),
+    fechaAutoAdmisorio:fechaISO($("fechaAutoAdmisorio")?.value||""),
+    fechaProvidenciaDefinitiva:fechaISO($("fechaProvidenciaDefinitiva")?.value||""),
     perfilContribuyente:upper($("perfilContribuyente")?.value||""),
     periodicidadObligacion:periodicidad,
     // La fecha para declarar ya no se captura en un campo independiente.
@@ -331,7 +364,6 @@ function leerFormulario(){
     tieneSancion:upper($("tieneSancion").value),
     valorSancion:numeroDesdeTexto($("valorSancion").value),
     fechaSancion:fechaISO($("fechaSancion").value),
-    origenSancion:upper($("origenSancion").value),
     beneficioSancion:upper($("beneficioSancion").value),
     beneficioTributario:upper($("beneficioTributario")?.value||"NINGUNO"),
     beneficioEscenario:upper($("beneficioTributario")?.value||"").replace("D0240_ART4_","").replace("_"," "),
@@ -438,7 +470,6 @@ function capturarSancionUI(){
     tiene:tiene.value||"",
     valor:$("valorSancion")?.value||"",
     fecha:$("fechaSancion")?.value||"",
-    origen:$("origenSancion")?.value||"",
     beneficio:$("beneficioSancion")?.value||""
   };
 }
@@ -449,7 +480,6 @@ function restaurarSancionUI(){
   if($("valorSancion") && estadoSancionUI.valor)$("valorSancion").value=estadoSancionUI.valor;
   if($("fechaSancion") && estadoSancionUI.fecha)$("fechaSancion").value=estadoSancionUI.fecha;
   if($("fechaSancionPicker") && estadoSancionUI.fecha){const iso=fechaISO(estadoSancionUI.fecha);if(iso)$("fechaSancionPicker").value=iso;}
-  if($("origenSancion"))$("origenSancion").value=estadoSancionUI.origen;
   if($("beneficioSancion"))$("beneficioSancion").value=estadoSancionUI.beneficio;
 }
 function actualizarSancionMinimaUI(){
@@ -458,12 +488,17 @@ function actualizarSancionMinimaUI(){
   const tiene=upper($("tieneSancion")?.value||"");
   const beneficio=upper($("beneficioSancion")?.value||"");
   const anio=Number($("anio")?.value||0);
-  // La sanción mínima corresponde al año de la obligación. Se muestra
-  // cuando existe sanción y se selecciona CON BENEFICIO; también se
-  // mantiene disponible durante la captura para evitar que el campo
-  // quede vacío al cambiar de beneficio o al limpiar el formulario.
-  if(motor && tiene==="SI" && beneficio==="CON BENEFICIO" && Number.isInteger(anio) && anio>0){
-    const v=Number(motor.sancionMinima(anio)||0);
+  const fechaS=fechaISO($("fechaSancion")?.value||"");
+  const usaAnioFechaSancion=(pagos||[]).some(p=>{
+    const t=upper(p?.tipo||"");
+    return t.includes("ART. 20 DECRETO 1474")||t.includes("ART. 3 DECRETO 0240");
+  });
+  const anioMinimo=(usaAnioFechaSancion && Number(fechaS.slice(0,4))) || anio;
+  // Para Art. 20 D.1474 y Art. 3 D.0240, la sanción mínima se consulta
+  // con el año de la fecha de sanción. Para los demás tratamientos se
+  // conserva el año gravable de la obligación.
+  if(motor && tiene==="SI" && beneficio==="CON BENEFICIO" && Number.isInteger(anioMinimo) && anioMinimo>0){
+    const v=Number(motor.sancionMinima(anioMinimo)||0);
     campo.value=v?dinero(v):"";
   }else{
     campo.value="";
@@ -473,7 +508,7 @@ function habilitarSancion(){
   const tiene=$("tieneSancion");
   if(!tiene)return;
   const on=upper(tiene.value)==="SI";
-  ["valorSancion","fechaSancion","origenSancion","beneficioSancion"].forEach(id=>{
+  ["valorSancion","fechaSancion","beneficioSancion"].forEach(id=>{
     const el=$(id);
     if(el)el.disabled=!on;
   });
@@ -628,6 +663,91 @@ function construirDatosSoporte(){
   return {d,r};
 }
 
+function fechaMasAnosReporte(iso,anios){
+  const base=fechaISO(iso)||"";
+  if(!base)return "";
+  const [y,m,d]=base.slice(0,10).split("-").map(Number);
+  if(!y||!m||!d)return "";
+  const ultimo=new Date(Date.UTC(y+Number(anios||0),m,0)).getUTCDate();
+  return `${y+Number(anios||0)}-${String(m).padStart(2,"0")}-${String(Math.min(d,ultimo)).padStart(2,"0")}`;
+}
+function fechaMasDiasReporte(iso,dias){
+  const base=fechaISO(iso)||"";
+  if(!base)return "";
+  const d=new Date(`${base}T00:00:00Z`);
+  if(Number.isNaN(d.getTime()))return "";
+  d.setUTCDate(d.getUTCDate()+Number(dias||0));
+  return d.toISOString().slice(0,10);
+}
+function detalleSuspensionInteresesOficial(x,d){
+  const auto=fechaISO(d.fechaAutoAdmisorio)||"";
+  const prov=fechaISO(d.fechaProvidenciaDefinitiva)||"";
+  if(!auto)return [];
+  const finDos=fechaMasAnosReporte(auto,2);
+  const inicioSusp=fechaMasDiasReporte(finDos,1);
+  const pago=fechaISO(x.pago?.fecha)||"";
+  const detalleCuotas=Array.isArray(x.interesesPorCuota)?x.interesesPorCuota:[];
+  const fuente=detalleCuotas.length?detalleCuotas:[{vto:"GENERAL",tramos:Array.isArray(x.tramosInteres)?x.tramosInteres:[]}];
+  return fuente.map((cuota)=>{
+    const ts=Array.isArray(cuota.tramos)?cuota.tramos:[];
+    const normales=ts.filter(t=>t.tipo!=="SUSPENSION_INTERESES");
+    const susp=ts.find(t=>t.tipo==="SUSPENSION_INTERESES")||null;
+    const antes=normales.filter(t=>!inicioSusp||String(t.hasta||"")<=inicioSusp);
+    const despues=normales.filter(t=>prov&&String(t.desde||"")>=prov);
+    const diasAntes=antes.reduce((a,t)=>a+Number(t.dias||0),0);
+    const diasDespues=despues.reduce((a,t)=>a+Number(t.dias||0),0);
+    const interesAntes=antes.reduce((a,t)=>a+Number(t.valor||0),0);
+    const interesDespues=despues.reduce((a,t)=>a+Number(t.valor||0),0);
+    const diasSusp=susp?Number(susp.dias||0):0;
+    const suspendido=!!(susp&&inicioSusp&&prov&&prov>=inicioSusp&&pago>inicioSusp);
+    return {vto:cuota.vto||"GENERAL",auto,finDos,inicioSusp,prov,pago,suspendido,
+      inicioIntereses:antes[0]?.desde||cuota.fechaVencimiento||"",
+      finPrimerInteres:antes.length?antes[antes.length-1]?.hasta||"":"",
+      diasAntes,interesAntes,
+      inicioSuspension:susp?.desde||inicioSusp,
+      finSuspension:susp?.hasta||prov,
+      diasSusp,
+      reanudacion:despues[0]?.desde||((prov&&pago>prov)?prov:""),
+      finSegundoInteres:despues.length?despues[despues.length-1]?.hasta||pago:"",
+      diasDespues,interesDespues,
+      interesTotal:interesAntes+interesDespues};
+  });
+}
+function bloqueSuspensionInteresesPdf(x,d,i){
+  const detalles=detalleSuspensionInteresesOficial(x,d);
+  if(!detalles.length)return "";
+  const rows=detalles.map(t=>`<tr>
+    <td>${escPdf(t.vto)}</td>
+    <td>${escPdf(fechaVisible(t.inicioIntereses))}</td>
+    <td>${escPdf(fechaVisible(t.finPrimerInteres))}</td>
+    <td>${t.diasAntes}</td>
+    <td>${dinero(t.interesAntes)}</td>
+    <td>${escPdf(fechaVisible(t.inicioSuspension))}</td>
+    <td>${escPdf(fechaVisible(t.finSuspension))}</td>
+    <td>${t.diasSusp}</td>
+    <td>${escPdf(fechaVisible(t.reanudacion))}</td>
+    <td>${escPdf(fechaVisible(t.finSegundoInteres))}</td>
+    <td>${t.diasDespues}</td>
+    <td>${dinero(t.interesDespues)}</td>
+    <td>${dinero(t.interesTotal)}</td>
+  </tr>`).join("");
+  const haySusp=detalles.some(t=>t.suspendido);
+  const t0=detalles[0];
+  const nota=haySusp
+    ? `Auto admisorio: ${fechaVisible(t0.auto)} · cumplimiento de 2 años: ${fechaVisible(t0.finDos)} · suspensión desde: ${fechaVisible(t0.inicioSusp)} · ejecutoria/providencia definitiva: ${fechaVisible(t0.prov)} · reanudación: ${fechaVisible(t0.reanudacion||t0.prov)}.`
+    : `No se alcanzó a configurar la suspensión de intereses para este pago. Auto admisorio: ${fechaVisible(t0.auto)} · fecha de cumplimiento de 2 años: ${fechaVisible(t0.finDos)} · providencia definitiva: ${fechaVisible(t0.prov)}.`;
+  return `<div class="pdf-suspension-intereses"><h3>DESGLOSE DE INTERESES — LIQUIDACIÓN OFICIAL — ART. 634 PARÁGRAFO 2 E.T. — PAGO ${Number(i)+1}</h3><div class="pdf-suspension-descripcion">${escPdf(nota)} Los intereses se calculan antes del corte de dos años; durante la suspensión no se causan intereses; después de la ejecutoria se reanudan hasta el pago.</div><table><thead><tr><th>VENCIMIENTO</th><th>INICIO INTERÉS</th><th>FIN PRIMER TRAMO</th><th>DÍAS 1</th><th>INTERÉS 1</th><th>INICIO SUSP.</th><th>FIN SUSP. / EJECUTORIA</th><th>DÍAS SUSP.</th><th>REANUDACIÓN</th><th>FIN SEGUNDO TRAMO</th><th>DÍAS 2</th><th>INTERÉS 2</th><th>TOTAL INTERÉS</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function detalleSuspensionInteresesExcel(r,d){
+  const filas=[];
+  (r.detalle||[]).forEach((x,i)=>{
+    for(const t of detalleSuspensionInteresesOficial(x,d)){
+      filas.push([i+1,t.vto,t.auto,t.finDos,t.inicioIntereses,t.finPrimerInteres,t.diasAntes,t.interesAntes,t.inicioSuspension,t.finSuspension,t.diasSusp,t.reanudacion,t.finSegundoInteres,t.diasDespues,t.interesDespues,t.interesTotal]);
+    }
+  });
+  return filas;
+}
+
 function construirDetalleInteresesExport(r){
   const filas=[];
   (r.detalle||[]).forEach((x,i)=>{
@@ -756,6 +876,14 @@ function exportarExcel(){
     push(["PAGO","CUOTA","VENCIMIENTO","CAPITAL BASE","DESDE","HASTA","DÍAS DE MORA","TASA APLICADA","INTERÉS CALCULADO","METODOLOGÍA","SITUACIÓN"],{header:true});
     construirDetalleInteresesExport(r).forEach(row=>push(row,{money:[4,9],percent:[8]}));
 
+    if(String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"){
+      push([]);
+      push(["DESGLOSE DE INTERESES — LIQUIDACIÓN OFICIAL — ART. 634 PARÁGRAFO 2 E.T."],{title:true});
+      push(["PAGO","VENCIMIENTO","AUTO ADMISORIO","CUMPLE 2 AÑOS","INICIO INTERÉS","FIN PRIMER TRAMO","DÍAS 1","INTERÉS 1","INICIO SUSPENSIÓN","FIN SUSPENSIÓN / EJECUTORIA","DÍAS SUSPENSIÓN","REANUDACIÓN","FIN SEGUNDO TRAMO","DÍAS 2","INTERÉS 2","TOTAL INTERÉS"],{header:true});
+      detalleSuspensionInteresesExcel(r,d).forEach(row=>push(row,{money:[8,15,16],percent:[]}));
+      push(["CRITERIO DE SUSPENSIÓN","Los intereses continúan desde el vencimiento hasta el cumplimiento de los dos años contados desde la admisión de la demanda; luego se suspenden hasta la ejecutoria de la providencia definitiva y se reanudan desde esa fecha hasta el pago." ]);
+    }
+
     push([]);
     push(["ACTUALIZACIÓN DE SANCIÓN — ART. 867-1 E.T. — DETALLE POR PAGO"],{title:true});
     let huboActualizacionExcel=false;
@@ -841,10 +969,11 @@ function bloquePdfPago(x,i,d,r){
   const vtoPrincipal=vtos[0]||{};
   const rows=vtos.length?vtos.map(v=>`<tr><td>${escPdf(v.id)}</td><td>${escPdf(fechaVisible(v.fecha))}</td><td>${dinero(v.aplicado)}</td><td>${dinero(v.saldo)}</td></tr>`).join(""):"<tr><td colspan='4'>Sin aplicación por vencimiento</td></tr>";
   return `<article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>DETALLE DEL PAGO</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>
-  <div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(dvNIT(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>TASA A APLICAR</b><strong class="pdf-tasa">${x.tasaVisible==null?"—":Number(x.tasaVisible).toFixed(3)+"%"}</strong></div></div>
+  <div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(dvNIT(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"")}</strong></div><div class="pdf-dato"><b>FECHA AUTO ADMISORIO</b><strong>${escPdf(fechaVisible(d.fechaAutoAdmisorio))}</strong></div><div class="pdf-dato"><b>FECHA PROVIDENCIA DEFINITIVA</b><strong>${escPdf(fechaVisible(d.fechaProvidenciaDefinitiva))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>TASA A APLICAR</b><strong class="pdf-tasa">${x.tasaVisible==null?"—":Number(x.tasaVisible).toFixed(3)+"%"}</strong></div></div>
   <div class="pdf-obligacion"><div class="pdf-fila"><div class="pdf-celda"><b>VALOR IMPUESTO / DEUDA</b><strong>${dinero(impuestoBase)}</strong></div><div class="pdf-celda"><b>FECHA VENCIMIENTO</b><strong>${escPdf(fechaVisible(vtoPrincipal.fecha||r.vencimientos[0]?.fecha||""))}</strong></div><div class="pdf-celda"><b>FECHA PREVISTA DE PAGO</b><strong>${escPdf(fechaVisible(x.pago.fecha))}</strong></div><div class="pdf-celda"><b>¿TIENE SANCIÓN?</b><strong>${escPdf(d.tieneSancion)}</strong></div></div><div class="pdf-fila"><div class="pdf-celda pdf-observaciones" style="grid-column:span 4"><b>OBSERVACIONES</b><strong>${escPdf(x.pago.observacion||`PAGO N°${i+1} — ${x.pago.tipo||"TASA DIAN"}`)}</strong></div></div></div>
   <div class="pdf-beneficio"><b>TIPO DE TASA/BENEFICIO:</b> ${escPdf(x.tipoAplicado||"TASA DIAN")} · ${escPdf(x.notaBeneficio||"TASA DIAN ordinaria")}</div>
   ${tablaInteresesPdf(x,r)}
+  ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdf(x,d,i):""}
   ${bloqueActualizacionSancionPdf(x,i)}
   <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>EXCEDENTE:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -887,6 +1016,13 @@ function estilosPdf(){
   .pdf-intereses th:first-child,.pdf-intereses td:first-child{text-align:center}
   .pdf-intereses thead th{background:#eef4f8;font-size:8.5pt}
   .pdf-intereses tfoot th{background:#e8f1f6;font-weight:700;font-size:9pt}
+  .pdf-suspension-intereses{margin:1.5mm 2mm;border:1px solid #8da6b7;break-inside:avoid;page-break-inside:avoid}
+  .pdf-suspension-intereses h3{font-size:9.5pt;margin:0;padding:1.25mm;background:#dceaf4;color:#17324d}
+  .pdf-suspension-descripcion{padding:1.1mm 1.5mm;font-size:7.8pt;line-height:1.1;background:#f8fbfc;border-bottom:1px solid #b7c4cc}
+  .pdf-suspension-intereses table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pdf-suspension-intereses th,.pdf-suspension-intereses td{border:1px solid #b7c4cc;padding:.85mm;font-size:6.7pt;line-height:1.0;text-align:right;white-space:nowrap}
+  .pdf-suspension-intereses th:first-child,.pdf-suspension-intereses td:first-child{text-align:center}
+  .pdf-suspension-intereses thead th{background:#eef4f8;font-size:6.4pt}
   .pdf-pago{margin:1.5mm 2mm 0;border:1px solid #78a2bc}
   .pdf-pago-titulo{text-align:center;font-weight:700;font-size:11pt;padding:1.5mm;background:#e8f1f6;border-bottom:1px solid #78a2bc}
   .pdf-tabla{width:100%;border-collapse:collapse}
@@ -1018,6 +1154,8 @@ function validarVigenciaBeneficiosUI(d){
 function calcular(){
   try{
     const d=leerFormulario();
+    if(!d.tipoLiquidacion)throw new Error("Seleccione el tipo de liquidación: PRIVADA u OFICIAL.");
+    if(!["PRIVADA","OFICIAL"].includes(d.tipoLiquidacion))throw new Error("El tipo de liquidación debe ser PRIVADA u OFICIAL.");
     // Los datos generales de la obligación (NIT, año, concepto, período y razón social)
     // son informativos y no bloquean la liquidación. El único dato obligatorio
     // de esta sección es indicar si existe sanción. Para una liquidación
@@ -1056,7 +1194,7 @@ function limpiar(){
   });
   // Estado inicial: el funcionario puede elegir SI o NO. Al elegir SI,
   // habilitarSancion() libera inmediatamente los campos de captura.
-  ["valorSancion","fechaSancion","origenSancion","beneficioSancion"].forEach(id=>{
+  ["valorSancion","fechaSancion","beneficioSancion"].forEach(id=>{
     const el=$(id);
     if(el)el.disabled=true;
   });
@@ -1070,6 +1208,13 @@ function limpiar(){
 function aplicarImportacion(obj){
   if(obj.nit)$("nit").value=String(obj.nit).replace(/\D/g,"");
   if(obj.razonSocial)$("razonSocial").value=upper(obj.razonSocial);
+  if(obj.tipoLiquidacion&&$("tipoLiquidacion")){
+    const tipoImportado=upper(obj.tipoLiquidacion);
+    $("tipoLiquidacion").value=tipoImportado.includes("OFICIAL")?"OFICIAL":tipoImportado.includes("PRIVADA")?"PRIVADA":"";
+  }
+  actualizarCamposTipoLiquidacion();
+  if(obj.fechaAutoAdmisorio&&$("fechaAutoAdmisorio")){const iso=fechaISO(obj.fechaAutoAdmisorio);$("fechaAutoAdmisorio").value=fechaVisible(iso);if($("fechaAutoAdmisorioPicker"))$("fechaAutoAdmisorioPicker").value=iso;}
+  if(obj.fechaProvidenciaDefinitiva&&$("fechaProvidenciaDefinitiva")){const iso=fechaISO(obj.fechaProvidenciaDefinitiva);$("fechaProvidenciaDefinitiva").value=fechaVisible(iso);if($("fechaProvidenciaDefinitivaPicker"))$("fechaProvidenciaDefinitivaPicker").value=iso;}
   if(obj.anio)$("anio").value=obj.anio;
   if(obj.concepto)$("concepto").value=upper(obj.concepto);
   if(obj.periodo)$("periodo").value=obj.periodo;
@@ -1077,7 +1222,6 @@ function aplicarImportacion(obj){
   if(obj.tieneSancion)$("tieneSancion").value=upper(obj.tieneSancion)==="SI"?"SI":"NO";
   if(obj.valorSancion)$("valorSancion").value=dinero(obj.valorSancion);
   if(obj.fechaSancion){const iso=fechaISO(obj.fechaSancion);$("fechaSancion").value=fechaVisible(iso);if($("fechaSancionPicker"))$("fechaSancionPicker").value=iso;}
-  if(obj.origenSancion)$("origenSancion").value=upper(obj.origenSancion);
   if(obj.beneficioSancion)$("beneficioSancion").value=upper(obj.beneficioSancion);
   if(obj.beneficioTributario&&$("beneficioTributario"))$("beneficioTributario").value=upper(obj.beneficioTributario);
   if(obj.fechaActuacionBeneficio&&$("fechaActuacionBeneficio"))$("fechaActuacionBeneficio").value=fechaVisible(obj.fechaActuacionBeneficio);
@@ -1127,13 +1271,16 @@ function configurarBase(){
   $("anio").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"");habilitarSancion();actualizarSancionMinimaUI();renderCalendario();});
   $("concepto").addEventListener("change",()=>{renderMetadatosConcepto();renderVencimientos();renderCalendario();});
   $("periodo").addEventListener("change",renderCalendario);
+  $("tipoLiquidacion").addEventListener("change",()=>{seleccionarMotorPorTipo();actualizarCamposTipoLiquidacion();actualizarSancionMinimaUI();});
   $("tieneSancion").addEventListener("change",()=>{estadoSancionUI.tiene=$("tieneSancion").value;habilitarSancion();});
   $("valorSancion").addEventListener("input",()=>{estadoSancionUI.valor=$("valorSancion").value;});
   $("valorSancion").addEventListener("blur",()=>{dineroCampo("valorSancion");capturarSancionUI();});
-  $("fechaSancion").addEventListener("blur",()=>{fechaCampo("fechaSancion");capturarSancionUI();});
-  $("origenSancion").addEventListener("change",capturarSancionUI);
+  $("fechaSancion").addEventListener("blur",()=>{fechaCampo("fechaSancion");capturarSancionUI();actualizarSancionMinimaUI();});
   $("beneficioSancion").addEventListener("change",()=>{capturarSancionUI();actualizarSancionMinimaUI();});
   sincronizarFechaDual("fechaSancion","fechaSancionPicker",()=>{});
+  sincronizarFechaDual("fechaAutoAdmisorio","fechaAutoAdmisorioPicker",()=>{});
+  sincronizarFechaDual("fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker",()=>{});
+  actualizarCamposTipoLiquidacion();
   $("btnCalcular").addEventListener("click",calcular);
   $("btnLimpiar").addEventListener("click",limpiar);
   $("btnAgregarPago").addEventListener("click",()=>agregarPago());

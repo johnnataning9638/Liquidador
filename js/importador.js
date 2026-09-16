@@ -43,7 +43,6 @@ const alias={
   tieneSancion:["tiene sancion","tiene sanción","sancion"],
   valorSancion:["valor sancion","valor sanción","sancion a pagar"],
   fechaSancion:["fecha sancion","fecha sanción"],
-  origenSancion:["origen sancion","origen sanción"],
   beneficioSancion:["beneficio sancion","beneficio sanción"],
   beneficioTributario:["beneficio tributario","beneficio decreto","decreto 0240","beneficio art 4","articulo 4 decreto 0240","artículo 4 decreto 0240"],
   fechaActuacionBeneficio:["fecha actuacion beneficio","fecha actuación beneficio","fecha presentacion beneficio","fecha presentación beneficio","fecha correccion beneficio","fecha corrección beneficio"],
@@ -199,7 +198,6 @@ export function importarDatosInteligente(texto){
   obligacion.tieneSancion=upper(get("tieneSancion"))==="SI"?"SI":"NO";
   obligacion.valorSancion=numeroDesdeTexto(get("valorSancion"));
   obligacion.fechaSancion=fechaISO(get("fechaSancion"));
-  obligacion.origenSancion=upper(get("origenSancion"));
   obligacion.beneficioSancion=upper(get("beneficioSancion"));
   obligacion.beneficioTributario=upper(get("beneficioTributario"));
   obligacion.fechaActuacionBeneficio=fechaISO(get("fechaActuacionBeneficio"));

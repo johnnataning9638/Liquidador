@@ -48,6 +48,8 @@ export class MotorLiquidacion{
       advertencias.push("No existe una regla normativa específica registrada para el concepto seleccionado; no se autogeneran vencimientos.");
       return {valida:false,regla:null,errores,advertencias};
     }
+    if(!String(datos.tipoLiquidacion||"").trim()) errores.push("Debe seleccionar el tipo de liquidación: PRIVADA u OFICIAL.");
+    if(!["PRIVADA","OFICIAL"].includes(String(datos.tipoLiquidacion||"").trim().toUpperCase())) errores.push("El tipo de liquidación debe ser PRIVADA u OFICIAL.");
     // NIT y demás datos generales de obligación son informativos; no bloquean la liquidación.
     // REAJUSTE 16.17: perfil del contribuyente y periodicidad son datos
     // auxiliares de referencia/calendario, pero NO son campos obligatorios
@@ -402,6 +404,16 @@ export class MotorLiquidacion{
     return {tasa:tim,factor:1,tasaFija:null,beneficio:null,reduceSancion:false,factorSancion:1,nota:"TASA DIAN ordinaria"};
   }
 
+  anioSancionParaMinima(datos,esArt20o3=false){
+    const fecha=fechaISO(datos?.fechaSancion)||"";
+    if(esArt20o3){
+      const anio=Number(fecha.slice(0,4));
+      return anio||2026;
+    }
+    const vtos=this.normalizarVencimientos(datos);
+    return Number(String(vtos[0]?.fecha||fecha||"").slice(0,4))||Number(datos?.anio||0);
+  }
+
   sancionConBeneficio(sancionActual,datos,especial,{habilitado=true}={}){
     const actual=Math.max(0,Number(sancionActual||0));
     if(!actual || !especial?.reduceSancion || !habilitado)return actual;
@@ -410,8 +422,9 @@ export class MotorLiquidacion{
     // ACTUALIZACION al 15%. La base para la reducción es la sanción ya
     // actualizada a la fecha del pago. Si el 15% resulta inferior a la
     // sanción mínima del año en que fue liquidada, se aplica la mínima.
-    const vtos=this.normalizarVencimientos(datos);
-    const anioMinima=Number(String(vtos[0]?.fecha||"").slice(0,4))||Number(datos.anio||0);
+    const tPagos=(datos?.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
+    const esArt20o3=tPagos.some(t=>t.includes("ART. 20 DECRETO 1474")||t.includes("ART. 3 DECRETO 0240"));
+    const anioMinima=this.anioSancionParaMinima(datos,esArt20o3);
     const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
     const factor=Number(especial.factorSancion||1);
     const reducida=roundMil(actual*factor);
@@ -601,7 +614,9 @@ export class MotorLiquidacion{
     // la actualización anual por Art. 867-1 cuando corresponda.
     let saldoSancion=sancionBaseOriginal;
     if(saldoSancion>0){
-      const anioMinimaInicial=Number(String(saldosVto[0]?.fecha||fechaSancion||"").slice(0,4))||Number(datos.anio||0);
+      const anioMinimaInicial=esArt20o3
+        ?(Number(fechaSancion.slice(0,4))||2026)
+        :(Number(String(saldosVto[0]?.fecha||fechaSancion||"").slice(0,4))||Number(datos.anio||0));
       const minimaInicial=this.sancionMinima(anioMinimaInicial);
       if(minimaInicial>0 && saldoSancion<minimaInicial){
         saldoSancion=minimaInicial;
@@ -773,7 +788,7 @@ export class MotorLiquidacion{
       if(!primerBeneficioDecretoUsado && especial.reduceSancion &&
          (String(pago.tipo||"").toUpperCase().includes("ART. 20 DECRETO 1474") ||
           String(pago.tipo||"").toUpperCase().includes("ART. 3 DECRETO 0240")) && saldoSancion>0){
-        const anioMinima=Number(String(saldosVto[0]?.fecha||fechaSancion||"").slice(0,4))||Number(datos.anio||0);
+        const anioMinima=this.anioSancionParaMinima(datos,true);
         const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
         const saldoActualizado=Number(saldoSancion||0);
         const reducido=roundMil(saldoActualizado*Number(especial.factorSancion||0.15));
