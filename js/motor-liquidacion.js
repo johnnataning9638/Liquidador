@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.32.16";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.16";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.32.21";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.21";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -616,21 +616,14 @@ export class MotorLiquidacion{
       t.includes("ART. 20 DECRETO 1474") ||
       t.includes("ART. 3 DECRETO 0240")
     );
-    // La sanción que llega desde la declaración ya incorpora, cuando corresponde,
-    // la reducción que hizo el contribuyente. El motor NO vuelve a aplicar 15 %.
-    // Única excepción: si el valor declarado es inferior a la sanción mínima del
-    // año de la declaración, se eleva a esa mínima. A partir de allí se conserva
-    // la actualización anual por Art. 867-1 cuando corresponda.
+    // LIQUIDACIÓN PRIVADA — REGLA DE SANCIÓN BASE
+    // La sanción digitada en la declaración es la sanción base y se conserva
+    // exactamente como fue registrada. Ser inferior a la sanción mínima NO
+    // activa por sí mismo una actualización ni permite elevarla a la mínima.
+    // La sanción mínima solo puede intervenir en los tratamientos que ya tienen
+    // una regla normativa específica de reducción/beneficio; no se aplica aquí
+    // como piso automático para una liquidación privada ordinaria.
     let saldoSancion=sancionBaseOriginal;
-    if(saldoSancion>0){
-      const anioMinimaInicial=esArt20o3
-        ?(Number(fechaSancion.slice(0,4))||2026)
-        :(Number(String(saldosVto[0]?.fecha||fechaSancion||"").slice(0,4))||Number(datos.anio||0));
-      const minimaInicial=this.sancionMinima(anioMinimaInicial);
-      if(minimaInicial>0 && saldoSancion<minimaInicial){
-        saldoSancion=minimaInicial;
-      }
-    }
     let fechaUltimaActualizacionSancion=fechaSancion;
     let detalleActualizacionSancion=[];
     let advertenciasSancion=[];
@@ -750,7 +743,19 @@ export class MotorLiquidacion{
       // La sanción base es definitiva: primero se actualiza únicamente el
       // saldo pendiente, y después se procesa el pago. Nunca se reconstruye
       // la sanción desde la base tributaria ni desde la sanción mínima.
-      if(saldoSancion>0 && fechaSancion && pago.fecha>fechaSancion){
+      // En liquidación privada la actualización anual no se ejecuta antes de
+      // la fecha efectiva de primera actualización (1 de enero del año siguiente
+      // a aquel en que se completó un año desde la fecha base). Esto se controla
+      // aquí además del módulo ActualizadorSancion para impedir cualquier camino
+      // alterno que pueda actualizar una sanción privada dentro del primer año.
+      const esLiquidacionPrivada=String(datos.tipoLiquidacion||"").toUpperCase()==="PRIVADA";
+      const fechaPrimeraActualizacionPrivada=fechaSancion
+        ?`${Number(this.actualizadorSancion.sumarUnAnio(fechaSancion).slice(0,4))+1}-01-01`
+        :"";
+      const puedeActualizarSancionPrivada=!esLiquidacionPrivada
+        ||(fechaPrimeraActualizacionPrivada && pago.fecha>=fechaPrimeraActualizacionPrivada);
+
+      if(saldoSancion>0 && fechaSancion && pago.fecha>fechaSancion && puedeActualizarSancionPrivada){
         // IMPORTANTE: se parte siempre de la fecha original de sanción, pero
         // se excluyen las vigencias anuales ya aplicadas en pagos anteriores.
         // Así, si P2 y P3 son del mismo año, P3 NO vuelve a actualizar la

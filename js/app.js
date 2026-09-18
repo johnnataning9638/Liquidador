@@ -1,13 +1,13 @@
-import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.19";
-import {importarDatosInteligente} from "./importador.js?v=16.32.19";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.19";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.19";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.19";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.19";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.19";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.19";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.19";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.19";
+import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.21";
+import {importarDatosInteligente} from "./importador.js?v=16.32.21";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.21";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.21";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.21";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.21";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.21";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.21";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.21";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.21";
 
 const $=id=>document.getElementById(id);
 const N=6;
@@ -297,7 +297,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.19"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.21"});
   $("estadoSistema").textContent="Parámetros históricos cargados";
   $("estadoSistema").classList.add("ok");
 }
@@ -905,7 +905,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.19"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.21"],{title:true});
     push([]);
     push(["NIT",d.nit||"","DV",dvNIT(d.nit),"RAZÓN SOCIAL",d.razonSocial||""]);
     push(["AÑO GRAVABLE",d.anio||"","CONCEPTO",d.concepto||"","PERÍODO",d.periodo||""]);
@@ -1022,9 +1022,18 @@ function bloquePdfPago(x,i,d,r){
   const impuestoBase=x.deudaAntes?.impuesto||0;
   const vtoPrincipal=vtos[0]||{};
   const rows=vtos.length?vtos.map(v=>`<tr><td>${escPdf(v.id)}</td><td>${escPdf(fechaVisible(v.fecha))}</td><td>${dinero(v.aplicado)}</td><td>${dinero(v.saldo)}</td></tr>`).join(""):"<tr><td colspan='4'>Sin aplicación por vencimiento</td></tr>";
+  // Identificador del documento de pago: se prioriza el RECIBO DE PAGO;
+  // si no existe, se utiliza el número TDJ. No se inventa ningún número.
+  const reciboPago=String(x.pago?.recibo||"").trim();
+  const tdj=String(x.pago?.tdj||"").trim();
+  const identificadorPago=reciboPago
+    ? {etiqueta:"RECIBO DE PAGO",valor:reciboPago}
+    : tdj
+      ? {etiqueta:"TDJ",valor:tdj}
+      : {etiqueta:"RECIBO DE PAGO",valor:""};
   return `<article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>DETALLE DEL PAGO</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>
   <div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(dvNIT(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"")}</strong></div><div class="pdf-dato"><b>FECHA DE PRESENTACIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato"><b>FECHA AUTO ADMISORIO</b><strong>${escPdf(fechaVisible(d.fechaAutoAdmisorio))}</strong></div><div class="pdf-dato"><b>FECHA PROVIDENCIA DEFINITIVA</b><strong>${escPdf(fechaVisible(d.fechaProvidenciaDefinitiva))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>TASA A APLICAR</b><strong class="pdf-tasa">${x.tasaVisible==null?"—":Number(x.tasaVisible).toFixed(3)+"%"}</strong></div></div>
-  <div class="pdf-obligacion"><div class="pdf-fila"><div class="pdf-celda"><b>VALOR IMPUESTO / DEUDA</b><strong>${dinero(impuestoBase)}</strong></div><div class="pdf-celda"><b>FECHA VENCIMIENTO</b><strong>${escPdf(fechaVisible(vtoPrincipal.fecha||r.vencimientos[0]?.fecha||""))}</strong></div><div class="pdf-celda"><b>FECHA PREVISTA DE PAGO</b><strong>${escPdf(fechaVisible(x.pago.fecha))}</strong></div><div class="pdf-celda"><b>¿TIENE SANCIÓN?</b><strong>${escPdf(d.tieneSancion)}</strong></div></div><div class="pdf-fila"><div class="pdf-celda pdf-observaciones" style="grid-column:span 4"><b>OBSERVACIONES</b><strong>${escPdf(x.pago.observacion||`PAGO N°${i+1} — ${x.pago.tipo||"TASA DIAN"}`)}</strong></div></div></div>
+  <div class="pdf-obligacion"><div class="pdf-fila"><div class="pdf-celda"><b>VALOR IMPUESTO / DEUDA</b><strong>${dinero(impuestoBase)}</strong></div><div class="pdf-celda"><b>FECHA VENCIMIENTO</b><strong>${escPdf(fechaVisible(vtoPrincipal.fecha||r.vencimientos[0]?.fecha||""))}</strong></div><div class="pdf-celda"><b>FECHA PREVISTA DE PAGO</b><strong>${escPdf(fechaVisible(x.pago.fecha))}</strong></div><div class="pdf-celda"><b>¿TIENE SANCIÓN?</b><strong>${escPdf(d.tieneSancion)}</strong></div></div><div class="pdf-fila"><div class="pdf-celda"><b>${identificadorPago.etiqueta}</b><strong>${escPdf(identificadorPago.valor)}</strong></div><div class="pdf-celda pdf-observaciones" style="grid-column:span 3"><b>OBSERVACIONES</b><strong>${escPdf(x.pago.observacion||`PAGO N°${i+1} — ${x.pago.tipo||"TASA DIAN"}`)}</strong></div></div></div>
   <div class="pdf-beneficio"><b>TIPO DE TASA/BENEFICIO:</b> ${escPdf(x.tipoAplicado||"TASA DIAN")} · ${escPdf(x.notaBeneficio||"TASA DIAN ordinaria")}</div>
   ${tablaInteresesPdf(x,r)}
   ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdf(x,d,i):""}
