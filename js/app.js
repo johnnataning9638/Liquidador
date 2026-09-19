@@ -491,9 +491,16 @@ function renderPagos(){
     tr.querySelectorAll("[data-k]").forEach(el=>{
       const sincronizar=()=>{
         const k=el.dataset.k;
-        if(k==="valor"){p.valor=numeroDesdeTexto(el.value);}
-        else if(k==="tipo"){p.tipo=upper(el.value);}
-        else p[k]=upper(el.value);
+        if(k==="valor"){
+          p.valor=numeroDesdeTexto(el.value);
+        }
+        else if(k==="tipo"){
+          p.tipo=upper(el.value);
+          actualizarTasaVisiblePago(tr,p);
+        }
+        else{
+          p[k]=upper(el.value);
+        }
       };
       // TDJ se sincroniza en cada pulsación, no solo al perder el foco.
       // Así el motor nunca entra por la ruta de proporcionalidad por haber
