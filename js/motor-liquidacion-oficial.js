@@ -1,5 +1,5 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.32.16";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.16";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.32.30";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -29,8 +29,6 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     }
     const auto=fechaISO(datos.fechaAutoAdmisorio)||"";
     const prov=fechaISO(datos.fechaProvidenciaDefinitiva)||"";
-    if(!auto) errores.push("Para una liquidación oficial debe registrar la fecha de auto admisorio.");
-    if(!prov) errores.push("Para una liquidación oficial debe registrar la fecha de providencia definitiva (ejecutoria).");
     if(auto&&prov&&prov<auto) errores.push("La fecha de providencia definitiva no puede ser anterior a la fecha de auto admisorio.");
     if(auto&&prov){
       const suspension=this.sumarAnos(auto,2);
@@ -232,6 +230,53 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       });
 
       const deudaAntes={impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:intCalc.liquidado,sancion:Math.max(0,saldoSancion)};
+      // TDJ de cuantía mínima: todo TDJ <= $1.000 se imputa exclusivamente
+      // a intereses, conservando exactamente el valor digitado. Se omite la
+      // proporcionalidad para impedir que $157 termine convertido en $1.000.
+      const esTDJMinimo=String(pago.tdj||"").trim()!=="" && Number(pago.valor||0)>0 && Number(pago.valor||0)<=1000;
+      if(esTDJMinimo){
+        const valorTDJ=Number(pago.valor||0);
+        const interesesDisponibles=Math.max(0,Number(intCalc.liquidado||0));
+        const aplicadoIntereses=Math.min(valorTDJ,interesesDisponibles);
+        const aplicacionesVto=[];
+        if(aplicadoIntereses>0){
+          const vtoInteres=intCalc.porVto.find(x=>Number(x.interes||0)>0);
+          if(vtoInteres){
+            const v=vencimientos.find(x=>x.id===vtoInteres.id);
+            aplicacionesVto.push({id:vtoInteres.id,aplicado:0,aplicadoIntereses:aplicadoIntereses,aplicadoSancion:0,saldo:v?.saldo??0});
+          }
+        }
+        saldoIntereses=Math.max(0,interesesDisponibles-aplicadoIntereses);
+        const excedente=Math.max(0,valorTDJ-aplicadoIntereses);
+        excedenteTotal+=excedente;
+        const aplicado={impuesto:0,intereses:aplicadoIntereses,sancion:0,total:aplicadoIntereses,excedente,porcentaje:0,tipoProporcion:"TDJ <= $1.000 — SOLO INTERESES"};
+        actualizacionSancionPago.saldoDespues=roundMil(saldoSancion);
+        detalle.push({
+          pago,
+          tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,
+          tasaVisible:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,
+          tipoAplicado:pago.tipo||"TASA DIAN",
+          beneficio:especial.beneficio?.id||null,
+          notaBeneficio:especial.nota,
+          interesGenerado:intCalc.liquidado,
+          interesLiquidado:intCalc.liquidado,
+          tramosInteres:intCalc.tramos,
+          interesesPorCuota,
+          deudaAntes,
+          aplicado,
+          excedente,
+          aplicacionesVto,
+          actualizacionSancion:actualizacionSancionPago,
+          saldo:{
+            impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),
+            intereses:saldoIntereses,
+            sancion:Math.max(0,saldoSancion),
+            total:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0)+saldoIntereses+Math.max(0,saldoSancion)
+          }
+        });
+        continue;
+      }
+
       const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha);
       const impuestoExigible=vencimientosExigibles.reduce((a,v)=>a+Math.max(0,v.saldo),0);
       const interesesExigibles=intCalc.porVto.filter(x=>vencimientosExigibles.some(v=>v.id===x.id)).reduce((a,x)=>a+Math.max(0,Number(x.interes||0)),0);

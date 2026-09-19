@@ -1,13 +1,13 @@
-import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.21";
-import {importarDatosInteligente} from "./importador.js?v=16.32.21";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.21";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.21";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.21";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.21";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.21";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.21";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.21";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.21";
+import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.30";
+import {importarDatosInteligente} from "./importador.js?v=16.32.31";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.30";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.30";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.30";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.30";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.30";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.30";
 
 const $=id=>document.getElementById(id);
 const N=6;
@@ -276,6 +276,8 @@ async function actualizarDesdeDIAN(){
 }
 
 async function cargarDatos(){
+  const estado=$("estadoSistema");
+  if(estado){estado.className="indicador-parametros cargando";estado.title="Cargando parámetros";estado.setAttribute("aria-label","Cargando parámetros");}
   let normativoData;
   [uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones,calendarioData,normativoData]=await Promise.all([
     fetch("datos/uvt.json").then(r=>r.json()),
@@ -297,19 +299,20 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.21"});
-  $("estadoSistema").textContent="Parámetros históricos cargados";
-  $("estadoSistema").classList.add("ok");
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.30"});
+  if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
 function opcionesTipo(actual){return TIPOS.map(t=>`<option value="${esc(t)}" ${actual===t?"selected":""}>${esc(t)}</option>`).join("");}
 function dineroCampo(id){const el=$(id);if(!el)return;const n=numeroDesdeTexto(el.value);el.value=n?dinero(n):"";}
-function fechaCampo(id){const el=$(id);if(!el)return "";const raw=String(el.value||"").trim();if(!raw)return "";const iso=fechaISO(raw);if(!iso){alert("Fecha no válida. Usa DD/MM/AAAA.");el.value="";return "";}el.value=fechaVisible(iso);return iso;}
+function fechaCampo(id){const el=$(id);if(!el)return "";const raw=String(el.value||"").trim();if(!raw)return "";const iso=fechaISO(raw);if(!iso){alert("Fecha no válida. Usa DD/MM/AA o DD/MM/AAAA.");el.value="";return "";}el.value=fechaVisible(iso);return iso;}
 function sincronizarFechaDual(textId,pickerId,onChange=()=>{}){
   const text=$(textId),picker=$(pickerId);if(!text||!picker)return;
   const aplicar=iso=>{const valido=fechaISO(iso);if(valido){text.value=fechaVisible(valido);picker.value=valido;onChange(valido);}else if(!String(iso||"").trim()){text.value="";picker.value="";onChange("");}};
   picker.addEventListener("change",()=>aplicar(picker.value));
-  text.addEventListener("blur",()=>{const iso=fechaCampo(textId);if(iso)picker.value=iso;else if(!text.value.trim())picker.value="";onChange(iso||"");});
+  const confirmar=()=>{const iso=fechaCampo(textId);if(iso)picker.value=iso;else if(!text.value.trim())picker.value="";onChange(iso||"");};
+  text.addEventListener("blur",confirmar);
+  text.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();confirmar();const focusables=[...document.querySelectorAll("input:not([disabled]):not([readonly]),select:not([disabled]),textarea:not([disabled]),button:not([disabled])")];const i=focusables.indexOf(text);if(i>=0&&focusables[i+1])focusables[i+1].focus();}});
   picker.addEventListener("click",()=>{try{if(typeof picker.showPicker==="function")picker.showPicker();}catch{}});
 }
 function montarFechaDual(root,onChange=()=>{}){
@@ -326,10 +329,12 @@ function montarFechaDual(root,onChange=()=>{}){
       if(iso){picker.value=iso;onChange(iso);}
     }
   });
-  text.addEventListener("blur",()=>{const iso=fechaCampo(text.id);if(iso)picker.value=iso;else if(!text.value.trim())picker.value="";onChange(iso||"");});
+  const confirmar=()=>{const iso=fechaCampo(text.id);if(iso)picker.value=iso;else if(!text.value.trim())picker.value="";onChange(iso||"");};
+  text.addEventListener("blur",confirmar);
+  text.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();confirmar();const focusables=[...document.querySelectorAll("input:not([disabled]):not([readonly]),select:not([disabled]),textarea:not([disabled]),button:not([disabled])")];const i=focusables.indexOf(text);if(i>=0&&focusables[i+1])focusables[i+1].focus();}});
   picker.addEventListener("click",()=>{try{if(typeof picker.showPicker==="function")picker.showPicker();}catch{}});
 }
-function campoFechaHtml({idText,idPicker,value="",clase=""}){const iso=fechaISO(value);return `<div class="fecha-dual"><input id="${esc(idText)}" class="fecha-campo ${esc(clase)}" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="${esc(fechaVisible(iso))}"><input id="${esc(idPicker)}" class="fecha-native" type="date" aria-label="Abrir calendario" title="Abrir calendario" value="${esc(iso)}"></div>`;}
+function campoFechaHtml({idText,idPicker,value="",clase=""}){const iso=fechaISO(value);return `<div class="fecha-dual"><input id="${esc(idText)}" class="fecha-campo ${esc(clase)}" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa" value="${esc(fechaVisible(iso))}"><input id="${esc(idPicker)}" class="fecha-native" type="date" aria-label="Abrir calendario" title="Abrir calendario" value="${esc(iso)}"></div>`;}
 
 function actualizarCamposTipoLiquidacion(){
   const tipo=upper($("tipoLiquidacion")?.value||"");
@@ -350,7 +355,26 @@ function actualizarCamposTipoLiquidacion(){
   }
 }
 
+function sincronizarPagosDesdeDOM(){
+  const filas=[...document.querySelectorAll("#tablaPagos tbody tr")];
+  filas.forEach((tr,i)=>{
+    const p=pagos[i];
+    if(!p)return;
+    tr.querySelectorAll("[data-k]").forEach(el=>{
+      const k=el.dataset.k;
+      if(k==="valor")p.valor=numeroDesdeTexto(el.value);
+      else if(k==="tipo")p.tipo=upper(el.value);
+      else p[k]=upper(el.value);
+    });
+    const fecha=tr.querySelector(`#fechaPago-${p.id}`);
+    if(fecha)p.fecha=fechaISO(fecha.value)||p.fecha||"";
+  });
+}
+
 function leerFormulario(){
+  // Sincronización final antes de calcular: captura TDJ/valor aunque el
+  // usuario pulse "Liquidar" inmediatamente después de escribirlos.
+  sincronizarPagosDesdeDOM();
   const concepto=upper($("concepto").value);
   const periodicidad=concepto==="SIMPLE"?"ANTICIPO BIMESTRAL":upper($("periodicidadObligacion")?.value||"");
   return {
@@ -463,12 +487,19 @@ function renderPagos(){
   pagos.forEach((p,i)=>{
     const tr=document.createElement("tr"),tasa=tasaParaPago(p);
     tr.innerHTML=`<td>${i+1}</td><td><input data-k="tdj" value="${esc(p.tdj||"")}"></td><td><input data-k="recibo" value="${esc(p.recibo||"")}"></td><td>${campoFechaHtml({idText:`fechaPago-${p.id}`,idPicker:`fechaPagoPicker-${p.id}`,value:p.fecha,clase:"fecha-pago"})}</td><td><input data-k="valor" class="money" inputmode="numeric" value="${p.valor?dinero(p.valor):""}" placeholder="$ 0"></td><td><select data-k="tipo">${opcionesTipo(p.tipo)}</select></td><td>${tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%"}</td><td><input data-k="observacion" value="${esc(p.observacion||"")}"></td><td><button class="peligro" data-del="1">Eliminar</button></td>`;
-    tr.querySelectorAll("[data-k]").forEach(el=>el.addEventListener("change",()=>{
-      const k=el.dataset.k;
-      if(k==="valor"){p.valor=numeroDesdeTexto(el.value);el.value=p.valor?dinero(p.valor):"";}
-      else if(k==="tipo"){p.tipo=upper(el.value);renderPagos();}
-      else p[k]=upper(el.value);
-    }));
+    tr.querySelectorAll("[data-k]").forEach(el=>{
+      const sincronizar=()=>{
+        const k=el.dataset.k;
+        if(k==="valor"){p.valor=numeroDesdeTexto(el.value);}
+        else if(k==="tipo"){p.tipo=upper(el.value);}
+        else p[k]=upper(el.value);
+      };
+      // TDJ se sincroniza en cada pulsación, no solo al perder el foco.
+      // Así el motor nunca entra por la ruta de proporcionalidad por haber
+      // quedado el número TDJ pendiente de un evento change.
+      el.addEventListener("input",sincronizar);
+      el.addEventListener("change",()=>{sincronizar();if(el.dataset.k==="valor")el.value=p.valor?dinero(p.valor):"";});
+    });
     montarFechaDual(tr,iso=>{p.fecha=iso||"";actualizarTasaVisiblePago(tr,p);});
     tr.querySelector("[data-del]").addEventListener("click",()=>{pagos=pagos.filter(x=>x.id!==p.id);renderPagos();});
     tbody.appendChild(tr);
@@ -524,13 +555,13 @@ function actualizarSancionMinimaUI(){
 function habilitarSancion(){
   const tiene=$("tieneSancion");
   if(!tiene)return;
-  const on=upper(tiene.value)==="SI";
+  // La sanción se mantiene siempre editable. SI/NO controla su participación
+  // en el cálculo, pero no bloquea la captura manual del valor, fecha o beneficio.
   ["valorSancion","fechaSancion","beneficioSancion"].forEach(id=>{
     const el=$(id);
-    if(el)el.disabled=!on;
+    if(el)el.disabled=false;
   });
   actualizarSancionMinimaUI();
-  // Se captura después de aplicar el estado real de los controles.
   capturarSancionUI();
 }
 
@@ -905,7 +936,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.21"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.24"],{title:true});
     push([]);
     push(["NIT",d.nit||"","DV",dvNIT(d.nit),"RAZÓN SOCIAL",d.razonSocial||""]);
     push(["AÑO GRAVABLE",d.anio||"","CONCEPTO",d.concepto||"","PERÍODO",d.periodo||""]);
@@ -1219,6 +1250,15 @@ function validarVigenciaBeneficiosUI(d){
   return errores;
 }
 
+function actualizarEstadoIndicador(modo,titulo){
+  const el=$("estadoSistema");
+  if(!el)return;
+  el.className=`indicador-parametros ${modo}`;
+  el.title=titulo||"";
+  el.setAttribute("aria-label",titulo||"");
+  el.textContent="";
+}
+
 function calcular(){
   try{
     const d=leerFormulario();
@@ -1241,7 +1281,7 @@ function calcular(){
     pintarInforme(r);
     renderVencimientos();
     renderAuditoria();
-    $("estadoSistema").textContent=`Liquidación procesada: ${r.detalle.length} pago(s)`;
+    actualizarEstadoIndicador("listo",`Parámetros cargados · Liquidación procesada: ${r.detalle.length} pago(s)`);
   }catch(e){console.error(e);alert(e.message||"No fue posible calcular la liquidación.");}
 }
 
@@ -1262,10 +1302,6 @@ function limpiar(){
   });
   // Estado inicial: el funcionario puede elegir SI o NO. Al elegir SI,
   // habilitarSancion() libera inmediatamente los campos de captura.
-  ["valorSancion","fechaSancion","beneficioSancion"].forEach(id=>{
-    const el=$(id);
-    if(el)el.disabled=true;
-  });
   if($("sancionMinima"))$("sancionMinima").value="";
   renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("resultadoAuditoria").innerHTML="";$("detalleCalculo").innerHTML="";
   ["rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotal","rSaldoTotalFooter"].forEach(id=>$(id).textContent=dinero(0));
@@ -1301,10 +1337,11 @@ function aplicarImportacion(obj){
   if(obj.vencimientos?.length)obligacionVencimientos=obj.vencimientos.map((v,i)=>({...v,id:v.id||`VTO-${v.numero||i+1}`,numero:Number(v.numero||i+1),periodo:v.periodo??(i+1),fecha:fechaISO(v.fecha)||"",impuesto:Number(v.impuesto||0)}));
   if(obj.pagos?.length)pagos=[...pagos,...obj.pagos];
   renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();
-  $("estadoSistema").textContent=`Importación aplicada: ${obj.pagos?.length||0} pago(s), ${obj.vencimientos?.length||0} vencimiento(s)`;
+  actualizarEstadoIndicador("listo",`Parámetros cargados · Importación aplicada: ${obj.pagos?.length||0} pago(s), ${obj.vencimientos?.length||0} vencimiento(s)`);
 }
 
 function aplicarImportacionObligacion(obj){
+  if(obj.anio && /^20\d{2}$/.test(String(obj.anio))) $("anio").value=String(obj.anio);
   if(obj.nit)$("nit").value=String(obj.nit).replace(/\D/g,"");
   if(obj.razonSocial)$("razonSocial").value=upper(obj.razonSocial);
   if(obj.cuotas?.length){
@@ -1329,7 +1366,7 @@ function aplicarImportacionObligacion(obj){
     if(obj.advertencias?.length)partes.push(`<span class="importacion-alerta">⚠ ${esc(obj.advertencias.join(" | "))}</span>`);
     r.innerHTML=partes.join(" · ");r.hidden=false;
   }
-  $("estadoSistema").textContent=`Datos ubicados: ${obj.cuotas?.length||0} cuota(s)`;
+  actualizarEstadoIndicador("listo",`Parámetros cargados · Datos ubicados: ${obj.cuotas?.length||0} cuota(s)`);
 }
 
 
@@ -1386,8 +1423,9 @@ window.addEventListener("DOMContentLoaded",async()=>{
     renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();renderTasasPersonalizadas();renderIPC();mensajeActualizacionesPendientes();
   }catch(e){
     console.error(e);
-    $("estadoSistema").textContent="Error cargando parámetros";
-    $("estadoSistema").classList.add("error");
+    $("estadoSistema").className="indicador-parametros error";
+    $("estadoSistema").title="Error cargando parámetros";
+    $("estadoSistema").setAttribute("aria-label","Error cargando parámetros");
     alert("No se pudieron cargar los parámetros históricos. Verifique que el proyecto se esté ejecutando mediante un servidor local.");
   }
 });

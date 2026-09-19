@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.32.21";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.21";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.32.30";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -870,6 +870,53 @@ export class MotorLiquidacion{
         intereses:intCalc.liquidado,
         sancion:Math.max(0,saldoSancion)
       };
+
+      // TDJ de cuantía mínima: por regla de imputación, todo TDJ <= $1.000
+      // se aplica exclusivamente a intereses y conserva exactamente el valor
+      // digitado. No pasa por la proporcionalidad ni por redondeos a miles.
+      const esTDJMinimo=String(pago.tdj||"").trim()!=="" && Number(pago.valor||0)>0 && Number(pago.valor||0)<=1000;
+      if(esTDJMinimo){
+        const valorTDJ=Number(pago.valor||0);
+        const interesesDisponibles=Math.max(0,Number(intCalc.liquidado||0));
+        const aplicadoIntereses=Math.min(valorTDJ,interesesDisponibles);
+        const aplicacionesVto=[];
+        if(aplicadoIntereses>0){
+          const vtoInteres=intCalc.porVto.find(x=>Number(x.interes||0)>0);
+          if(vtoInteres){
+            const v=vencimientos.find(x=>x.id===vtoInteres.id);
+            aplicacionesVto.push({id:vtoInteres.id,aplicado:0,aplicadoIntereses:aplicadoIntereses,aplicadoSancion:0,saldo:v?.saldo??0});
+          }
+        }
+        saldoIntereses=Math.max(0,interesesDisponibles-aplicadoIntereses);
+        const excedente=Math.max(0,valorTDJ-aplicadoIntereses);
+        excedenteTotal+=excedente;
+        const aplicado={impuesto:0,intereses:aplicadoIntereses,sancion:0,total:aplicadoIntereses,excedente,porcentaje:0,tipoProporcion:"TDJ <= $1.000 — SOLO INTERESES"};
+        actualizacionSancionPago.saldoDespues=roundMil(saldoSancion);
+        detalle.push({
+          pago,
+          tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,
+          tasaVisible:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,
+          tipoAplicado:pago.tipo||"TASA DIAN",
+          beneficio:especial.beneficio?.id||null,
+          notaBeneficio:especial.nota,
+          interesGenerado:intCalc.liquidado,
+          interesLiquidado:intCalc.liquidado,
+          tramosInteres:intCalc.tramos,
+          interesesPorCuota,
+          deudaAntes,
+          aplicado,
+          excedente,
+          aplicacionesVto,
+          actualizacionSancion:actualizacionSancionPago,
+          saldo:{
+            impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),
+            intereses:saldoIntereses,
+            sancion:Math.max(0,saldoSancion),
+            total:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0)+saldoIntereses+Math.max(0,saldoSancion)
+          }
+        });
+        continue;
+      }
 
       /*
        * PROPORCIONALIDAD GLOBAL DE LA OBLIGACIÓN EXIGIBLE:

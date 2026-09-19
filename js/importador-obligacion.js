@@ -5,15 +5,9 @@ const upper=s=>String(s??"").trim().toUpperCase();
 
 function limpiarCelda(s){return String(s??"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();}
 function esFecha(s){return !!fechaISO(limpiarCelda(s));}
-function esReciboPago(s){return /^4\d{12,}$/.test(String(s??"").replace(/\D/g,""));}
 function esAnio(s){return /^20\d{2}$/.test(limpiarCelda(s));}
-function numeroSeguro(s){
-  const t=limpiarCelda(s);
-  if(!t||esFecha(t)||esAnio(t)||esReciboPago(t))return null;
-  if(!/[\d]/.test(t))return null;
-  const n=numeroDesdeTexto(t);
-  return Number.isFinite(n)&&n>0?n:null;
-}
+function soloDigitos(s){return String(s??"").replace(/\D/g,"");}
+function esNumeroIdentidadOTaxId(s){const d=soloDigitos(s);return /^\d{6,12}$/.test(d)&&!esAnio(d);}
 
 function dividirLinea(linea){
   const s=String(linea??"").trim();
@@ -26,21 +20,33 @@ function dividirLinea(linea){
 function extraerNIT(raw,lineas){
   const rotulo=raw.match(/(?:N\.?\s*I\.?\s*T\.?|n[uú]mero\s+de\s+identificaci[oó]n|identificaci[oó]n\s+tributaria)\s*[:#\-]?\s*(\d{6,12})(?:\s*[-/]\s*\d)?/i);
   if(rotulo)return rotulo[1];
+
   const candidatos=[];
+  const visto=new Set();
+  const agregar=(t,contexto="")=>{
+    const limpio=soloDigitos(t);
+    if(!/^\d{6,12}$/.test(limpio)||esAnio(limpio)||visto.has(limpio))return;
+    visto.add(limpio);
+    let score=0;
+    // Sin rótulo, los NIT colombianos de 8-10 dígitos son un patrón útil,
+    // pero no se descartan otros números de identificación válidos.
+    if(/^9\d{8}$/.test(limpio))score+=55;
+    else if(/^8\d{8}$/.test(limpio))score+=50;
+    else if(/^\d{8,10}$/.test(limpio))score+=30;
+    if(/(?:nit|identificaci[oó]n|tributaria|documento)/i.test(contexto))score+=100;
+    // Un número escrito como dinero tiene menor probabilidad de ser NIT.
+    if(/\$|\d[.,]\d{3}/.test(t))score-=45;
+    // Prioriza números aislados frente a cadenas con varios importes.
+    if(/\s/.test(t.trim()))score-=10;
+    candidatos.push({t:limpio,score});
+  };
   for(const linea of lineas){
-    const tokens=linea.match(/\b\d{6,12}\b/g)||[];
-    for(const t of tokens){
-      if(esAnio(t)||esReciboPago(t))continue;
-      const n=Number(t);
-      if(n<1000000)continue;
-      let score=0;
-      if(/^9\d{7,11}$/.test(t))score+=40;
-      if(/^8\d{7,11}$/.test(t))score+=20;
-      if(/(?:nit|identificaci[oó]n)/i.test(linea))score+=50;
-      if(/[.,]\d{3}/.test(t))score-=20;
-      candidatos.push({t,score});
-    }
+    const tokens=linea.match(/\d[\d.,\-\/]*\d|\d+/g)||[];
+    tokens.forEach(t=>agregar(t,linea));
   }
+  // También inspeccionamos el texto completo para casos horizontales sin saltos.
+  const tokens=raw.match(/\b\d{6,12}(?:[-\/]\d)?\b/g)||[];
+  tokens.forEach(t=>agregar(t,raw));
   candidatos.sort((a,b)=>b.score-a.score||a.t.localeCompare(b.t));
   return candidatos[0]?.t||"";
 }
@@ -49,210 +55,153 @@ function extraerRazonSocial(raw,lineas){
   const rotulo=raw.match(/(?:raz[oó]n\s+social|nombre\s+(?:o\s+)?raz[oó]n|contribuyente)\s*[:#\-]?\s*([^\n\r]+)/i);
   if(rotulo){
     const v=limpiarCelda(rotulo[1]).replace(/^[-:#\s]+/,"");
-    if(v&& !/^(nit|identificaci[oó]n|cuota|fecha|valor|impuesto)\b/i.test(v))return upper(v);
+    if(v&&!/^(nit|identificaci[oó]n|cuota|fecha|valor|impuesto|a[nñ]o|periodo)\b/i.test(v))return upper(v);
   }
-  const sufijos=/(?:S\.?A\.?S?\.?|SAS|S\.?A\.?|LTDA\.?|LIMITADA|E\.?U\.?|S\.\s*EN\s*C\.?|S\.\s*CO\.?|COOPERATIVA)$/i;
   const candidatos=[];
+  const sufijo=/(?:SAS|S\.?A\.?S?\.?|LTDA\.?|LIMITADA|E\.?U\.?|S\.?\s*EN\s*C\.?|S\.?\s*CO\.?|COOPERATIVA|FUNDACI[ÓO]N|ASOCIACI[ÓO]N)\b/i;
+  const descartar=/(?:pegar|reconocer|ubicar|informaci[oó]n de la obligaci[oó]n|puede venir|ordenada|desordenada|filas|columnas|sin t[ií]tulos|datos|fecha|vencimiento|impuesto|cuota|periodo|vigencia|nit|identificaci[oó]n|tributaria)/i;
+
+  const limpiarDatos=entrada=>{
+    let v=String(entrada);
+    // Quita fechas con separadores y fechas compactas. Primero las fechas para
+    // que sus componentes no queden como texto suelto.
+    v=v.replace(/\b\d{1,2}[\/\-.]\d{1,2}[\/\-.](?:\d{2}|20\d{2})\b/g," ");
+    v=v.replace(/\b20\d{2}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\b/g," ");
+    v=v.replace(/\b\d{2}\d{2}(?:\d{2}|\d{4})\b/g," ");
+    // Quita NIT/documentos, años, importes y números de cuota.
+    if(raw) v=v.replace(new RegExp(`\\b${soloDigitos(extraerNIT(raw,lineas))}\\b`,"g")," ");
+    v=v.replace(/\b20\d{2}\b/g," ");
+    v=v.replace(/(?:\$\s*)?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d{4,})/g," ");
+    v=v.replace(/\b[1-6]\b/g," ");
+    return limpiarCelda(v).replace(/^[\s,:;|\-]+|[\s,:;|\-]+$/g,"");
+  };
+
   for(const linea of lineas){
-    const celdas=dividirLinea(linea);
-    for(const celda of celdas){
-      const v=limpiarCelda(celda);
-      if(!v||esFecha(v)||esAnio(v)||/^\d+[.,\d\s-]*$/.test(v))continue;
-      if(/^(nit|raz[oó]n social|nombre|contribuyente|cuota|fecha|valor|impuesto|vencimiento)\b/i.test(v))continue;
-      if(sufijos.test(v))candidatos.push(v);
-    }
+    const v=limpiarDatos(linea);
+    if(!v||v.length<3||descartar.test(v))continue;
+    if(!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(v))continue;
+    let score=30+Math.min(60,v.length);
+    if(sufijo.test(v))score+=120;
+    if(v.split(/\s+/).length>=2)score+=20;
+    candidatos.push({v,score});
   }
-  return candidatos.length?upper(candidatos[0]):"";
+  // En un pegado horizontal puede existir toda la información en una sola
+  // línea; después de limpiar números/fechas queda la razón social aislada.
+  const limpioGlobal=limpiarDatos(raw);
+  if(limpioGlobal&&!descartar.test(limpioGlobal)&&/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(limpioGlobal)){
+    let score=35+Math.min(60,limpioGlobal.length)+(sufijo.test(limpioGlobal)?120:0);
+    candidatos.push({v:limpioGlobal,score});
+  }
+  candidatos.sort((a,b)=>b.score-a.score||b.v.length-a.v.length);
+  return candidatos[0]?.v?upper(candidatos[0].v):"";
 }
 
-function contextoCuotaNumero(texto){
-  const s=norm(texto);
-  const m=s.match(/(?:cuota|cuot|periodo|periodo\s+gravable|vto|vencimiento)\s*(?:n(?:umero)?|no)?\s*(?:de)?\s*([1-6])\b/);
-  if(m)return Number(m[1]);
-  return null;
+function extraerFechas(raw){
+  const halladas=[];
+  const push=(f,idx,rawFecha)=>{if(!f)return;const clave=`${f}|${idx}`;if(halladas.some(x=>x.clave===clave))return;halladas.push({fecha:f,index:idx,raw:rawFecha,clave});};
+  const re=/\b(?:\d{1,2}[\/\-.]\d{1,2}[\/\-.](?:20\d{2}|\d{2})|20\d{2}[\/\-.]\d{1,2}[\/\-.]\d{1,2}|\d{2}\d{2}(?:\d{2}|\d{4})|20\d{6})\b/g;
+  let m;while((m=re.exec(raw))){const f=fechaISO(m[0]);if(f)push(f,m.index,m[0]);}
+  // Formato separado por espacios: 01 01 26 / 01 01 2026.
+  const reEsp=/\b(\d{1,2})\s+(\d{1,2})\s+(20\d{2}|\d{2})\b/g;
+  while((m=reEsp.exec(raw))){const f=fechaISO(`${m[1]}/${m[2]}/${m[3]}`);if(f)push(f,m.index,m[0]);}
+  return halladas.sort((a,b)=>a.index-b.index);
 }
 
-function extraerFechaDesdeTexto(texto){
-  const s=String(texto??"");
-  const candidatos=s.match(/\b(?:\d{1,2}[\/\-.]\d{1,2}[\/\-.]20\d{2}|20\d{2}[\/\-.]\d{1,2}[\/\-.]\d{1,2})\b/g)||[];
-  for(const c of candidatos){const f=fechaISO(c);if(f)return f;}
-  return "";
+function extraerAnio(raw,fechas){
+  const candidatos=[];
+  const protegido=[];
+  for(const f of fechas){const start=raw.indexOf(f.raw);if(start>=0)protegido.push([start,start+f.raw.length]);}
+  const re=/\b(20\d{2})\b/g;let m;
+  while((m=re.exec(raw))){if(protegido.some(([a,b])=>m.index>=a&&m.index<b))continue;candidatos.push({anio:Number(m[1]),index:m.index});}
+  return candidatos[0]?.anio||0;
 }
 
-function numerosDeLinea(texto){
+function extraerNumeros(raw,nit,fechas){
   const out=[];
-  const s=String(texto??"");
-  const tokens=s.match(/(?:\$\s*)?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d{4,})/g)||[];
-  for(const token of tokens){
-    const limpio=token.replace(/^\$\s*/,"");
-    if(esAnio(limpio)||esReciboPago(limpio))continue;
-    const n=numeroSeguro(limpio);
-    if(n!==null)out.push({raw:limpio,value:n});
+  const protegidoFechas=fechas.map(f=>f.raw);
+  const esMontoToken=t=>{const s=String(t).replace(/^\$\s*/,'').trim();const m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/);if(m){const d=Number(m[1]),mo=Number(m[2]);return !(d>=1&&d<=31&&mo>=1&&mo<=12);}return /\d/.test(s);};
+  const re=/(?:\$\s*)?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d{4,})/g;let m;
+  while((m=re.exec(raw))){
+    const token=m[0].replace(/^\$\s*/,"");
+    if(!esMontoToken(token))continue;
+    const n=numeroDesdeTexto(token);if(!Number.isFinite(n)||n<=0)continue;
+    const limpio=soloDigitos(token);
+    if(limpio===soloDigitos(nit))continue;
+    if(esAnio(token))continue;
+    if(protegidoFechas.includes(token))continue;
+    // Números con formato de fecha compacta no deben ser importes.
+    if(/^(?:\d{6}|\d{8})$/.test(limpio)){const f=fechaISO(limpio);if(f)continue;}
+    out.push({value:n,index:m.index,raw:token,formatted:/[.,]\d{3}/.test(token),score:0});
   }
   return out;
 }
 
-function elegirValor(celdas,fechaIndex){
-  // Primero prioriza números con formato monetario o separadores de miles.
-  const candidatos=[];
-  for(let i=Math.max(0,fechaIndex+1);i<celdas.length;i++){
-    const s=limpiarCelda(celdas[i]);
-    if(esFecha(s))continue;
-    const ns=numerosDeLinea(s);
-    for(const x of ns){
-      let score=0;
-      if(/[.,]\d{3}/.test(x.raw))score+=30;
-      if(x.value>=100000)score+=20;
-      if(/\$|valor|impuesto|pagar|declarado/i.test(s))score+=25;
-      candidatos.push({...x,score,index:i});
-    }
-  }
-  candidatos.sort((a,b)=>b.score-a.score||a.index-b.index);
-  return candidatos[0]||null;
+function extraerNumeroCuotaEnContexto(raw,index){
+  const ventana=raw.slice(Math.max(0,index-45),Math.min(raw.length,index+45));
+  const m=norm(ventana).match(/(?:cuota|periodo|periodo\s+gravable|vto|vencimiento)\s*(?:n(?:umero)?|no)?\s*(?:de)?\s*([1-6])\b/);
+  if(m)return Number(m[1]);
+  // También reconoce el número de cuota aislado cuando viene separado por
+  // espacios o saltos de línea: "2\n30/04/2025" o "2 30/04/2025".
+  const alrededor=raw.slice(Math.max(0,index-18),Math.min(raw.length,index+4));
+  const bare=alrededor.match(/(?:^|\s)([1-6])(?=\s|$)/);
+  return bare?Number(bare[1]):null;
 }
 
-function analizarFila(celdas,indiceLinea){
-  const texto=celdas.join(" ");
-  const fechaIdx=celdas.findIndex(esFecha);
-  const fecha=fechaIdx>=0?fechaISO(celdas[fechaIdx]):extraerFechaDesdeTexto(texto);
-  if(!fecha)return null;
-  const numero=contextoCuotaNumero(texto);
-  let valor=elegirValor(celdas,fechaIdx>=0?fechaIdx:0);
-  // Cuando una fila llega pegada como una sola cadena (por ejemplo:
-  // "1 26/05/2025 3.499.000"), no existe una celda posterior a la fecha.
-  // En ese caso se busca el importe dentro de toda la misma línea, excluyendo
-  // años, NIT y recibos.
-  if(!valor){
-    const nums=numerosDeLinea(texto).filter(x=>x.value>=1000);
-    if(nums.length)valor=nums.sort((a,b)=>b.value-a.value)[0];
-  }
-  if(!valor)return {numero,fecha,impuesto:0,indiceLinea,confianza:25};
-  return {numero,fecha,impuesto:valor.value,indiceLinea,confianza:70};
-}
+function construirCuotas(raw,lineas,nit){
+  const fechas=extraerFechas(raw);
+  const numeros=extraerNumeros(raw,nit,fechas);
+  if(!fechas.length)return [];
 
-function construirCuotas(raw,lineas){
-  const filas=lineas.map(dividirLinea).filter(Boolean);
-  const halladas=[];
-
-  // 1) Primero resolvemos filas completas. Esto cubre pegados horizontales
-  // como: "1 26/05/2025 3.499.000" o columnas separadas por TAB/; /|.
-  for(let i=0;i<filas.length;i++){
-    const r=analizarFila(filas[i],i);
-    if(r)halladas.push(r);
-  }
-
-  // 2) Resolvemos bloques con número de cuota explícito. Se soportan tanto
-  // bloques verticales como varias cuotas en una sola línea horizontal:
-  // "Cuota 1 26/05/2025 3.499.000 Cuota 2 19/06/2025 3.045.000...".
-  // Cada cuota se procesa dentro de su propio tramo de texto.
-  const explicitas=[];
-  const matches=[...raw.matchAll(/(?:cuota|periodo|vto)\s*(?:n(?:umero)?\s*)?([1-6])\b/gi)];
-  for(let m=0;m<matches.length;m++){
-    const numero=Number(matches[m][1]);
-    const inicio=matches[m].index;
-    const fin=(m+1<matches.length)?matches[m+1].index:raw.length;
-    const segmento=raw.slice(inicio,fin);
-    const fecha=extraerFechaDesdeTexto(segmento);
-    if(!fecha)continue;
-    const posFecha=segmento.search(/\b(?:\d{1,2}[\/\-.]\d{1,2}[\/\-.]20\d{2}|20\d{2}[\/\-.]\d{1,2}[\/\-.]\d{1,2})\b/);
-    const despues=posFecha>=0?segmento.slice(posFecha):segmento;
-    const candidatos=numerosDeLinea(despues).filter(x=>x.value>=1000);
-    const valor=candidatos.length?candidatos.sort((a,b)=>b.value-a.value)[0].value:0;
-    const indiceLinea=raw.slice(0,inicio).split("\n").length-1;
-    explicitas.push({numero,fecha,impuesto:Number(valor||0),indiceLinea,confianza:120});
-  }
-  // Fallback para formatos donde el rótulo "Cuota 1" está en una línea
-  // independiente y el texto fue pegado verticalmente.
-  for(let i=0;i<lineas.length;i++){
-    const numero=contextoCuotaNumero(lineas[i]);
-    if(!numero||explicitas.some(x=>x.numero===numero&&x.indiceLinea===i))continue;
-    let fecha="", valor=null, fechaLinea=-1;
-    for(let j=i;j<Math.min(lineas.length,i+5);j++){
-      const f=extraerFechaDesdeTexto(lineas[j]);
-      if(f&&!fecha){fecha=f;fechaLinea=j;}
-      if(fecha && j>=fechaLinea){
-        const candidatos=numerosDeLinea(lineas[j]).filter(x=>x.value>=1000);
-        if(candidatos.length){valor=candidatos.sort((a,b)=>b.value-a.value)[0].value;break;}
-      }
-    }
-    if(fecha)explicitas.push({numero,fecha,impuesto:Number(valor||0),indiceLinea:i,confianza:110});
-  }
-
-  // Las cuotas explícitas sustituyen cualquier inferencia que haya producido
-  // la misma cuota. Así una fecha/valor suelto no puede desplazar una cuota
-  // correctamente rotulada.
-  if(explicitas.length){
-    const porNumero=new Map();
-    for(const x of halladas.filter(x=>x.numero==null)){
-      // Solo conservamos inferencias sin número para completar cuotas faltantes.
-      porNumero.set(`F|${x.fecha}`,x);
-    }
-    for(const x of halladas.filter(x=>x.numero!=null)){
-      if(!explicitas.some(e=>e.numero===x.numero))porNumero.set(`N|${x.numero}`,x);
-    }
-    halladas.length=0;
-    halladas.push(...explicitas,...porNumero.values());
-  }
-
-  // 3) Para datos sin títulos y sin número de cuota, cada fecha se asocia al
-  // importe más próximo que aparece después. No exige fila, columna ni orden.
-  const fechas=[];
-  for(let i=0;i<lineas.length;i++){
-    const f=extraerFechaDesdeTexto(lineas[i]);
-    if(f)fechas.push({fecha:f,linea:i});
-  }
-  for(const f of fechas){
-    if(halladas.some(x=>x.fecha===f.fecha && x.indiceLinea===f.linea))continue;
-    // Si ya existe una cuota explícita con esa fecha, no crear una segunda.
-    if(halladas.some(x=>x.fecha===f.fecha && x.numero!=null))continue;
-    let mejor=null;
-    for(let j=f.linea;j<Math.min(lineas.length,f.linea+5);j++){
-      const ns=numerosDeLinea(lineas[j]);
-      for(const x of ns){
-        if(x.value<1000)continue;
-        const texto=lineas[j];
-        if(/(?:nit|identificaci[oó]n|a[nñ]o|vigencia)/i.test(texto))continue;
-        const dist=j-f.linea;
-        let score=100-dist*18;
-        if(/[.,]\d{3}/.test(x.raw))score+=25;
-        if(/\$|valor|impuesto|pagar|declarado/i.test(texto))score+=20;
-        if(!mejor||score>mejor.score)mejor={...x,score,linea:j};
-      }
-      if(mejor?.score>=120)break;
-    }
-    if(mejor)halladas.push({numero:null,fecha:f.fecha,impuesto:mejor.value,indiceLinea:f.linea,confianza:mejor.score});
-  }
-
-  // 4) Asignación final. Los números explícitos se respetan. Las cuotas sin
-  // número se ordenan por aparición y completan los números que falten.
+  // Los importes y las fechas se emparejan como secuencias de datos, no como
+  // columnas rígidas. Esto permite: horizontal, vertical, fechas primero,
+  // importes primero o cada fecha junto a su importe.
+  const ordenFechas=[...fechas].sort((a,b)=>a.index-b.index);
+  const ordenNumeros=[...numeros].sort((a,b)=>a.index-b.index);
   const usados=new Set();
-  const salida=[];
-  for(const h of halladas){
-    if(h.numero&&h.numero>=1&&h.numero<=6&&!usados.has(h.numero)){
-      salida.push({...h,numero:h.numero});usados.add(h.numero);
+  const pares=[];
+
+  // Si hay el mismo número de fechas e importes, la correspondencia por orden
+  // de aparición es la más estable cuando la fuente no trae títulos.
+  if(ordenNumeros.length===ordenFechas.length){
+    for(let i=0;i<ordenFechas.length;i++)pares.push({f:ordenFechas[i],n:ordenNumeros[i],score:100});
+  }else{
+    // En cantidades distintas, buscamos para cada fecha el importe más cercano
+    // sin reutilizarlo. Se acepta que esté antes o después.
+    for(const f of ordenFechas){
+      let mejor=null;
+      for(let i=0;i<ordenNumeros.length;i++){
+        if(usados.has(i))continue;
+        const n=ordenNumeros[i],dist=Math.abs(n.index-f.index);
+        let score=250-dist+(n.index<f.index?-8:0)+(n.formatted?45:0);
+        if(dist>500)score-=Math.min(100,dist-500);
+        if(!mejor||score>mejor.score)mejor={i,n,score};
+      }
+      if(mejor){usados.add(mejor.i);pares.push({f,n:mejor.n,score:mejor.score});}
+      else pares.push({f,n:null,score:60});
     }
   }
-  const anonimas=halladas
-    .filter(h=>!h.numero&&h.fecha)
-    .sort((a,b)=>a.indiceLinea-b.indiceLinea||a.fecha.localeCompare(b.fecha));
-  let siguiente=1;
-  for(const h of anonimas){
-    while(usados.has(siguiente)&&siguiente<=6)siguiente++;
-    if(siguiente>6)break;
-    if(salida.some(x=>x.fecha===h.fecha))continue;
-    salida.push({...h,numero:siguiente});usados.add(siguiente);siguiente++;
-  }
 
-  const mapa=new Map();
-  for(const x of salida){
-    const key=x.numero?`N${x.numero}`:`F${x.fecha}`;
-    const prev=mapa.get(key);
-    if(!prev || x.confianza>prev.confianza || (x.impuesto>prev.impuesto))mapa.set(key,x);
+  const resultados=pares.map(p=>({
+    numero:extraerNumeroCuotaEnContexto(raw,p.f.index),
+    fecha:p.f.fecha,
+    impuesto:p.n?Number(p.n.value||0):0,
+    indice:p.f.index,
+    score:p.score
+  }));
+
+  // Las cuotas rotuladas se respetan. Las que no tienen número se asignan por
+  // orden de aparición de las fechas.
+  const salida=[];const usadosN=new Set();
+  for(const x of resultados.filter(x=>x.numero>=1&&x.numero<=6)){
+    if(!usadosN.has(x.numero)){salida.push(x);usadosN.add(x.numero);}
   }
-  return [...mapa.values()]
-    .sort((a,b)=>a.numero-b.numero)
-    .slice(0,6)
-    .map(x=>({numero:x.numero,periodo:String(x.numero),fecha:x.fecha,impuesto:Number(x.impuesto||0)}));
+  let n=1;
+  for(const x of resultados.filter(x=>!x.numero)){
+    while(usadosN.has(n)&&n<=6)n++;
+    if(n>6)break;
+    salida.push({...x,numero:n});usadosN.add(n);n++;
+  }
+  return salida.sort((a,b)=>a.numero-b.numero).slice(0,6).map(x=>({numero:x.numero,periodo:String(x.numero),fecha:x.fecha,impuesto:x.impuesto}));
 }
 
 export function importarDatosObligacionInteligente(texto){
@@ -261,12 +210,15 @@ export function importarDatosObligacionInteligente(texto){
   if(!lineas.length)throw new Error("No hay información para reconocer.");
   const nit=extraerNIT(raw,lineas);
   const razonSocial=extraerRazonSocial(raw,lineas);
-  const cuotas=construirCuotas(raw,lineas);
+  const fechas=extraerFechas(raw);
+  const anio=extraerAnio(raw,fechas);
+  const cuotas=construirCuotas(raw,lineas,nit);
   const advertencias=[];
   if(!nit)advertencias.push("No se pudo confirmar el NIT.");
   if(!razonSocial)advertencias.push("No se pudo confirmar la razón social.");
+  if(!anio)advertencias.push("No se pudo identificar el año gravable.");
   if(!cuotas.length)advertencias.push("No se encontraron cuotas con fecha e impuesto declarado.");
-  if(cuotas.length>6)advertencias.push("Se encontraron más de seis cuotas; solo se incorporan las seis primeras válidas.");
-  if(!nit&&!razonSocial&&!cuotas.length)throw new Error("No pude reconocer NIT, razón social ni cuotas. Puede pegar los datos con o sin títulos, en filas o columnas.");
-  return {nit,razonSocial,cuotas,advertencias};
+  if(fechas.length>6)advertencias.push("Se encontraron más de seis fechas; solo se incorporan seis cuotas.");
+  if(!nit&&!razonSocial&&!anio&&!cuotas.length)throw new Error("No pude reconocer NIT, razón social, año ni cuotas. Puede pegar los datos con o sin títulos, en filas o columnas y en cualquier orden.");
+  return {nit,razonSocial,anio,cuotas,advertencias};
 }
