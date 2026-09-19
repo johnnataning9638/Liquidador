@@ -255,6 +255,12 @@
 
 /* REAJUSTE 16.29 — importación inteligente de datos de obligación */
 .importador-obligacion textarea{min-height:88px;font-family:Arial,Helvetica,sans-serif;line-height:1.35}
+
+/* APRENDIZAJE IA — confirmación explícita antes de guardar ejemplos. */
+.feedback-ia{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;border-top:1px solid var(--borde);background:#f7fafc;font-size:11px}
+.feedback-ia span{font-weight:600;color:#596875}
+.feedback-ia button{padding:5px 9px;font-size:11px}
+
 .importacion-resumen{padding:8px 10px;background:#f4f8fa;border-top:1px solid var(--borde);font-size:11px}
 .importacion-alerta{color:#7a5300;font-weight:700}
 
