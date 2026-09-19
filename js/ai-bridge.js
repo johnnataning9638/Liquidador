@@ -12,10 +12,13 @@ export function getAIEndpoint(){
     // En GitHub Pages, nunca quedarse apuntando al motor local guardado
     // durante las pruebas. En localhost se conserva la posibilidad de usar
     // el motor local.
-    const host=String(window?.location?.hostname||"").toLowerCase();
-    const esLocalPage=host==="localhost"||host==="127.0.0.1";
-    if(stored && !(esMotorLocal(stored)&&!esLocalPage)) return stored;
-    return esLocalPage ? (stored||LOCAL_AI_URL) : DEFAULT_AI_URL;
+    // El Liquidador web usa por defecto el motor público de Render, incluso
+    // cuando se prueba localmente con localhost:8000. Esto evita que una URL
+    // antigua guardada en localStorage apunte por error a 127.0.0.1:8787.
+    // Si se desea usar un motor local, se puede establecer explícitamente
+    // mediante setAIEndpoint("http://127.0.0.1:8787").
+    if(stored) return stored;
+    return DEFAULT_AI_URL;
   }catch{return DEFAULT_AI_URL;}
 }
 
@@ -183,6 +186,56 @@ export function fusionarPagosSeguros(deterministicos, ia){
   }
   out.sort((a,b)=>String(a.fecha||"").localeCompare(String(b.fecha||"")));
   return {pagos:out.map((p,i)=>({...p,numero:i+1})),advertencias};
+}
+
+
+export async function enviarFeedbackIA(examples=[], source="liquidador-ia-confirmado"){
+  const lista=Array.isArray(examples)?examples:[];
+  const limpios=[];
+  const vistos=new Set();
+  for(const e of lista){
+    const text=String(e?.text??"").trim();
+    const label=String(e?.label??"").trim().toUpperCase();
+    if(!text||!label)continue;
+    const key=`${label}::${text}`;
+    if(vistos.has(key))continue;
+    vistos.add(key);
+    limpios.push({text:text.slice(0,5000),label,source:String(e?.source||source).slice(0,80)});
+  }
+  if(!limpios.length)return {ok:true,accepted:0};
+  // Evita volver a enviar exactamente el mismo ejemplo desde el mismo navegador.
+  let pendientes=[];
+  try{
+    const raw=localStorage.getItem("dianAiFeedbackHashes")||"[]";
+    const guardados=new Set(Array.isArray(JSON.parse(raw))?JSON.parse(raw):[]);
+    for(const e of limpios){
+      const hash=`${e.label}|${e.text}`;
+      if(guardados.has(hash))continue;
+      pendientes.push(e);
+    }
+    if(!pendientes.length)return {ok:true,accepted:0,duplicados:limpios.length};
+  }catch{
+    pendientes=limpios;
+  }
+
+  const r=await fetch(`${getAIEndpoint()}/feedback`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({confirmed:true,examples:pendientes.slice(0,50)}),
+    cache:"no-store",
+  });
+  let data=null;
+  try{data=await r.json();}catch{}
+  if(!r.ok)throw new Error(data?.detail||`Motor IA respondió HTTP ${r.status} al guardar aprendizaje.`);
+  try{
+    const raw=localStorage.getItem("dianAiFeedbackHashes")||"[]";
+    const arr=Array.isArray(JSON.parse(raw))?JSON.parse(raw):[];
+    const set=new Set(arr);
+    pendientes.slice(0,50).forEach(e=>set.add(`${e.label}|${e.text}`));
+    const salida=[...set].slice(-500);
+    localStorage.setItem("dianAiFeedbackHashes",JSON.stringify(salida));
+  }catch{}
+  return data||{ok:true,accepted:0};
 }
 
 export async function interpretarPagosConIA(texto){

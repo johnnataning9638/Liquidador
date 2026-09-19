@@ -1,6 +1,6 @@
 import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.30";
 import {importarDatosInteligente} from "./importador.js?v=16.32.32";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA} from "./ai-bridge.js?v=16.32.46";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.32.48";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.30";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
@@ -35,6 +35,7 @@ let supabaseClient=null;
 let adminEmail=null;
 let ultimaLiquidacion=null,ultimaAuditoria=null;
 let obligacionVencimientos=[];
+let feedbackIAPendiente=null;
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
 let estadoSancionUI={tiene:"",valor:"",fecha:"",beneficio:""};
 
@@ -1294,6 +1295,7 @@ function calcular(){
 }
 
 function limpiar(){
+  ocultarFeedbackIA();
   pagos=[];obligacionVencimientos=[];ultimaLiquidacion=null;ultimaAuditoria=null;
   // El botón LIMPIAR inicia una obligación completamente nueva.
   // Es importante reiniciar también el estado auxiliar de sanción y el
@@ -1315,6 +1317,74 @@ function limpiar(){
   ["rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotal","rSaldoTotalFooter"].forEach(id=>$(id).textContent=dinero(0));
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
   if($("rExcedenteBox")){$("rExcedenteBox").hidden=true;$("rExcedente").textContent=dinero(0);}
+}
+
+
+function construirFeedbackPagosIA(){
+  const ejemplos=[];
+  for(const p of Array.isArray(pagos)?pagos:[]){
+    const tdj=String(p?.tdj||"").trim();
+    const recibo=String(p?.recibo||"").trim();
+    const fecha=String(p?.fecha||"").trim();
+    const valor=Number(p?.valor||0);
+    if(tdj)ejemplos.push({text:`TDJ ${tdj}`,label:"TDJ"});
+    if(recibo)ejemplos.push({text:`RECIBO ${recibo}`,label:"RECIBO"});
+    if(fecha)ejemplos.push({text:`FECHA ${fechaVisible(fecha)}`,label:"FECHA"});
+    if(Number.isFinite(valor)&&valor>0)ejemplos.push({text:`VALOR ${dinero(valor)}`,label:"VALOR"});
+  }
+  return ejemplos;
+}
+
+function construirFeedbackObligacionIA(){
+  const ejemplos=[];
+  const nit=String($("nit")?.value||"").replace(/\D/g,"");
+  const razon=String($("razonSocial")?.value||"").trim();
+  const anio=String($("anio")?.value||"").trim();
+  if(nit)ejemplos.push({text:`NIT ${nit}`,label:"NIT"});
+  if(razon)ejemplos.push({text:razon,label:"RAZON_SOCIAL"});
+  if(/^20\d{2}$/.test(anio))ejemplos.push({text:`AÑO ${anio}`,label:"ANIO"});
+  for(const c of Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]){
+    const fecha=String(c?.fecha||"").trim();
+    const impuesto=Number(c?.impuesto||0);
+    if(fecha)ejemplos.push({text:`FECHA ${fechaVisible(fecha)}`,label:"FECHA"});
+    if(Number.isFinite(impuesto)&&impuesto>0)ejemplos.push({text:`VALOR ${dinero(impuesto)}`,label:"VALOR"});
+  }
+  return ejemplos;
+}
+
+function mostrarFeedbackIA(tipo){
+  feedbackIAPendiente=tipo;
+  const pagosBox=$("feedbackIApagos");
+  const obligacionBox=$("feedbackIAobligacion");
+  if(pagosBox)pagosBox.hidden=tipo!=="pagos";
+  if(obligacionBox)obligacionBox.hidden=tipo!=="obligacion";
+}
+
+function ocultarFeedbackIA(){
+  feedbackIAPendiente=null;
+  [$("feedbackIApagos"),$("feedbackIAobligacion")].forEach(x=>{if(x)x.hidden=true;});
+}
+
+async function registrarFeedbackIA(tipo,corregido=false){
+  if(feedbackIAPendiente!==tipo)return;
+  const ejemplos=tipo==="pagos"?construirFeedbackPagosIA():construirFeedbackObligacionIA();
+  if(!ejemplos.length){
+    ocultarFeedbackIA();
+    actualizarEstadoIndicador("listo","IA DIAN: no había campos estructurados para guardar como aprendizaje.");
+    return;
+  }
+  const source=corregido
+    ?`liquidador-ia-${tipo}-corregido`
+    :`liquidador-ia-${tipo}-confirmado`;
+  try{
+    const r=await enviarFeedbackIA(ejemplos,source);
+    ocultarFeedbackIA();
+    actualizarEstadoIndicador("listo",`IA DIAN: aprendizaje guardado · ${Number(r?.accepted||0)} ejemplo(s) nuevo(s).`);
+  }catch(e){
+    console.error("Feedback IA:",e);
+    actualizarEstadoIndicador("error","IA DIAN: no fue posible guardar el aprendizaje.");
+    alert(e.message||"No fue posible guardar el aprendizaje IA. Los datos de la liquidación no fueron modificados.");
+  }
 }
 
 function aplicarImportacion(obj){
@@ -1424,7 +1494,7 @@ function configurarBase(){
   $("btnActualizarTasaDian").addEventListener("click",actualizarDesdeDIAN);
   $("btnIniciarAdmin")?.addEventListener("click",iniciarSesionAdmin);
   $("btnCerrarAdmin")?.addEventListener("click",cerrarSesionAdmin);
-  $("btnProcesarPegado").addEventListener("click",()=>{try{aplicarImportacion(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
+  $("btnProcesarPegado").addEventListener("click",()=>{try{ocultarFeedbackIA();aplicarImportacion(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
   $("btnProcesarPegadoIA")?.addEventListener("click",async()=>{
     const text=$("pegarDatos").value;
     try{
@@ -1452,6 +1522,9 @@ function configurarBase(){
       $("pegarDatos").value="";
       window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"PAGOS APLICADOS",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:base.pagos.length,anomalies:(ai.aiAnomalies||[]).length,timestamp:new Date().toISOString()}}));
       actualizarEstadoIndicador("listo",`IA DIAN: ${ai.pagosValidos} pago(s) estructurado(s) · ${base.pagos.length} pago(s) aplicados · confianza ${Math.round(Number(ai.confidence||0)*100)}%${fusion.advertencias?.length?` · ${fusion.advertencias.length} advertencia(s)`:""}`);
+      // El aprendizaje solo se guarda después de que el usuario confirme o
+      // corrija los datos que quedaron en la tabla.
+      mostrarFeedbackIA("pagos");
       if(fusion.advertencias?.length) console.warn("Advertencias de fidelidad IA:",fusion.advertencias);
     }catch(e){
       console.error(e);
@@ -1459,6 +1532,11 @@ function configurarBase(){
       alert(e.message||"No fue posible interpretar los pagos con IA.");
     }
   });
+  $("btnFeedbackIAPagosConfirmar")?.addEventListener("click",()=>registrarFeedbackIA("pagos",false));
+  $("btnFeedbackIAPagosCorregido")?.addEventListener("click",()=>registrarFeedbackIA("pagos",true));
+  $("btnFeedbackIAObligacionConfirmar")?.addEventListener("click",()=>registrarFeedbackIA("obligacion",false));
+  $("btnFeedbackIAObligacionCorregido")?.addEventListener("click",()=>registrarFeedbackIA("obligacion",true));
+
   const comprobarIAAutomaticamente=async()=>{
     const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
     dots.forEach(dot=>{
@@ -1485,10 +1563,11 @@ function configurarBase(){
   window.setInterval(comprobarIAAutomaticamente,10000);
 
   $("btnImportar").addEventListener("click",()=>$("archivoImportacion").click());
-  $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{aplicarImportacion(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
+  $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{ocultarFeedbackIA();aplicarImportacion(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
 
   $("btnProcesarDatosObligacion").addEventListener("click",()=>{
     try{
+      ocultarFeedbackIA();
       const obj=importarDatosObligacionInteligente($("pegarDatosObligacion").value);
       aplicarImportacionObligacion(obj);
       $("pegarDatosObligacion").value="";
@@ -1511,6 +1590,9 @@ function configurarBase(){
       }
       window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"OBLIGACION VALIDADA",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:obj.cuotas?.length||0,anomalies:0,timestamp:new Date().toISOString()}}));
       actualizarEstadoIndicador("listo",`IA DIAN: NIT, razón social y ${obj.cuotas?.length||0} cuota(s) validados · confianza ${confianza}%`);
+      // El aprendizaje solo se guarda después de que el usuario confirme o
+      // corrija los datos que quedaron en la obligación.
+      mostrarFeedbackIA("obligacion");
     }catch(e){
       console.error(e);
       actualizarEstadoIndicador("error","IA DIAN no validó los datos de la obligación");
