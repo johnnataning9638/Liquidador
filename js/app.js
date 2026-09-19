@@ -1,5 +1,6 @@
 import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.30";
-import {importarDatosInteligente} from "./importador.js?v=16.32.31";
+import {importarDatosInteligente} from "./importador.js?v=16.32.32";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA} from "./ai-bridge.js?v=16.32.43";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.30";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
@@ -1376,6 +1377,24 @@ function configurarBase(){
   $("anio").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"");habilitarSancion();actualizarSancionMinimaUI();renderCalendario();});
   $("concepto").addEventListener("change",()=>{renderMetadatosConcepto();renderVencimientos();renderCalendario();});
   $("periodo").addEventListener("change",renderCalendario);
+  function renderEstadoIA(){
+    try{
+      const e=getEstadoIA?.();
+      const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
+      if(!dots.length||!e)return;
+      const ok=String(e.estado||"").toUpperCase()==="CONECTADO" || String(e.estado||"").toUpperCase()==="PAGOS APLICADOS" || String(e.estado||"").toUpperCase()==="OBLIGACION VALIDADA";
+      const version=e.version&&e.version!=="—"?` · versión ${e.version}`:"";
+      const titulo=ok?`IA DIAN comprobada${version}`:"IA DIAN no comprobada · Haga clic para comprobar";
+      dots.forEach(dot=>{
+        dot.className=`indicador-parametros indicador-ia ${ok?"listo":"error"}`;
+        dot.title=titulo;
+        dot.setAttribute("aria-label",titulo);
+      });
+    }catch{}
+  }
+  window.addEventListener("dian-ai-status",renderEstadoIA);
+  renderEstadoIA();
+
   $("tipoLiquidacion").addEventListener("change",()=>{seleccionarMotorPorTipo();actualizarCamposTipoLiquidacion();actualizarSancionMinimaUI();});
   $("tieneSancion").addEventListener("change",()=>{estadoSancionUI.tiene=$("tieneSancion").value;habilitarSancion();});
   $("valorSancion").addEventListener("input",()=>{estadoSancionUI.valor=$("valorSancion").value;});
@@ -1399,6 +1418,65 @@ function configurarBase(){
   $("btnIniciarAdmin")?.addEventListener("click",iniciarSesionAdmin);
   $("btnCerrarAdmin")?.addEventListener("click",cerrarSesionAdmin);
   $("btnProcesarPegado").addEventListener("click",()=>{try{aplicarImportacion(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
+  $("btnProcesarPegadoIA")?.addEventListener("click",async()=>{
+    const text=$("pegarDatos").value;
+    try{
+      actualizarEstadoIndicador("cargando","IA DIAN: interpretando pagos...");
+      const base=importarDatosInteligente(text);
+      const ai=await interpretarPagosConIA(text);
+
+      // El importador determinístico sigue siendo la red de seguridad. Si la
+      // IA no consigue estructurar ningún pago, nunca se borra el pegado ni
+      // se deja la tabla vacía: se aplican los pagos determinísticos ya
+      // reconocidos y se informa que la IA no pudo complementar el caso.
+      if(!ai.pagos.length){
+        if(!base.pagos?.length)throw new Error("Ni el importador determinístico ni la IA encontraron pagos completos con fecha, valor y documento/TDJ.");
+        aplicarImportacion(base);
+        $("pegarDatos").value="";
+        actualizarEstadoIndicador("listo",`IA DIAN: no estructuró pagos completos; se conservaron ${base.pagos.length} pago(s) reconocidos determinísticamente.`);
+        return;
+      }
+
+      // Obligación y vencimientos siguen pasando por el importador determinístico.
+      // La IA entrega únicamente registros estructurados de pagos.
+      const fusion=fusionarPagosSeguros(base.pagos,ai.pagos);
+      base.pagos=fusion.pagos;
+      aplicarImportacion(base);
+      $("pegarDatos").value="";
+      window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"PAGOS APLICADOS",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:base.pagos.length,anomalies:(ai.aiAnomalies||[]).length,timestamp:new Date().toISOString()}}));
+      actualizarEstadoIndicador("listo",`IA DIAN: ${ai.pagosValidos} pago(s) estructurado(s) · ${base.pagos.length} pago(s) aplicados · confianza ${Math.round(Number(ai.confidence||0)*100)}%${fusion.advertencias?.length?` · ${fusion.advertencias.length} advertencia(s)`:""}`);
+      if(fusion.advertencias?.length) console.warn("Advertencias de fidelidad IA:",fusion.advertencias);
+    }catch(e){
+      console.error(e);
+      actualizarEstadoIndicador("error", "IA DIAN no disponible o datos no reconocidos");
+      alert(e.message||"No fue posible interpretar los pagos con IA.");
+    }
+  });
+  const comprobarIAAutomaticamente=async()=>{
+    const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
+    dots.forEach(dot=>{
+      dot.className="indicador-parametros indicador-ia cargando";
+      dot.title="Comprobando conexión con IA DIAN...";
+      dot.setAttribute("aria-label","Comprobando conexión con IA DIAN");
+    });
+    try{
+      const r=await comprobarMotorIA();
+      renderEstadoIA();
+      dots.forEach(dot=>{
+        dot.title=`IA DIAN activa · motor v${r.version||"—"}`;
+        dot.setAttribute("aria-label",`IA DIAN activa · motor v${r.version||"—"}`);
+      });
+    }catch(e){
+      // La comprobación es silenciosa: si el AI Engine no está disponible,
+      // los indicadores permanecen rojos y el Liquidador sigue funcionando.
+      renderEstadoIA();
+    }
+  };
+  // Comprobación automática al abrir el Liquidador y vigilancia periódica.
+  // No requiere pulsar ningún indicador.
+  comprobarIAAutomaticamente();
+  window.setInterval(comprobarIAAutomaticamente,10000);
+
   $("btnImportar").addEventListener("click",()=>$("archivoImportacion").click());
   $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{aplicarImportacion(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
 
@@ -1408,6 +1486,29 @@ function configurarBase(){
       aplicarImportacionObligacion(obj);
       $("pegarDatosObligacion").value="";
     }catch(e){alert(e.message||"No pude reconocer los datos de la obligación.");}
+  });
+  $("btnProcesarDatosObligacionIA")?.addEventListener("click",async()=>{
+    const text=$("pegarDatosObligacion").value;
+    try{
+      if(!text.trim())throw new Error("No hay información de obligación para interpretar.");
+      actualizarEstadoIndicador("cargando","IA DIAN: interpretando NIT, razón social y cuotas...");
+      const base=importarDatosObligacionInteligente(text);
+      const ai=await interpretarObligacionConIA(text,base);
+      const obj=ai.resultado;
+      aplicarImportacionObligacion(obj);
+      $("pegarDatosObligacion").value="";
+      const confianza=Math.round(Number(ai.confidence||0)*100);
+      const r=$("resultadoImportacionObligacion");
+      if(r){
+        r.innerHTML=(r.innerHTML||"")+` · <strong>IA DIAN:</strong> validación ${confianza}% — datos determinísticos confirmados`;
+      }
+      window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"OBLIGACION VALIDADA",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:obj.cuotas?.length||0,anomalies:0,timestamp:new Date().toISOString()}}));
+      actualizarEstadoIndicador("listo",`IA DIAN: NIT, razón social y ${obj.cuotas?.length||0} cuota(s) validados · confianza ${confianza}%`);
+    }catch(e){
+      console.error(e);
+      actualizarEstadoIndicador("error","IA DIAN no validó los datos de la obligación");
+      alert(e.message||"No fue posible interpretar la obligación con IA.");
+    }
   });
 }
 

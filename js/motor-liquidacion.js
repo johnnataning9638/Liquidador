@@ -468,25 +468,72 @@ export class MotorLiquidacion{
     }
     const rupMil=n=>Math.ceil((Number(n)||0)/1000)*1000;
     let ai=0,aa=0,as=0;
+    // Guardamos también los valores proporcionales SIN redondear. Esto es
+    // indispensable para resolver el caso en que dos componentes pequeños
+    // son redondeados por separado a $1.000 y, al sumarlos, superan el pago.
+    const rawImpuesto=porcentaje/100*impuesto;
+    const rawIntereses=porcentaje/100*intereses;
+    const rawSancion=porcentaje/100*sancion;
+
     if(tipoProporcion==="Impuesto mayor") {
-      aa=Math.min(intereses,rupMil(porcentaje/100*intereses));
-      as=Math.min(sancion,rupMil(porcentaje/100*sancion));
+      aa=Math.min(intereses,rupMil(rawIntereses));
+      as=Math.min(sancion,rupMil(rawSancion));
       ai=Math.max(0,aplicado-aa-as);
       ai=Math.min(ai,impuesto);
     }else if(tipoProporcion==="Interés mayor") {
-      ai=Math.min(impuesto,rupMil(porcentaje/100*impuesto));
-      as=Math.min(sancion,rupMil(porcentaje/100*sancion));
+      ai=Math.min(impuesto,rupMil(rawImpuesto));
+      as=Math.min(sancion,rupMil(rawSancion));
       aa=Math.max(0,aplicado-ai-as);
       aa=Math.min(aa,intereses);
     }else {
-      ai=Math.min(impuesto,rupMil(porcentaje/100*impuesto));
-      aa=Math.min(intereses,rupMil(porcentaje/100*intereses));
+      ai=Math.min(impuesto,rupMil(rawImpuesto));
+      aa=Math.min(intereses,rupMil(rawIntereses));
       as=Math.max(0,aplicado-ai-aa);
       as=Math.min(as,sancion);
     }
+
+    // AJUSTE CRÍTICO DE SEGURIDAD:
+    // El pago es un límite absoluto. El redondeo hacia arriba de varios
+    // componentes NO puede generar una aplicación superior al dinero pagado.
+    // Si ocurre un exceso por redondeo, se reduce primero el componente no
+    // dominante con menor valor proporcional real. Así, por ejemplo, un pago
+    // de $1.001 con interés proporcional de $51 y sanción proporcional de
+    // $300 puede quedar $1 en intereses + $1.000 en sanción, nunca $2.000.
+    let suma=ai+aa+as;
+    if(suma>aplicado){
+      const componentes=[
+        {key:"impuesto",raw:rawImpuesto,get:()=>ai,set:v=>{ai=v}},
+        {key:"intereses",raw:rawIntereses,get:()=>aa,set:v=>{aa=v}},
+        {key:"sancion",raw:rawSancion,get:()=>as,set:v=>{as=v}}
+      ];
+      const noDominantes=componentes
+        .filter(c=>c.key!==({"Impuesto mayor":"impuesto","Interés mayor":"intereses","Sanción mayor":"sancion"}[tipoProporcion]))
+        .sort((a,b)=>a.raw-b.raw);
+      let exceso=suma-aplicado;
+      for(const c of noDominantes){
+        if(exceso<=0)break;
+        const actual=c.get();
+        const reducir=Math.min(actual,exceso);
+        c.set(actual-reducir);
+        exceso-=reducir;
+      }
+      // Respaldo final: por ninguna circunstancia se puede superar el pago,
+      // incluso si todos los componentes anteriores agotaran sus saldos.
+      if(exceso>0){
+        const todos=[...componentes].sort((a,b)=>b.get()-a.get());
+        for(const c of todos){
+          if(exceso<=0)break;
+          const actual=c.get();
+          const reducir=Math.min(actual,exceso);
+          c.set(actual-reducir);
+          exceso-=reducir;
+        }
+      }
+      suma=ai+aa+as;
+    }
+
     // Ajuste de seguridad si los topes de los componentes produjeron una
     // diferencia por redondeo. Nunca se asigna más de lo adeudado.
-    let suma=ai+aa+as;
     let faltante=aplicado-suma;
     if(faltante>0){
       const orden=tipoProporcion==="Impuesto mayor"?["impuesto","intereses","sancion"]:
@@ -502,6 +549,11 @@ export class MotorLiquidacion{
       }
       suma=ai+aa+as;
     }
+
+    // Invariante absoluto: el total aplicado jamás puede superar el pago.
+    // Si una combinación de redondeos llegara a violarlo, el total se recorta
+    // al pago y el excedente se calcula sobre ese total real.
+    suma=Math.min(suma,aplicado);
     return {impuesto:Math.round(ai),intereses:Math.round(aa),sancion:Math.round(as),total:Math.round(suma),excedente:Math.max(0,B-suma),porcentaje,tipoProporcion};
   }
 

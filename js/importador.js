@@ -120,6 +120,30 @@ function normalizarDocumento(v){
   const d=base.replace(/\D/g,"");
   return d;
 }
+function extraerTDJDesdeTexto(v){
+  const s=limpiarCeldaPago(v);
+  const m=s.match(/\bTDJ\b\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?\s*(\d{5,})/i)
+    ||s.match(/T[ÍI]TULO\s+DE\s+DEP[ÓO]SITO\s+JUDICIAL\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?\s*(\d{5,})/i);
+  return m?m[1]:"";
+}
+function esTDJTexto(v){ return !!extraerTDJDesdeTexto(v); }
+function separarTokensPagoSinTitulo(celda){
+  const s=limpiarCeldaPago(celda);
+  if(!s)return [];
+  const tdj=extraerTDJDesdeTexto(s);
+  if(tdj){
+    const resto=s
+      .replace(/\bTDJ\b\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?\s*\d{5,}/i,"")
+      .replace(/T[ÍI]TULO\s+DE\s+DEP[ÓO]SITO\s+JUDICIAL\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?\s*\d{5,}/i,"")
+      .trim();
+    const fecha=(resto.match(/\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/)||[])[0]||"";
+    const sinFecha=fecha?resto.replace(fecha,""):resto;
+    const nums=sinFecha.match(/(?:\$?\s*\d{1,3}(?:[. ]\d{3})+|\$?\s*\d+(?:[.,]\d+)?)\s*$/);
+    const valor=nums?nums[0].trim():"";
+    return [tdj,fecha,valor].filter(Boolean);
+  }
+  return s.split(/\s+/).filter(Boolean);
+}
 function esDocumentoLargo(v){
   const d=normalizarDocumento(v);
   return /^\d{10,}$/.test(d) && !/^20\d{2}$/.test(d);
@@ -178,41 +202,50 @@ function extraerTipoDesdeTexto(v){
   return t.includes("TASA")?"TASA DIAN":"TASA DIAN";
 }
 function reconocerFilaPago(celdas,indices={}){
-  const vals=celdas.map(limpiarCeldaPago).filter(Boolean);
+  const tdjOriginal=celdas.length===1?extraerTDJDesdeTexto(celdas[0]):"";
+  let celdasNormalizadas=celdas.map(limpiarCeldaPago);
+  if(celdasNormalizadas.length===1 && /\s+/.test(celdasNormalizadas[0])){
+    const tokens=separarTokensPagoSinTitulo(celdasNormalizadas[0]);
+    if(tokens.length>1)celdasNormalizadas=tokens;
+  }
+  const vals=celdasNormalizadas.filter(Boolean);
   if(!vals.length)return null;
   let fecha="",idxFecha=-1;
   const fechaIdx=indices.fecha??-1;
-  if(fechaIdx>=0&&celdas[fechaIdx]){fecha=fechaISO(limpiarCeldaPago(celdas[fechaIdx]));if(fecha)idxFecha=fechaIdx;}
-  if(!fecha){for(let i=0;i<celdas.length;i++){const f=fechaISO(celdas[i]);if(f){fecha=f;idxFecha=i;break;}}}
+  if(fechaIdx>=0&&celdasNormalizadas[fechaIdx]){fecha=fechaISO(limpiarCeldaPago(celdasNormalizadas[fechaIdx]));if(fecha)idxFecha=fechaIdx;}
+  if(!fecha){for(let i=0;i<celdasNormalizadas.length;i++){const f=fechaISO(celdasNormalizadas[i]);if(f){fecha=f;idxFecha=i;break;}}}
   if(!fecha)return null;
 
   let recibo="",tdj="",idxDoc=-1;
   const tdjIdx=indices.tdj??-1, reciboIdx=indices.recibo??-1;
-  if(tdjIdx>=0&&celdas[tdjIdx]){tdj=normalizarDocumento(celdas[tdjIdx]);idxDoc=tdj?tdjIdx:-1;}
-  if(reciboIdx>=0&&celdas[reciboIdx]){recibo=normalizarDocumento(celdas[reciboIdx]);idxDoc=recibo?reciboIdx:idxDoc;}
+  if(tdjIdx>=0&&celdasNormalizadas[tdjIdx]){tdj=normalizarDocumento(celdasNormalizadas[tdjIdx]);idxDoc=tdj?tdjIdx:-1;}
+  if(reciboIdx>=0&&celdasNormalizadas[reciboIdx]){recibo=normalizarDocumento(celdasNormalizadas[reciboIdx]);idxDoc=recibo?reciboIdx:idxDoc;}
   if(!tdj&&!recibo){
-    for(let i=0;i<celdas.length;i++){
-      const limpio=limpiarCeldaPago(celdas[i]);
+    for(let i=0;i<celdasNormalizadas.length;i++){
+      const limpio=limpiarCeldaPago(celdasNormalizadas[i]);
+      const t=extraerTDJDesdeTexto(limpio);
+      if(t){tdj=t;idxDoc=i;break;}
       if(esReciboPagoSinTitulo(limpio)){recibo=normalizarDocumento(limpio);idxDoc=i;break;}
     }
   }
+  if(!tdjOriginal){}else{tdj=tdjOriginal;recibo="";idxDoc=0;}
   if(!tdj&&!recibo){
-    for(let i=0;i<celdas.length;i++){
-      const limpio=limpiarCeldaPago(celdas[i]);
+    for(let i=0;i<celdasNormalizadas.length;i++){
+      const limpio=limpiarCeldaPago(celdasNormalizadas[i]);
       if(esDocumentoLargo(limpio)){recibo=normalizarDocumento(limpio);idxDoc=i;break;}
     }
   }
 
   let valor=0;
   const valorIdx=indices.valor??-1;
-  if(valorIdx>=0)valor=valorNumericoEstricto(celdas[valorIdx])||0;
+  if(valorIdx>=0)valor=valorNumericoEstricto(celdasNormalizadas[valorIdx])||0;
   if(!(valor>0)){
     const candidatos=[];
-    for(let i=0;i<celdas.length;i++){
+    for(let i=0;i<celdasNormalizadas.length;i++){
       if(i===idxDoc||i===idxFecha)continue;
-      const n=valorNumericoEstricto(celdas[i]);
+      const n=valorNumericoEstricto(celdasNormalizadas[i]);
       if(n===null||n<=0)continue;
-      const txt=limpiarCeldaPago(celdas[i]);
+      const txt=limpiarCeldaPago(celdasNormalizadas[i]);
       if(/^\d{1,2}$/.test(txt))continue; // Nº/repetición/cuota
       if(/^20\d{2}$/.test(txt))continue;
       // Un documento largo nunca es valor pagado.
@@ -224,8 +257,18 @@ function reconocerFilaPago(celdas,indices={}){
   }
   if(!(valor>0))return null;
 
-  let tipo=indices.tipo>=0?extraerTipoDesdeTexto(celdas[indices.tipo]):"TASA DIAN";
-  let observacion=indices.obs>=0?upper(limpiarCeldaPago(celdas[indices.obs])):"IMPORTADO INTELIGENTE";
+  let tipo=indices.tipo>=0?extraerTipoDesdeTexto(celdasNormalizadas[indices.tipo]):"TASA DIAN";
+  if(!tdj && indices.tipo>=0 && /\bTDJ\b|T[ÍI]TULO\s+DE\s+DEP[ÓO]SITO\s+JUDICIAL/i.test(limpiarCeldaPago(celdasNormalizadas[indices.tipo]))){
+    for(let i=0;i<celdasNormalizadas.length;i++){
+      const d=limpiarCeldaPago(celdasNormalizadas[i]);
+      const t=extraerTDJDesdeTexto(d);
+      if(t){tdj=t;recibo="";break;}
+      if(/^\d{5,}$/.test(d)){tdj=d;recibo="";break;}
+    }
+    tipo="TDJ";
+  }
+  if(tdj)tipo="TDJ";
+  let observacion=indices.obs>=0?upper(limpiarCeldaPago(celdasNormalizadas[indices.obs])):"IMPORTADO INTELIGENTE";
   return {id:crypto.randomUUID(),numero:0,tdj,recibo,fecha,valor,tipo,observacion};
 }
 function reconocerPagosTabularesInteligente(lines){
@@ -293,9 +336,12 @@ function reconocerPagosTranspuestosInteligente(lines){
   let filaDoc=-1, docCols=[];
   for(let r=0;r<Math.min(filas.length,12);r++){
     const c=filas[r];
+    const etiqueta=norm(c[0]||"");
+    const esEtiquetaDocumento=etiqueta.includes("documento fuente")||etiqueta.includes("recibo")||etiqueta.includes("tdj")||etiqueta.includes("titulo de deposito")||etiqueta.includes("título de depósito");
+    if(!esEtiquetaDocumento)continue;
     const candidatos=[];
     for(let col=1;col<c.length;col++){
-      if(esReciboPagoSinTitulo(c[col])||esDocumentoLargo(c[col]))candidatos.push(col);
+      if(esReciboPagoSinTitulo(c[col])||esDocumentoLargo(c[col])||extraerTDJDesdeTexto(c[col]))candidatos.push(col);
     }
     if(candidatos.length>=1){filaDoc=r;docCols=candidatos;break;}
   }
@@ -363,11 +409,8 @@ function reconocerPagosSinTitulos(lines){
   for(const c of filas){
     const p=reconocerFilaPago(c);
     if(p)encontrados.push(p);
-    // Una línea sin separadores puede contener varios campos separados solo
-    // por espacios. Se vuelve a tokenizar para reconocer documento, fecha y
-    // valor aunque estén en cualquier orden.
     if(c.length===1 && /\s+/.test(c[0])){
-      const tokens=c[0].split(/\s+/).filter(Boolean).map(limpiarCeldaPago);
+      const tokens=separarTokensPagoSinTitulo(c[0]);
       const q=reconocerFilaPago(tokens);
       if(q)encontrados.push(q);
     }
@@ -399,15 +442,16 @@ function reconocerPagosSinTitulos(lines){
     let mejorDoc=null;
     for(let j=Math.max(0,i-4);j<=Math.min(filas.length-1,i+4);j++){
       for(const cell of filas[j]){
-        if(esReciboPagoSinTitulo(cell)||esDocumentoLargo(cell)){
-          const d=normalizarDocumento(cell),dist=Math.abs(j-i);
-          if(!mejorDoc||dist<mejorDoc.dist)mejorDoc={d,dist};
+        const tdj=extraerTDJDesdeTexto(cell);
+        if(tdj || esReciboPagoSinTitulo(cell)||esDocumentoLargo(cell)){
+          const d=tdj||normalizarDocumento(cell),dist=Math.abs(j-i);
+          if(!mejorDoc||dist<mejorDoc.dist)mejorDoc={d,dist,tdj:!!tdj};
         }
       }
     }
     if(!mejorDoc)continue;
     usadosValores.add(mejorValor.j);
-    const p={id:crypto.randomUUID(),numero:0,tdj:"",recibo:mejorDoc.d,fecha,valor:mejorValor.n,tipo:"TASA DIAN",observacion:"IMPORTADO INTELIGENTE"};
+    const p={id:crypto.randomUUID(),numero:0,tdj:mejorDoc.tdj?mejorDoc.d:"",recibo:mejorDoc.tdj?"":mejorDoc.d,fecha,valor:mejorValor.n,tipo:mejorDoc.tdj?"TDJ":"TASA DIAN",observacion:"IMPORTADO INTELIGENTE"};
     const clave=`${p.recibo}|${p.fecha}|${p.valor}`;
     if(!encontrados.some(x=>`${x.recibo}|${x.fecha}|${x.valor}`===clave))encontrados.push(p);
   }
