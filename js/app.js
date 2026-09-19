@@ -432,6 +432,27 @@ function renderMetadatosConcepto(){
   const c=upper($("concepto").value);
 }
 
+function configurarTabulacionVencimientos(){
+  const tbody=$("tablaVencimientos")?.querySelector("tbody");
+  if(!tbody)return;
+  // El calendario nativo no participa en la navegación con TAB: se abre
+  // únicamente cuando el usuario lo solicita con el mouse.
+  tbody.querySelectorAll(".fecha-native").forEach(el=>el.tabIndex=-1);
+  // La cuota es informativa/automática y el botón Limpiar es una acción;
+  // ninguno debe interrumpir la secuencia de captura.
+  tbody.querySelectorAll('input[data-v="periodo"], button[data-clear]').forEach(el=>el.tabIndex=-1);
+}
+
+function configurarTabulacionPagos(){
+  const tbody=$("tablaPagos")?.querySelector("tbody");
+  if(!tbody)return;
+  // En pagos la secuencia es: TDJ → Recibo → Fecha → Valor → Tipo →
+  // Observación → siguiente fila. El calendario y Eliminar quedan fuera
+  // de la navegación con TAB.
+  tbody.querySelectorAll(".fecha-native").forEach(el=>el.tabIndex=-1);
+  tbody.querySelectorAll("button[data-del]").forEach(el=>el.tabIndex=-1);
+}
+
 function renderVencimientos(){
   const tbody=$("tablaVencimientos").querySelector("tbody");
   tbody.innerHTML="";
@@ -454,6 +475,7 @@ function renderVencimientos(){
     tr.querySelector("[data-clear]").addEventListener("click",()=>{obligacionVencimientos=obligacionVencimientos.filter(x=>Number(x.numero)!==i);renderVencimientos();});
     tbody.appendChild(tr);
   }
+  configurarTabulacionVencimientos();
 }
 
 function renderCalendario(){
@@ -514,6 +536,7 @@ function renderPagos(){
     tr.querySelector("[data-del]").addEventListener("click",()=>{pagos=pagos.filter(x=>x.id!==p.id);renderPagos();});
     tbody.appendChild(tr);
   });
+  configurarTabulacionPagos();
 }
 
 function agregarPago(p={}){
