@@ -1,7 +1,22 @@
-const DEFAULT_AI_URL = "http://127.0.0.1:8787";
+const DEFAULT_AI_URL = "https://ai-liquidador.onrender.com";
+const LOCAL_AI_URL = "http://127.0.0.1:8787";
+
+function esMotorLocal(url){
+  const s=String(url||"").trim().toLowerCase();
+  return s===LOCAL_AI_URL || s.startsWith(LOCAL_AI_URL+"/") || s.startsWith("http://localhost:8787");
+}
 
 export function getAIEndpoint(){
-  try{return localStorage.getItem("dianAiEndpoint")||DEFAULT_AI_URL;}catch{return DEFAULT_AI_URL;}
+  try{
+    const stored=localStorage.getItem("dianAiEndpoint")||"";
+    // En GitHub Pages, nunca quedarse apuntando al motor local guardado
+    // durante las pruebas. En localhost se conserva la posibilidad de usar
+    // el motor local.
+    const host=String(window?.location?.hostname||"").toLowerCase();
+    const esLocalPage=host==="localhost"||host==="127.0.0.1";
+    if(stored && !(esMotorLocal(stored)&&!esLocalPage)) return stored;
+    return esLocalPage ? (stored||LOCAL_AI_URL) : DEFAULT_AI_URL;
+  }catch{return DEFAULT_AI_URL;}
 }
 
 

@@ -1,6 +1,6 @@
 import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.30";
 import {importarDatosInteligente} from "./importador.js?v=16.32.32";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA} from "./ai-bridge.js?v=16.32.43";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA} from "./ai-bridge.js?v=16.32.46";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.30";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
