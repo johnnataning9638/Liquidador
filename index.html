@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liquidador DIAN — Reajuste 16.32.31</title>
-<link rel="stylesheet" href="estilos.css?v=16.32.31">
+<title>Liquidador DIAN — Reajuste 16.32.43</title>
+<link rel="stylesheet" href="estilos.css?v=16.32.43">
 </head>
 <body>
 <header class="topbar">
@@ -69,7 +69,11 @@
   <div class="panel-title fila-titulo"><span>Importación inteligente — NIT, razón social y cuotas</span><span class="mini-badge">PEGAR DATOS</span></div>
   <div class="importador importador-obligacion">
     <textarea id="pegarDatosObligacion" rows="5" placeholder="Pegue aquí la información de la obligación. Puede venir ordenada o desordenada, en filas o columnas, con o sin títulos. El sistema intentará reconocer NIT, razón social y hasta seis cuotas (número, fecha e impuesto declarado) sin exigir un orden específico."></textarea>
-    <button type="button" id="btnProcesarDatosObligacion" class="secundario">Reconocer y ubicar</button>
+    <div class="acciones-importacion acciones-obligacion-ia">
+      <button type="button" id="btnProcesarDatosObligacion" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>Importar</span></button>
+      <button type="button" id="btnProcesarDatosObligacionIA" class="primario"><span>Importar IA</span></button>
+      <span id="btnComprobarIAObligacion" class="indicador-parametros error indicador-ia" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span>
+    </div>
   </div>
   <div id="resultadoImportacionObligacion" class="importacion-resumen" hidden></div>
 </section>
@@ -80,7 +84,13 @@
     <div class="tab-pane-inner">
 <section class="panel">
   <div class="panel-title fila-titulo"><span>Tabla de pagos históricos</span><div class="acciones"><button id="btnAgregarPago" class="primario">Agregar pago</button><button id="btnImportar" class="secundario">Importar</button><input id="archivoImportacion" type="file" accept=".txt,.csv,.tsv" hidden></div></div>
-  <div class="importador"><textarea id="pegarDatos" rows="4" placeholder="Pega información horizontal o vertical. Puede contener información con o sin títulos. En pagos sin títulos, reconoce recibos que inicien por 4 y tengan más de 12 dígitos, luego fecha y valor; descarta lo demás."></textarea><button id="btnProcesarPegado" class="secundario">Reconocer y aplicar</button></div>
+  <div class="importador"><textarea id="pegarDatos" rows="4" placeholder="Pega información horizontal o vertical. Puede contener información con o sin títulos. En pagos sin títulos, reconoce recibos que inicien por 4 y tengan más de 12 dígitos, luego fecha y valor; descarta lo demás."></textarea><div class="acciones-importacion acciones-pagos-wrap">
+      <div class="acciones-pagos-ia">
+        <button id="btnProcesarPegado" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>Importar</span></button>
+        <button id="btnProcesarPegadoIA" class="primario"><span>Importar IA</span></button>
+      </div>
+      <span id="btnComprobarIA" class="indicador-parametros error indicador-ia" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span>
+    </div></div>
   <div class="tabla-scroll"><table id="tablaPagos"><thead><tr><th>Nº</th><th>TDJ Nº</th><th>Recibo Nº</th><th>Fecha pago</th><th>Valor pago</th><th>Tipo</th><th>Tasa</th><th>Observación</th><th>Acción</th></tr></thead><tbody></tbody></table></div>
 </section>
     </div>
@@ -117,6 +127,8 @@
   <div id="estadoIPC" class="resultado-calendario"></div><div class="tabla-scroll"><table id="tablaIPC"><thead><tr><th>Año IPC</th><th>IPC</th><th>Aplicable desde</th><th>Fuente</th><th>Norma / referencia</th></tr></thead><tbody></tbody></table></div>
 </details>
 
+
+
 <section class="panel soporte-panel">
   <div class="panel-title fila-titulo"><span>Soportes de la liquidación</span><span class="badge soporte-badge">FASE 17</span></div>
   <div class="soporte-contenido">
@@ -138,7 +150,7 @@
 
 </main>
 <footer>Liquidador DIAN — versión 16.32, con TIM e IPC centralizados y alertas informativas</footer>
-<script type="module" src="js/app.js?v=16.32.31"></script>
+<script type="module" src="js/app.js?v=16.32.43"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
