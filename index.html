@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liquidador DIAN — Reajuste 16.32.21</title>
-<link rel="stylesheet" href="estilos.css?v=16.32.12">
+<title>Liquidador DIAN — Reajuste 16.32.31</title>
+<link rel="stylesheet" href="estilos.css?v=16.32.31">
 </head>
 <body>
 <header class="topbar">
   <div><h1>LIQUIDADOR DE OBLIGACIONES DIAN</h1><p>Liquidación histórica de obligaciones, pagos, intereses, sanciones y saldo</p></div>
-  <span id="estadoSistema" class="badge">Cargando parámetros...</span>
+  <span id="estadoSistema" class="indicador-parametros cargando" role="status" aria-label="Cargando parámetros" title="Cargando parámetros"></span>
 </header>
 <main class="contenedor">
 
@@ -37,8 +37,8 @@
         <label>Período / Cuota<select id="periodo"><option value="">SELECCIONE...</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></label>
         <label class="dato-razon">Razón social<input id="razonSocial" type="text"></label>
         <label>Tipo de liquidación<select id="tipoLiquidacion" required><option value="">SELECCIONE...</option><option value="PRIVADA">PRIVADA</option><option value="OFICIAL">OFICIAL</option></select></label>
-        <label id="campoFechaAutoAdmisorio" hidden>Fecha de auto admisorio<div class="fecha-dual"><input id="fechaAutoAdmisorio" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><input id="fechaAutoAdmisorioPicker" class="fecha-native" type="date" aria-label="Calendario fecha de auto admisorio" title="Abrir calendario"></div></label>
-        <label id="campoFechaProvidenciaDefinitiva" hidden>Fecha de providencia definitiva<div class="fecha-dual"><input id="fechaProvidenciaDefinitiva" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><input id="fechaProvidenciaDefinitivaPicker" class="fecha-native" type="date" aria-label="Calendario fecha de providencia definitiva" title="Abrir calendario"></div></label>
+        <label id="campoFechaAutoAdmisorio" hidden>Fecha de auto admisorio<div class="fecha-dual"><input id="fechaAutoAdmisorio" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa"><input id="fechaAutoAdmisorioPicker" class="fecha-native" type="date" aria-label="Calendario fecha de auto admisorio" title="Abrir calendario"></div></label>
+        <label id="campoFechaProvidenciaDefinitiva" hidden>Fecha de providencia definitiva<div class="fecha-dual"><input id="fechaProvidenciaDefinitiva" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa"><input id="fechaProvidenciaDefinitivaPicker" class="fecha-native" type="date" aria-label="Calendario fecha de providencia definitiva" title="Abrir calendario"></div></label>
       </div>
     </div>
     <div class="datos-bloque sancion-bloque">
@@ -46,7 +46,7 @@
       <div class="datos-grid sancion-grid">
         <label>¿Tiene sanción?<select id="tieneSancion" required><option value="">SELECCIONE...</option><option>NO</option><option>SI</option></select></label>
         <label>Valor sanción<input id="valorSancion" class="money" inputmode="numeric" placeholder="$ 0"></label>
-        <label>Fecha sanción<div class="fecha-dual"><input id="fechaSancion" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><input id="fechaSancionPicker" class="fecha-native" type="date" aria-label="Calendario fecha de sanción" title="Abrir calendario"></div></label>
+        <label>Fecha sanción<div class="fecha-dual"><input id="fechaSancion" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa"><input id="fechaSancionPicker" class="fecha-native" type="date" aria-label="Calendario fecha de sanción" title="Abrir calendario"></div></label>
         <label>Sanción mínima del año<input id="sancionMinima" readonly value="$ 0"></label>
         <label class="beneficio-sancion-abajo">Beneficio sanción<select id="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
       </div>
@@ -138,7 +138,7 @@
 
 </main>
 <footer>Liquidador DIAN — versión 16.32, con TIM e IPC centralizados y alertas informativas</footer>
-<script type="module" src="js/app.js?v=16.32.21"></script>
+<script type="module" src="js/app.js?v=16.32.31"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
