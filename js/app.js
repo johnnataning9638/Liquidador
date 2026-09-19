@@ -1,6 +1,6 @@
 import {dinero,numeroDesdeTexto,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.30";
 import {importarDatosInteligente} from "./importador.js?v=16.32.32";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.32.48";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.32.49";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.30";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
@@ -35,7 +35,8 @@ let supabaseClient=null;
 let adminEmail=null;
 let ultimaLiquidacion=null,ultimaAuditoria=null;
 let obligacionVencimientos=[];
-let feedbackIAPendiente=null;
+let feedbackIAPendientes=new Set();
+let limpiando=false;
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
 let estadoSancionUI={tiene:"",valor:"",fecha:"",beneficio:""};
 
@@ -1294,7 +1295,27 @@ function calcular(){
   }catch(e){console.error(e);alert(e.message||"No fue posible calcular la liquidación.");}
 }
 
-function limpiar(){
+async function limpiar(){
+  if(limpiando)return;
+  limpiando=true;
+  // LIMPIAR inicia un análisis nuevo. Antes de borrar el expediente actual,
+  // guarda silenciosamente el aprendizaje de las importaciones IA realizadas
+  // durante este análisis. Si hubo pagos y obligación IA, se guardan ambos.
+  const pendientes=[...feedbackIAPendientes];
+  if(pendientes.length){
+    for(const tipo of pendientes){
+      try{
+        const ejemplos=tipo==="pagos"?construirFeedbackPagosIA():construirFeedbackObligacionIA();
+        if(!ejemplos.length)continue;
+        await enviarFeedbackIA(ejemplos,`liquidador-ia-${tipo}-limpieza`);
+      }catch(e){
+        // El aprendizaje nunca debe impedir ni alterar la limpieza del Liquidador.
+        // El error queda en consola para diagnóstico técnico, sin alertar al usuario.
+        console.warn(`Aprendizaje IA al limpiar (${tipo}):`,e);
+      }
+    }
+  }
+  feedbackIAPendientes.clear();
   ocultarFeedbackIA();
   pagos=[];obligacionVencimientos=[];ultimaLiquidacion=null;ultimaAuditoria=null;
   // El botón LIMPIAR inicia una obligación completamente nueva.
@@ -1317,6 +1338,7 @@ function limpiar(){
   ["rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotal","rSaldoTotalFooter"].forEach(id=>$(id).textContent=dinero(0));
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
   if($("rExcedenteBox")){$("rExcedenteBox").hidden=true;$("rExcedente").textContent=dinero(0);}
+  limpiando=false;
 }
 
 
@@ -1353,39 +1375,19 @@ function construirFeedbackObligacionIA(){
 }
 
 function mostrarFeedbackIA(tipo){
-  feedbackIAPendiente=tipo;
+  // Ya no se muestran botones ni avisos al usuario. La marca solo indica que,
+  // al pulsar LIMPIAR, debe guardarse silenciosamente el aprendizaje de esta IA.
+  feedbackIAPendientes.add(tipo);
   const pagosBox=$("feedbackIApagos");
   const obligacionBox=$("feedbackIAobligacion");
-  if(pagosBox)pagosBox.hidden=tipo!=="pagos";
-  if(obligacionBox)obligacionBox.hidden=tipo!=="obligacion";
+  if(pagosBox)pagosBox.hidden=true;
+  if(obligacionBox)obligacionBox.hidden=true;
 }
 
 function ocultarFeedbackIA(){
-  feedbackIAPendiente=null;
   [$("feedbackIApagos"),$("feedbackIAobligacion")].forEach(x=>{if(x)x.hidden=true;});
 }
 
-async function registrarFeedbackIA(tipo,corregido=false){
-  if(feedbackIAPendiente!==tipo)return;
-  const ejemplos=tipo==="pagos"?construirFeedbackPagosIA():construirFeedbackObligacionIA();
-  if(!ejemplos.length){
-    ocultarFeedbackIA();
-    actualizarEstadoIndicador("listo","IA DIAN: no había campos estructurados para guardar como aprendizaje.");
-    return;
-  }
-  const source=corregido
-    ?`liquidador-ia-${tipo}-corregido`
-    :`liquidador-ia-${tipo}-confirmado`;
-  try{
-    const r=await enviarFeedbackIA(ejemplos,source);
-    ocultarFeedbackIA();
-    actualizarEstadoIndicador("listo",`IA DIAN: aprendizaje guardado · ${Number(r?.accepted||0)} ejemplo(s) nuevo(s).`);
-  }catch(e){
-    console.error("Feedback IA:",e);
-    actualizarEstadoIndicador("error","IA DIAN: no fue posible guardar el aprendizaje.");
-    alert(e.message||"No fue posible guardar el aprendizaje IA. Los datos de la liquidación no fueron modificados.");
-  }
-}
 
 function aplicarImportacion(obj){
   if(obj.nit)$("nit").value=String(obj.nit).replace(/\D/g,"");
@@ -1483,7 +1485,7 @@ function configurarBase(){
   sincronizarFechaDual("fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker",()=>{});
   actualizarCamposTipoLiquidacion();
   $("btnCalcular").addEventListener("click",calcular);
-  $("btnLimpiar").addEventListener("click",limpiar);
+  $("btnLimpiar").addEventListener("click",()=>{void limpiar();});
   $("btnAgregarPago").addEventListener("click",()=>agregarPago());
   $("btnCalcularVencimiento").addEventListener("click",renderCalendario);
   $("btnGenerarAuditoria").addEventListener("click",renderAuditoria);
@@ -1532,10 +1534,6 @@ function configurarBase(){
       alert(e.message||"No fue posible interpretar los pagos con IA.");
     }
   });
-  $("btnFeedbackIAPagosConfirmar")?.addEventListener("click",()=>registrarFeedbackIA("pagos",false));
-  $("btnFeedbackIAPagosCorregido")?.addEventListener("click",()=>registrarFeedbackIA("pagos",true));
-  $("btnFeedbackIAObligacionConfirmar")?.addEventListener("click",()=>registrarFeedbackIA("obligacion",false));
-  $("btnFeedbackIAObligacionCorregido")?.addEventListener("click",()=>registrarFeedbackIA("obligacion",true));
 
   const comprobarIAAutomaticamente=async()=>{
     const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
