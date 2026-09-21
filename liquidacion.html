@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liquidación de Obligaciones — DIAN</title>
+<link rel="stylesheet" href="estilos.css?v=16.32.43">
+</head>
+<body>
+<header class="topbar">
+  <div class="ruta-modulo"><button type="button" class="secundario btn-inicio" onclick="window.location.href='index.html'">← Módulo de inicio</button></div>
+  <div><h1>LIQUIDADOR DE OBLIGACIONES DIAN</h1><p>Liquidación histórica de obligaciones, pagos, intereses, sanciones y saldo</p></div>
+  <span id="estadoSistema" class="indicador-parametros cargando" role="status" aria-label="Cargando parámetros" title="Cargando parámetros"></span>
+</header>
+<main class="contenedor">
+
+  <nav class="tabs-nav" aria-label="Secciones del liquidador">
+    <button type="button" class="tab-btn active" data-tab="datos">1. Datos y vencimientos</button>
+    <button type="button" class="tab-btn" data-tab="pagos">2. Pagos</button>
+    <button type="button" class="tab-btn" data-tab="resultados">3. Resultados</button>
+  </nav>
+
+  <div id="avisosParametros" class="avisos-parametros" hidden></div>
+
+  <section class="tab-pane active" data-pane="datos">
+    <div class="tab-pane-inner">
+<section class="panel datos-unificados-panel">
+  <div class="panel-title fila-titulo"><span>Datos de la obligación y sanción</span><span class="mini-badge">INFORMACIÓN PRINCIPAL</span></div>
+  <div class="datos-unificados">
+    <div class="datos-bloque">
+      <div class="datos-bloque-titulo">Obligación</div>
+      <div class="datos-grid">
+        <label>NIT<input id="nit" type="text" inputmode="numeric" maxlength="20"></label>
+        <label>Año gravable<input id="anio" type="text" inputmode="numeric" maxlength="4"></label>
+        <label>Concepto<select id="concepto">
+          <option value="">SELECCIONE...</option><option>RENTA</option><option>RENTA CREE</option><option>VENTAS</option><option>CONSUMO</option><option>RETENCIÓN</option><option>RETENCIÓN CREE</option><option>PATRIMONIO</option><option>RIQUEZA</option><option>GMF</option><option>SANCION</option><option>PRODUCTOS ULTRAPROCESADOS</option><option>PRODUCTOS PLASTICOS</option><option>SIMPLE</option><option>OTROS</option>
+        </select></label>
+        <label>Período / Cuota<select id="periodo"><option value="">SELECCIONE...</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></label>
+        <label class="dato-razon">Razón social<input id="razonSocial" type="text"></label>
+        <label>Tipo de liquidación<select id="tipoLiquidacion" required><option value="">SELECCIONE...</option><option value="PRIVADA">PRIVADA</option><option value="OFICIAL">OFICIAL</option></select></label>
+        <label id="campoFechaAutoAdmisorio" hidden>Fecha de auto admisorio<div class="fecha-dual"><input id="fechaAutoAdmisorio" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa"><input id="fechaAutoAdmisorioPicker" class="fecha-native" type="date" aria-label="Calendario fecha de auto admisorio" title="Abrir calendario"></div></label>
+        <label id="campoFechaProvidenciaDefinitiva" hidden>Fecha de providencia definitiva<div class="fecha-dual"><input id="fechaProvidenciaDefinitiva" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa"><input id="fechaProvidenciaDefinitivaPicker" class="fecha-native" type="date" aria-label="Calendario fecha de providencia definitiva" title="Abrir calendario"></div></label>
+      </div>
+    </div>
+    <div class="datos-bloque sancion-bloque">
+      <div class="datos-bloque-titulo">Sanción</div>
+      <div class="datos-grid sancion-grid">
+        <label>¿Tiene sanción?<select id="tieneSancion" required><option value="">SELECCIONE...</option><option>NO</option><option>SI</option></select></label>
+        <label>Valor sanción<input id="valorSancion" class="money" inputmode="numeric" placeholder="$ 0"></label>
+        <label>Fecha sanción<div class="fecha-dual"><input id="fechaSancion" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa"><input id="fechaSancionPicker" class="fecha-native" type="date" aria-label="Calendario fecha de sanción" title="Abrir calendario"></div></label>
+        <label>Sanción mínima del año<input id="sancionMinima" readonly value="$ 0"></label>
+        <label class="beneficio-sancion-abajo">Beneficio sanción<select id="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
+      </div>
+    </div>
+  </div>
+  <div class="nota"><strong>Regla principal:</strong> el valor del impuesto se toma de la declaración del contribuyente y se registra directamente en el vencimiento. El sistema no determina el impuesto a partir de bases gravables; calcula la liquidación, intereses, sanciones, pagos y saldo. La sanción informada se conserva como saldo definitivo.</div>
+</section>
+    </div>
+
+<section class="panel panel-vencimientos-integrado" id="panelVencimientosGenerales">
+  <div class="panel-title fila-titulo"><span>Vencimientos de la obligación</span><div class="acciones"><button id="btnAgregarCuota" type="button" class="primario">Agregar cuota</button><button id="btnCalcularVencimiento" class="secundario">Consultar vencimiento DIAN</button></div></div>
+  <div id="resultadoCalendario" class="resultado-calendario">Complete NIT, año, concepto y período para consultar el calendario cuando exista una regla registrada.</div>
+  <div class="tabla-scroll">
+    <table id="tablaVencimientos"><thead><tr><th>Nº</th><th>Cuota</th><th>Fecha vencimiento</th><th>Impuesto declarado</th><th>Acción</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="nota">La obligación inicia con una cuota. Puede agregar tantas cuotas como correspondan a la obligación. El valor de cada cuota debe corresponder al impuesto efectivamente determinado en la declaración, recibo o documento tributario del contribuyente.</div>
+</section>
+
+<section class="panel importador-obligacion-panel">
+  <div class="panel-title fila-titulo"><span>Importación inteligente — NIT, razón social y cuotas</span><span class="mini-badge">PEGAR DATOS</span></div>
+  <div class="importador importador-obligacion">
+    <textarea id="pegarDatosObligacion" rows="5" placeholder="Pegue aquí la información de la obligación. Puede venir ordenada o desordenada, en filas o columnas, con o sin títulos. El sistema intentará reconocer NIT, razón social y hasta seis cuotas (número, fecha e impuesto declarado) sin exigir un orden específico."></textarea>
+    <div class="acciones-importacion acciones-obligacion-ia">
+      <button type="button" id="btnProcesarDatosObligacion" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>Importar</span></button>
+      <button type="button" id="btnProcesarDatosObligacionIA" class="primario"><span>Importar IA</span></button>
+      <span id="btnComprobarIAObligacion" class="indicador-parametros error indicador-ia" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span>
+    </div>
+  </div>
+  <div id="resultadoImportacionObligacion" class="importacion-resumen" hidden></div>
+</section>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="pagos">
+    <div class="tab-pane-inner">
+<section class="panel">
+  <div class="panel-title fila-titulo"><span>Tabla de pagos históricos</span><div class="acciones"><button id="btnAgregarPago" class="primario">Agregar pago</button><button id="btnImportar" class="secundario">Importar</button><input id="archivoImportacion" type="file" accept=".txt,.csv,.tsv" hidden></div></div>
+  <div class="importador"><textarea id="pegarDatos" rows="4" placeholder="Pega información horizontal o vertical. Puede contener información con o sin títulos. En pagos sin títulos, reconoce recibos que inicien por 4 y tengan más de 12 dígitos, luego fecha y valor; descarta lo demás."></textarea><div class="acciones-importacion acciones-pagos-wrap">
+      <div class="acciones-pagos-ia">
+        <button id="btnProcesarPegado" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>Importar</span></button>
+        <button id="btnProcesarPegadoIA" class="primario"><span>Importar IA</span></button>
+      </div>
+      <span id="btnComprobarIA" class="indicador-parametros error indicador-ia" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span>
+    </div></div>
+  <div class="tabla-scroll"><table id="tablaPagos"><thead><tr><th>Nº</th><th>TDJ Nº</th><th>Recibo Nº</th><th>Fecha pago</th><th>Valor pago</th><th>Tipo</th><th>Tasa</th><th>Observación</th><th>Acción</th></tr></thead><tbody></tbody></table></div>
+</section>
+    </div>
+  </section>
+
+<section class="tab-pane" data-pane="resultados">
+    <div class="tab-pane-inner">
+<section class="panel informe-panel">
+  <div class="informe-cabecera"><div><div class="informe-subtitulo">RESULTADO DE LA LIQUIDACIÓN</div><div class="valor-pago"><span>SALDO TOTAL</span><strong id="rSaldoTotal">$ 0</strong></div><div id="rExcedenteBox" class="excedente-box" hidden><span>EXCEDENTE</span><strong id="rExcedente">$ 0</strong></div></div><div class="informe-meta"><div><span>Último pago</span><strong id="rFechaPago">—</strong></div><div><span>Tasa utilizada</span><strong id="rTasa">—</strong></div></div></div>
+  <div class="tabla-informe-wrap"><table class="tabla-informe"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>APLICADO</th><th>SALDO</th></tr></thead><tbody><tr><td>Impuesto</td><td id="rDeudaImpuesto">$ 0</td><td id="rPropImpuesto">$ 0</td><td id="rSaldoImpuesto">$ 0</td></tr><tr><td>Intereses</td><td id="rDeudaIntereses">$ 0</td><td id="rPropIntereses">$ 0</td><td id="rSaldoIntereses">$ 0</td></tr><tr><td>Sanción</td><td id="rDeudaSancion">$ 0</td><td id="rPropSancion">$ 0</td><td id="rSaldoSancion">$ 0</td></tr></tbody><tfoot><tr><th>TOTALES</th><th id="rDeudaTotal">$ 0</th><th id="rPropTotal">$ 0</th><th id="rSaldoTotalFooter">$ 0</th></tr></tfoot></table></div>
+  <div id="detalleCalculo" class="detalle"></div>
+</section>
+
+<details class="panel tasas-panel">
+  <summary class="panel-title fila-titulo"><span>Actualización central de tasas moratorias</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · TIM</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+  <div class="tasas-admin-bar">
+    <div><strong>Estado de tasas:</strong> <span id="estadoTasasConexion">Consultando...</span></div>
+    <div class="tasas-admin-auth"><span id="estadoAdmin">Modo consulta pública</span><button id="btnIniciarAdmin" type="button" class="secundario">Ingresar como administrador</button><button id="btnCerrarAdmin" type="button" class="peligro" hidden>Cerrar sesión</button></div>
+  </div>
+  <div id="panelEdicionTasa" class="tasas-admin-editor" hidden>
+    <div class="tasas-grid"><label>Mes<select id="tasaMes"><option value="1">ENERO</option><option value="2">FEBRERO</option><option value="3">MARZO</option><option value="4">ABRIL</option><option value="5">MAYO</option><option value="6">JUNIO</option><option value="7">JULIO</option><option value="8">AGOSTO</option><option value="9">SEPTIEMBRE</option><option value="10">OCTUBRE</option><option value="11">NOVIEMBRE</option><option value="12">DICIEMBRE</option></select></label><label>Año<input id="tasaAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label><label>Tasa DIAN (%)<input id="tasaValor" type="text" inputmode="decimal" placeholder="Ej. 27,24"></label><label>Norma (opcional)<input id="tasaNorma" type="text" placeholder="Ej. Resolución 1260 de 2026"></label><div class="tasas-acciones"><button id="btnGuardarTasa" type="button" class="primario">Guardar tasa central</button><button id="btnActualizarTasaDian" type="button" class="secundario">Recargar tasas centrales</button></div></div>
+    <div class="nota">Solo el administrador autorizado puede guardar tasas. Una tasa nueva queda centralizada en Supabase y todos los usuarios la reciben al abrir o recargar el liquidador.</div>
+  </div>
+  <div id="estadoTasas" class="resultado-calendario"></div><div class="tabla-scroll"><table id="tablaTasasPersonalizadas"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Tipo</th><th>Fuente</th><th>Norma</th></tr></thead><tbody></tbody></table></div>
+</details>
+
+<details class="panel tasas-panel ipc-panel">
+  <summary class="panel-title fila-titulo"><span>Actualización central de IPC anuales</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · IPC</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+  <div class="tasas-admin-bar"><div><strong>Estado de IPC:</strong> <span id="estadoIPCConexion">Consultando...</span></div><div class="nota">Se registra el IPC del año de inflación; su aplicación inicia el 1 de enero del año siguiente.</div></div>
+  <div id="panelEdicionIPC" class="tasas-admin-editor" hidden>
+    <div class="tasas-grid"><label>Año IPC<input id="ipcAnio" type="text" inputmode="numeric" maxlength="4" placeholder="AAAA"></label><label>IPC (%)<input id="ipcValor" type="text" inputmode="decimal" placeholder="Ej. 5,10"></label><label>Norma / referencia (opcional)<input id="ipcNorma" type="text" placeholder="Ej. DANE / DIAN"></label><div class="tasas-acciones"><button id="btnGuardarIPC" type="button" class="primario">Guardar IPC central</button></div></div>
+    <div class="nota">El administrador puede incorporar el IPC anual cuando esté oficialmente disponible. La actualización es informativa y no bloquea las liquidaciones.</div>
+  </div>
+  <div id="estadoIPC" class="resultado-calendario"></div><div class="tabla-scroll"><table id="tablaIPC"><thead><tr><th>Año IPC</th><th>IPC</th><th>Aplicable desde</th><th>Fuente</th><th>Norma / referencia</th></tr></thead><tbody></tbody></table></div>
+</details>
+
+
+
+<section class="panel soporte-panel">
+  <div class="panel-title fila-titulo"><span>Soportes de la liquidación</span><span class="badge soporte-badge">FASE 17</span></div>
+  <div class="soporte-contenido">
+    <div class="nota">Genere un archivo Excel con la trazabilidad de vencimientos, pagos, intereses, imputaciones y saldos. El soporte PDF reproduce la estructura del liquidador y muestra la aplicación de cada pago.</div>
+    <div class="acciones soporte-acciones">
+      <button id="btnExportarExcel" class="secundario">Exportar Excel</button>
+      <button id="btnExportarPdf" class="primario">Exportar PDF</button>
+    </div>
+    <div id="estadoExportacion" class="resultado-calendario" hidden></div>
+  </div>
+</section>
+
+<details class="panel auditoria-panel"><summary>Auditoría y trazabilidad</summary><div class="detalle"><div class="nota">La auditoría conserva la trazabilidad de normativa, vencimientos, intereses, sanciones, pagos, imputación y saldo sin ocupar espacio permanente en la pantalla.</div><button id="btnGenerarAuditoria" class="secundario">Generar auditoría</button><div id="resultadoAuditoria" class="resultado-auditoria"></div></div></details>
+
+    </div>
+  </section>
+
+<section class="botonera"><button id="btnCalcular" class="primario grande">Calcular liquidación</button><button id="btnLimpiar" class="peligro grande">Limpiar</button></section>
+
+</main>
+<footer>Liquidador DIAN — versión 16.32, con TIM e IPC centralizados y alertas informativas</footer>
+<script type="module" src="js/app.js?v=16.32.50"></script>
+<script>
+(function(){
+  (function protegerEstadoFormulario(){
+    const s=()=>document.getElementById('tieneSancion');
+    document.addEventListener('change',e=>{if(e.target && e.target.id==='tieneSancion')e.target.dataset.tabValue=e.target.value;});
+    document.addEventListener('input',e=>{if(e.target && e.target.id==='tieneSancion')e.target.dataset.tabValue=e.target.value;});
+  })();
+  function configurarPestanas(){
+    const botones=[...document.querySelectorAll('.tab-btn')];
+    const paneles=[...document.querySelectorAll('.tab-pane')];
+    if(!botones.length)return;
+    function activar(nombre){
+      // Navegar entre pestañas nunca debe reiniciar datos del formulario.
+      try{if(typeof window.capturarSancionUI === "function")window.capturarSancionUI();}catch{}
+      botones.forEach(b=>{
+        const on=b.dataset.tab===nombre;
+        b.classList.toggle('active',on);
+        b.setAttribute('aria-selected',on?'true':'false');
+      });
+      paneles.forEach(p=>p.classList.toggle('active',p.dataset.pane===nombre));
+      // Preservar explícitamente la selección de sanción al cambiar de pestaña.
+      try{
+        const s=document.getElementById('tieneSancion');
+        if(s && s.dataset.tabValue) s.value=s.dataset.tabValue;
+      }catch{}
+    }
+    botones.forEach(b=>b.addEventListener('click',()=>activar(b.dataset.tab)));
+    activar('datos');
+    const calcular=document.getElementById('btnCalcular');
+    if(calcular)calcular.addEventListener('click',()=>setTimeout(()=>activar('resultados'),80));
+    const venc=document.getElementById('btnCalcularVencimiento');
+    if(venc)venc.addEventListener('click',()=>setTimeout(()=>activar('datos'),50));
+    const agregar=document.getElementById('btnAgregarPago');
+    if(agregar)agregar.addEventListener('click',()=>setTimeout(()=>activar('pagos'),50));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',configurarPestanas,{once:true});
+  else configurarPestanas();
+})();
+</script>
+</body>
+</html>
