@@ -137,13 +137,24 @@ function extraerNumeros(raw,nit,fechas){
 }
 
 function extraerNumeroCuotaEnContexto(raw,index){
-  const ventana=raw.slice(Math.max(0,index-45),Math.min(raw.length,index+45));
-  const m=norm(ventana).match(/(?:cuota|periodo|periodo\s+gravable|vto|vencimiento)\s*(?:n(?:umero)?|no)?\s*(?:de)?\s*([1-6])\b/);
-  if(m)return Number(m[1]);
+  const inicio=Math.max(0,index-80);
+  const fin=Math.min(raw.length,index+20);
+  const ventana=norm(raw.slice(inicio,fin));
+  const re=/(?:cuota|periodo|periodo\s+gravable|vto|vencimiento)\s*(?:n(?:umero)?|no)?\s*(?:de)?\s*(\d{1,3})\b/g;
+  let m,mejor=null;
+  while((m=re.exec(ventana))){
+    const posicion=inicio+m.index;
+    const distancia=Math.abs(index-posicion);
+    // Preferimos la etiqueta de cuota inmediatamente anterior a la fecha.
+    const penalizacion=posicion>index?25:0;
+    const score=distancia+penalizacion;
+    if(!mejor||score<mejor.score)mejor={numero:Number(m[1]),score};
+  }
+  if(mejor)return mejor.numero;
   // También reconoce el número de cuota aislado cuando viene separado por
-  // espacios o saltos de línea: "2\n30/04/2025" o "2 30/04/2025".
-  const alrededor=raw.slice(Math.max(0,index-18),Math.min(raw.length,index+4));
-  const bare=alrededor.match(/(?:^|\s)([1-6])(?=\s|$)/);
+  // espacios o saltos de línea: "7\n30/04/2025" o "7 30/04/2025".
+  const alrededor=norm(raw.slice(Math.max(0,index-18),Math.min(raw.length,index+4)));
+  const bare=alrededor.match(/(?:^|\s)(\d{1,3})(?=\s|$)/);
   return bare?Number(bare[1]):null;
 }
 
@@ -192,16 +203,16 @@ function construirCuotas(raw,lineas,nit){
   // Las cuotas rotuladas se respetan. Las que no tienen número se asignan por
   // orden de aparición de las fechas.
   const salida=[];const usadosN=new Set();
-  for(const x of resultados.filter(x=>x.numero>=1&&x.numero<=6)){
+  for(const x of resultados.filter(x=>x.numero>=1)){
     if(!usadosN.has(x.numero)){salida.push(x);usadosN.add(x.numero);}
   }
   let n=1;
   for(const x of resultados.filter(x=>!x.numero)){
-    while(usadosN.has(n)&&n<=6)n++;
-    if(n>6)break;
+    while(usadosN.has(n))n++;
+    
     salida.push({...x,numero:n});usadosN.add(n);n++;
   }
-  return salida.sort((a,b)=>a.numero-b.numero).slice(0,6).map(x=>({numero:x.numero,periodo:String(x.numero),fecha:x.fecha,impuesto:x.impuesto}));
+  return salida.sort((a,b)=>a.numero-b.numero).map(x=>({numero:x.numero,periodo:String(x.numero),fecha:x.fecha,impuesto:x.impuesto}));
 }
 
 export function importarDatosObligacionInteligente(texto){
@@ -218,7 +229,7 @@ export function importarDatosObligacionInteligente(texto){
   if(!razonSocial)advertencias.push("No se pudo confirmar la razón social.");
   if(!anio)advertencias.push("No se pudo identificar el año gravable.");
   if(!cuotas.length)advertencias.push("No se encontraron cuotas con fecha e impuesto declarado.");
-  if(fechas.length>6)advertencias.push("Se encontraron más de seis fechas; solo se incorporan seis cuotas.");
+  if(fechas.length>1)advertencias.push(`Se reconocieron ${fechas.length} cuota(s) a partir de las fechas importadas.`);
   if(!nit&&!razonSocial&&!anio&&!cuotas.length)throw new Error("No pude reconocer NIT, razón social, año ni cuotas. Puede pegar los datos con o sin títulos, en filas o columnas y en cualquier orden.");
   return {nit,razonSocial,anio,cuotas,advertencias};
 }

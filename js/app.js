@@ -11,7 +11,6 @@ import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=1
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.30";
 
 const $=id=>document.getElementById(id);
-const N=6;
 const TIPOS=[
   "TASA DIAN",
   "ART. 45 LEY 2155",
@@ -34,7 +33,7 @@ let tasasCentrales=[];
 let supabaseClient=null;
 let adminEmail=null;
 let ultimaLiquidacion=null,ultimaAuditoria=null;
-let obligacionVencimientos=[];
+let obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
 let feedbackIAPendientes=new Set();
 let limpiando=false;
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
@@ -443,6 +442,27 @@ function configurarTabulacionVencimientos(){
   tbody.querySelectorAll('input[data-v="periodo"], button[data-clear]').forEach(el=>el.tabIndex=-1);
 }
 
+function numeroMaximoCuota(){
+  return Math.max(1,...obligacionVencimientos.map(v=>Number(v.numero)||0));
+}
+
+function asegurarCuotaInicial(){
+  if(!obligacionVencimientos.length){
+    obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
+  }
+}
+
+function agregarCuota(){
+  asegurarCuotaInicial();
+  const siguiente=numeroMaximoCuota()+1;
+  const x={id:`VTO-${siguiente}-${Date.now()}`,numero:siguiente,periodo:siguiente,fecha:"",impuesto:0};
+  obligacionVencimientos.push(x);
+  obligacionVencimientos.sort((a,b)=>Number(a.numero)-Number(b.numero));
+  renderVencimientos();
+  const fila=$(`#tablaVencimientos tbody tr:nth-child(${obligacionVencimientos.findIndex(v=>Number(v.numero)===siguiente)+1})`);
+  fila?.querySelector('[data-v="periodo"]')?.focus();
+}
+
 function configurarTabulacionPagos(){
   const tbody=$("tablaPagos")?.querySelector("tbody");
   if(!tbody)return;
@@ -454,27 +474,39 @@ function configurarTabulacionPagos(){
 }
 
 function renderVencimientos(){
+  asegurarCuotaInicial();
   const tbody=$("tablaVencimientos").querySelector("tbody");
   tbody.innerHTML="";
-  for(let i=1;i<=N;i++){
-    const v=obligacionVencimientos.find(x=>Number(x.numero)===i)||{};
+  const cuotas=[...obligacionVencimientos].sort((a,b)=>Number(a.numero)-Number(b.numero));
+  cuotas.forEach((v,idx)=>{
+    const n=Number(v.numero)||idx+1;
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${i}</td><td><input data-v="periodo" value="${esc(v.periodo??(i))}" inputmode="text"></td><td>${campoFechaHtml({idText:`fechaVto-${i}`,idPicker:`fechaVtoPicker-${i}`,value:v.fecha,clase:"fecha-vto"})}</td><td><input data-v="impuesto" class="money" inputmode="numeric" value="${v.impuesto?dinero(v.impuesto):""}" placeholder="$ 0"></td><td><button class="secundario" data-clear="1">Limpiar</button></td>`;
+    tr.innerHTML=`<td>${idx+1}</td><td><input data-v="periodo" value="${esc(v.periodo??n)}" inputmode="text"></td><td>${campoFechaHtml({idText:`fechaVto-${v.id}`,idPicker:`fechaVtoPicker-${v.id}`,value:v.fecha,clase:"fecha-vto"})}</td><td><input data-v="impuesto" class="money" inputmode="numeric" value="${v.impuesto?dinero(v.impuesto):""}" placeholder="$ 0"></td><td><button class="secundario" data-clear="1">Eliminar</button></td>`;
     tr.querySelectorAll("[data-v]").forEach(el=>el.addEventListener("change",()=>{
       const key=el.dataset.v;
-      let x=obligacionVencimientos.find(z=>Number(z.numero)===i);
-      if(!x){x={id:`VTO-${i}`,numero:i,periodo:i,fecha:"",impuesto:0};obligacionVencimientos.push(x);}
+      const x=obligacionVencimientos.find(z=>z.id===v.id);
+      if(!x)return;
       if(key==="impuesto"){x.impuesto=numeroDesdeTexto(el.value);el.value=x.impuesto?dinero(x.impuesto):"";}
       else if(key==="periodo"){x.periodo=upper(el.value);}
     }));
     montarFechaDual(tr,iso=>{
-      let x=obligacionVencimientos.find(z=>Number(z.numero)===i);
-      if(!x){x={id:`VTO-${i}`,numero:i,periodo:i,fecha:"",impuesto:0};obligacionVencimientos.push(x);}
-      x.fecha=iso||"";
+      const x=obligacionVencimientos.find(z=>z.id===v.id);
+      if(x)x.fecha=iso||"";
+    },`fechaVto-${v.id}`,`fechaVtoPicker-${v.id}`);
+    tr.querySelector("[data-clear]").addEventListener("click",()=>{
+      if(obligacionVencimientos.length<=1){
+        const x=obligacionVencimientos[0];
+        if(x){x.fecha="";x.impuesto=0;x.periodo=1;}
+      }else{
+        obligacionVencimientos=obligacionVencimientos.filter(x=>x.id!==v.id);
+        // Renumeración visual/secuencial de las cuotas restantes.
+        obligacionVencimientos.sort((a,b)=>Number(a.numero)-Number(b.numero));
+        obligacionVencimientos.forEach((x,i)=>{x.numero=i+1;if(!x.periodo)x.periodo=i+1;});
+      }
+      renderVencimientos();
     });
-    tr.querySelector("[data-clear]").addEventListener("click",()=>{obligacionVencimientos=obligacionVencimientos.filter(x=>Number(x.numero)!==i);renderVencimientos();});
     tbody.appendChild(tr);
-  }
+  });
   configurarTabulacionVencimientos();
 }
 
@@ -487,7 +519,7 @@ function renderCalendario(){
   if(r.disponible){
     box.innerHTML=`<div class="cal-grid"><div><span>Fecha DIAN</span><strong>${fechaVisible(r.fecha)}</strong></div><div><span>Regla</span><strong>${esc(r.clave)}</strong></div></div><div class="nota">${esc(r.detalle)} · ${esc(r.fuente)}</div><button type="button" id="btnAplicarVencimiento" class="primario">Aplicar al vencimiento ${esc(d.periodo||"1")}</button>`;
     $("btnAplicarVencimiento").addEventListener("click",()=>{
-      const n=Math.min(N,Math.max(1,Number(d.periodo||1)));
+      const n=Math.max(1,Number(d.periodo||1));
       let x=obligacionVencimientos.find(v=>Number(v.numero)===n);
       if(!x){x={id:`VTO-${n}`,numero:n,periodo:n,impuesto:0,fecha:""};obligacionVencimientos.push(x);}
       x.fecha=r.fecha;
@@ -1340,7 +1372,7 @@ async function limpiar(){
   }
   feedbackIAPendientes.clear();
   ocultarFeedbackIA();
-  pagos=[];obligacionVencimientos=[];ultimaLiquidacion=null;ultimaAuditoria=null;
+  pagos=[];obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];ultimaLiquidacion=null;ultimaAuditoria=null;
   // El botón LIMPIAR inicia una obligación completamente nueva.
   // Es importante reiniciar también el estado auxiliar de sanción y el
   // estado usado por las pestañas: HTMLFormElement.reset() o limpiar
@@ -1450,7 +1482,7 @@ function aplicarImportacionObligacion(obj){
   if(obj.cuotas?.length){
     const existentes=new Map(obligacionVencimientos.map(v=>[Number(v.numero),v]));
     for(const c of obj.cuotas){
-      const n=Math.min(N,Math.max(1,Number(c.numero||1)));
+      const n=Math.max(1,Number(c.numero||1));
       let x=existentes.get(n);
       if(!x){x={id:`VTO-${n}`,numero:n,periodo:n,fecha:"",impuesto:0};obligacionVencimientos.push(x);existentes.set(n,x);}
       if(c.fecha)x.fecha=fechaISO(c.fecha)||x.fecha;
@@ -1510,6 +1542,7 @@ function configurarBase(){
   $("btnCalcular").addEventListener("click",calcular);
   $("btnLimpiar").addEventListener("click",()=>{void limpiar();});
   $("btnAgregarPago").addEventListener("click",()=>agregarPago());
+  $("btnAgregarCuota")?.addEventListener("click",agregarCuota);
   $("btnCalcularVencimiento").addEventListener("click",renderCalendario);
   $("btnGenerarAuditoria").addEventListener("click",renderAuditoria);
   $("btnExportarExcel").addEventListener("click",exportarExcel);
