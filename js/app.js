@@ -379,6 +379,16 @@ function leerFormulario(){
   sincronizarPagosDesdeDOM();
   const concepto=upper($("concepto").value);
   const periodicidad=concepto==="SIMPLE"?"ANTICIPO BIMESTRAL":upper($("periodicidadObligacion")?.value||"");
+  // En una liquidación sin pagos, la fecha de corte la define el funcionario
+  // en la primera fila de la tabla de pagos. Esa fila es solo un registro de
+  // fecha de corte: no exige TDJ, recibo, valor ni tasa. Si existen pagos
+  // reales (valor > 0), se conserva el comportamiento histórico y la fecha
+  // de corte sigue siendo la fecha actual.
+  const pagosReales=pagos.filter(p=>Number(p?.valor||0)>0);
+  const filaFechaCorte=pagos.find(p=>
+    fechaISO(p?.fecha) && Number(p?.valor||0)<=0 && !String(p?.tdj||"").trim() && !String(p?.recibo||"").trim()
+  );
+  const fechaCorte=pagosReales.length?hoyISO():(fechaISO(filaFechaCorte?.fecha)||"");
   return {
     nit:$("nit").value.replace(/\D/g,""),
     anio:Number($("anio").value||0),
@@ -393,7 +403,7 @@ function leerFormulario(){
     // La fecha para declarar ya no se captura en un campo independiente.
     // Para el PDF/Excel se deriva siempre de la CUOTA 1.
     fechaVencimientoDeclarar:fechaISO((obligacionVencimientos.find(v=>Number(v.numero)===1)||{}).fecha||""),
-    fechaCorte:hoyISO(),
+    fechaCorte,
     vencimientos:obligacionVencimientos
       .filter(v=>v.fecha&&Number(v.impuesto)>0)
       .map(v=>({...v,impuesto:Number(v.impuesto)})),
@@ -632,7 +642,11 @@ function habilitarSancion(){
 
 function pintarInforme(r){
   const u=r.ultimo||null;
-  const d=u?.deudaAntes||{impuesto:0,intereses:0,sancion:0};
+  const d=u?.deudaAntes||{
+    impuesto:(r.vencimientos||[]).reduce((a,v)=>a+Number(v.saldo||0),0),
+    intereses:Number(r.intereses||0),
+    sancion:Number(r.sancion||0)
+  };
   const p=u?.aplicado||{impuesto:0,intereses:0,sancion:0,total:0};
   const s=u?.saldo||{impuesto:r.impuesto||0,intereses:r.intereses||0,sancion:r.sancion||0};
   $("rFechaPago").textContent=u?.pago?.fecha?fechaVisible(u.pago.fecha):"—";
@@ -953,11 +967,11 @@ function filasActualizacionSancionExport(r){
         x.pago?.fecha||"",
         Number(t.anio||0),
         t.desde||"",
-        Number(t.anioInflacion||Number(t.anio||0)-1),
-        Number(t.saldoAntes||0),
+        Number(t.anioInflacion??(Number(t.anio||0)-1)),
+        Number(t.saldoAntes??t.saldoInicial??0),
         Number(t.ipcPorcentaje||0),
         Number(t.actualizacion||0),
-        Number(t.saldoDespues||0)
+        Number(t.saldoDespues??t.saldoFinal??0)
       ]);
     });
   });
@@ -967,7 +981,7 @@ function filasActualizacionSancionExport(r){
 function bloqueActualizacionSancionPdf(x,i){
   const tramos=Array.isArray(x.actualizacionSancion?.tramos)?x.actualizacionSancion.tramos:[];
   if(!tramos.length)return "";
-  const rows=tramos.map(t=>`<tr><td>${escPdf(t.anio)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion||Number(t.anio||0)-1)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td></tr>`).join("");
+  const rows=tramos.map(t=>`<tr><td>${escPdf(t.anio)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join("");
   const total=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
   return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica el 1 de enero de cada vigencia que corresponda, utilizando el 100 % del IPC del año inmediatamente anterior. No se prorratea por días. La fecha mostrada corresponde a la fecha efectiva de aplicación y el año IPC identifica la inflación utilizada.</div><table><thead><tr><th>AÑO DE ACTUALIZACIÓN</th><th>FECHA DE APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE ESTE PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table></div>`;
 }
@@ -977,7 +991,7 @@ function resumenFinalPdf(r){
   (r.detalle||[]).forEach((x,i)=>{
     (x.actualizacionSancion?.tramos||[]).forEach(t=>tramos.push({pago:i+1,fechaPago:x.pago?.fecha||"",...t}));
   });
-  const filas=tramos.length?tramos.map(t=>`<tr><td>${t.pago}</td><td>${escPdf(fechaVisible(t.fechaPago))}</td><td>${t.anio}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion||Number(t.anio||0)-1)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td></tr>`).join(""):"<tr><td colspan='8'>No se realizaron actualizaciones de sanción.</td></tr>";
+  const filas=tramos.length?tramos.map(t=>`<tr><td>${t.pago}</td><td>${escPdf(fechaVisible(t.fechaPago))}</td><td>${t.anio}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join(""):"<tr><td colspan='8'>No se realizaron actualizaciones de sanción.</td></tr>";
   const excedentes=(r.detalle||[]).map((x,i)=>({pago:i+1,fecha:x.pago?.fecha||"",valor:Number(x.excedente||x.aplicado?.excedente||0)}));
   const filasExcedentes=excedentes.length?excedentes.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.valor)}</td></tr>`).join(""):"<tr><td colspan='3'>No se registraron pagos.</td></tr>";
   const excedenteTotal=excedentes.reduce((a,e)=>a+e.valor,0);
@@ -1018,13 +1032,24 @@ function exportarExcel(){
     push([]);
 
     push(["PAGOS Y APLICACIÓN"],{title:true});
-    push(["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO","VALOR PAGO","TIPO","TASA","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
-    (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.tdj||"",x.pago?.recibo||"",x.pago?.fecha||"",x.pago?.valor||0,x.tipoAplicado||"TASA DIAN",x.tasaVisible??"",x.interesGenerado||0,x.aplicado?.impuesto||0,x.aplicado?.intereses||0,x.aplicado?.sancion||0,x.aplicado?.total||0,x.excedente||0],{money:[5,8,9,10,11,12,13],percent:[7]}));
+    push(["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO / CORTE","VALOR PAGO","TIPO","TASA","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
+    if((r.detalle||[]).length){
+      (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.tdj||"",x.pago?.recibo||"",x.pago?.fecha||"",x.pago?.valor||0,x.tipoAplicado||"TASA DIAN",x.tasaVisible??"",x.interesGenerado||0,x.aplicado?.impuesto||0,x.aplicado?.intereses||0,x.aplicado?.sancion||0,x.aplicado?.total||0,x.excedente||0],{money:[5,8,9,10,11,12,13],percent:[7]}));
+    }else{
+      push([0,"","",r.fechaCorte||d.fechaCorte||"",0,"TASA DIAN","",r.intereses||0, r.impuesto||0, r.intereses||0, r.sancion||0, r.total||0,0],{money:[5,8,9,10,11,12,13],percent:[7]});
+    }
     push([]);
 
-    push(["DETALLE DE INTERESES POR CUOTA Y POR PAGO"],{title:true});
+    push(["DETALLE DE INTERESES POR CUOTA Y POR FECHA DE CORTE"],{title:true});
     push(["PAGO","CUOTA","VENCIMIENTO","CAPITAL BASE","DESDE","HASTA","DÍAS DE MORA","TASA APLICADA","INTERÉS CALCULADO","METODOLOGÍA","SITUACIÓN"],{header:true});
-    construirDetalleInteresesExport(r).forEach(row=>push(row,{money:[4,9],percent:[8]}));
+    if((r.detalle||[]).length){
+      construirDetalleInteresesExport(r).forEach(row=>push(row,{money:[4,9],percent:[8]}));
+    }else{
+      (r.interesesPorCuota||[]).forEach((t,idx)=>{
+        push([0,t.vto||idx+1, t.vto||"", Number(t.base||t.capitalBase||0), t.desde||t.fechaVencimiento||"", t.hasta||t.fechaPago||r.fechaCorte||"", Number(t.dias||0), t.tasa==null?"":Number(t.tasa)*100, Number(t.interes??t.valor??0), t.metodologia||"", t.aplica===false?"NO EXIGIBLE":"INTERÉS CALCULADO"],{money:[4,9],percent:[8]});
+      });
+    }
+    push(["TOTAL INTERESES A LA FECHA DE CORTE", "", "", "", "", "", "", "", r.intereses||0],{money:[9]});
 
     if(String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"){
       push([]);
@@ -1037,17 +1062,29 @@ function exportarExcel(){
     push([]);
     push(["ACTUALIZACIÓN DE SANCIÓN — ART. 867-1 E.T. — DETALLE POR PAGO"],{title:true});
     let huboActualizacionExcel=false;
-    (r.detalle||[]).forEach((x,i)=>{
-      const tramos=Array.isArray(x.actualizacionSancion?.tramos)?x.actualizacionSancion.tramos:[];
-      if(!tramos.length)return;
-      huboActualizacionExcel=true;
-      push([`PAGO ${i+1}`,x.pago?.fecha||"",`ACTUALIZACIÓN DE SANCIÓN DEL PAGO ${i+1}`],{title:true});
-      push(["AÑO DE ACTUALIZACIÓN","FECHA DE APLICACIÓN","AÑO IPC","VALOR ANTERIOR","IPC","ACTUALIZACIÓN","VALOR DESPUÉS"],{header:true});
-      tramos.forEach(t=>push([Number(t.anio||0),t.desde||"",Number(t.anioInflacion||Number(t.anio||0)-1),Number(t.saldoAntes||0),Number(t.ipcPorcentaje||0),Number(t.actualizacion||0),Number(t.saldoDespues||0)],{money:[4,6,7],percent:[5]}));
-      const totalAct=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
-      push(["TOTAL ACTUALIZACIÓN DEL PAGO ${i+1}","","",0,"",totalAct,0],{money:[4,6,7]});
-      push([]);
-    });
+    if((r.detalle||[]).length){
+      (r.detalle||[]).forEach((x,i)=>{
+        const tramos=Array.isArray(x.actualizacionSancion?.tramos)?x.actualizacionSancion.tramos:[];
+        if(!tramos.length)return;
+        huboActualizacionExcel=true;
+        push([`PAGO ${i+1}`,x.pago?.fecha||"",`ACTUALIZACIÓN DE SANCIÓN DEL PAGO ${i+1}`],{title:true});
+        push(["AÑO DE ACTUALIZACIÓN","FECHA DE APLICACIÓN","AÑO IPC","VALOR ANTERIOR","IPC","ACTUALIZACIÓN","VALOR DESPUÉS"],{header:true});
+        tramos.forEach(t=>push([Number(t.anio||0),t.desde||"",Number(t.anioInflacion??(Number(t.anio||0)-1)),Number(t.saldoAntes??t.saldoInicial??0),Number(t.ipcPorcentaje||0),Number(t.actualizacion||0),Number(t.saldoDespues??t.saldoFinal??0)],{money:[4,6,7],percent:[5]}));
+        const totalAct=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
+        push([`TOTAL ACTUALIZACIÓN DEL PAGO ${i+1}`,"","",0,"",totalAct,0],{money:[4,6,7]});
+        push([]);
+      });
+    }else{
+      const tramos=(r.sancionActualizacion?.tramos||[]).flatMap(x=>Array.isArray(x.tramos)?x.tramos:[]);
+      if(tramos.length){
+        huboActualizacionExcel=true;
+        push(["ACTUALIZACIÓN DE SANCIÓN — LIQUIDACIÓN SIN PAGOS",r.fechaCorte||d.fechaCorte||""],{title:true});
+        push(["AÑO DE ACTUALIZACIÓN","FECHA DE APLICACIÓN","AÑO IPC","VALOR ANTERIOR","IPC","ACTUALIZACIÓN","VALOR DESPUÉS"],{header:true});
+        tramos.forEach(t=>push([Number(t.anio||0),t.desde||"",Number(t.anioInflacion??(Number(t.anio||0)-1)),Number(t.saldoAntes??t.saldoInicial??0),Number(t.ipcPorcentaje||0),Number(t.actualizacion||0),Number(t.saldoDespues??t.saldoFinal??0)],{money:[4,6,7],percent:[5]}));
+        const totalAct=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
+        push(["TOTAL ACTUALIZACIÓN DE SANCIÓN", "", "", 0, "", totalAct, r.sancion||0],{money:[4,6,7]});
+      }
+    }
     if(!huboActualizacionExcel)push(["NO SE REALIZARON ACTUALIZACIONES DE SANCIÓN."]);
 
     push([]);
@@ -1233,6 +1270,33 @@ function estilosPdf(){
   }`;
 }
 
+function bloquePdfSinPagos(d,r){
+  const detalle=Array.isArray(r.interesesPorCuota)?r.interesesPorCuota:[];
+  const filasInteres=detalle.length?detalle.map((t,i)=>`<tr><td>${escPdf(t.vto||t.cuota||i+1)}</td><td>${dinero(t.base||t.capitalBase||0)}</td><td>${escPdf(fechaVisible(t.desde||t.fechaVencimiento||""))}</td><td>${escPdf(fechaVisible(t.hasta||t.fechaPago||r.fechaCorte||""))}</td><td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes??t.valor??0)}</td><td>${escPdf(t.metodologia||"INTERÉS CALCULADO")}</td></tr>`).join(""):
+    `<tr><td colspan="8">NO SE GENERARON TRAMOS DE INTERÉS.</td></tr>`;
+  const tramosSancion=(r.sancionActualizacion?.tramos||[]).flatMap(x=>Array.isArray(x.tramos)?x.tramos:[]);
+  const filasSancion=tramosSancion.length?tramosSancion.map(t=>`<tr><td>${escPdf(t.anio||"")}</td><td>${escPdf(fechaVisible(t.desde||""))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join(""):
+    `<tr><td colspan="7">NO SE REALIZARON ACTUALIZACIONES DE SANCIÓN.</td></tr>`;
+  const totalAct=tramosSancion.reduce((a,t)=>a+Number(t.actualizacion||0),0);
+  const diasInteres=detalle.reduce((a,t)=>a+Number(t.dias||0),0);
+  const tasas=[...new Set(detalle.filter(t=>t.tasa!=null).map(t=>(Number(t.tasa)*100).toFixed(3)+"%"))].join(" / ")||"TASA DIAN";
+  const corte=r.fechaCorte||d.fechaCorte||hoyISO();
+  return `<article class="pdf-liquidacion">
+    <div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>LIQUIDACIÓN A FECHA DE CORTE — SIN PAGOS</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>
+    <div class="pdf-datos">
+      <div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(dvNIT(d.nit))}</strong></div>
+      <div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"")}</strong></div><div class="pdf-dato"><b>FECHA DE PRESENTACIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>FECHA DE CORTE</b><strong>${escPdf(fechaVisible(corte))}</strong></div>
+    </div>
+    <div class="pdf-obligacion"><div class="pdf-fila"><div class="pdf-celda"><b>IMPUESTO</b><strong>${dinero(r.impuesto||0)}</strong></div><div class="pdf-celda"><b>SANCIÓN ACTUALIZADA</b><strong>${dinero(r.sancion||0)}</strong></div><div class="pdf-celda"><b>INTERESES A FECHA DE CORTE</b><strong>${dinero(r.intereses||0)}</strong></div><div class="pdf-celda"><b>TOTAL OBLIGACIÓN</b><strong>${dinero(r.total||0)}</strong></div></div><div class="pdf-fila"><div class="pdf-celda"><b>VALOR PAGO</b><strong>${dinero(0)}</strong></div><div class="pdf-celda"><b>RECIBO DE PAGO</b><strong></strong></div><div class="pdf-celda"><b>DÍAS TOTALES DE INTERÉS</b><strong>${diasInteres}</strong></div><div class="pdf-celda"><b>TASAS UTILIZADAS</b><strong>${escPdf(tasas)}</strong></div></div></div>
+    <div class="pdf-beneficio"><b>CONDICIÓN:</b> LIQUIDACIÓN INFORMATIVA A LA FECHA DE CORTE, SIN PAGOS REGISTRADOS. EL IMPUESTO SE CONSERVA ÍNTEGRAMENTE; SE ACTUALIZAN SANCIÓN E INTERESES CON LAS REGLAS NORMALES DEL LIQUIDADOR.</div>
+    <div class="pdf-intereses"><h3>CÁLCULO DE INTERESES — DESGLOSE COMPLETO</h3><div class="pdf-actualizacion-descripcion">Los intereses se calculan desde cada fecha de vencimiento hasta la fecha de corte, sobre el capital correspondiente. Días: ${diasInteres}. Tasa(s) utilizada(s): ${escPdf(tasas)}.</div><table><thead><tr><th>CUOTA / VTO.</th><th>CAPITAL BASE</th><th>DESDE</th><th>HASTA</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th><th>METODOLOGÍA</th></tr></thead><tbody>${filasInteres}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES A LA FECHA DE CORTE</th><th>${dinero(r.intereses||0)}</th><th></th></tr></tfoot></table></div>
+    <div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — DETALLE COMPLETO</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica conforme a la lógica normativa vigente del liquidador, identificando cada vigencia, fecha de aplicación, año del IPC utilizado, valor anterior, porcentaje de IPC, actualización y valor resultante.</div><table><thead><tr><th>AÑO</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${filasSancion}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE SANCIÓN</th><th>${dinero(totalAct)}</th><th>${dinero(r.sancion||0)}</th></tr></tfoot></table></div>
+    <div class="pdf-pago"><div class="pdf-pago-titulo">RESUMEN DE LA OBLIGACIÓN A LA FECHA DE CORTE</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>VALOR</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(r.impuesto||0)}</td></tr><tr><td>INTERESES</td><td>${dinero(r.intereses||0)}</td></tr><tr><td>SANCIÓN ACTUALIZADA</td><td>${dinero(r.sancion||0)}</td></tr><tr class="total"><td>TOTAL OBLIGACIÓN</td><td>${dinero(r.total||0)}</td></tr></tbody></table></div>
+    <div class="pdf-aplicaciones"><h3>PAGOS REGISTRADOS</h3><table><thead><tr><th>ESTADO</th><th>VALOR</th><th>RECIBO</th></tr></thead><tbody><tr><td>SIN PAGOS REGISTRADOS</td><td>${dinero(0)}</td><td></td></tr></tbody></table></div>
+    <div class="pdf-nota">Nota: esta liquidación determina el valor total de la obligación a la fecha de corte indicada. No representa un pago registrado ni crea un recibo de pago.</div>
+  </article>`;
+}
+
 function exportarPdf(){
   try{
     const {d,r}=construirDatosSoporte();
@@ -1240,10 +1304,15 @@ function exportarPdf(){
     if(!win)throw new Error("El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.");
     const bloques=r.detalle||[];
     const paginas=[];
-    // Una liquidación completa por hoja. Esto permite conservar en la misma página
-    // el cálculo de intereses por cuota y la aplicación del pago por vencimiento.
-    for(let i=0;i<bloques.length;i++){
-      paginas.push(`<section class="pdf-hoja"><div class="pdf-pagina">${bloquePdfPago(bloques[i],i,d,r)}</div></section>`);
+    // Una liquidación completa por hoja. Sin pagos se genera el mismo nivel de
+    // detalle de una liquidación normal, usando la fecha de corte como fecha de
+    // cálculo y dejando el valor del pago en cero y el recibo en blanco.
+    if(!bloques.length){
+      paginas.push(`<section class="pdf-hoja"><div class="pdf-pagina">${bloquePdfSinPagos(d,r)}</div></section>`);
+    }else{
+      for(let i=0;i<bloques.length;i++){
+        paginas.push(`<section class="pdf-hoja"><div class="pdf-pagina">${bloquePdfPago(bloques[i],i,d,r)}</div></section>`);
+      }
     }
     const resumenFinal=resumenFinalPdf(r);
     const advertencias=(r.advertencias||[]).length?`<section class="pdf-hoja pdf-hoja-advertencias"><div class="pdf-pagina"><div class='pdf-alerta'><b>Advertencias:</b> ${escPdf([...new Set(r.advertencias)].join(" | "))}</div></div></section>`:"";
@@ -1252,7 +1321,7 @@ function exportarPdf(){
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
-    mostrarEstadoExportacion("Soporte PDF preparado: una liquidación por hoja, con cálculo de intereses por cuota y aplicación completa del pago por vencimiento.");
+    mostrarEstadoExportacion("Soporte PDF preparado: una liquidación por hoja, con desglose completo de intereses, actualización de sanción y total a la fecha de corte.");
   }catch(e){console.error(e);alert(e.message||"No fue posible generar el PDF.");}
 }
 
@@ -1335,6 +1404,10 @@ function calcular(){
     // matemática debe existir al menos un vencimiento con fecha e impuesto.
     if(!d.tieneSancion)throw new Error("Debe indicar si la obligación tiene sanción.");
     if(!d.vencimientos.length)throw new Error("Debe registrar al menos un vencimiento con fecha e impuesto declarado.");
+    const hayPagosReales=d.pagos.some(p=>Number(p?.valor||0)>0);
+    if(!hayPagosReales && !d.fechaCorte){
+      throw new Error("Para liquidar una obligación sin pagos debe registrar la FECHA DE CORTE en la primera fila de Pagos. Solo es necesario diligenciar la fecha de pago/corte; TDJ, recibo y valor pueden quedar en blanco o en cero.");
+    }
     const erroresVigencia=validarVigenciaBeneficiosUI(d);
     if(erroresVigencia.length){
       throw new Error("NO SE PUEDE CONTINUAR CON LA LIQUIDACIÓN:\n\n"+erroresVigencia.join("\n\n"));

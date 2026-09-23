@@ -7,10 +7,10 @@ import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.32.30";
  * vigente, determina el período de actualización según la fecha base y
  * devuelve el nuevo saldo junto con la trazabilidad de cada tramo.
  *
- * REAJUSTE 16.32.16: la vigencia anual se aplica al 100 % del IPC del año
- * inmediatamente anterior, sin prorrateo, y la primera actualización se
- * practica el 1 de enero del año siguiente a aquel en que se completó el año
- * de vencimiento.
+ * REAJUSTE: reproduce la mecánica del módulo Act.Sancion(LP-LO) del Excel
+ * DIAN: primer tramo desde la fecha inicial de cobro hasta el día anterior al
+ * 1 de enero de aplicación; tramos posteriores de año calendario completo,
+ * con capitalización diaria y redondeo de la tasa diaria a 7 decimales.
  *
  * Para Liquidación Privada, la fecha base que entrega el formulario es la
  * fecha de presentación de la declaración. Para Liquidación Oficial y
@@ -135,11 +135,28 @@ export class ActualizadorSancion{
       let actualizacion=0;
       const disponible=ipc>0;
 
-      if(disponible){
-        // La norma aplica el porcentaje anual completo; NO se prorratea por días.
-        actualizacion=roundMil(antes*ipc);
+      // El módulo Act.Sancion(LP-LO) del Excel DIAN aplica la actualización
+      // mediante capitalización diaria: K * ((1 + REDONDEO(i/365,7))^n - 1).
+      // El primer tramo no es un año completo: va desde la fecha inicial de
+      // cobro hasta el día anterior al 1 de enero en que se aplica el IPC.
+      // Los tramos posteriores abarcan exactamente de 1 de enero a 1 de enero,
+      // por lo que pueden tener 365 o 366 días.
+      const diasPrimerTramo = Math.max(0, diasEntre(activacion, fechaAplicacion)-1);
+      const fechaInicioTramo = anioAplicacion===primerAnioActualizacion
+        ? activacion
+        : `${anioAplicacion-1}-01-01`;
+      const dias = anioAplicacion===primerAnioActualizacion
+        ? diasPrimerTramo
+        : diasEntre(fechaInicioTramo, fechaAplicacion);
+      const fechaFinTramo = anioAplicacion===primerAnioActualizacion
+        ? `${anioAplicacion}-01-01`
+        : fechaAplicacion;
+
+      if(disponible && dias>0){
+        const tasaDiariaRedondeada=Math.round((ipc/365)*10000000)/10000000;
+        actualizacion=roundMil(antes*(Math.pow(1+tasaDiariaRedondeada,dias)-1));
         saldo=roundMil(antes+actualizacion);
-      }else{
+      }else if(!disponible){
         advertencias.push(`No existe IPC cargado para ${anioInflacion}; no se actualizó la sanción en ${anioAplicacion}.`);
       }
 
@@ -147,16 +164,16 @@ export class ActualizadorSancion{
         anio:anioAplicacion,
         anioAplicacion,
         anioInflacion,
-        desde:fechaAplicacion,
-        hasta:fechaAplicacion,
-        dias:365,
+        desde:fechaInicioTramo,
+        hasta:fechaFinTramo,
+        dias,
         ipc,
         ipcPorcentaje:ipc*100,
         saldoInicial:antes,
         actualizacion,
         saldoFinal:saldo,
         disponible,
-        aplicado:disponible
+        aplicado:disponible && dias>0
       });
     }
 

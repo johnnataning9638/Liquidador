@@ -684,9 +684,6 @@ export class MotorLiquidacion{
     // pagos dentro del mismo año.
     const aniosActualizacionSancionAplicados=new Set();
 
-    // En DOS VENCIMIENTOS la sanción se carga al primer vencimiento.
-    const idVtoSancion=saldosVto[0]?.id||null;
-
     let saldoIntereses=0;
     let excedenteTotal=0;
     let primerBeneficioDecretoUsado=false;
@@ -771,6 +768,105 @@ export class MotorLiquidacion{
         porVto
       };
     };
+
+    // LIQUIDACIÓN SIN PAGOS: permite conocer la obligación completa a la fecha
+    // de corte sin crear un pago ficticio. El impuesto permanece íntegro;
+    // intereses y sanción se actualizan hasta la fecha de corte.
+    if(pagos.length===0){
+      if(!fechaCorte) throw new Error("Debe existir una fecha de corte para liquidar una obligación sin pagos.");
+
+      let interesesSinPagos=0;
+      const detalleInteresesSinPagos=[];
+      for(const v of saldosVto){
+        if(v.saldo<=0 || fechaCorte<=v.fecha) continue;
+        const ih=this.interesParaPago(v.saldo,v.fecha,fechaCorte,{tipo:"TASA DIAN",factor:1,tasaFija:null});
+        if(ih.valor==null){
+          advertenciasSancion.push("No hay tasa histórica suficiente para cerrar el tramo de intereses de la obligación a la fecha de corte.");
+          continue;
+        }
+        interesesSinPagos+=Number(ih.valor||0);
+        const tramosFuente=Array.isArray(ih.tramos)&&ih.tramos.length?ih.tramos:[{
+          vto:v.id, valor:Number(ih.valor||0), metodologia:ih.metodologia,
+          dias:ih.dias, desde:v.fecha, hasta:fechaCorte, tasa:ih.tasa
+        }];
+        const tramosReporte=tramosFuente.map((t,idx)=>{
+          let valorTramo=Number(t.interes??t.valor);
+          // interesExcelPost2012 devuelve el valor total en `ih.valor` y deja
+          // los tramos como trazabilidad de fechas/tasa. Cuando existe un solo
+          // tramo, ese valor total es exactamente el interés que debe mostrarse
+          // en la columna INTERÉS del soporte.
+          if(!Number.isFinite(valorTramo) || valorTramo===0){
+            if(tramosFuente.length===1){
+              valorTramo=Number(ih.valor||0);
+            }else if(Number.isFinite(Number(t.tasa)) && Number(t.dias||0)>0){
+              valorTramo=roundMil(Number(v.saldo||0)*Number(t.tasa)/this.diasDelAnio(t.desde||v.fecha)*Number(t.dias||0));
+            }else{
+              valorTramo=0;
+            }
+          }
+          return {
+            ...t,
+            base:Number(v.saldo||0),
+            vto:v.id,
+            valor:valorTramo,
+            interes:valorTramo
+          };
+        });
+        // Si un tramo histórico no expone tasa/valor individual, no se debe
+        // presentar $0 cuando el motor sí determinó un interés total. En ese
+        // caso se conserva un único renglón consolidado para el soporte.
+        if(tramosReporte.length>1 && tramosReporte.every(t=>Number(t.interes||0)===0) && Number(ih.valor||0)>0){
+          detalleInteresesSinPagos.push({
+            vto:v.id, base:Number(v.saldo||0), valor:Number(ih.valor||0), interes:Number(ih.valor||0),
+            metodologia:ih.metodologia, dias:Number(ih.dias||0), desde:v.fecha, hasta:fechaCorte, tasa:ih.tasa??null
+          });
+        }else{
+          detalleInteresesSinPagos.push(...tramosReporte);
+        }
+      }
+      saldoIntereses=roundMil(interesesSinPagos);
+
+      if(saldoSancion>0 && fechaSancion && fechaCorte>fechaSancion){
+        const act=this.actualizadorSancion.calcular(saldoSancion,fechaSancion,fechaCorte,{aniosExcluir:[]});
+        if(act.valor>saldoSancion) saldoSancion=act.valor;
+        if(act.tramos?.length){
+          act.tramos.forEach(t=>aniosActualizacionSancionAplicados.add(Number(t.anio)));
+          // Normalizar la trazabilidad para los informes. El módulo de
+          // actualización conserva saldoInicial/saldoFinal; el soporte de
+          // liquidación expone además saldoAntes/saldoDespues para mantener
+          // la misma estructura de las liquidaciones con pagos.
+          const actReporte={
+            ...act,
+            tramos:(act.tramos||[]).map(t=>({
+              ...t,
+              saldoAntes:Number(t.saldoAntes??t.saldoInicial??0),
+              saldoDespues:Number(t.saldoDespues??t.saldoFinal??0),
+              anioInflacion:Number(t.anioInflacion??(Number(t.anio||0)-1))
+            }))
+          };
+          detalleActualizacionSancion.push({fechaCorte,...actReporte});
+          fechaUltimaActualizacionSancion=act.tramos.at(-1)?.hasta||fechaUltimaActualizacionSancion;
+          advertenciasSancion.push(...(act.advertencias||[]));
+        }
+      }
+
+      const impuestoSinPagos=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);
+      const actualizacionSancionAcumulada=roundMil(detalleActualizacionSancion.reduce((total,x)=>
+        total+Number(x.tramos?.reduce((a,t)=>a+Number(t.actualizacion||0),0)||0),0));
+      return {
+        vencimientos:saldosVto, impuesto:impuestoSinPagos, intereses:saldoIntereses,
+        sancion:Math.max(0,saldoSancion),
+        total:impuestoSinPagos+saldoIntereses+Math.max(0,saldoSancion),
+        excedente:0, ultimo:null, detalle:[], interesesPorCuota:detalleInteresesSinPagos,
+        advertencias:[...validacion.advertencias,...advertenciasSancion], beneficiosAplicados:[],
+        reglaObligacion:validacion.regla, validacionObligacion:validacion,
+        verificacionObligacion:this.verificarImpuestoPlastico(datos), fechaCorte, sinPagos:true,
+        sancionActualizacion:{fechaBase:fechaSancion,fechaUltimaActualizacion:fechaUltimaActualizacionSancion,
+          saldoOriginal:roundMil(sancionBaseOriginal),saldoFinal:roundMil(saldoSancion),
+          actualizacionAcumulada:actualizacionSancionAcumulada,tramos:detalleActualizacionSancion,
+          metodoAcumulacion:"SUMA_DE_ACTUALIZACIONES_APLICADAS"}
+      };
+    }
 
     for(const pago of pagos){
       const especial=this.tasaEspecial(pago.tipo,pago.fecha);
@@ -1058,11 +1154,29 @@ export class MotorLiquidacion{
         )
       );
 
-      // La sanción pertenece al primer vencimiento exigible. Si no existe
-      // ninguno exigible, no se imputa en este pago.
-      const vtoSancion=vencimientosExigibles.find(v=>v.id===idVtoSancion)
-        ||vencimientosExigibles[0]
-        ||null;
+      // La sanción debe cobrarse cuando forma parte de la deuda que el pago
+      // puede atender. La corrección anterior fue demasiado restrictiva:
+      // después de pagar todo el impuesto e interés de un vencimiento, ese
+      // vencimiento todavía NO está completamente cancelado si conserva saldo
+      // de sanción. Por eso no podemos descartar la sanción simplemente porque
+      // impuesto e intereses hayan quedado en cero.
+      //
+      // Regla de ubicación:
+      // 1) Si existe un vencimiento exigible con saldo de impuesto o intereses,
+      //    la sanción se asigna al primero de ellos.
+      // 2) Si todos los vencimientos exigibles ya tienen impuesto e intereses
+      //    en cero, pero aún existe sanción pendiente, la sanción se asigna al
+      //    primer vencimiento exigible: la deuda sigue existiendo precisamente
+      //    por la sanción y no se crea una fila adicional artificial.
+      const vtosConSaldoRestante=vencimientosExigibles.filter(v=>{
+        const interesOriginal=Number(intCalc.porVto.find(x=>x.id===v.id)?.interes||0);
+        const interesAplicado=Number(
+          aplicacionesVto.find(x=>x.id===v.id)?.aplicadoIntereses||0
+        );
+        return Number(v.saldo||0)>0 || Math.max(0,interesOriginal-interesAplicado)>0;
+      });
+      const vtoSancion=vtosConSaldoRestante[0] ||
+        (Number(saldoSancion||0)>0 ? vencimientosExigibles[0] : null);
       if(vtoSancion && Number(aplicacionGlobal.sancion||0)>0){
         aplicadoSancion=Math.min(
           Math.max(0,saldoSancion),
