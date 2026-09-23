@@ -2,8 +2,164 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liquidación de Títulos / TDJ — DIAN</title><link rel="stylesheet" href="estilos.css?v=16.32.50">
-<style>.placeholder{max-width:1000px;margin:30px auto;padding:30px;background:#fff;border:1px solid var(--borde);border-radius:10px;box-shadow:0 6px 22px rgba(20,48,71,.08)}.placeholder h2{color:var(--azul);margin-top:0}.placeholder li{margin:8px 0;color:#596875}.acciones-inicio{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}</style>
-</head><body>
-<header class="topbar"><div><h1>LIQUIDACIÓN DE TÍTULOS / TDJ</h1><p>Aplicación de títulos sobre obligaciones tributarias</p></div></header>
-<main class="contenedor"><section class="placeholder"><h2>NUEVO MÓDULO DE TÍTULOS / TDJ</h2><p>Esta es la entrada del nuevo módulo. La interfaz y el motor de aplicación de títulos se desarrollarán sobre esta estructura sin modificar el liquidador de obligaciones existente.</p><ul><li>MÚLTIPLES OBLIGACIONES Y CUOTAS DINÁMICAS.</li><li>SANCIÓN INDEPENDIENTE POR OBLIGACIÓN.</li><li>PAGOS ASOCIADOS A CADA OBLIGACIÓN.</li><li>MÚLTIPLES TÍTULOS / TDJ DE APLICACIÓN GENERAL.</li><li>APLICACIÓN SECUENCIAL POR OBLIGACIÓN Y FECHA DEL TÍTULO.</li><li>CONTROL DE SALDOS, TÍTULOS SOBRANTES Y ENDOSO.</li></ul><div class="acciones-inicio"><button class="secundario" type="button" onclick="window.location.href='index.html'">← MÓDULO DE INICIO</button><button class="primario" type="button" onclick="window.location.href='liquidacion.html'">IR A LIQUIDACIÓN DE OBLIGACIONES</button></div></section></main><footer>Liquidador DIAN — Liquidación de Títulos / TDJ</footer></body></html>
+<title>Liquidación de Títulos / TDJ — DIAN</title>
+<link rel="stylesheet" href="estilos.css?v=16.32.81">
+<style>
+/* AJUSTE TDJ v16.32.82: únicamente organización visual de pestañas y botones. Lógica sin cambios. */
+.tabs-nav{display:flex!important;align-items:center;gap:8px;flex-wrap:nowrap;width:100%;overflow:visible;padding:0;background:transparent;border:0;box-shadow:none;margin-bottom:14px}.tabs-nav .tab-btn{min-width:0;padding:10px 12px;font-size:12px;white-space:nowrap}.tdj-tab-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-width:0;flex:1;background:#dfe8ee;border:1px solid #b9c9d5;border-radius:8px;overflow:hidden;box-shadow:0 2px 5px #00000012}.tdj-sheet-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:14px 0 0}.tdj-sheet-actions button{height:40px;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}.tdj-sheet-actions .tdj-calc{background:#2f6f95;color:#fff;border:1px solid #2f6f95}.tdj-sheet-actions .tdj-clear{background:#a52a2a;color:#fff;border:1px solid #8f2020}.tdj-sheet-actions .tdj-excel{background:#eef3f7;color:#173047;border:1px solid #9eb0be}.tdj-sheet-actions .tdj-pdf{background:#2f6f95;color:#fff;border:1px solid #2f6f95}@media(max-width:900px){.tabs-nav{flex-wrap:wrap}.tdj-sheet-actions{justify-content:flex-start;flex-wrap:wrap}}
+:root{--tdj-blue:#003b5c;--tdj-soft:#eef3f7;--tdj-border:#cbd5df;--tdj-green:#2e7d32;--tdj-red:#a52a2a}
+body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24px 42px}.tdj-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}.tdj-top h1{margin:0;color:var(--tdj-blue);font-size:25px}.tdj-top p{margin:6px 0 0;color:#687783}.tdj-actions{display:flex;gap:8px;flex-wrap:wrap}.estado-motor{padding:8px 12px;border-radius:18px;font-size:12px;font-weight:700;display:inline-block}.estado-motor.ok{background:#e7f5ed;color:#14633e}.estado-motor.warn{background:#fff4df;color:#8a5a00}.estado-motor.loading{background:#edf2f6;color:#4c6474}.estado-motor.error{background:#fdeaea;color:#8d2222}
+.card{background:#fff;border:1px solid var(--tdj-border);border-radius:10px;box-shadow:0 4px 16px rgba(23,63,95,.06);margin-bottom:14px}.card-head{padding:14px 16px;border-bottom:1px solid #cbd5df;display:flex;justify-content:space-between;gap:15px;align-items:center}.card-head h3{margin:3px 0 0;color:#173047;font-size:16px}.kicker{font-size:11px;font-weight:800;color:#687783;letter-spacing:.5px}.card-actions,.actions{display:flex;gap:8px;flex-wrap:wrap}.compact-grid{padding:14px 16px;display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}.compact-grid label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:#596875}.compact-grid input,.compact-grid select,.subpanel input,.subpanel select,.import-box textarea,.tdj-import textarea{width:100%;box-sizing:border-box;border:1px solid #aebbc8;border-radius:6px;padding:8px 9px;background:#fff;color:#173047}.subpanel{margin:0 16px 14px;border:1px solid #cbd5df;border-radius:8px;overflow:hidden}.subhead{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:var(--tdj-soft);color:#173047;font-size:12px}.tabla-scroll{overflow:auto}.mini-table,.result-table{width:100%;border-collapse:collapse;font-size:12px}.mini-table th,.mini-table td,.result-table th,.result-table td{border-bottom:1px solid #cbd5df;padding:7px 8px;text-align:left;vertical-align:middle}.mini-table th,.result-table th{background:#e8eef3;color:#173047;font-size:10px;text-transform:uppercase;white-space:nowrap}.mini-table input,.mini-table select{min-width:100px}.money{text-align:right}.small{padding:6px 10px!important;font-size:11px!important}.import-box{margin:0 16px 14px;padding:11px;background:#f7fafc;border:1px dashed #b9c9d5;border-radius:8px}.import-box textarea{min-height:80px;margin-bottom:8px}.import-result{margin-top:7px;font-size:12px;color:#36536a}.tdj-import{padding:14px 16px}.tdj-import textarea{min-height:80px}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.metric{background:#fff;border:1px solid var(--tdj-border);border-radius:9px;padding:13px}.metric span{display:block;font-size:10px;font-weight:800;color:#687783}.metric strong{display:block;margin-top:5px;font-size:20px;color:var(--tdj-blue)}.resultado-head{padding:14px 16px;border-bottom:1px solid #cbd5df}.resultado-head h2{margin:0;color:var(--tdj-blue);font-size:17px}.endoso{margin-top:12px;padding:11px 13px;border-left:4px solid #007f9e;background:#eef3f7;color:#173047;font-weight:700}.nota-endoso{margin:10px 16px 16px}.nav-footer{display:flex;justify-content:space-between;gap:10px;margin-top:18px}.peligro{color:#fff;background:#a52828;border:1px solid #8f2020;border-radius:6px;padding:7px 10px;cursor:pointer}.primario,.secundario{cursor:pointer}.secundario{border:1px solid #9eb0be}.import-title{margin-top:0;color:var(--tdj-blue)}@media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}.tdj-top{flex-direction:column}}@media(max-width:650px){.compact-grid{grid-template-columns:1fr}.summary-grid{grid-template-columns:1fr}.tdj-wrap{padding:12px}.card-head{flex-direction:column;align-items:flex-start}}
+.tdj-title-import{margin:0 16px 14px;padding:14px 16px;background:#fff;border:1px solid var(--tdj-border);border-radius:8px}.tdj-title-import .import-title{margin:0 0 10px}.tdj-title-import-grid{display:grid;grid-template-columns:minmax(0,1fr) 185px;gap:10px;align-items:start}.tdj-title-import-grid textarea{width:100%;min-height:88px;box-sizing:border-box;border:1px solid #aebbc8;border-radius:6px;padding:8px 9px;background:#fff;color:#173047;resize:vertical}.tdj-title-import-actions{display:flex;flex-direction:column;gap:7px;align-items:center;width:185px}.tdj-title-import-actions button{width:185px;min-height:36px;display:flex;align-items:center;justify-content:center;gap:7px}.tdj-title-import-actions .indicador-ia{margin-top:2px}.tdj-title-import-actions #resultadoImportacionTitulos{width:100%;font-size:11px;text-align:center;color:#36536a}/* POSICION FINAL TDJ: IMPORTAR / IMPORTAR IA / INDICADOR SIEMPRE A LA DERECHA DEL AREA DE IMPORTACION. */
+.tdj-global-import .tdj-import-grid{display:grid;grid-template-columns:minmax(0,1fr) 185px;gap:10px;align-items:start;}
+.tdj-global-import .tdj-import-grid .import-destino{grid-column:1 / -1;}
+.tdj-global-import .tdj-import-grid textarea{grid-column:1;grid-row:2;width:100%;min-height:88px;box-sizing:border-box;}
+.tdj-global-import .tdj-import-grid .tdj-import-actions{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:7px;align-items:center;width:185px;margin-top:0;}
+.tdj-global-import .tdj-import-actions button{width:185px;min-height:36px;display:flex;align-items:center;justify-content:center;gap:7px;}
+.tdj-global-import .tdj-import-actions .indicador-ia{margin-top:2px;}
+@media(max-width:900px){.tdj-global-import .tdj-import-grid{grid-template-columns:1fr;}.tdj-global-import .tdj-import-grid .import-destino,.tdj-global-import .tdj-import-grid textarea,.tdj-global-import .tdj-import-grid .tdj-import-actions{grid-column:1;grid-row:auto;}.tdj-global-import .tdj-import-grid .tdj-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;}.tdj-global-import .tdj-import-actions button{width:auto;min-width:150px;}}
+.tdj-titulos-pane .tdj-sheet-actions{margin-top:14px}@media(max-width:900px){.tdj-title-import-grid{grid-template-columns:1fr}.tdj-title-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center}.tdj-title-import-actions button{width:auto;min-width:150px}.tdj-title-import-actions .indicador-ia{align-self:center}.tdj-title-import-actions #resultadoImportacionTitulos{width:auto}}
+/* AJUSTE VISUAL TDJ COMPACTO — SOLO PRESENTACIÓN, SIN CAMBIAR LÓGICA */
+.tdj-wrap{max-width:1500px;margin:0 auto;padding:10px 14px 24px}
+.tabs-nav{margin-bottom:8px}
+.tabs-nav .tab-btn{padding:8px 10px;font-size:12px}
+.card{border-radius:8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(23,63,95,.05)}
+.card-head{padding:8px 12px;gap:10px}
+.card-head h3{margin:2px 0 0;font-size:14px}
+.kicker{font-size:10px}
+.compact-grid{padding:8px 12px;grid-template-columns:repeat(4,minmax(150px,1fr));gap:7px}
+.compact-grid label{gap:3px;font-size:10px}
+.compact-grid input,.compact-grid select,.subpanel input,.subpanel select,.import-box textarea,.tdj-import textarea{padding:6px 8px;border-radius:5px}
+.subpanel{margin:0 12px 8px;border-radius:6px}
+.subhead{padding:6px 9px;font-size:11px}
+.mini-table,.result-table{font-size:11px}
+.mini-table th,.mini-table td,.result-table th,.result-table td{padding:5px 6px}
+.mini-table th,.result-table th{font-size:9px}
+.import-box{margin:0 12px 8px;padding:8px;border-radius:6px}
+.import-box textarea{min-height:64px;margin-bottom:6px}
+.tdj-import{padding:8px 12px}
+.tdj-global-import .tdj-import-grid textarea{min-height:64px}
+.tdj-global-import .tdj-import-actions button{min-height:32px}
+.tdj-title-import{margin:0 12px 8px;padding:8px 10px;border-radius:6px}
+.tdj-title-import .import-title{margin:0 0 6px;font-size:12px}
+.tdj-title-import-grid textarea{min-height:64px;padding:6px 8px}
+.tdj-title-import-actions{gap:5px}
+.tdj-title-import-actions button{min-height:32px}
+.nota{padding:6px 8px;font-size:11px}
+.summary-grid{gap:7px;margin-bottom:8px}
+.metric{border-radius:7px;padding:8px}
+.metric strong{margin-top:3px;font-size:17px}
+.resultado-head{padding:8px 12px}
+.resultado-head h2{font-size:15px}
+.endoso{margin-top:8px;padding:8px 10px}
+.nota-endoso{margin:7px 12px 9px}
+.tdj-sheet-actions{margin:8px 0 0;gap:6px}
+.tdj-sheet-actions button{height:34px;padding:7px 11px;font-size:11px}
+.nav-footer{margin-top:10px}
+.tdj-parametros-panel{margin-bottom:6px}
+.tdj-parametros-panel .panel-title{padding:6px 8px}
+.tdj-parametros-panel .tasas-admin-bar{padding:6px 8px}
+.tdj-parametros-panel .tabla-scroll th,.tdj-parametros-panel .tabla-scroll td{padding:4px 6px}
+@media(min-width:1200px){.compact-grid{gap:6px;padding:7px 12px}.tdj-wrap{padding-left:12px;padding-right:12px}}
+@media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}}
+@media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="ruta-modulo"><button type="button" class="secundario btn-inicio" onclick="window.location.href='index.html'">← Módulo de inicio</button></div>
+  <div><h1>LIQUIDACIÓN DE TÍTULOS / TDJ</h1><p>Aplicación secuencial de títulos sobre múltiples obligaciones</p></div>
+  <span id="estadoMotorTDJ" class="indicador-parametros cargando" role="status" aria-label="Cargando parámetros" title="Cargando parámetros"></span>
+</header>
+<main class="tdj-wrap">
+  <nav class="tabs-nav" aria-label="Secciones de liquidación de títulos">
+    <div class="tdj-tab-buttons">
+      <button type="button" class="tab-btn active" data-tab="datos">1. Datos y vencimientos</button>
+      <button type="button" class="tab-btn" data-tab="pagos">2. Pagos</button>
+      <button type="button" class="tab-btn" data-tab="titulos">3. Titulos y Resultado</button>
+    </div>
+  </nav>
+
+  <section class="tab-pane active" data-pane="datos">
+    <div class="tab-pane-inner">
+      <section class="card"><div class="card-head"><div><span class="kicker">DATOS GENERALES</span><h3>Contribuyente</h3></div></div>
+        <div class="compact-grid"><label>NIT<input id="nitGlobal" inputmode="numeric" placeholder="NIT"></label><label>RAZÓN SOCIAL<input id="razonGlobal" placeholder="RAZÓN SOCIAL"></label></div>
+      </section>
+
+      <section class="card"><div class="card-head"><div><span class="kicker">1 · OBLIGACIONES</span><h3>Obligaciones independientes — liquidación privada</h3></div><button id="btnAgregarObligacion" class="primario">+ AGREGAR OBLIGACIÓN</button></div>
+        <div id="listaObligaciones"></div>
+      </section>
+
+      <section class="import-box tdj-global-import">
+        <div class="panel-title fila-titulo"><span>Importación inteligente — Datos y vencimientos</span><span class="mini-badge">SELECCIONE OBLIGACIÓN</span></div>
+        <div class="tdj-import-grid">
+          <select id="destinoImportacionObligacion" class="import-destino" aria-label="Obligación destino"><option value="">SELECCIONE LA OBLIGACIÓN DESTINO...</option></select>
+          <textarea id="importarObligacionTexto" placeholder="PEGUE AQUÍ LOS DATOS DE LA OBLIGACIÓN. EL IMPORTADOR RECONOCERÁ NIT, RAZÓN SOCIAL, CONCEPTO, AÑO, PERÍODO, CUOTAS, SANCIÓN Y FECHAS."></textarea>
+          <div class="acciones-importacion tdj-import-actions"><button type="button" id="btnImportarObligacionTDJ" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>IMPORTAR</span></button><button type="button" id="btnImportarObligacionTDJIA" class="primario"><span>IMPORTAR IA</span></button><span id="estadoIAImportObligacion" class="indicador-parametros indicador-ia error" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span></div>
+        </div>
+        <div id="resultadoImportacionObligacionTDJ" class="import-result"></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="pagos">
+    <div class="tab-pane-inner">
+      <section class="card"><div class="card-head"><div><span class="kicker">2 · PAGOS</span><h3>Pagos independientes por obligación</h3></div></div>
+        <div class="nota" style="margin:0 16px 14px">Cada obligación genera automáticamente su propio módulo de pagos. Los módulos no se eliminan de forma independiente: al eliminar una obligación se elimina automáticamente su módulo de pagos asociado.</div>
+        <div id="listaPagos"></div>
+      </section>
+
+      <section class="import-box tdj-global-import">
+        <div class="panel-title fila-titulo"><span>Importación inteligente — Pagos</span><span class="mini-badge">SELECCIONE OBLIGACIÓN</span></div>
+        <div class="tdj-import-grid">
+          <select id="destinoImportacionPagos" class="import-destino" aria-label="Obligación destino"><option value="">SELECCIONE LA OBLIGACIÓN DESTINO...</option></select>
+          <textarea id="importarPagosTexto" placeholder="PEGUE AQUÍ LOS PAGOS. EL IMPORTADOR RECONOCE RECIBO NÚMERO, FECHA PAGO, VALOR PAGO Y TIPO."></textarea>
+          <div class="acciones-importacion tdj-import-actions"><button type="button" id="btnImportarPagosTDJ" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>IMPORTAR</span></button><button type="button" id="btnImportarPagosTDJIA" class="primario"><span>IMPORTAR IA</span></button><span id="estadoIAImportPagos" class="indicador-parametros indicador-ia error" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span></div>
+        </div>
+        <div id="resultadoImportacionPagosTDJ" class="import-result"></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="tab-pane tdj-titulos-pane" data-pane="titulos">
+    <div class="tab-pane-inner">
+      <section class="card"><div class="card-head"><div><span class="kicker">3 · TÍTULOS / TDJ</span><h3>Recursos generales para aplicación</h3></div><button id="btnAgregarTitulo" class="primario">+ AGREGAR TÍTULO</button></div>
+        <div class="tabla-scroll"><table id="tablaTitulos" class="result-table"><thead><tr><th>Nº</th><th>TDJ</th><th>FECHA TDJ</th><th>VALOR TDJ</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tdj-title-import"><h4 class="import-title">Importación de títulos</h4><div class="tdj-title-import-grid"><textarea id="importarTitulosTexto" placeholder="PEGUE DATOS DE TDJ / TÍTULOS. EL IMPORTADOR RECONOCE TDJ, FECHA Y VALOR."></textarea><div class="tdj-title-import-actions"><button id="btnProcesarImportTitulos" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>IMPORTAR</span></button><button id="btnProcesarImportTitulosIA" class="primario"><span>IMPORTAR IA</span></button><span id="estadoIAImportTitulos" class="indicador-parametros indicador-ia error" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span><span id="resultadoImportacionTitulos"></span></div></div></div>
+      </section>
+
+
+
+      <section id="resultadoTDJ" class="card" hidden><div class="resultado-head"><h2>RESULTADO DE APLICACIÓN DE TÍTULOS / TDJ</h2></div>
+        <div class="summary-grid" style="padding:14px 16px 0"><div class="metric"><span>TOTAL TÍTULOS</span><strong id="resTotalTitulos">$ 0</strong></div><div class="metric"><span>TOTAL APLICADO</span><strong id="resAplicado">$ 0</strong></div><div class="metric"><span>SALDO OBLIGACIONES</span><strong id="resSaldo">$ 0</strong></div><div class="metric"><span>ENDOSO</span><strong id="resEndoso">$ 0</strong></div></div>
+        <div class="tabla-scroll"><table id="tablaResultadoObligaciones" class="result-table"><thead><tr><th>OBL.</th><th>OBLIGACIÓN</th><th>PAGOS</th><th>TDJ APLICADOS</th><th>SALDO</th></tr></thead><tbody></tbody></table></div>
+        <div class="resultado-head" style="margin-top:16px"><h2>TRAZABILIDAD DE APLICACIÓN DE TÍTULOS</h2></div>
+        <div class="tabla-scroll"><table id="tablaAplicacion" class="result-table"><thead><tr><th>TDJ</th><th>FECHA</th><th>OBLIGACIÓN</th><th>VALOR DISPONIBLE</th><th>IMPUESTO</th><th>INTERESES</th><th>SANCIÓN</th><th>APLICADO</th><th>SALDO TDJ</th><th>SALDO OBLIGACIÓN</th></tr></thead><tbody></tbody></table></div>
+        <div id="notaEndoso" class="endoso nota-endoso"></div><div class="resultado-head"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2></div><div class="tabla-scroll"><table id="tablaEndoso" class="result-table"><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody></tbody></table></div>
+      </section>
+      <details class="panel tasas-panel tdj-parametros-panel">
+        <summary class="panel-title fila-titulo"><span>Actualización central de tasas moratorias</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · TIM</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+        <div class="tasas-admin-bar"><div><strong>Estado de tasas:</strong> <span id="estadoTasasConexionTDJ">Cargando...</span></div><div class="nota">Las tasas visibles son las mismas tasas centrales utilizadas por el motor de liquidación.</div></div>
+        <div id="estadoTasasTDJ" class="resultado-calendario"></div>
+        <div class="tabla-scroll"><table id="tablaTasasTDJ"><thead><tr><th>FECHA INICIO</th><th>FECHA FIN</th><th>TASA DIAN</th><th>FUENTE</th><th>NORMA / REFERENCIA</th></tr></thead><tbody></tbody></table></div>
+      </details>
+      <details class="panel tasas-panel ipc-panel tdj-parametros-panel">
+        <summary class="panel-title fila-titulo"><span>Actualización central de IPC anuales</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · IPC</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+        <div class="tasas-admin-bar"><div><strong>Estado de IPC:</strong> <span id="estadoIPCConexionTDJ">Cargando...</span></div><div class="nota">Se registra el IPC del año de inflación; su aplicación inicia el 1 de enero del año siguiente.</div></div>
+        <div class="tabla-scroll"><table id="tablaIPCTDJ"><thead><tr><th>AÑO IPC</th><th>IPC</th><th>APLICABLE DESDE</th><th>FUENTE</th></tr></thead><tbody></tbody></table></div>
+      </details>
+    </div>
+  </section>
+
+  <div class="tdj-sheet-actions" aria-label="Acciones de liquidación TDJ">
+    <button type="button" class="tdj-calc btn-calcular-tdj">CALCULAR LIQUIDACIÓN</button>
+    <button type="button" class="tdj-clear btn-limpiar-tdj">LIMPIAR</button>
+    <button type="button" id="btnExportarExcelTDJ" class="tdj-excel">EXPORTAR EXCEL</button>
+    <button type="button" id="btnExportarPdfTDJ" class="tdj-pdf">EXPORTAR PDF</button>
+  </div>
+
+  <div class="nav-footer"><button class="secundario" type="button" onclick="window.location.href='index.html'">← MÓDULO DE INICIO</button><button class="secundario" type="button" onclick="window.location.href='liquidacion.html'">IR A LIQUIDACIÓN DE OBLIGACIONES</button></div>
+</main>
+<footer>Liquidador DIAN — módulo de Liquidación de Títulos / TDJ · v16.32.81</footer>
+<script type="module" src="js/tdj.js?v=16.32.81"></script>
+</body></html>
