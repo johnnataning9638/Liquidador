@@ -79,6 +79,12 @@
   <div id="resultadoImportacionObligacion" class="importacion-resumen" hidden></div>
 </section>
     </div>
+
+      <section class="botonera" aria-label="Acciones de liquidación">
+        <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
+        <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
+        <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
+      </section>
   </section>
 
   <section class="tab-pane" data-pane="pagos">
@@ -95,6 +101,12 @@
   <div class="tabla-scroll"><table id="tablaPagos"><thead><tr><th>Nº</th><th>TDJ Nº</th><th>Recibo Nº</th><th>Fecha pago</th><th>Valor pago</th><th>Tipo</th><th>Tasa</th><th>Observación</th><th>Acción</th></tr></thead><tbody></tbody></table></div>
 </section>
     </div>
+
+      <section class="botonera" aria-label="Acciones de liquidación">
+        <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
+        <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
+        <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
+      </section>
   </section>
 
 <section class="tab-pane" data-pane="resultados">
@@ -144,14 +156,19 @@
 
 <details class="panel auditoria-panel"><summary>Auditoría y trazabilidad</summary><div class="detalle"><div class="nota">La auditoría conserva la trazabilidad de normativa, vencimientos, intereses, sanciones, pagos, imputación y saldo sin ocupar espacio permanente en la pantalla.</div><button id="btnGenerarAuditoria" class="secundario">Generar auditoría</button><div id="resultadoAuditoria" class="resultado-auditoria"></div></div></details>
 
+      <section class="botonera" aria-label="Acciones de liquidación">
+        <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
+        <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
+        <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
+      </section>
+
     </div>
   </section>
 
-<section class="botonera"><button id="btnCalcular" class="primario grande">Calcular liquidación</button><button id="btnLimpiar" class="peligro grande">Limpiar</button></section>
 
 </main>
-<footer>Liquidador DIAN — versión 16.32, con TIM e IPC centralizados y alertas informativas</footer>
-<script type="module" src="js/app.js?v=16.32.50"></script>
+<footer>Liquidador DIAN — versión 16.32.90, con TIM e IPC centralizados y alertas informativas</footer>
+<script type="module" src="js/app.js?v=16.32.93"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
@@ -180,8 +197,7 @@
     }
     botones.forEach(b=>b.addEventListener('click',()=>activar(b.dataset.tab)));
     activar('datos');
-    const calcular=document.getElementById('btnCalcular');
-    if(calcular)calcular.addEventListener('click',()=>setTimeout(()=>activar('resultados'),80));
+    document.querySelectorAll('.btn-calcular-normal').forEach(calcular=>calcular.addEventListener('click',()=>setTimeout(()=>activar('resultados'),80)));
     const venc=document.getElementById('btnCalcularVencimiento');
     if(venc)venc.addEventListener('click',()=>setTimeout(()=>activar('datos'),50));
     const agregar=document.getElementById('btnAgregarPago');
