@@ -1,4 +1,4 @@
-import {fechaISO,numeroDesdeTexto} from "./utilidades.js";
+import {fechaISO,numeroDesdeTexto,truncarValorEntero} from "./utilidades.js";
 
 const norm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[º°]/g,"").replace(/[.\-_:]/g," ").replace(/\s+/g," ").trim();
 const upper=s=>String(s??"").trim().toUpperCase();
@@ -145,6 +145,12 @@ function separarTokensPagoSinTitulo(celda){
   return s.split(/\s+/).filter(Boolean);
 }
 function esDocumentoLargo(v){
+  const raw=limpiarCeldaPago(v).replace(/\s/g,"");
+  // Si contiene separadores monetarios/decimales, primero se trata como
+  // importe. Esto evita confundir, por ejemplo, 14.558.700,58 con un
+  // documento de 10 dígitos. Los documentos en notación científica siguen
+  // pudiendo reconocerse mediante normalizarDocumento().
+  if(/[,$.]/.test(raw) && !/^[+-]?\d+[eE][+-]?\d+$/.test(raw))return false;
   const d=normalizarDocumento(v);
   return /^\d{10,}$/.test(d) && !/^20\d{2}$/.test(d);
 }
@@ -159,7 +165,7 @@ function valorNumericoEstricto(v){
   if(sci!==null)return null; // la notación científica se reserva para documentos.
   if(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(s))return null;
   const n=numeroDesdeTexto(s);
-  return Number.isFinite(n)?n:null;
+  return Number.isFinite(n)?truncarValorEntero(n):null;
 }
 function separarFilaPagos(linea){
   const s=String(linea??"").trim();
@@ -452,6 +458,7 @@ function reconocerPagosSinTitulos(lines){
     if(!mejorDoc)continue;
     usadosValores.add(mejorValor.j);
     const p={id:crypto.randomUUID(),numero:0,tdj:mejorDoc.tdj?mejorDoc.d:"",recibo:mejorDoc.tdj?"":mejorDoc.d,fecha,valor:mejorValor.n,tipo:mejorDoc.tdj?"TDJ":"TASA DIAN",observacion:"IMPORTADO INTELIGENTE"};
+    p.valor=truncarValorEntero(p.valor);
     const clave=`${p.recibo}|${p.fecha}|${p.valor}`;
     if(!encontrados.some(x=>`${x.recibo}|${x.fecha}|${x.valor}`===clave))encontrados.push(p);
   }
@@ -462,7 +469,8 @@ function deduplicarPagos(pagos){
   return pagos.filter(p=>{
     const recibo=String(p.recibo||"").replace(/\D/g,"");
     const tdj=String(p.tdj||"").replace(/\D/g,"");
-    const clave=recibo?`R|${recibo}|${p.fecha}|${Number(p.valor||0)}`:tdj?`T|${tdj}|${p.fecha}|${Number(p.valor||0)}`:`P|${p.fecha}|${Number(p.valor||0)}|${p.tdj||""}`;
+    p.valor=truncarValorEntero(p.valor);
+    const clave=recibo?`R|${recibo}|${p.fecha}|${p.valor}`:tdj?`T|${tdj}|${p.fecha}|${p.valor}`:`P|${p.fecha}|${p.valor}|${p.tdj||""}`;
     if(vistos.has(clave))return false;
     vistos.add(clave);return true;
   }).sort((a,b)=>a.fecha.localeCompare(b.fecha)).map((p,i)=>({...p,numero:i+1}));
