@@ -176,31 +176,27 @@
 @media(max-width:850px){.tabs-nav{position:static;grid-template-columns:repeat(2,1fr)}.tab-btn:nth-child(2){border-right:0}.tab-btn{border-bottom:1px solid #c1ced7}.botonera{position:static;flex-direction:column}.botonera button{width:100%}}
 @media(max-width:600px){.tabs-nav{grid-template-columns:1fr}.tab-btn{border-right:0}.tab-pane-inner{gap:6px}.contenedor{padding:0 7px}.grid{padding:7px}}
 
-/* REAJUSTE 16.22 — Compactación de Datos generales + Sanción.
-   Solo afecta la interfaz; no altera estilos de PDF ni lógica de cálculo. */
+/* REAJUSTE 16.33.12 — Reordenamiento visual de obligación y sanción.
+   Solo presentación: mueve campos sin modificar IDs ni lógica de cálculo. */
 .datos-unificados-panel{border:1px solid #b9c9d5}
-.datos-unificados{padding:7px 9px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.datos-unificados{padding:7px 9px 0;display:grid;grid-template-columns:42% 58%;gap:8px}
 .datos-bloque{border:1px solid #d0dbe3;border-radius:6px;background:#fbfdfe;overflow:hidden}
 .datos-bloque-titulo{padding:5px 8px;background:#e8f0f5;color:#173047;font-size:11px;font-weight:700;border-bottom:1px solid #d0dbe3}
-.datos-grid{display:grid;grid-template-columns:.9fr .9fr 1.3fr 1.3fr 1fr 1fr;gap:6px;padding:7px;align-items:end}
+.datos-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:7px;align-items:end}
 .datos-grid label{display:flex;flex-direction:column;gap:3px;font-weight:700;font-size:11px;min-width:0}
 .datos-grid label>input,.datos-grid label>select{width:100%;min-width:0;max-width:none;height:32px;margin:0;padding:5px 7px}
-/* Distribución C2 final: razón social amplia; fechas compactas y alineadas. */
-.datos-grid label.dato-razon{min-width:0;grid-column:1 / 4}
-.datos-grid label.dato-razon>input{width:100%;max-width:none}
-.datos-grid label:nth-child(3){grid-column:3 / 5}
-.datos-grid label:nth-child(4){grid-column:5 / 7}
-.datos-grid label:nth-child(6){grid-column:4 / 5}
+.obligacion-grid{grid-template-columns:.9fr .9fr 1.8fr 1.1fr}
+.obligacion-grid .obligacion-concepto{grid-column:3 / 5}
+.obligacion-grid .dato-razon{grid-column:1 / 4;min-width:0}
+.obligacion-grid .dato-razon>input{width:100%;max-width:none}
+.obligacion-grid .obligacion-periodo{grid-column:4}
 .datos-grid .fecha-dual{display:grid;grid-template-columns:minmax(0,1fr) 36px;gap:4px;align-items:center}
 .datos-grid .fecha-native{width:36px;height:32px;padding:3px}
 .datos-grid .money{text-align:right}
-.sancion-grid{grid-template-columns:1fr 1fr 1.15fr}
+.sancion-grid{grid-template-columns:1fr 1.1fr 1.15fr 1.1fr}
 .sancion-grid label>input,.sancion-grid label>select{max-width:none;width:100%}
-.sancion-grid label:nth-child(2),.sancion-grid label:nth-child(3){min-width:0}
-.sancion-grid label:nth-child(4),.sancion-grid label:nth-child(5){min-width:0}
-.sancion-grid label:nth-child(4){grid-column:1}
-.sancion-grid .beneficio-sancion-abajo{grid-column:2 / 4}
-
+.sancion-grid .beneficio-sancion-abajo{grid-column:2}
+.sancion-grid #campoFechaAutoAdmisorio,.sancion-grid #campoFechaProvidenciaDefinitiva{grid-column:auto}
 .datos-unificados-panel>.nota{padding-top:5px;padding-bottom:7px}
 @media(max-width:1100px){.datos-unificados{grid-template-columns:1fr}.datos-grid label.dato-razon{flex:0 1 280px}}
 @media(max-width:650px){.datos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.datos-grid label,.datos-grid label.dato-razon{min-width:0;flex:auto;width:100%;grid-column:auto!important}.datos-grid label>input,.datos-grid label>select,.datos-grid label.dato-razon>input{width:100%;max-width:none}.datos-grid .fecha-dual{grid-template-columns:minmax(0,1fr) 36px}.sancion-grid{grid-template-columns:1fr}.sancion-grid label,.sancion-grid .beneficio-sancion-abajo{grid-column:auto!important}}
