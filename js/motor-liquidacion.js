@@ -343,6 +343,22 @@ export class MotorLiquidacion{
     const redondear4=n=>Math.round(Number(n)*10000)/10000;
     const es=needle=>t.includes(needle);
 
+    if(es("DECRETO 1419") && es("ART. 9")){
+      return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
+        factorSancion:0.15,reduceSancion:true,actualizaSancion:true,
+        nota:"ART. 9 D1419 seleccionado: interés al 4,500% anual y sanción/actualización al 15%, respetando la sanción mínima"};
+    }
+    if(es("DECRETO 1419") && es("ART. 10") && es("OMIS")){
+      return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
+        factorSancion:0.15,reduceSancion:true,
+        nota:"ART. 10 D1419 (omisa) seleccionado: interés al 4,500% anual y sanción al 15%, respetando la sanción mínima"};
+    }
+    if(es("DECRETO 1419") && es("ART. 10") && es("CORRECC")){
+      return {tasa:0,factor:0,tasaFija:0,beneficio,
+        factorSancion:0.15,reduceSancion:true,
+        nota:"ART. 10 D1419 (corrección) seleccionado: interés 0% y sanción al 15%, respetando la sanción mínima"};
+    }
+
     // Los cuatro tratamientos de los Decretos 1474/2025 y 0240/2026 se
     // aplican por decisión del liquidador, sin validar vigencia o requisitos.
     // Sus tratamientos matemáticos son los mismos que aparecen en las
@@ -430,7 +446,7 @@ export class MotorLiquidacion{
     // actualizada a la fecha del pago. Si el 15% resulta inferior a la
     // sanción mínima del año en que fue liquidada, se aplica la mínima.
     const tPagos=(datos?.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
-    const esArt20o3=tPagos.some(t=>t.includes("ART. 20 DECRETO 1474")||t.includes("ART. 3 DECRETO 0240"));
+    const esArt20o3=tPagos.some(t=>t.includes("ART. 20 DECRETO 1474")||t.includes("ART. 3 DECRETO 0240")||t.includes("DECRETO 1419"));
     const anioMinima=this.anioSancionParaMinima(datos,esArt20o3);
     const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
     const factor=Number(especial.factorSancion||1);
@@ -701,7 +717,8 @@ export class MotorLiquidacion{
       return t.includes("ART. 20 DECRETO 1474")
         ||t.includes("ART. 21 DECRETO 1474")
         ||t.includes("ART. 3 DECRETO 0240")
-        ||t.includes("ART. 4 DECRETO 0240");
+        ||t.includes("ART. 4 DECRETO 0240")
+        ||t.includes("DECRETO 1419");
     };
 
     const calcularInteresesAntesPago=(pago)=>{
@@ -714,7 +731,8 @@ export class MotorLiquidacion{
         let tramoVto=[];
 
         if(v.saldo>0 && pago.fecha>v.fecha){
-          const especial=this.tasaEspecial(pago.tipo,pago.fecha);
+          const tipoInteres=String(pago.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419")&&String(v.fecha)>"2026-08-10"?"TASA DIAN":pago.tipo;
+          const especial=this.tasaEspecial(tipoInteres,pago.fecha);
 
           if(especial.requiereDato){
             tramoVto=[{
@@ -960,7 +978,8 @@ export class MotorLiquidacion{
       // el piso final exigido por la norma.
       if(!primerBeneficioDecretoUsado && especial.reduceSancion &&
          (String(pago.tipo||"").toUpperCase().includes("ART. 20 DECRETO 1474") ||
-          String(pago.tipo||"").toUpperCase().includes("ART. 3 DECRETO 0240")) && saldoSancion>0){
+          String(pago.tipo||"").toUpperCase().includes("ART. 3 DECRETO 0240") ||
+          String(pago.tipo||"").toUpperCase().includes("DECRETO 1419")) && saldoSancion>0){
         const anioMinima=this.anioSancionParaMinima(datos,true);
         const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
         const saldoActualizado=Number(saldoSancion||0);

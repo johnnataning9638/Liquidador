@@ -10,6 +10,7 @@ import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.27";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.27";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.27";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.27";
+import {TIPO_1419,esTipoDecreto1419,esArticulo10Correccion1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.27";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -23,7 +24,10 @@ const TIPOS=[
   "ART. 20 DECRETO 1474 DE 2025",
   "ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",
   "ART. 3 DECRETO 0240 DE 2026",
-  "ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION"
+  "ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION",
+  TIPO_1419.ART9,
+  TIPO_1419.ART10_OMISO,
+  TIPO_1419.ART10_CORRECCION
 ];
 
 let motor=null,motorPrivado=null,motorOficial=null,actualizadorSancion=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
@@ -411,6 +415,8 @@ function leerFormulario(){
     tieneSancion:upper($("tieneSancion").value),
     valorSancion:numeroDesdeTexto($("valorSancion").value),
     fechaSancion:fechaISO($("fechaSancion").value),
+    fechaPresentacionDeclaracion1419:fechaISO($("fechaPresentacionDeclaracion1419")?.value||""),
+    fechaDeclaracionOriginal1419:fechaISO($("fechaDeclaracionOriginal1419")?.value||""),
     beneficioSancion:upper($("beneficioSancion").value),
     beneficioTributario:upper($("beneficioTributario")?.value||"NINGUNO"),
     beneficioEscenario:upper($("beneficioTributario")?.value||"").replace("D0240_ART4_","").replace("_"," "),
@@ -556,13 +562,20 @@ function renderPagos(){
     const tr=document.createElement("tr"),tasa=tasaParaPago(p);
     tr.innerHTML=`<td>${i+1}</td><td><input data-k="tdj" value="${esc(p.tdj||"")}"></td><td><input data-k="recibo" value="${esc(p.recibo||"")}"></td><td>${campoFechaHtml({idText:`fechaPago-${p.id}`,idPicker:`fechaPagoPicker-${p.id}`,value:p.fecha,clase:"fecha-pago"})}</td><td><input data-k="valor" class="money" inputmode="numeric" value="${p.valor?dinero(p.valor):""}" placeholder="$ 0"></td><td><select data-k="tipo">${opcionesTipo(p.tipo)}</select></td><td>${tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%"}</td><td><input data-k="observacion" value="${esc(p.observacion||"")}"></td><td><button class="peligro" data-del="1">Eliminar</button></td>`;
     tr.querySelectorAll("[data-k]").forEach(el=>{
-      const sincronizar=()=>{
+      const sincronizar=(validarTipo=false)=>{
         const k=el.dataset.k;
         if(k==="valor"){
           p.valor=truncarValorEntero(numeroDesdeTexto(el.value));
         }
         else if(k==="tipo"){
-          p.tipo=upper(el.value);
+          const tipoNuevo=upper(el.value);
+          if(validarTipo&&rechazarTipo1419Normal(tipoNuevo,p,el))return;
+          p.tipo=tipoNuevo;
+          if(tipoNuevo==="TASA DIAN"){
+            $("campoFechaPresentacion1419").dataset.abierto="";
+            $("campoFechaDeclaracionOriginal1419").dataset.abierto="";
+          }
+          actualizarCamposFecha1419();
           actualizarTasaVisiblePago(tr,p);
         }
         else{
@@ -572,13 +585,14 @@ function renderPagos(){
       // TDJ se sincroniza en cada pulsación, no solo al perder el foco.
       // Así el motor nunca entra por la ruta de proporcionalidad por haber
       // quedado el número TDJ pendiente de un evento change.
-      el.addEventListener("input",sincronizar);
-      el.addEventListener("change",()=>{sincronizar();if(el.dataset.k==="valor")el.value=p.valor?dinero(p.valor):"";});
+      el.addEventListener("input",()=>{if(el.dataset.k!=="tipo")sincronizar();});
+      el.addEventListener("change",()=>{sincronizar(el.dataset.k==="tipo");if(el.dataset.k==="valor")el.value=p.valor?dinero(p.valor):"";});
     });
-    montarFechaDual(tr,iso=>{p.fecha=iso||"";actualizarTasaVisiblePago(tr,p);});
+    montarFechaDual(tr,iso=>{p.fecha=iso||"";if(esTipoDecreto1419(p.tipo))rechazarTipo1419Normal(p.tipo,p,tr.querySelector('[data-k="tipo"]'));actualizarTasaVisiblePago(tr,p);});
     tr.querySelector("[data-del]").addEventListener("click",()=>{pagos=pagos.filter(x=>x.id!==p.id);renderPagos();});
     tbody.appendChild(tr);
   });
+  actualizarCamposFecha1419();
   configurarTabulacionPagos();
 }
 
@@ -1430,6 +1444,41 @@ function normalizarTipoBeneficioVigencia(v){
   return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g," ").trim();
 }
 
+function actualizarCamposFecha1419(){
+  const tipos=pagos.map(p=>p.tipo||"");
+  const articulo10=tipos.some(t=>String(t).includes("ART. 10 DECRETO 1419"));
+  const correccion=tipos.some(esArticulo10Correccion1419);
+  const presentacion=$("campoFechaPresentacion1419"),original=$("campoFechaDeclaracionOriginal1419");
+  if(presentacion)presentacion.hidden=!articulo10&&presentacion.dataset.abierto!=="1";
+  if(original)original.hidden=!correccion&&original.dataset.abierto!=="1";
+}
+
+function erroresTipo1419Normal(tipo,pago){
+  const fechas=obligacionVencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||"");
+  const esTitulo=Boolean(String(pago?.tdj||"").trim());
+  return validarSeleccion1419({
+    tipo,fechasVencimiento:fechas,
+    fechaPresentacion:fechaISO($("fechaPresentacionDeclaracion1419")?.value||""),
+    fechaDeclaracionOriginal:fechaISO($("fechaDeclaracionOriginal1419")?.value||""),
+    fechaPago:esTitulo?"":fechaISO(pago?.fecha||""),
+    fechaTitulo:esTitulo?fechaISO(pago?.fecha||""):"",esTitulo
+  });
+}
+
+function rechazarTipo1419Normal(tipo,pago,select){
+  if(!esTipoDecreto1419(tipo))return false;
+  if(tipo.includes("ART. 10"))$("campoFechaPresentacion1419").dataset.abierto="1";
+  if(esArticulo10Correccion1419(tipo))$("campoFechaDeclaracionOriginal1419").dataset.abierto="1";
+  actualizarCamposFecha1419();
+  const errores=erroresTipo1419Normal(tipo,pago);
+  if(!errores.length)return false;
+  if(select)select.value="TASA DIAN";
+  pago.tipo="TASA DIAN";
+  actualizarCamposFecha1419();
+  alert(`No se puede seleccionar ${tipo}:\n\n${errores.join("\n\n")}\n\nSe dejó TASA DIAN, sin beneficio.`);
+  return true;
+}
+
 function obtenerVentanasBeneficios(){
   return [
     {clave:"ART. 20 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-03-31",nombre:"ART. 20 DEL DECRETO 1474 DE 2025"},
@@ -1466,6 +1515,18 @@ function validarVigenciaBeneficiosUI(d){
       }
     });
   }
+  (d.pagos||[]).forEach((p,i)=>{
+    if(!esTipoDecreto1419(p.tipo))return;
+    errores.push(...validarSeleccion1419({
+      tipo:p.tipo,
+      fechasVencimiento:(d.vencimientos||[]).filter(v=>Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||""),
+      fechaPresentacion:d.fechaPresentacionDeclaracion1419,
+      fechaDeclaracionOriginal:d.fechaDeclaracionOriginal1419,
+      fechaPago:String(p.tdj||"").trim()?"":p.fecha,
+      fechaTitulo:String(p.tdj||"").trim()?p.fecha:"",
+      esTitulo:Boolean(String(p.tdj||"").trim())
+    }).map(x=>`Pago/título ${i+1}: ${x}`));
+  });
   return errores;
 }
 
@@ -1552,6 +1613,8 @@ async function limpiar(){
   feedbackIAPendientes.clear();
   ocultarFeedbackIA();
   pagos=[];obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];ultimaLiquidacion=null;ultimaAuditoria=null;
+  $("fechaPresentacionDeclaracion1419").value="";$("fechaDeclaracionOriginal1419").value="";
+  $("campoFechaPresentacion1419").dataset.abierto="";$("campoFechaDeclaracionOriginal1419").dataset.abierto="";
   // El botón LIMPIAR inicia una obligación completamente nueva.
   // Es importante reiniciar también el estado auxiliar de sanción y el
   // estado usado por las pestañas: HTMLFormElement.reset() o limpiar

@@ -162,7 +162,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const minima=this.sancionMinima(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));
       if(minima>0&&saldoSancion<minima)saldoSancion=minima;
     }
-    let saldoIntereses=0,excedenteTotal=0;
+    let saldoIntereses=0,excedenteTotal=0,primerBeneficio1419Usado=false;
     let detalleActualizacionSancion=[]; let advertenciasSancion=[];
     const aniosActualizacionSancionAplicados=new Set();
     const idVtoSancion=saldosVto[0]?.id||null;
@@ -175,7 +175,8 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       for(const v of saldosVto){
         let valor=0,tramoVto=[];
         if(v.saldo>0&&pago.fecha>v.fecha){
-          const especial=this.tasaEspecial(pago.tipo,pago.fecha);
+          const tipoInteres=String(pago.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419")&&String(v.fecha)>"2026-08-10"?"TASA DIAN":pago.tipo;
+          const especial=this.tasaEspecial(tipoInteres,pago.fecha);
           if(especial.requiereDato){
             tramoVto=[{vto:v.id,base:Number(v.saldo||0),valor:null,metodologia:"BENEFICIO_REQUIERE_IBC",advertencia:"El tratamiento seleccionado requiere IBC histórico; no se sustituye por la TIM."}];
           }else if(especial.tasa!=null&&Number(especial.tasa)===0){
@@ -214,6 +215,17 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
           actualizacionSancionPago.actualizacionTotal=roundMil(actualizacionSancionPago.tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0));
         }
         advertenciasSancion.push(...(act.advertencias||[]));
+      }
+
+      if(!primerBeneficio1419Usado&&especial.reduceSancion&&String(pago.tipo||"").toUpperCase().includes("DECRETO 1419")&&saldoSancion>0){
+        const anioMinima=Number(fechaSancion.slice(0,4))||Number(datos.anio||0);
+        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
+        const saldoAntes=Number(saldoSancion||0);
+        const reducido=roundMil(saldoAntes*Number(especial.factorSancion||0.15));
+        saldoSancion=roundMil(Math.max(reducido,minima));
+        primerBeneficio1419Usado=true;
+        detalleActualizacionSancion.push({fechaPago:pago.fecha,beneficio:pago.tipo,saldoAntesReduccion:roundMil(saldoAntes),porcentajeReduccion:Number(especial.factorSancion||0.15)*100,valorReducido:reducido,sancionMinima:minima,saldoDespuesReduccion:saldoSancion,actualizacionPrevia:roundMil(Math.max(0,saldoAntes-sancionBaseOriginal))});
+        actualizacionSancionPago.eventos.push({tipo:"REDUCCION POR BENEFICIO",beneficio:pago.tipo,saldoAntes:roundMil(saldoAntes),saldoDespues:saldoSancion,porcentaje:Number(especial.factorSancion||0.15)*100});
       }
 
       const interesesPorCuota=saldosVto.map(v=>{
