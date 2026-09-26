@@ -1,11 +1,11 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.23";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.23";
-import {importarDatosInteligente} from "./importador.js?v=16.33.23";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.23";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.23";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.23";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.23";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.23";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.27";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.27";
+import {importarDatosInteligente} from "./importador.js?v=16.33.27";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.27";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.27";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.27";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.27";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.27";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -936,6 +936,7 @@ function aplicarTitulos(){
     resultado={resumenObligaciones,resumenTitulos,endoso,fechaCalculo:hoyISO()};
     resultadoDesactualizado=false;
     pintarResultado(resultado);
+    renderPagos();
     activarTab("titulos");
     setTimeout(()=>document.getElementById("resultadoTDJ")?.scrollIntoView({behavior:"smooth",block:"start"}),50);
   }catch(e){console.error(e);alert(e.message||"No fue posible realizar la aplicación de títulos.");enfocarCampoErrorTDJ(e.focusTarget);}
@@ -1522,7 +1523,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.23-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.27-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -1608,6 +1609,7 @@ async function importarExcelTDJ(){
     const file=input.files?.[0]; if(!file)return;
     try{
       const rows=await leerXlsxPrimeraHoja(file);
+      const esLiquidadorNormal = rows.some(r=>/^LIQUIDADOR DE OBLIGACIONES DIAN$/.test(normExcel(r?.filter(Boolean).join(" "))));
       const meta=obtenerMetaExcelRobusta(rows);
       const getMeta=k=>meta[normExcel(k)]??"";
       if(!getMeta("NIT")&&!getMeta("RAZON SOCIAL")){
@@ -1620,6 +1622,21 @@ async function importarExcelTDJ(){
       for(let i=0;i<rows.length;i++) if(esTituloObligacionExcel(rows[i])) marcas.push(i);
 
       const nuevas=[];
+      // Un mismo TDJ puede aparecer en PAGOS Y APLICACIÓN y nuevamente en
+      // TÍTULOS / TDJ. Se conserva una sola representación como título.
+      const nuevosTitulos=[];
+      const clavesTitulos=new Set();
+      const agregarTituloImportado=(tdjNum,fecha,valor,tipo="TASA DIAN",observacion="")=>{
+        const tdjTxt=upper(tdjNum||"").trim();
+        const f=fechaCampoTDJImport(fecha)||"";
+        const v=truncarValorEntero(valor);
+        if(!f||v<=0)return false;
+        const clave=`${tdjTxt}|${f}|${v}`;
+        if(clavesTitulos.has(clave))return false;
+        clavesTitulos.add(clave);
+        nuevosTitulos.push({id:uid("TDJ"),numero:nuevosTitulos.length+1,tdj:tdjTxt,fecha:f,valor:v,tipo:upper(tipo||"TASA DIAN"),observacion:upper(observacion||"")});
+        return true;
+      };
       for(let m=0;m<marcas.length;m++){
         const start=marcas[m];
         const end=m+1<marcas.length?marcas[m+1]:rows.length;
@@ -1630,7 +1647,10 @@ async function importarExcelTDJ(){
         const tipoIdx=idxFila(seg,r=>normExcel(r?.[0])==="TIPO DE LIQUIDACION");
         if(tipoIdx>=0){
           const v=seg[tipoIdx]||[];
-          o.tipoLiquidacion=upper(v[1]||"PRIVADA")==="OFICIAL"?"OFICIAL":"PRIVADA";
+          // El módulo TDJ opera exclusivamente como liquidación privada.
+          // Si el origen es un Excel del Liquidador normal, se ignora cualquier
+          // valor OFICIAL del archivo fuente y se fuerza PRIVADA.
+          o.tipoLiquidacion=esLiquidadorNormal?"PRIVADA":(upper(v[1]||"PRIVADA")==="OFICIAL"?"OFICIAL":"PRIVADA");
           o.fechaAutoAdmisorio=fechaCampoTDJImport(v[1]?.toString().toUpperCase()==="OFICIAL"?seg[tipoIdx+1]?.[1]:"");
           o.fechaProvidenciaDefinitiva=fechaCampoTDJImport(v[1]?.toString().toUpperCase()==="OFICIAL"?seg[tipoIdx+1]?.[2]:"");
         }
@@ -1676,28 +1696,40 @@ async function importarExcelTDJ(){
           if(arr.length){arr.forEach((v,i)=>v.numero=i+1);o.vencimientos=arr;}
         }
 
-        // Pagos normales de ESTA obligación.
+        // Pagos normales de ESTA obligación. Si el Excel del Liquidador
+        // contiene TDJ dentro de este bloque histórico, esos registros se
+        // separan inmediatamente y se convierten en títulos. Así no quedan
+        // duplicados cuando además existe la sección TÍTULOS / TDJ.
         const ph=idxFila(seg,r=>{
           const n=(r||[]).map(normExcel);
-          return n[0]==="Nº"&&n[1]==="RECIBO"&&n[2]==="FECHA"&&n[3]==="VALOR"&&n[4]==="TIPO";
+          return n[0]==="Nº"&&(n[1]==="RECIBO"||n[1]==="RECIBO Nº")&&(n[2]==="FECHA"||n[2]==="FECHA PAGO")&&(n[3]==="VALOR"||n[3]==="VALOR PAGO")&&n.includes("TIPO");
         });
         o.pagos=[];
         if(ph>=0){
-          const h=seg[ph]||[], obsIdx=h.findIndex(c=>normExcel(c)==="OBSERVACION");
+          const h=seg[ph]||[], nh=h.map(normExcel);
+          const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
+          const ixT=nh.findIndex(x=>x==="TDJ Nº"||x==="TDJ"||x==="TITULO"||x==="TÍTULO");
+          const ixR=nh.findIndex(x=>x==="RECIBO Nº"||x==="RECIBO"||x==="RECIBO NÚMERO");
+          const ixF=nh.findIndex(x=>x==="FECHA PAGO / CORTE"||x==="FECHA PAGO"||x==="FECHA DE PAGO"||x==="FECHA");
+          const ixV=nh.findIndex(x=>x==="VALOR PAGO"||x==="VALOR"||x==="VALOR DEL PAGO"||x==="VALOR PAGADO");
+          const ixTipo=nh.findIndex(x=>x==="TIPO"||x==="TIPO DE PAGO");
+          const ixObs=nh.findIndex(x=>x==="OBSERVACIÓN"||x==="OBSERVACION");
           for(let i=ph+1;i<seg.length;i++){
-            const r=seg[i]||[], s=normExcel(r.filter(Boolean).join(" | "));
-            if(!s)continue;
-            if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|OBLIGACION \d+ -)/.test(s))break;
-            // Nunca convertir filas de encabezado/resumen en pagos.
-            if(!/^\d+$/.test(String(r[0]??"").trim()))continue;
-            const f=fechaCampoTDJImport(r[2]), val=truncarValorEntero(numExcel(r[3]));
-            if(f||val>0){
-              o.pagos.push({
-                id:uid("PAG"),numero:o.pagos.length+1,recibo:upper(r[1]||""),
-                fecha:f,valor:val,tipo:upper(r[4]||"TASA DIAN"),
-                observacion:upper(obsIdx>=0?r[obsIdx]:"")
-              });
+            const r=seg[i]||[], srow=normExcel(r.filter(Boolean).join(" | "));
+            if(!srow)continue;
+            if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|TITULOS \/ TDJ|TITULOS TDJ|RECUPERACION COMPLETA|FIN RECUPERACION|OBLIGACION \d+ -)/.test(srow))break;
+            if(ixN>=0&&!/^\d+$/.test(String(r[ixN]??"").trim()))continue;
+            const f=fechaCampoTDJImport(ixF>=0?r[ixF]:""), val=truncarValorEntero(numExcel(ixV>=0?r[ixV]:""));
+            if(!f||val<=0)continue;
+            const tdjNum=upper(ixT>=0?r[ixT]||"":"").trim();
+            const recibo=upper(ixR>=0?r[ixR]||"":"").trim();
+            const tipo=upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN");
+            const obs=upper(ixObs>=0?r[ixObs]||"":"");
+            if(tdjNum){
+              agregarTituloImportado(tdjNum,f,val,tipo,obs);
+              continue;
             }
+            o.pagos.push({id:uid("PAG"),numero:o.pagos.length+1,recibo,fecha:f,valor:val,tipo,observacion:obs});
           }
         }
         nuevas.push(o);
@@ -1716,7 +1748,6 @@ async function importarExcelTDJ(){
       let th=idxFila(rows,r=>/^TITULOS \/ TDJ\s*-?\s*CONTROL FINAL/.test(normExcel(r?.filter(Boolean).join(" "))));
       if(th<0)th=idxFila(rows,r=>/^TITULOS \/ TDJ\s*-?\s*TITULOS REGISTRADOS/.test(normExcel(r?.filter(Boolean).join(" "))));
       const hh=headerTitle(th>=0?th:0);
-      const nuevosTitulos=[];
       if(hh>=0){
         const h=rows[hh]||[], nh=h.map(normExcel);
         const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
@@ -1732,11 +1763,7 @@ async function importarExcelTDJ(){
           const f=fechaCampoTDJImport(r[ixF]), val=truncarValorEntero(numExcel(r[ixV]));
           const tdjNum=upper(r[ixT]||"");
           if(f&&(tdjNum||val>0)){
-            nuevosTitulos.push({
-              id:uid("TDJ"),numero:nuevosTitulos.length+1,tdj:tdjNum,fecha:f,valor:val,
-              tipo:upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),
-              observacion:upper(ixObs>=0?r[ixObs]||"":"")
-            });
+            agregarTituloImportado(tdjNum,f,val,upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),upper(ixObs>=0?r[ixObs]||"":""));
           }
         }
       }
@@ -1766,7 +1793,15 @@ async function importarExcelTDJ(){
   input.click();
 }
 
-function limpiarTodo(){if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;$("nitGlobal").value="";$("razonGlobal").value="";obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;$("resultadoTDJ").hidden=true;renderObligaciones();renderPagos();renderTitulos();actualizarSelectoresImportacion();window.scrollTo({top:0,behavior:"smooth"});}
+function limpiarTodo(){
+  if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;
+  $("nitGlobal").value="";$("razonGlobal").value="";
+  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;
+  $("resultadoTDJ").hidden=true;
+  renderObligaciones();renderPagos();renderTitulos();actualizarSelectoresImportacion();
+  refrescarTabActualTDJ();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
 
 function importarTitulos(){const text=$("importarTitulosTexto").value.trim();if(!text)return alert("Pegue primero los datos de los títulos.");try{const r=importarDatosInteligente(text);const pagosReconocidos=r.pagos||[];const tituladosExplicitos=pagosReconocidos.filter(p=>p.tdj||upper(p.tipo)==="TDJ");let encontrados=tituladosExplicitos.length?tituladosExplicitos:pagosReconocidos.filter(p=>p.fecha&&Number(p.valor)>0);
   // En el importador de TÍTULOS el contexto ya identifica la primera columna
@@ -1807,7 +1842,16 @@ function activarTab(nombre){
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===nombre));
   document.querySelectorAll(".tab-pane").forEach(p=>p.classList.toggle("active",p.dataset.pane===nombre));
   if(nombre==="pagos")renderPagos();
+  requestAnimationFrame(()=>{
+    if(nombre==="pagos")renderPagos();
+    const pane=document.querySelector(`.tab-pane[data-pane="${nombre}"]`);
+    if(pane)pane.classList.add("active");
+  });
   window.scrollTo({top:0,behavior:"smooth"});
+}
+function refrescarTabActualTDJ(){
+  const nombre=document.querySelector(".tab-btn.active")?.dataset.tab||"datos";
+  requestAnimationFrame(()=>activarTab(nombre));
 }
 function iniciarTabs(){
   document.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>activarTab(b.dataset.tab)));

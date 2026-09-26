@@ -1,5 +1,5 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.23";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.23";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.27";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.27";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL

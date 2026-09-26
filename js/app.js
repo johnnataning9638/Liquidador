@@ -1,15 +1,15 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.23";
-import {importarDatosInteligente} from "./importador.js?v=16.33.23";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.23";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.23";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.23";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.23";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.23";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.23";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.23";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.23";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.23";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.23";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.27";
+import {importarDatosInteligente} from "./importador.js?v=16.33.27";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.27";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.27";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.27";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.27";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.27";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.27";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.27";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.27";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.27";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.27";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -302,7 +302,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.23"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.27"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1042,20 +1042,20 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.23"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.27"],{title:true});
     push([]);
+    // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
+    // NIT y razón social quedan en la misma fila; los datos propios de la
+    // obligación (concepto, año, período, sanción, vencimientos y pagos)
+    // viven en el bloque OBLIGACIÓN 1 — LIQUIDACIÓN NORMAL, igual que TDJ.
     push(["NIT",d.nit||"","DV",dvNIT(d.nit),"RAZÓN SOCIAL",d.razonSocial||""]);
-    push(["AÑO GRAVABLE",d.anio||"","CONCEPTO",d.concepto||"","PERÍODO",d.periodo||""]);
-    push(["TIPO DE LIQUIDACIÓN",d.tipoLiquidacion||""]);
-    push(["FECHA DE PRESENTACIÓN",d.fechaSancion||""]);
+    push(["TIPO DE LIQUIDACIÓN",d.tipoLiquidacion||"PRIVADA"]);
     push(["FECHA AUTO ADMISORIO",d.fechaAutoAdmisorio||""]);
     push(["FECHA PROVIDENCIA DEFINITIVA",d.fechaProvidenciaDefinitiva||""]);
-    push(["FECHA VENCIMIENTO PARA DECLARAR",d.fechaVencimientoDeclarar||""]);
     push(["TIENE SANCIÓN",d.tieneSancion||"NO"]);
     push(["VALOR SANCIÓN",d.valorSancion||0],{money:[2]});
     push(["FECHA SANCIÓN",d.fechaSancion||""]);
-    push(["BENEFICIO SANCIÓN",d.beneficioSancion||""]);
-    push(["BENEFICIO TRIBUTARIO",d.beneficioTributario||"NINGUNO"]);
+    push([]);
     push(["SALDO TOTAL",r.total||0,"EXCEDENTE",r.excedente||0,"ÚLTIMO PAGO",r.ultimo?.pago?.fecha||"","TASA ÚLTIMO PAGO",r.ultimo?.tasaVisible??""],{money:[2,4],percent:[8]});
     push(["TIPOS DE TASA/BENEFICIO APLICADOS",(r.beneficiosAplicados||[]).join(" | ")||"TASA DIAN"]);
     push(["CRITERIO","La liquidación utiliza exactamente el tipo seleccionado en cada pago; no se valida elegibilidad jurídica."]);
@@ -1131,6 +1131,41 @@ function exportarExcel(){
     const excedenteTotalReporte=(r.detalle||[]).reduce((a,x)=>a+Number(x.excedente||x.aplicado?.excedente||0),0);
     push(["EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS","",excedenteTotalReporte],{money:[3]});
     push([]);
+    // BLOQUE CANÓNICO COMPATIBLE CON TDJ:
+    // El Liquidador normal exporta la misma estructura de obligación que
+    // utiliza el módulo TDJ para permitir importación cruzada sin perder datos.
+    push(["OBLIGACIÓN 1 — LIQUIDACIÓN NORMAL"],{title:true});
+    push(["TIPO DE LIQUIDACIÓN","FECHA AUTO ADMISORIO","FECHA PROVIDENCIA DEFINITIVA"],{header:true});
+    push([upper(d.tipoLiquidacion||"PRIVADA"),d.fechaAutoAdmisorio||"",d.fechaProvidenciaDefinitiva||""]);
+    push(["CONCEPTO","AÑO","PERÍODO","SANCIÓN","VALOR SANCIÓN","BENEFICIO SANCIÓN","FECHA SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
+    push([upper(d.concepto||""),d.anio||"",d.periodo??"",upper(d.tieneSancion||"NO"),truncarValorEntero(d.valorSancion||0),upper(d.beneficioSancion||""),d.fechaSancion||"",upper(d.beneficioTributario||"NINGUNO")],{money:[5]});
+    push(["VENCIMIENTOS / SALDOS"],{title:true});
+    push(["Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO","SALDO FINAL BASE"],{header:true});
+    (Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]).forEach((v,i)=>{
+      const saldoBase=Number((r.vencimientos||[]).find(x=>x.id===v.id)?.saldo??v.saldo??0);
+      push([i+1,v.periodo??i+1,v.fecha||"",truncarValorEntero(v.impuesto||0),truncarValorEntero(saldoBase)],{money:[4,5]});
+    });
+    // ESTRUCTURA CANÓNICA: PAGOS NORMALES y TDJ se mantienen separados.
+    // Un TDJ puede aparecer también dentro del listado histórico de pagos del
+    // motor, pero no debe duplicarse como pago normal al importar este Excel
+    // en TDJ. El importador normal reconstruye posteriormente los TDJ desde
+    // su sección propia y los agrega como pagos cuando corresponda.
+    const pagosNormalesExcel=(Array.isArray(pagos)?pagos:[]).filter(p=>!String(p?.tdj||"").trim());
+    const tdjDesdePagos=(Array.isArray(pagos)?pagos:[]).filter(p=>String(p?.tdj||"").trim() && Number(p?.valor||0)>0);
+    push(["PAGOS REGISTRADOS — LIQUIDACIÓN NORMAL"],{title:true});
+    push(["Nº","RECIBO","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN"],{header:true});
+    pagosNormalesExcel.forEach((p,i)=>{
+      push([i+1,p.recibo||"",p.fecha||"",truncarValorEntero(p.valor||0),upper(p.tipo||"TASA DIAN"),p.tasa==null?"":Number(p.tasa)*100,upper(p.observacion||"")],{money:[4],percent:[6]});
+    });
+    if(!pagosNormalesExcel.length)push(["NO HAY PAGOS NORMALES REGISTRADOS."]);
+    push([]);
+    if(tdjDesdePagos.length){
+      push(["TÍTULOS / TDJ — TÍTULOS REGISTRADOS"],{title:true});
+      push(["Nº","TDJ","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN"],{header:true});
+      tdjDesdePagos.forEach((p,i)=>push([i+1,p.tdj||"",p.fecha||"",truncarValorEntero(p.valor||0),upper(p.tipo||"TASA DIAN"),p.tasa==null?"":Number(p.tasa)*100,upper(p.observacion||"")],{money:[4],percent:[6]}));
+      push([]);
+    }
+
     // BLOQUE CANÓNICO DE RECUPERACIÓN: DATOS DE CAPTURA, NO RESULTADOS.
     // Permite que el mismo Excel generado por el Liquidador sea reimportado 1:1.
     push(["RECUPERACIÓN COMPLETA — DATOS DE TRABAJO (NO MODIFICAR)"],{title:true});
@@ -1142,6 +1177,8 @@ function exportarExcel(){
     (Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]).forEach((v,i)=>push(["",i+1,v.periodo??i+1,v.fecha||"",truncarValorEntero(v.impuesto||0)],{money:[5]}));
     push(["PAGOS","Nº","TDJ Nº","RECIBO Nº","FECHA","VALOR","TIPO","OBSERVACIÓN"],{header:true});
     (Array.isArray(pagos)?pagos:[]).forEach((p,i)=>push(["",i+1,p.tdj||"",p.recibo||"",p.fecha||"",truncarValorEntero(p.valor||0),p.tipo||"TASA DIAN",p.observacion||""] ,{money:[6]}));
+    push(["TÍTULOS TDJ","Nº","TDJ","FECHA","VALOR","TIPO","OBSERVACIÓN"],{header:true});
+    tdjDesdePagos.forEach((p,i)=>push(["",i+1,p.tdj||"",p.fecha||"",truncarValorEntero(p.valor||0),upper(p.tipo||"TASA DIAN"),upper(p.observacion||"")],{money:[5]}));
     push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
     push([]);
     push(["OBSERVACIÓN","Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se aplica el 1 de enero de cada vigencia que corresponda con el IPC anual del año anterior, sin prorrateo por días. Se muestra por pago y se consolida al final."]);
@@ -1661,7 +1698,10 @@ function leerMetaExcel(rows){
     for(let i=0;i<r.length;i+=2){
       const k=normExcel(r?.[i]);
       if(!k)continue;
-      meta[k]=r?.[i+1]??"";
+      const v=r?.[i+1]??"";
+      // Nunca permitir que una cabecera posterior (p. ej. DATOS OBLIGACIÓN)
+      // sobrescriba un metadato válido leído en el encabezado del libro.
+      if(!(k in meta) || meta[k]==="") meta[k]=v;
     }
   }
   return meta;
@@ -1788,21 +1828,54 @@ async function importarExcelNormal(){
     }
 
     if(!get("NIT")&&!get("RAZÓN SOCIAL"))throw new Error("El archivo no parece ser un Excel exportado por el Liquidador de Obligaciones DIAN ni por el módulo de Títulos / TDJ.");
+
+    // Fuente canónica de los datos de la obligación: misma estructura que TDJ.
+    // Esto evita depender de posiciones del encabezado general y permite que
+    // Liquidador → Excel → Liquidador y Liquidador → Excel → TDJ sean 1:1.
+    let datosCanonicos=null;
+    const marcaObl=rows.findIndex(r=>/^OBLIGACION\s+\d+\s*-?\s*LIQUIDACION NORMAL/.test(normExcel((r||[]).filter(Boolean).join(" "))));
+    if(marcaObl>=0){
+      const finObl=rows.findIndex((r,i)=>i>marcaObl&&/^OBLIGACION\s+\d+\s*-?\s*LIQUIDACION NORMAL/.test(normExcel((r||[]).filter(Boolean).join(" "))));
+      const seg=rows.slice(marcaObl+1,finObl>marcaObl?finObl:rows.length);
+      const info=seg.findIndex(r=>normExcel(r?.[0])==="CONCEPTO");
+      if(info>=0){
+        const h=(seg[info]||[]).map(normExcel),v=seg[info+1]||[];
+        const ix=(...names)=>h.findIndex(x=>names.map(normExcel).includes(x));
+        datosCanonicos={
+          concepto: ix("CONCEPTO")>=0?v[ix("CONCEPTO")]:"",
+          anio: ix("AÑO","ANO","AÑO GRAVABLE","ANO GRAVABLE")>=0?v[ix("AÑO","ANO","AÑO GRAVABLE","ANO GRAVABLE")]:"",
+          periodo: ix("PERÍODO","PERIODO","PERÍODO / CUOTA","PERIODO / CUOTA")>=0?v[ix("PERÍODO","PERIODO","PERÍODO / CUOTA","PERIODO / CUOTA")]:"",
+          tieneSancion: ix("SANCIÓN","SANCION","TIENE SANCIÓN","TIENE SANCION")>=0?v[ix("SANCIÓN","SANCION","TIENE SANCIÓN","TIENE SANCION")]:"",
+          valorSancion: ix("VALOR SANCIÓN","VALOR SANCION")>=0?v[ix("VALOR SANCIÓN","VALOR SANCION")]:"",
+          beneficioSancion: ix("BENEFICIO SANCIÓN","BENEFICIO SANCION")>=0?v[ix("BENEFICIO SANCIÓN","BENEFICIO SANCION")]:"",
+          fechaSancion: ix("FECHA SANCIÓN","FECHA SANCION")>=0?v[ix("FECHA SANCIÓN","FECHA SANCION")]:"",
+          beneficioTributario: ix("BENEFICIO TRIBUTARIO")>=0?v[ix("BENEFICIO TRIBUTARIO")]:""
+        };
+      }
+    }
     if(get("NIT"))$("nit").value=String(get("NIT")).replace(/\D/g,"");
     if(get("RAZÓN SOCIAL"))$("razonSocial").value=upper(get("RAZÓN SOCIAL"));
-    if(get("AÑO GRAVABLE"))$("anio").value=String(get("AÑO GRAVABLE")).replace(/\D/g,"");
-    if(get("CONCEPTO"))$("concepto").value=upper(get("CONCEPTO"));
-    if(get("PERÍODO"))$("periodo").value=String(get("PERÍODO"));
+    const anioImport=datosCanonicos?.anio||get("AÑO GRAVABLE");
+    const conceptoImport=datosCanonicos?.concepto||get("CONCEPTO");
+    const periodoImport=datosCanonicos?.periodo??get("PERÍODO");
+    if(anioImport)$("anio").value=String(anioImport).replace(/\D/g,"");
+    if(conceptoImport)$("concepto").value=upper(conceptoImport);
+    if(periodoImport!==""&&periodoImport!=null)$("periodo").value=String(periodoImport);
     if(get("TIPO DE LIQUIDACIÓN"))$("tipoLiquidacion").value=upper(get("TIPO DE LIQUIDACIÓN")).includes("OFICIAL")?"OFICIAL":"PRIVADA";
     if(get("FECHA VENCIMIENTO PARA DECLARAR"))establecerFechaCampoExcel("fechaVencimientoDeclarar",get("FECHA VENCIMIENTO PARA DECLARAR"));
-    if(get("TIENE SANCIÓN"))$("tieneSancion").value=upper(get("TIENE SANCIÓN")).startsWith("SI")?"SI":"NO";
-    if(get("VALOR SANCIÓN"))$("valorSancion").value=dinero(truncarValorEntero(numExcel(get("VALOR SANCIÓN"))));
+    const tieneSancionImport=datosCanonicos?.tieneSancion||get("TIENE SANCIÓN");
+    const valorSancionImport=datosCanonicos?.valorSancion??get("VALOR SANCIÓN");
+    if(tieneSancionImport)$("tieneSancion").value=upper(tieneSancionImport).startsWith("SI")?"SI":"NO";
+    if(valorSancionImport!==""&&valorSancionImport!=null)$("valorSancion").value=dinero(truncarValorEntero(numExcel(valorSancionImport)));
     if(get("FECHA DE PRESENTACIÓN"))establecerFechaCampoExcel("fechaSancion",get("FECHA DE PRESENTACIÓN"));
-    if(get("FECHA SANCIÓN"))establecerFechaCampoExcel("fechaSancion",get("FECHA SANCIÓN"));
+    if(datosCanonicos?.fechaSancion)establecerFechaCampoExcel("fechaSancion",datosCanonicos.fechaSancion);
+    else if(get("FECHA SANCIÓN"))establecerFechaCampoExcel("fechaSancion",get("FECHA SANCIÓN"));
     if(get("FECHA AUTO ADMISORIO"))establecerFechaCampoExcel("fechaAutoAdmisorio",get("FECHA AUTO ADMISORIO"));
     if(get("FECHA PROVIDENCIA DEFINITIVA"))establecerFechaCampoExcel("fechaProvidenciaDefinitiva",get("FECHA PROVIDENCIA DEFINITIVA"));
-    if(get("BENEFICIO SANCIÓN"))$("beneficioSancion").value=upper(get("BENEFICIO SANCIÓN"));
-    if(get("BENEFICIO TRIBUTARIO")&&$("beneficioTributario"))$("beneficioTributario").value=upper(get("BENEFICIO TRIBUTARIO"));
+    const beneficioSancionImport=datosCanonicos?.beneficioSancion||get("BENEFICIO SANCIÓN");
+    const beneficioTributarioImport=datosCanonicos?.beneficioTributario||get("BENEFICIO TRIBUTARIO");
+    if(beneficioSancionImport)$("beneficioSancion").value=upper(beneficioSancionImport);
+    if(beneficioTributarioImport&&$("beneficioTributario"))$("beneficioTributario").value=upper(beneficioTributarioImport);
     const vh=buscarHeaderFlexibleNormal(rows,[
       ["FECHA VENCIMIENTO","VENCIMIENTO","FECHA DE VENCIMIENTO"],
       ["IMPUESTO DECLARADO","IMPORTE / IMPUESTO","IMPUESTO","VALOR IMPUESTO","VALOR DECLARADO"],
