@@ -86,6 +86,40 @@
     "fuente": "Decreto 0240 de 2026 art.4; Concepto DIAN 7491 de 2026"
   },
   {
+    "id": "D1419_ART9",
+    "nombre": "ART. 9 DECRETO 1419 DE 2026 - TRIBUTARIO",
+    "estado": "VIGENTE_HASTA_2026_11_19",
+    "vigenciaDesde": "2026-09-17",
+    "fechaCorteObligacion": "2026-08-10",
+    "fechaPagoHasta": "2026-11-19",
+    "fechaCorteTituloAntesDe": "2026-08-10",
+    "efectoInteresAnual": 0.045,
+    "efectoSancionFactor": 0.15,
+    "fuente": "Decreto Legislativo 1419 de 2026, artículo 9"
+  },
+  {
+    "id": "D1419_ART10_OMISAS",
+    "nombre": "ART. 10 DECRETO 1419 DE 2026 - OMISAS TRIBUTARIAS",
+    "estado": "VIGENTE_HASTA_2026_11_19",
+    "vigenciaDesde": "2026-09-17",
+    "fechaCorteObligacion": "2026-08-10",
+    "fechaPagoHasta": "2026-11-19",
+    "efectoInteresAnual": 0.045,
+    "efectoSancionFactor": 0.15,
+    "fuente": "Decreto Legislativo 1419 de 2026, artículo 10, obligaciones tributarias omitidas"
+  },
+  {
+    "id": "D1419_ART10_CORRECCIONES",
+    "nombre": "ART. 10 DECRETO 1419 DE 2026 - CORRECCIONES TRIBUTARIAS",
+    "estado": "VIGENTE_HASTA_2026_11_19",
+    "vigenciaDesde": "2026-09-17",
+    "fechaCorteObligacion": "2026-08-10",
+    "fechaPagoHasta": "2026-11-19",
+    "efectoInteresFactor": 0,
+    "efectoSancionFactor": 0.15,
+    "fuente": "Decreto Legislativo 1419 de 2026, artículo 10, correcciones tributarias"
+  },
+  {
     "id": "LEY2155_ART48",
     "nombre": "ART. 48 LEY 2155",
     "estado": "HISTORICO_CERRADO",
