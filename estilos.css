@@ -184,6 +184,7 @@
 .datos-bloque-titulo{padding:5px 8px;background:#e8f0f5;color:#173047;font-size:11px;font-weight:700;border-bottom:1px solid #d0dbe3}
 .datos-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:7px;align-items:end}
 .datos-grid label{display:flex;flex-direction:column;gap:3px;font-weight:700;font-size:11px;min-width:0}
+.datos-grid label[hidden]{display:none!important}
 .datos-grid label>input,.datos-grid label>select{width:100%;min-width:0;max-width:none;height:32px;margin:0;padding:5px 7px}
 .obligacion-grid{grid-template-columns:.9fr .9fr 1.8fr 1.1fr}
 .obligacion-grid .obligacion-concepto{grid-column:3 / 5}
