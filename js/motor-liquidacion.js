@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.32.30";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.23";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.23";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -48,8 +48,15 @@ export class MotorLiquidacion{
       advertencias.push("No existe una regla normativa específica registrada para el concepto seleccionado; no se autogeneran vencimientos.");
       return {valida:false,regla:null,errores,advertencias};
     }
-    if(!String(datos.tipoLiquidacion||"").trim()) errores.push("Debe seleccionar el tipo de liquidación: PRIVADA u OFICIAL.");
-    if(!["PRIVADA","OFICIAL"].includes(String(datos.tipoLiquidacion||"").trim().toUpperCase())) errores.push("El tipo de liquidación debe ser PRIVADA u OFICIAL.");
+    const tipoLiquidacion=String(datos.tipoLiquidacion||"").trim().toUpperCase();
+    const tieneSancion=String(datos.tieneSancion||"").trim().toUpperCase()==="SI";
+    // El tipo de liquidación solo es requerido cuando existe sanción.
+    // Sin sanción, el motor privado es el comportamiento neutral y el tipo
+    // no debe bloquear ni alterar la liquidación matemática.
+    if(tieneSancion){
+      if(!tipoLiquidacion) errores.push("Debe seleccionar el tipo de liquidación: PRIVADA u OFICIAL cuando la obligación tiene sanción.");
+      else if(!["PRIVADA","OFICIAL"].includes(tipoLiquidacion)) errores.push("El tipo de liquidación debe ser PRIVADA u OFICIAL.");
+    }
     // NIT y demás datos generales de obligación son informativos; no bloquean la liquidación.
     // REAJUSTE 16.17: perfil del contribuyente y periodicidad son datos
     // auxiliares de referencia/calendario, pero NO son campos obligatorios
@@ -763,7 +770,11 @@ export class MotorLiquidacion{
       }
 
       return {
+        // Conservamos el valor exacto para reglas especiales de TDJ <= $1.000.
+        // La salida liquidado continúa redondeada a $1.000 como exige el motor
+        // histórico, por lo que esto no altera los cálculos ordinarios.
         liquidado:roundMil(liquidado),
+        liquidadoExacto:Math.max(0,Number(liquidado||0)),
         tramos,
         porVto
       };
@@ -1019,27 +1030,103 @@ export class MotorLiquidacion{
         sancion:Math.max(0,saldoSancion)
       };
 
-      // TDJ de cuantía mínima: por regla de imputación, todo TDJ <= $1.000
-      // se aplica exclusivamente a intereses y conserva exactamente el valor
-      // digitado. No pasa por la proporcionalidad ni por redondeos a miles.
-      const esTDJMinimo=String(pago.tdj||"").trim()!=="" && Number(pago.valor||0)>0 && Number(pago.valor||0)<=1000;
+      // TDJ DE CUANTÍA MÍNIMA: todo TDJ entero mayor que $0 y menor o igual
+      // a $1.000 requiere una imputación explícita y visible. La prioridad
+      // depende de la deuda REAL existente al momento del TDJ:
+      //   1) si existen intereses exigibles > 0, se imputa primero a intereses;
+      //   2) si no existen intereses pero existe sanción pendiente, se imputa
+      //      a sanción;
+      //   3) si no existen intereses ni sanción, se imputa al impuesto pendiente.
+      // Nunca se aplica más de lo adeudado y nunca se convierte en endoso si
+      // todavía existe saldo que pueda recibir el título.
+      const valorTDJMinimo=Number(pago.valor||0);
+      const esTDJMinimo=(pago.esTDJ===true || String(pago.tdj||"").trim()!=="")
+        && Number.isInteger(valorTDJMinimo)
+        && valorTDJMinimo>0
+        && valorTDJMinimo<=1000;
       if(esTDJMinimo){
-        const valorTDJ=Number(pago.valor||0);
-        const interesesDisponibles=Math.max(0,Number(intCalc.liquidado||0));
-        const aplicadoIntereses=Math.min(valorTDJ,interesesDisponibles);
+        const valorTDJ=valorTDJMinimo;
+        const interesesDisponibles=Math.max(0,Number(intCalc.liquidadoExacto ?? intCalc.liquidado ?? 0));
+        const sancionDisponible=Math.max(0,Number(saldoSancion||0));
+        const impuestoDisponible=()=>saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0);
+
+        let restante=valorTDJ;
+        let aplicadoIntereses=0;
+        let aplicadoSancion=0;
+        let aplicadoImpuesto=0;
         const aplicacionesVto=[];
-        if(aplicadoIntereses>0){
+
+        // 1. Intereses: solo hasta el interés realmente generado/disponible.
+        if(restante>0 && interesesDisponibles>0){
+          aplicadoIntereses=Math.min(restante,interesesDisponibles);
+          restante-=aplicadoIntereses;
           const vtoInteres=intCalc.porVto.find(x=>Number(x.interes||0)>0);
           if(vtoInteres){
-            const v=vencimientos.find(x=>x.id===vtoInteres.id);
-            aplicacionesVto.push({id:vtoInteres.id,aplicado:0,aplicadoIntereses:aplicadoIntereses,aplicadoSancion:0,saldo:v?.saldo??0});
+            const v=saldosVto.find(x=>x.id===vtoInteres.id);
+            aplicacionesVto.push({
+              id:vtoInteres.id,
+              aplicado:0,
+              aplicadoIntereses:aplicadoIntereses,
+              aplicadoSancion:0,
+              saldo:Number(v?.saldo||0),
+              notaAplicacion:"TDJ ≤ $1.000 — IMPUTACIÓN A INTERESES"
+            });
           }
         }
-        saldoIntereses=Math.max(0,interesesDisponibles-aplicadoIntereses);
-        const excedente=Math.max(0,valorTDJ-aplicadoIntereses);
+
+        // 2. Si no hay interés (o quedó remanente del título), atender sanción.
+        if(restante>0 && sancionDisponible>0){
+          aplicadoSancion=Math.min(restante,sancionDisponible);
+          saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
+          restante-=aplicadoSancion;
+          const vtoBase=saldosVto.find(v=>Number(v.saldo||0)>0) || saldosVto[0];
+          if(vtoBase){
+            const existente=aplicacionesVto.find(x=>x.id===vtoBase.id);
+            if(existente)existente.aplicadoSancion=Number(existente.aplicadoSancion||0)+aplicadoSancion;
+            else aplicacionesVto.push({id:vtoBase.id,aplicado:0,aplicadoIntereses:0,aplicadoSancion:aplicadoSancion,saldo:Number(vtoBase.saldo||0),notaAplicacion:"TDJ ≤ $1.000 — IMPUTACIÓN A SANCIÓN"});
+          }
+        }
+
+        // 3. Si no hay interés ni sanción, o quedó algún remanente, imputarlo
+        // al impuesto pendiente. Esto es lo que permite que un TDJ de $2 siga
+        // reduciendo el impuesto pendiente real en el último pago.
+        if(restante>0){
+          for(const v of saldosVto){
+            if(restante<=0)break;
+            const disponibleImpuesto=Math.max(0,Number(v.saldo||0));
+            if(disponibleImpuesto<=0)continue;
+            const aplicar=Math.min(restante,disponibleImpuesto);
+            v.saldo=Math.max(0,disponibleImpuesto-aplicar);
+            aplicadoImpuesto+=aplicar;
+            restante-=aplicar;
+            const existente=aplicacionesVto.find(x=>x.id===v.id);
+            if(existente){
+              existente.aplicado=Number(existente.aplicado||0)+aplicar;
+              existente.saldo=v.saldo;
+            }else{
+              aplicacionesVto.push({id:v.id,aplicado:aplicar,aplicadoIntereses:0,aplicadoSancion:0,saldo:v.saldo,notaAplicacion:"TDJ ≤ $1.000 — IMPUTACIÓN A IMPUESTO"});
+            }
+          }
+        }
+
+        // Si después de atender intereses, sanción e impuesto quedara una
+        // fracción, es excedente real porque ya no existe deuda aplicable.
+        const excedente=Math.max(0,restante);
         excedenteTotal+=excedente;
-        const aplicado={impuesto:0,intereses:aplicadoIntereses,sancion:0,total:aplicadoIntereses,excedente,porcentaje:0,tipoProporcion:"TDJ <= $1.000 — SOLO INTERESES"};
+        saldoIntereses=roundMil(Math.max(0,interesesDisponibles-aplicadoIntereses));
+        const totalAplicado=aplicadoIntereses+aplicadoSancion+aplicadoImpuesto;
+        const destino=aplicadoIntereses>0?"INTERESES":(aplicadoSancion>0?"SANCIÓN":(aplicadoImpuesto>0?"IMPUESTO":"SIN DEUDA APLICABLE"));
+        const aplicado={
+          impuesto:Math.round(aplicadoImpuesto),
+          intereses:Math.round(aplicadoIntereses),
+          sancion:Math.round(aplicadoSancion),
+          total:Math.round(totalAplicado),
+          excedente:Math.round(excedente),
+          porcentaje:0,
+          tipoProporcion:`TDJ <= $1.000 — ${destino}`
+        };
         actualizacionSancionPago.saldoDespues=roundMil(saldoSancion);
+        const saldoImpuestoFinal=saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0);
         detalle.push({
           pago,
           tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,
@@ -1057,10 +1144,10 @@ export class MotorLiquidacion{
           aplicacionesVto,
           actualizacionSancion:actualizacionSancionPago,
           saldo:{
-            impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),
+            impuesto:saldoImpuestoFinal,
             intereses:saldoIntereses,
             sancion:Math.max(0,saldoSancion),
-            total:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0)+saldoIntereses+Math.max(0,saldoSancion)
+            total:saldoImpuestoFinal+saldoIntereses+Math.max(0,saldoSancion)
           }
         });
         continue;

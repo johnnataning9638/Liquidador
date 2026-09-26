@@ -1,15 +1,15 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.32.83";
-import {importarDatosInteligente} from "./importador.js?v=16.32.83";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.32.49";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.32.30";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.32.30";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.32.30";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.32.30";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.32.30";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.32.30";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.32.30";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.32.99";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.23";
+import {importarDatosInteligente} from "./importador.js?v=16.33.23";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.23";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.23";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.23";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.23";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.23";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.23";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.23";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.23";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.23";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.23";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -302,7 +302,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.32.30"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.23"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -628,6 +628,31 @@ function actualizarSancionMinimaUI(){
     campo.value="";
   }
 }
+function sincronizarTipoLiquidacionConSancion(){
+  const tiene=upper($("tieneSancion")?.value||"");
+  const tipo=$("tipoLiquidacion");
+  if(!tipo)return;
+
+  const haySancion=tiene==="SI";
+  // El tipo de liquidación solo participa cuando existe sanción.
+  // Sin sanción se neutraliza completamente: no selecciona el motor oficial,
+  // no exige fechas de actuación oficial y no puede alterar intereses.
+  tipo.disabled=!haySancion;
+  tipo.required=haySancion;
+
+  if(!haySancion){
+    tipo.value="";
+    if(typeof motorPrivado!=="undefined" && motorPrivado) motor=motorPrivado;
+    ["fechaAutoAdmisorio","fechaAutoAdmisorioPicker","fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker"].forEach(id=>{
+      const el=$(id);
+      if(el)el.value="";
+    });
+  }
+
+  actualizarCamposTipoLiquidacion();
+  actualizarSancionMinimaUI();
+}
+
 function habilitarSancion(){
   const tiene=$("tieneSancion");
   if(!tiene)return;
@@ -637,6 +662,7 @@ function habilitarSancion(){
     const el=$(id);
     if(el)el.disabled=false;
   });
+  sincronizarTipoLiquidacionConSancion();
   actualizarSancionMinimaUI();
   capturarSancionUI();
 }
@@ -1016,7 +1042,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.32.24"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.23"],{title:true});
     push([]);
     push(["NIT",d.nit||"","DV",dvNIT(d.nit),"RAZÓN SOCIAL",d.razonSocial||""]);
     push(["AÑO GRAVABLE",d.anio||"","CONCEPTO",d.concepto||"","PERÍODO",d.periodo||""]);
@@ -1104,6 +1130,19 @@ function exportarExcel(){
     (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.fecha||"",Number(x.excedente||x.aplicado?.excedente||0)],{money:[3]}));
     const excedenteTotalReporte=(r.detalle||[]).reduce((a,x)=>a+Number(x.excedente||x.aplicado?.excedente||0),0);
     push(["EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS","",excedenteTotalReporte],{money:[3]});
+    push([]);
+    // BLOQUE CANÓNICO DE RECUPERACIÓN: DATOS DE CAPTURA, NO RESULTADOS.
+    // Permite que el mismo Excel generado por el Liquidador sea reimportado 1:1.
+    push(["RECUPERACIÓN COMPLETA — DATOS DE TRABAJO (NO MODIFICAR)"],{title:true});
+    push(["FORMATO","LIQUIDADOR_RECOVERY_V1"]);
+    push(["OBLIGACIÓN",1,"TIPO DE LIQUIDACIÓN",d.tipoLiquidacion||"PRIVADA","FECHA AUTO ADMISORIO",d.fechaAutoAdmisorio||"","FECHA PROVIDENCIA DEFINITIVA",d.fechaProvidenciaDefinitiva||""]);
+    push(["DATOS OBLIGACIÓN","NIT","RAZÓN SOCIAL","AÑO GRAVABLE","CONCEPTO","PERÍODO","FECHA VENCIMIENTO PARA DECLARAR","TIENE SANCIÓN","VALOR SANCIÓN","FECHA SANCIÓN","BENEFICIO SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
+    push(["",d.nit||"",d.razonSocial||"",d.anio||"",d.concepto||"",d.periodo??"",d.fechaVencimientoDeclarar||"",d.tieneSancion||"NO",truncarValorEntero(d.valorSancion||0),d.fechaSancion||"",d.beneficioSancion||"",d.beneficioTributario||"NINGUNO"],{money:[9]});
+    push(["VENCIMIENTOS","Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO"],{header:true});
+    (Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]).forEach((v,i)=>push(["",i+1,v.periodo??i+1,v.fecha||"",truncarValorEntero(v.impuesto||0)],{money:[5]}));
+    push(["PAGOS","Nº","TDJ Nº","RECIBO Nº","FECHA","VALOR","TIPO","OBSERVACIÓN"],{header:true});
+    (Array.isArray(pagos)?pagos:[]).forEach((p,i)=>push(["",i+1,p.tdj||"",p.recibo||"",p.fecha||"",truncarValorEntero(p.valor||0),p.tipo||"TASA DIAN",p.observacion||""] ,{money:[6]}));
+    push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
     push([]);
     push(["OBSERVACIÓN","Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se aplica el 1 de enero de cada vigencia que corresponda con el IPC anual del año anterior, sin prorrateo por días. Se muestra por pago y se consolida al final."]);
     const fechaGeneracion=new Date().toISOString();
@@ -1417,8 +1456,17 @@ function enfocarCampoError(selector){
 function calcular(){
   try{
     const d=leerFormulario();
-    if(!d.tipoLiquidacion){const e=new Error("Seleccione el tipo de liquidación: PRIVADA u OFICIAL.");e.focusTarget="#tipoLiquidacion";throw e;}
-    if(!["PRIVADA","OFICIAL"].includes(d.tipoLiquidacion)){const e=new Error("El tipo de liquidación debe ser PRIVADA u OFICIAL.");e.focusTarget="#tipoLiquidacion";throw e;}
+    // Tipo de liquidación solo es obligatorio cuando la obligación tiene sanción,
+    // porque únicamente en ese escenario se requiere escoger el tratamiento
+    // PRIVADA/OFICIAL para la actualización de la sanción.
+    if(d.tieneSancion==="SI"){
+      if(!d.tipoLiquidacion){const e=new Error("Seleccione el tipo de liquidación: PRIVADA u OFICIAL, porque la obligación tiene sanción.");e.focusTarget="#tipoLiquidacion";throw e;}
+      if(!["PRIVADA","OFICIAL"].includes(d.tipoLiquidacion)){const e=new Error("El tipo de liquidación debe ser PRIVADA u OFICIAL.");e.focusTarget="#tipoLiquidacion";throw e;}
+    }else{
+      // Sin sanción el tipo queda neutralizado para evitar que un valor residual
+      // seleccione el motor oficial y altere la liquidación de intereses.
+      d.tipoLiquidacion="";
+    }
     // Los datos generales de la obligación (NIT, año, concepto, período y razón social)
     // son informativos y no bloquean la liquidación. El único dato obligatorio
     // de esta sección es indicar si existe sanción. Para una liquidación
@@ -1623,6 +1671,67 @@ function buscarHeaderExcel(rows,required){
   return rows.findIndex(r=>req.every(x=>r.some(c=>normExcel(c)===x)));
 }
 function filasHastaSeccion(rows,start){const out=[];for(let i=start+1;i<rows.length;i++){const s=normExcel(rows[i].filter(Boolean).join(" | "));if(!s){if(out.length)break;continue;}if(/^(DETALLE DE|ACTUALIZACION DE|RESUMEN FINAL|CONSOLIDACION DE|OBSERVACION|TITULOS \/ TDJ|TOTAL ENDOSO|SALDO TOTAL FINAL)/.test(s))break;out.push(rows[i]);}return out;}
+
+function buscarHeaderFlexibleNormal(rows,grupos,desde=0){
+  for(let i=desde;i<rows.length;i++){
+    const n=(rows[i]||[]).map(normExcel);
+    const ok=grupos.every(grupo=>grupo.some(alias=>n.includes(normExcel(alias))));
+    if(ok)return i;
+  }
+  return -1;
+}
+function indiceColumnaNormal(header,aliases){
+  const n=(header||[]).map(normExcel);
+  for(const alias of aliases){const idx=n.indexOf(normExcel(alias));if(idx>=0)return idx;}
+  return -1;
+}
+function leerVencimientosFlexNormal(rows,headerIdx){
+  if(headerIdx<0)return [];
+  const h=rows[headerIdx]||[];
+  const ixN=indiceColumnaNormal(h,["Nº","NO","N","NÚMERO","NUMERO"]);
+  const ixP=indiceColumnaNormal(h,["PERÍODO","PERIODO","PERIODO / CUOTA","CUOTA"]);
+  const ixF=indiceColumnaNormal(h,["FECHA VENCIMIENTO","VENCIMIENTO","FECHA DE VENCIMIENTO"]);
+  const ixI=indiceColumnaNormal(h,["IMPUESTO DECLARADO","IMPORTE / IMPUESTO","IMPUESTO","VALOR IMPUESTO","VALOR DECLARADO"]);
+  if(ixF<0||ixI<0)return [];
+  const out=[];
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const r=rows[i]||[],s=normExcel(r.filter(Boolean).join(" | "));
+    if(!s){if(out.length)break;continue;}
+    if(/^(PAGOS Y APLICACION|PAGOS REGISTRADOS|PAGOS|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|RECUPERACION COMPLETA|FIN RECUPERACION COMPLETA|TITULOS \/ TDJ)/.test(s))break;
+    const f=fechaExcel(ixF>=0?r[ixF]:"");
+    const imp=truncarValorEntero(numExcel(ixI>=0?r[ixI]:""));
+    if(!f||imp<=0)continue;
+    const n=ixN>=0?Number(r[ixN]):NaN;
+    const periodo=ixP>=0&&String(r[ixP]??"").trim()!==""?r[ixP]:(Number.isFinite(n)&&n>0?n:out.length+1);
+    out.push({id:`VTO-IMP-${i}`,numero:Number.isFinite(n)&&n>0?n:out.length+1,periodo,fecha:f,impuesto:imp});
+  }
+  out.forEach((v,i)=>v.numero=i+1);
+  return out;
+}
+function leerPagosFlexNormal(rows,headerIdx){
+  if(headerIdx<0)return [];
+  const h=rows[headerIdx]||[];
+  const ixN=indiceColumnaNormal(h,["Nº","NO","N","NÚMERO","NUMERO"]);
+  const ixT=indiceColumnaNormal(h,["TDJ Nº","TDJ","TITULO","TÍTULO"]);
+  const ixR=indiceColumnaNormal(h,["RECIBO Nº","RECIBO","RECIBO NÚMERO"]);
+  const ixF=indiceColumnaNormal(h,["FECHA PAGO / CORTE","FECHA PAGO","FECHA DE PAGO","FECHA","FECHA CORTE"]);
+  const ixV=indiceColumnaNormal(h,["VALOR PAGO","VALOR","VALOR DEL PAGO","IMPORTE","VALOR PAGADO"]);
+  const ixTipo=indiceColumnaNormal(h,["TIPO","TIPO DE PAGO"]);
+  const ixObs=indiceColumnaNormal(h,["OBSERVACIÓN","OBSERVACION"]);
+  if(ixF<0||ixV<0)return [];
+  const out=[];
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const r=rows[i]||[],s=normExcel(r.filter(Boolean).join(" | "));
+    if(!s){if(out.length)break;continue;}
+    if(/^(DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|RECUPERACION COMPLETA|FIN RECUPERACION COMPLETA|IMPUTACION POR|TITULOS \/ TDJ)/.test(s))break;
+    const f=fechaExcel(r[ixF]),val=truncarValorEntero(numExcel(r[ixV]));
+    const docT=ixT>=0?upper(r[ixT]||""):"",docR=ixR>=0?upper(r[ixR]||""):"";
+    if(!f&&!val&&!docT&&!docR)continue;
+    out.push({id:crypto.randomUUID(),tdj:docT,recibo:docT?"":docR,fecha:f||"",valor:val,tipo:upper(ixTipo>=0?r[ixTipo]||"":"TASA DIAN")||"TASA DIAN",observacion:upper(ixObs>=0?r[ixObs]||"":"")});
+  }
+  return out.map((p,i)=>({...p,numero:i+1}));
+}
+
 async function importarExcelNormal(){
   const input=document.createElement("input");input.type="file";input.accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   input.addEventListener("change",async()=>{const file=input.files?.[0];if(!file)return;try{
@@ -1641,7 +1750,7 @@ async function importarExcelNormal(){
       if(get("RAZÓN SOCIAL"))$("razonSocial").value=upper(get("RAZÓN SOCIAL"));
       $("tipoLiquidacion").value="PRIVADA";
 
-      const marcas=[];for(let i=0;i<rows.length;i++)if(/^OBLIGACION\s+\d+\s+—\s+LIQUIDACION NORMAL/.test(normExcel(rows[i]?.filter(Boolean).join(" "))))marcas.push(i);
+      const marcas=[];for(let i=0;i<rows.length;i++)if(/^OBLIGACION\s+\d+\s*-?\s*LIQUIDACION NORMAL/.test(normExcel(rows[i]?.filter(Boolean).join(" "))))marcas.push(i);
       const start=marcas.length?marcas[0]:-1;
       const end=marcas.length>1?marcas[1]:rows.length;
       const seg=start>=0?rows.slice(start+1,end):rows;
@@ -1653,8 +1762,21 @@ async function importarExcelNormal(){
       const pagosImport=[];if(ph>=0){const phRow=seg[ph]||[];const obsIdx=phRow.findIndex(c=>normExcel(c)==="OBSERVACION");for(let i=ph+1;i<seg.length;i++){const r=seg[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION)/.test(srow))break;const f=fechaExcel(r[2]),val=truncarValorEntero(numExcel(r[3]));if(f||val>0)pagosImport.push({id:crypto.randomUUID(),tdj:"",recibo:upper(r[1]||""),fecha:f||"",valor:val,tipo:upper(r[4]||"TASA DIAN"),observacion:upper(obsIdx>=0?r[obsIdx]:"")});}}
       // Los títulos/TDJ son globales en el Excel TDJ. En el Liquidador normal
       // entran como pagos dentro de la misma hoja de pagos.
-      const th=rows.findIndex(r=>/^TITULOS\s*\/\s*TDJ\s*[—-]\s*CONTROL FINAL/.test(normExcel(r.filter(Boolean).join(" "))));
-      const titulos=[];if(th>=0){const hh=buscarHeaderExcel(rows.slice(th+1),["Nº","TDJ","FECHA","VALOR ORIGINAL","TIPO"]);if(hh>=0){const abs=th+1+hh;const hrow=rows[abs]||[];const obsIdx=hrow.findIndex(c=>normExcel(c)==="OBSERVACION");for(let i=abs+1;i<rows.length;i++){const r=rows[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow||/^TOTAL ENDOSO/.test(srow))break;const f=fechaExcel(r[2]),val=truncarValorEntero(numExcel(r[3]));if(f&&val>=0&&(r[1]||val>0))titulos.push({tdj:upper(r[1]||""),fecha:f,valor:val,tipo:upper(r[4]||"TASA DIAN"),observacion:upper(obsIdx>=0?r[obsIdx]:"")});}}}
+      const buscarTitulosSeccion=(patron)=>{
+        const th=rows.findIndex(r=>patron.test(normExcel(r.filter(Boolean).join(" "))));
+        if(th<0)return [];
+        const hh=buscarHeaderExcel(rows.slice(th+1),["Nº","TDJ","FECHA",patternVal]);
+        if(hh<0)return [];
+        const abs=th+1+hh,hrow=rows[abs]||[],nh=hrow.map(normExcel);
+        const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N"),ixT=nh.findIndex(x=>x==="TDJ"),ixF=nh.findIndex(x=>x==="FECHA"),ixV=nh.findIndex(x=>x==="VALOR ORIGINAL"||x==="VALOR"),ixTipo=nh.findIndex(x=>x==="TIPO"),ixObs=nh.findIndex(x=>x==="OBSERVACION");
+        const out=[];
+        for(let i=abs+1;i<rows.length;i++){const r=rows[i]||[],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow||/^TOTAL ENDOSO/.test(srow)||/^FIN RECUPERACION COMPLETA/.test(srow))break;const f=fechaExcel(ixF>=0?r[ixF]:""),val=truncarValorEntero(numExcel(ixV>=0?r[ixV]:""));if(f&&val>=0&&(ixT>=0?r[ixT]:"")||val>0)out.push({tdj:upper(ixT>=0?r[ixT]||"":""),fecha:f,valor:val,tipo:upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),observacion:upper(ixObs>=0?r[ixObs]||"":"")});}
+        return out;
+      };
+      let patternVal="VALOR ORIGINAL";
+      let titulos=buscarTitulosSeccion(/^TITULOS\s*\/\s*TDJ\s*-?\s*CONTROL FINAL/);
+      if(!titulos.length){patternVal="VALOR";titulos=buscarTitulosSeccion(/^TITULOS\s*\/\s*TDJ\s*-?\s*TITULOS REGISTRADOS/);}
+
       for(const t of titulos)pagosImport.push({id:crypto.randomUUID(),tdj:t.tdj,recibo:"",fecha:t.fecha,valor:truncarValorEntero(t.valor),tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});
       if(get("TIPO DE LIQUIDACIÓN")&&$("tipoLiquidacion"))$("tipoLiquidacion").value=upper(get("TIPO DE LIQUIDACIÓN")).includes("OFICIAL")?"OFICIAL":"PRIVADA";
       if(venc.length)obligacionVencimientos=venc;
@@ -1681,10 +1803,17 @@ async function importarExcelNormal(){
     if(get("FECHA PROVIDENCIA DEFINITIVA"))establecerFechaCampoExcel("fechaProvidenciaDefinitiva",get("FECHA PROVIDENCIA DEFINITIVA"));
     if(get("BENEFICIO SANCIÓN"))$("beneficioSancion").value=upper(get("BENEFICIO SANCIÓN"));
     if(get("BENEFICIO TRIBUTARIO")&&$("beneficioTributario"))$("beneficioTributario").value=upper(get("BENEFICIO TRIBUTARIO"));
-    const vh=buscarHeaderExcel(rows,["Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO"]);
-    const venc=[];if(vh>=0){for(let i=vh+1;i<rows.length;i++){const r=rows[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(PAGOS Y APLICACION|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL)/.test(srow))break;const n=numExcel(r[0]),f=fechaExcel(r[2]),imp=numExcel(r[3]);if(f&&imp>0)venc.push({id:`VTO-IMP-${i}`,numero:n||venc.length+1,periodo:r[1]??venc.length+1,fecha:f,impuesto:truncarValorEntero(imp)});}}
-    const ph=buscarHeaderExcel(rows,["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO / CORTE","VALOR PAGO","TIPO","TASA"]);
-    const pagosImport=[];if(ph>=0){const phRow=rows[ph]||[];const obsIdx=phRow.findIndex(c=>normExcel(c)==="OBSERVACION");for(let i=ph+1;i<rows.length;i++){const r=rows[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL)/.test(srow))break;const f=fechaExcel(r[3]),val=truncarValorEntero(numExcel(r[4]));if(f||val>0){const tdjImport=upper(r[1]||"").trim(),reciboImport=upper(r[2]||"").trim();pagosImport.push({id:crypto.randomUUID(),tdj:tdjImport,recibo:tdjImport?"":reciboImport,fecha:f||"",valor:val,tipo:upper(r[5])||"TASA DIAN",observacion:upper(obsIdx>=0?r[obsIdx]:"")});}}}
+    const vh=buscarHeaderFlexibleNormal(rows,[
+      ["FECHA VENCIMIENTO","VENCIMIENTO","FECHA DE VENCIMIENTO"],
+      ["IMPUESTO DECLARADO","IMPORTE / IMPUESTO","IMPUESTO","VALOR IMPUESTO","VALOR DECLARADO"],
+      ["PERÍODO","PERIODO","PERIODO / CUOTA","CUOTA","Nº","NO","N","NÚMERO","NUMERO"]
+    ]);
+    const venc=leerVencimientosFlexNormal(rows,vh);
+    const ph=buscarHeaderFlexibleNormal(rows,[
+      ["FECHA PAGO / CORTE","FECHA PAGO","FECHA DE PAGO","FECHA"],
+      ["VALOR PAGO","VALOR","VALOR DEL PAGO","IMPORTE","VALOR PAGADO"]
+    ]);
+    const pagosImport=leerPagosFlexNormal(rows,ph);
     if(venc.length)obligacionVencimientos=venc;
     pagos=pagosImport;
     renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();actualizarCamposTipoLiquidacion();renderCalendario();renderBeneficio();
@@ -1704,7 +1833,7 @@ function configurarBase(){
       const e=getEstadoIA?.();
       const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
       if(!dots.length||!e)return;
-      const ok=String(e.estado||"").toUpperCase()==="CONECTADO" || String(e.estado||"").toUpperCase()==="PAGOS APLICADOS" || String(e.estado||"").toUpperCase()==="OBLIGACION VALIDADA";
+      const ok=["CONECTADO","PAGOS APLICADOS","PAGOS INTERPRETADOS","OBLIGACION VALIDADA","OBLIGACION INTERPRETADA"].includes(String(e.estado||"").toUpperCase());
       const version=e.version&&e.version!=="—"?` · versión ${e.version}`:"";
       const titulo=ok?`IA DIAN comprobada${version}`:"IA DIAN no comprobada · Haga clic para comprobar";
       dots.forEach(dot=>{
@@ -1800,10 +1929,10 @@ function configurarBase(){
       renderEstadoIA();
     }
   };
-  // Comprobación automática al abrir el Liquidador y vigilancia periódica.
-  // No requiere pulsar ningún indicador.
-  comprobarIAAutomaticamente();
-  window.setInterval(comprobarIAAutomaticamente,10000);
+  // Comprobación única y asíncrona al abrir el Liquidador.
+  // El estado queda cacheado durante 45 s en ai-bridge.js; no se hacen
+  // consultas cada 10 segundos ni se genera tráfico periódico innecesario.
+  void comprobarIAAutomaticamente();
 
   $("btnImportar").addEventListener("click",()=>$("archivoImportacion").click());
   $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{ocultarFeedbackIA();aplicarImportacion(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});

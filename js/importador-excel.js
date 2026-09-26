@@ -1,4 +1,4 @@
-const norm=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim().toUpperCase();
+const norm=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[–—−]/g,"-").replace(/\s+/g," ").trim().toUpperCase();
 const textDecoder=new TextDecoder("utf-8");
 function u16(d,o){return d.getUint16(o,true)} function u32(d,o){return d.getUint32(o,true)}
 function findEOCD(b){for(let i=b.length-22;i>=Math.max(0,b.length-22-65557);i--){if(b[i]===80&&b[i+1]===75&&b[i+2]===5&&b[i+3]===6)return i}throw new Error("No se encontró una estructura XLSX válida.")}

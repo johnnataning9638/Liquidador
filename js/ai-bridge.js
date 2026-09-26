@@ -24,6 +24,11 @@ export function getAIEndpoint(){
 
 
 let aiState={estado:"NO COMPROBADO",version:"—",confidence:null,pagosValidos:0,anomalies:0,timestamp:null};
+let aiHealthPromise=null;
+let aiHealthAt=0;
+let aiHealthOk=false;
+const AI_HEALTH_CACHE_MS=45000;
+const AI_HEALTH_TIMEOUT_MS=5000;
 
 export function getEstadoIA(){return {...aiState};}
 function actualizarEstadoIA(p={}){aiState={...aiState,...p,timestamp:p.timestamp||new Date().toISOString()};try{window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{...aiState}}));}catch{}}
@@ -35,18 +40,40 @@ export function setAIEndpoint(url){
   return value;
 }
 
-export async function comprobarMotorIA(){
-  try{
-    const r=await fetch(`${getAIEndpoint()}/health`,{method:"GET",cache:"no-store"});
-    if(!r.ok)throw new Error(`Motor IA respondió HTTP ${r.status}.`);
-    const data=await r.json();
-    if(!data?.ok)throw new Error("El motor IA no reportó estado OK.");
-    actualizarEstadoIA({estado:"CONECTADO",version:data.version||"—",confidence:null,anomalies:0});
-    return data;
-  }catch(e){
-    actualizarEstadoIA({estado:"NO COMPROBADO",version:"—",confidence:null,anomalies:0});
-    throw e;
+export async function comprobarMotorIA(opciones={}){
+  const force=Boolean(opciones?.force);
+  const ahora=Date.now();
+  if(!force && aiHealthOk && (ahora-aiHealthAt)<AI_HEALTH_CACHE_MS){
+    return {ok:true,version:aiState.version,fromCache:true};
   }
+  if(aiHealthPromise)return aiHealthPromise;
+
+  const endpoint=getAIEndpoint();
+  aiHealthPromise=(async()=>{
+    const controller=typeof AbortController!=="undefined"?new AbortController():null;
+    const timer=controller?setTimeout(()=>controller.abort(),AI_HEALTH_TIMEOUT_MS):null;
+    try{
+      const r=await fetch(`${endpoint}/health`,{method:"GET",cache:"no-store",signal:controller?.signal});
+      if(!r.ok)throw new Error(`Motor IA respondió HTTP ${r.status}.`);
+      const data=await r.json();
+      if(!data?.ok)throw new Error("El motor IA no reportó estado OK.");
+      aiHealthOk=true;
+      aiHealthAt=Date.now();
+      actualizarEstadoIA({estado:"CONECTADO",version:data.version||"—",confidence:null,anomalies:0});
+      return data;
+    }catch(e){
+      // Una caída/transitorio del endpoint no debe borrar una conexión IA ya confirmada.
+      // Esto evita que el indicador parpadee en rojo mientras el motor remoto despierta.
+      if(!aiHealthOk){
+        actualizarEstadoIA({estado:"NO COMPROBADO",version:"—",confidence:null,anomalies:0});
+      }
+      throw e;
+    }finally{
+      if(timer)clearTimeout(timer);
+      aiHealthPromise=null;
+    }
+  })();
+  return aiHealthPromise;
 }
 
 function normalizarPagoIA(row){

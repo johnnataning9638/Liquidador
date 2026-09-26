@@ -1,5 +1,5 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.32.30";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.32.30";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.23";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.23";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -233,7 +233,8 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       // TDJ de cuantía mínima: todo TDJ <= $1.000 se imputa exclusivamente
       // a intereses, conservando exactamente el valor digitado. Se omite la
       // proporcionalidad para impedir que $157 termine convertido en $1.000.
-      const esTDJMinimo=String(pago.tdj||"").trim()!=="" && Number(pago.valor||0)>0 && Number(pago.valor||0)<=1000;
+      const valorTDJMinimo=Number(pago.valor||0);
+      const esTDJMinimo=String(pago.tdj||"").trim()!=="" && Number.isInteger(valorTDJMinimo) && valorTDJMinimo>0 && valorTDJMinimo<=1000;
       if(esTDJMinimo){
         const valorTDJ=Number(pago.valor||0);
         const interesesDisponibles=Math.max(0,Number(intCalc.liquidado||0));
