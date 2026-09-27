@@ -33,7 +33,6 @@ export function validarSeleccion1419({
   tipo,
   fechasVencimiento = [],
   fechaPresentacion = "",
-  fechaDeclaracionOriginal = "",
   fechaPago = "",
   fechaTitulo = "",
   esTitulo = false
@@ -63,7 +62,7 @@ export function validarSeleccion1419({
   }
 
   if (esArticulo10Omiso1419(tipo)) {
-    if (!fechaPresentacion) errores.push("Registre la fecha de presentación de la declaración omitida.");
+    if (!fechaPresentacion) errores.push("Registre la fecha de sanción, que corresponde a la fecha de presentación de la declaración omitida.");
     else if (fechaPresentacion > DECRETO_1419.finVigencia) errores.push("La declaración omitida se presentó después del 19/11/2026; no cumple el plazo del artículo 10.");
     else if (vencimientos.length && fechaPresentacion <= vencimientos.sort().at(-1)) errores.push("La fecha de presentación no es posterior al vencimiento; el caso no corresponde a una declaración omitida.");
     if (esTitulo) {
@@ -76,11 +75,10 @@ export function validarSeleccion1419({
   }
 
   if (esArticulo10Correccion1419(tipo)) {
-    if (!fechaDeclaracionOriginal) errores.push("Registre la fecha de presentación de la declaración original que se corrige.");
-    else if (fechaDeclaracionOriginal > DECRETO_1419.fechaCorteObligacion) errores.push("La declaración original debe haberse presentado a más tardar el 10/08/2026.");
-    if (!fechaPresentacion) errores.push("Registre la fecha de presentación de la corrección.");
-    else if (fechaPresentacion > DECRETO_1419.finVigencia) errores.push("La corrección se presentó después del 19/11/2026; no cumple el plazo del artículo 10.");
-    else if (fechaDeclaracionOriginal && fechaPresentacion <= fechaDeclaracionOriginal) errores.push("La fecha de presentación de la corrección debe ser posterior a la declaración original.");
+    if (!fechaPresentacion) errores.push("Registre la fecha de sanción, que corresponde a la fecha de presentación de la corrección.");
+    else if (fechaPresentacion < DECRETO_1419.fechaCorteObligacion || fechaPresentacion > DECRETO_1419.finVigencia) {
+      errores.push("La fecha de sanción/presentación de la corrección debe estar entre el 10/08/2026 y el 19/11/2026.");
+    }
     if (esTitulo) {
       if (!fechaTitulo || fechaTitulo < DECRETO_1419.inicioVigencia || fechaTitulo > DECRETO_1419.finVigencia) {
         errores.push("Para el artículo 10, el título debe constituirse durante la vigencia del beneficio: 17/09/2026 a 19/11/2026.");

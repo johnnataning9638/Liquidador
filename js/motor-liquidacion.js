@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.27";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.27";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.39";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.39";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -350,13 +350,13 @@ export class MotorLiquidacion{
     }
     if(es("DECRETO 1419") && es("ART. 10") && es("OMIS")){
       return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
-        factorSancion:0.15,reduceSancion:true,
-        nota:"ART. 10 D1419 (omisa) seleccionado: interés al 4,500% anual y sanción al 15%, respetando la sanción mínima"};
+        factorSancion:1,reduceSancion:false,
+        nota:"ART. 10 D1419 (omisa): la sanción ingresada ya debe estar reducida al 15% en la declaración; se conserva y se verifica la sanción mínima"};
     }
     if(es("DECRETO 1419") && es("ART. 10") && es("CORRECC")){
       return {tasa:0,factor:0,tasaFija:0,beneficio,
-        factorSancion:0.15,reduceSancion:true,
-        nota:"ART. 10 D1419 (corrección) seleccionado: interés 0% y sanción al 15%, respetando la sanción mínima"};
+        factorSancion:1,reduceSancion:false,
+        nota:"ART. 10 D1419 (corrección): la sanción ingresada ya debe estar reducida al 15% en la corrección; se conserva y se verifica la sanción mínima. Interés 0%"};
     }
 
     // Los cuatro tratamientos de los Decretos 1474/2025 y 0240/2026 se
@@ -699,6 +699,16 @@ export class MotorLiquidacion{
     // una regla normativa específica de reducción/beneficio; no se aplica aquí
     // como piso automático para una liquidación privada ordinaria.
     let saldoSancion=sancionBaseOriginal;
+    // En el artículo 10 el valor capturado corresponde a la sanción que ya
+    // quedó liquidada en la declaración omitida/corrección. No se vuelve a
+    // multiplicar por 15% al pagar. La fecha de presentación determina el año
+    // de la sanción mínima que debe respetar ese valor.
+    const fechaPresentacion1419=fechaISO(datos.fechaSancion)||"";
+    const articulo10Seleccionado=(datos.pagos||[]).some(p=>String(p?.tipo||"").toUpperCase().includes("DECRETO 1419")&&String(p?.tipo||"").toUpperCase().includes("ART. 10"));
+    if(saldoSancion>0&&fechaPresentacion1419&&articulo10Seleccionado){
+      const minimaPresentacion=Math.max(0,Number(this.sancionMinima(Number(fechaPresentacion1419.slice(0,4))||Number(datos.anio||0))||0));
+      saldoSancion=Math.max(saldoSancion,minimaPresentacion);
+    }
     let fechaUltimaActualizacionSancion=fechaSancion;
     let detalleActualizacionSancion=[];
     let advertenciasSancion=[];
@@ -929,8 +939,8 @@ export class MotorLiquidacion{
       const fechaPrimeraActualizacionPrivada=fechaSancion
         ?`${Number(this.actualizadorSancion.sumarUnAnio(fechaSancion).slice(0,4))+1}-01-01`
         :"";
-      const puedeActualizarSancionPrivada=!esLiquidacionPrivada
-        ||(fechaPrimeraActualizacionPrivada && pago.fecha>=fechaPrimeraActualizacionPrivada);
+      const puedeActualizarSancionPrivada=!articulo10Seleccionado&&(!esLiquidacionPrivada
+        ||(fechaPrimeraActualizacionPrivada && pago.fecha>=fechaPrimeraActualizacionPrivada));
 
       if(saldoSancion>0 && fechaSancion && pago.fecha>fechaSancion && puedeActualizarSancionPrivada){
         // IMPORTANTE: se parte siempre de la fecha original de sanción, pero
@@ -979,7 +989,7 @@ export class MotorLiquidacion{
       if(!primerBeneficioDecretoUsado && especial.reduceSancion &&
          (String(pago.tipo||"").toUpperCase().includes("ART. 20 DECRETO 1474") ||
           String(pago.tipo||"").toUpperCase().includes("ART. 3 DECRETO 0240") ||
-          String(pago.tipo||"").toUpperCase().includes("DECRETO 1419")) && saldoSancion>0){
+          String(pago.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419")) && saldoSancion>0){
         const anioMinima=this.anioSancionParaMinima(datos,true);
         const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
         const saldoActualizado=Number(saldoSancion||0);

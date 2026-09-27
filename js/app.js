@@ -1,16 +1,16 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.27";
-import {importarDatosInteligente} from "./importador.js?v=16.33.27";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.27";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.27";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.27";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.27";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.27";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.27";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.27";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.27";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.27";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.27";
-import {TIPO_1419,esTipoDecreto1419,esArticulo10Correccion1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.27";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.39";
+import {importarDatosInteligente} from "./importador.js?v=16.33.39";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.39";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.39";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.39";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.39";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.39";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.39";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.39";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.39";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -306,7 +306,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.27"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.39"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -384,16 +384,17 @@ function leerFormulario(){
   sincronizarPagosDesdeDOM();
   const concepto=upper($("concepto").value);
   const periodicidad=concepto==="SIMPLE"?"ANTICIPO BIMESTRAL":upper($("periodicidadObligacion")?.value||"");
-  // En una liquidación sin pagos, la fecha de corte la define el funcionario
-  // en la primera fila de la tabla de pagos. Esa fila es solo un registro de
-  // fecha de corte: no exige TDJ, recibo, valor ni tasa. Si existen pagos
-  // reales (valor > 0), se conserva el comportamiento histórico y la fecha
-  // de corte sigue siendo la fecha actual.
+  // Los pagos se liquidan hasta la fecha del último pago capturado, incluso
+  // cuando es posterior a hoy. Usar hoy como corte descartaba silenciosamente
+  // pagos futuros (por ejemplo, pagos dentro de la vigencia de un beneficio)
+  // y el resultado quedaba con deuda íntegra y "Sin pagos procesados".
+  // Si no hay pagos reales, la primera fila puede aportar solo la fecha de corte.
   const pagosReales=pagos.filter(p=>Number(p?.valor||0)>0);
+  const fechaUltimoPago=pagosReales.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";
   const filaFechaCorte=pagos.find(p=>
     fechaISO(p?.fecha) && Number(p?.valor||0)<=0 && !String(p?.tdj||"").trim() && !String(p?.recibo||"").trim()
   );
-  const fechaCorte=pagosReales.length?hoyISO():(fechaISO(filaFechaCorte?.fecha)||"");
+  const fechaCorte=pagosReales.length?fechaUltimoPago:(fechaISO(filaFechaCorte?.fecha)||"");
   return {
     nit:$("nit").value.replace(/\D/g,""),
     anio:Number($("anio").value||0),
@@ -415,8 +416,7 @@ function leerFormulario(){
     tieneSancion:upper($("tieneSancion").value),
     valorSancion:numeroDesdeTexto($("valorSancion").value),
     fechaSancion:fechaISO($("fechaSancion").value),
-    fechaPresentacionDeclaracion1419:fechaISO($("fechaPresentacionDeclaracion1419")?.value||""),
-    fechaDeclaracionOriginal1419:fechaISO($("fechaDeclaracionOriginal1419")?.value||""),
+    fechaPresentacionDeclaracion1419:fechaISO($("fechaSancion").value||""),
     beneficioSancion:upper($("beneficioSancion").value),
     beneficioTributario:upper($("beneficioTributario")?.value||"NINGUNO"),
     beneficioEscenario:upper($("beneficioTributario")?.value||"").replace("D0240_ART4_","").replace("_"," "),
@@ -571,11 +571,6 @@ function renderPagos(){
           const tipoNuevo=upper(el.value);
           if(validarTipo&&rechazarTipo1419Normal(tipoNuevo,p,el))return;
           p.tipo=tipoNuevo;
-          if(tipoNuevo==="TASA DIAN"){
-            $("campoFechaPresentacion1419").dataset.abierto="";
-            $("campoFechaDeclaracionOriginal1419").dataset.abierto="";
-          }
-          actualizarCamposFecha1419();
           actualizarTasaVisiblePago(tr,p);
         }
         else{
@@ -592,7 +587,6 @@ function renderPagos(){
     tr.querySelector("[data-del]").addEventListener("click",()=>{pagos=pagos.filter(x=>x.id!==p.id);renderPagos();});
     tbody.appendChild(tr);
   });
-  actualizarCamposFecha1419();
   configurarTabulacionPagos();
 }
 
@@ -1021,10 +1015,20 @@ function filasActualizacionSancionExport(r){
 
 function bloqueActualizacionSancionPdf(x,i){
   const tramos=Array.isArray(x.actualizacionSancion?.tramos)?x.actualizacionSancion.tramos:[];
-  if(!tramos.length)return "";
+  const eventos1419=(x.actualizacionSancion?.eventos||[]).filter(e=>String(e.beneficio||"").toUpperCase().includes("DECRETO 1419"));
+  if(!tramos.length&&!eventos1419.length)return "";
   const rows=tramos.map(t=>`<tr><td>${escPdf(t.anio)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join("");
   const total=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
-  return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica el 1 de enero de cada vigencia que corresponda, utilizando el 100 % del IPC del año inmediatamente anterior. No se prorratea por días. La fecha mostrada corresponde a la fecha efectiva de aplicación y el año IPC identifica la inflación utilizada.</div><table><thead><tr><th>AÑO DE ACTUALIZACIÓN</th><th>FECHA DE APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE ESTE PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table></div>`;
+  const tablaActualizacion=tramos.length?`<table><thead><tr><th>AÑO DE ACTUALIZACIÓN</th><th>FECHA DE APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE ESTE PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table>`:"<div class='pdf-actualizacion-descripcion'>No hubo actualización anual de sanción en este pago.</div>";
+  const tablaReduccion=eventos1419.length?`<h3>REDUCCIÓN DE SANCIÓN — DECRETO 1419 — PAGO ${Number(i)+1}</h3><table><thead><tr><th>SANCIÓN ANTES DE REDUCIR</th><th>ACTUALIZACIÓN PREVIA</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>SANCIÓN APLICADA</th></tr></thead><tbody>${eventos1419.map(e=>{const antes=Number(e.saldoAntesReduccion??e.saldoAntes??0),final=Number(e.saldoDespuesReduccion??e.saldoDespues??0);return `<tr><td>${dinero(antes)}</td><td>${dinero(e.actualizacionPrevia||0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??(antes*Number(e.porcentajeReduccion??e.porcentaje??15)/100))}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(final)}</td></tr>`;}).join("")}</tbody></table>`:"";
+  return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica el 1 de enero de cada vigencia que corresponda, utilizando el 100 % del IPC del año inmediatamente anterior. No se prorratea por días. La fecha mostrada corresponde a la fecha efectiva de aplicación y el año IPC identifica la inflación utilizada.</div>${tablaActualizacion}${tablaReduccion}</div>`;
+}
+function bloqueSancionDeclaracion1419Pdf(x,d){
+  const tipo=String(x?.tipoAplicado||x?.pago?.tipo||"").toUpperCase();
+  if(!tipo.includes("DECRETO 1419")||!tipo.includes("ART. 10"))return "";
+  const declarada=Number(d?.valorSancion||0),reconocida=Number(x?.deudaAntes?.sancion||0);
+  if(declarada<=0&&reconocida<=0)return "";
+  return `<div class="pdf-actualizacion-descripcion"><b>SANCIÓN — ARTÍCULO 10:</b> valor registrado para la declaración presentada: ${dinero(declarada)}. Valor de sanción reconocido antes de aplicar este pago: ${dinero(reconocida)}. El pago conserva la sanción declarada; no se vuelve a reducir al 15 % en esta etapa.</div>`;
 }
 
 function resumenFinalPdf(r){
@@ -1036,7 +1040,13 @@ function resumenFinalPdf(r){
   const excedentes=(r.detalle||[]).map((x,i)=>({pago:i+1,fecha:x.pago?.fecha||"",valor:Number(x.excedente||x.aplicado?.excedente||0)}));
   const filasExcedentes=excedentes.length?excedentes.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.valor)}</td></tr>`).join(""):"<tr><td colspan='3'>No se registraron pagos.</td></tr>";
   const excedenteTotal=excedentes.reduce((a,e)=>a+e.valor,0);
-  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table></div><div class="pdf-excedentes-finales"><h3>CONSOLIDACIÓN DE EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>FECHA DE PAGO</th><th>EXCEDENTE DEL PAGO</th></tr></thead><tbody>${filasExcedentes}</tbody><tfoot><tr><th colspan="2">EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS</th><th>${dinero(excedenteTotal)}</th></tr></tfoot></table></div><div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
+  const totalIntereses=r.detalle.reduce((a,x)=>a+Number(x.interesGenerado??x.interesLiquidado??0),0);
+  const totalActualizacionSancion=r.detalle.reduce((a,x)=>a+Number(x.actualizacionSancion?.actualizacionTotal||0),0);
+  const reducciones1419=r.detalle.flatMap((x,i)=>(x.actualizacionSancion?.eventos||[]).filter(e=>String(e.beneficio||"").toUpperCase().includes("DECRETO 1419")).map(e=>({pago:i+1,fecha:x.pago?.fecha||"",...e})));
+  const totalReduccion1419=reducciones1419.reduce((a,e)=>a+Math.max(0,Number(e.saldoAntesReduccion??e.saldoAntes??0)-Number(e.saldoDespuesReduccion??e.saldoDespues??0)),0);
+  const filasReduccion1419=reducciones1419.length?reducciones1419.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.saldoAntesReduccion??e.saldoAntes??0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??0)}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(e.saldoDespuesReduccion??e.saldoDespues??0)}</td></tr>`).join(""):`<tr><td colspan="7">No se registró reducción de sanción del artículo 9 en los pagos liquidados.</td></tr>`;
+  const observacionesBeneficio=(r.observacionesBeneficio1419||[]).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div><div><b>INTERESES GENERADOS EN LOS PAGOS</b><strong>${dinero(totalIntereses)}</strong></div><div><b>ACTUALIZACIÓN TOTAL DE SANCIÓN</b><strong>${dinero(totalActualizacionSancion)}</strong></div><div><b>REDUCCIÓN EFECTIVA SANCIÓN ART. 9</b><strong>${dinero(totalReduccion1419)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table><h3>DETALLE DE REDUCCIÓN DE SANCIÓN — ARTÍCULO 9</h3><table><thead><tr><th>PAGO</th><th>FECHA</th><th>ANTES DE REDUCIR</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>VALOR APLICADO</th></tr></thead><tbody>${filasReduccion1419}</tbody></table></div><div class="pdf-excedentes-finales"><h3>CONSOLIDACIÓN DE EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>FECHA DE PAGO</th><th>EXCEDENTE DEL PAGO</th></tr></thead><tbody>${filasExcedentes}</tbody><tfoot><tr><th colspan="2">EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS</th><th>${dinero(excedenteTotal)}</th></tr></tfoot></table></div>${observacionesBeneficio}<div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
 }
 
 function exportarExcel(){
@@ -1056,7 +1066,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.27"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.39"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la
@@ -1073,6 +1083,7 @@ function exportarExcel(){
     push(["SALDO TOTAL",r.total||0,"EXCEDENTE",r.excedente||0,"ÚLTIMO PAGO",r.ultimo?.pago?.fecha||"","TASA ÚLTIMO PAGO",r.ultimo?.tasaVisible??""],{money:[2,4],percent:[8]});
     push(["TIPOS DE TASA/BENEFICIO APLICADOS",(r.beneficiosAplicados||[]).join(" | ")||"TASA DIAN"]);
     push(["CRITERIO","La liquidación utiliza exactamente el tipo seleccionado en cada pago; no se valida elegibilidad jurídica."]);
+    (r.observacionesBeneficio1419||[]).forEach(t=>push(["OBSERVACIÓN — BENEFICIO DECRETO 1419",t],{title:true}));
     push([]);
 
     push(["VENCIMIENTOS DE LA OBLIGACIÓN"],{title:true});
@@ -1214,7 +1225,6 @@ function exportarExcel(){
 
 function escPdf(v){return esc(v);}
 function tablaInteresesPdf(x,r){
-  if(r.vencimientos.length<=1)return "";
   const detalle=Array.isArray(x.interesesPorCuota)?x.interesesPorCuota:[];
   const filas=detalle.length?detalle:[];
   let rows="";
@@ -1270,6 +1280,7 @@ function bloquePdfPago(x,i,d,r){
   ${tablaInteresesPdf(x,r)}
   ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdf(x,d,i):""}
   ${bloqueActualizacionSancionPdf(x,i)}
+  ${bloqueSancionDeclaracion1419Pdf(x,d)}
   <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>EXCEDENTE:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article>`;
@@ -1444,22 +1455,12 @@ function normalizarTipoBeneficioVigencia(v){
   return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g," ").trim();
 }
 
-function actualizarCamposFecha1419(){
-  const tipos=pagos.map(p=>p.tipo||"");
-  const articulo10=tipos.some(t=>String(t).includes("ART. 10 DECRETO 1419"));
-  const correccion=tipos.some(esArticulo10Correccion1419);
-  const presentacion=$("campoFechaPresentacion1419"),original=$("campoFechaDeclaracionOriginal1419");
-  if(presentacion)presentacion.hidden=!articulo10&&presentacion.dataset.abierto!=="1";
-  if(original)original.hidden=!correccion&&original.dataset.abierto!=="1";
-}
-
 function erroresTipo1419Normal(tipo,pago){
   const fechas=obligacionVencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||"");
   const esTitulo=Boolean(String(pago?.tdj||"").trim());
   return validarSeleccion1419({
     tipo,fechasVencimiento:fechas,
-    fechaPresentacion:fechaISO($("fechaPresentacionDeclaracion1419")?.value||""),
-    fechaDeclaracionOriginal:fechaISO($("fechaDeclaracionOriginal1419")?.value||""),
+    fechaPresentacion:fechaISO($("fechaSancion").value||""),
     fechaPago:esTitulo?"":fechaISO(pago?.fecha||""),
     fechaTitulo:esTitulo?fechaISO(pago?.fecha||""):"",esTitulo
   });
@@ -1467,15 +1468,11 @@ function erroresTipo1419Normal(tipo,pago){
 
 function rechazarTipo1419Normal(tipo,pago,select){
   if(!esTipoDecreto1419(tipo))return false;
-  if(tipo.includes("ART. 10"))$("campoFechaPresentacion1419").dataset.abierto="1";
-  if(esArticulo10Correccion1419(tipo))$("campoFechaDeclaracionOriginal1419").dataset.abierto="1";
-  actualizarCamposFecha1419();
   const errores=erroresTipo1419Normal(tipo,pago);
   if(!errores.length)return false;
-  if(select)select.value="TASA DIAN";
-  pago.tipo="TASA DIAN";
-  actualizarCamposFecha1419();
-  alert(`No se puede seleccionar ${tipo}:\n\n${errores.join("\n\n")}\n\nSe dejó TASA DIAN, sin beneficio.`);
+  if(select)select.value=tipo;
+  pago.tipo=tipo;
+  alert(`La fecha no cumple las condiciones del Decreto 1419 para ${tipo}:\n\n${errores.join("\n\n")}\n\nCorrija la fecha o cambie manualmente el tratamiento. La liquidación no se ejecutará mientras la fecha no cumpla.`);
   return true;
 }
 
@@ -1517,15 +1514,40 @@ function validarVigenciaBeneficiosUI(d){
   }
   (d.pagos||[]).forEach((p,i)=>{
     if(!esTipoDecreto1419(p.tipo))return;
+    const esTitulo=Boolean(String(p.tdj||"").trim());
+    const fechaRegistro=fechaISO(p.fecha)||"";
+    const art9=String(p.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419");
+    const art10=String(p.tipo||"").toUpperCase().includes("ART. 10 DECRETO 1419");
+    let fechaBeneficioInvalida=false;
+    if(esTitulo&&(art9||art10)){
+      fechaBeneficioInvalida=art9?(!fechaRegistro||fechaRegistro>="2026-08-10"):
+        (!fechaRegistro||fechaRegistro<"2026-09-17"||fechaRegistro>"2026-11-19");
+      if(fechaBeneficioInvalida){
+        const identificador=String(p.tdj||"").trim()||`TDJ ${i+1}`;
+        const fechaTexto=fechaRegistro?` (${fechaVisible(fechaRegistro)})`:"";
+        const rango=art9?"deben haberse constituido antes del 10/08/2026":"deben tener fecha entre el 17/09/2026 y el 19/11/2026";
+        errores.push(`La fecha registrada en el título ${identificador}${fechaTexto} no corresponde a la fecha admitida para ${p.tipo}. Los títulos ${rango}. Corríjala o seleccione la tasa correspondiente.`);
+      }
+    }else if(!esTitulo&&(art9||art10)&&(!fechaRegistro||fechaRegistro<"2026-09-17"||fechaRegistro>"2026-11-19")){
+      const fechaTexto=fechaRegistro?` (${fechaVisible(fechaRegistro)})`:"";
+      errores.push(`La fecha del pago ${i+1}${fechaTexto} está fuera del periodo admitido para ${p.tipo}: del 17/09/2026 al 19/11/2026. Corríjala o seleccione la tasa correspondiente.`);
+      fechaBeneficioInvalida=true;
+    }
     errores.push(...validarSeleccion1419({
       tipo:p.tipo,
       fechasVencimiento:(d.vencimientos||[]).filter(v=>Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||""),
       fechaPresentacion:d.fechaPresentacionDeclaracion1419,
-      fechaDeclaracionOriginal:d.fechaDeclaracionOriginal1419,
-      fechaPago:String(p.tdj||"").trim()?"":p.fecha,
-      fechaTitulo:String(p.tdj||"").trim()?p.fecha:"",
-      esTitulo:Boolean(String(p.tdj||"").trim())
-    }).map(x=>`Pago/título ${i+1}: ${x}`));
+      fechaPago:esTitulo?"":p.fecha,
+      fechaTitulo:esTitulo?p.fecha:"",
+      esTitulo
+    }).filter(x=>!(fechaBeneficioInvalida&&(
+      x.includes("títulos constituidos antes del 10/08/2026")
+      ||x.includes("el título debe tener fecha anterior")
+      ||x.includes("el título debe constituirse durante la vigencia")
+      ||x.includes("pago del artículo 9 debe tener fecha")
+      ||x.includes("pago del artículo 10 debe tener fecha")
+    )))
+      .map(x=>`Pago/título ${i+1}: ${x}`));
   });
   return errores;
 }
@@ -1553,7 +1575,7 @@ function enfocarCampoError(selector){
 
 function calcular(){
   try{
-    const d=leerFormulario();
+    let d=leerFormulario();
     // Tipo de liquidación solo es obligatorio cuando la obligación tiene sanción,
     // porque únicamente en ese escenario se requiere escoger el tratamiento
     // PRIVADA/OFICIAL para la actualización de la sanción.
@@ -1581,7 +1603,12 @@ function calcular(){
     }
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
-    const r=motor.calcular(d);
+    let r=motor.calcular(d);
+    if(d.pagos.some(p=>esTipoDecreto1419(p.tipo))&&Number(r.total||0)>1){
+      const saldoFaltanteBeneficio=Math.max(0,Number(r.total||0));
+      const articulos=[...new Set(d.pagos.filter(p=>esTipoDecreto1419(p.tipo)).map(p=>String(p.tipo).match(/ART\.\s*\d+/i)?.[0]?.toUpperCase()).filter(Boolean))].join(" / ");
+      r.observacionesBeneficio1419=[`El pago no cubrió el total de la obligación para completar el beneficio del Decreto 1419${articulos?` (${articulos})`:""}. Faltó ${dinero(saldoFaltanteBeneficio)}. La liquidación conserva el tipo de tasa/beneficio seleccionado por el funcionario y aplica el pago; el detalle muestra su distribución entre impuesto, intereses y sanción y el saldo pendiente.`];
+    }
     ultimaLiquidacion=r;
     pintarInforme(r);
     renderVencimientos();
@@ -1613,8 +1640,6 @@ async function limpiar(){
   feedbackIAPendientes.clear();
   ocultarFeedbackIA();
   pagos=[];obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];ultimaLiquidacion=null;ultimaAuditoria=null;
-  $("fechaPresentacionDeclaracion1419").value="";$("fechaDeclaracionOriginal1419").value="";
-  $("campoFechaPresentacion1419").dataset.abierto="";$("campoFechaDeclaracionOriginal1419").dataset.abierto="";
   // El botón LIMPIAR inicia una obligación completamente nueva.
   // Es importante reiniciar también el estado auxiliar de sanción y el
   // estado usado por las pestañas: HTMLFormElement.reset() o limpiar

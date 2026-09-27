@@ -1,5 +1,5 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.27";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.27";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.39";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -158,8 +158,12 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     const fechaSancion=fechaISO(datos.fechaSancion)||saldosVto[0]?.fecha||"";
     const fechaFirmezaSancion=fechaSancion;
     let saldoSancion=sancionBaseOriginal;
+    const tipo1419Inicial=(datos.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
+    const articulo10Seleccionado=tipo1419Inicial.some(t=>t.includes("DECRETO 1419")&&t.includes("ART. 10"));
     if(saldoSancion>0){
-      const minima=this.sancionMinima(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));
+      const fechaPresentacion=fechaSancion;
+      const anioMinima=articulo10Seleccionado&&fechaPresentacion?Number(fechaPresentacion.slice(0,4)):(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));
+      const minima=this.sancionMinima(anioMinima);
       if(minima>0&&saldoSancion<minima)saldoSancion=minima;
     }
     let saldoIntereses=0,excedenteTotal=0,primerBeneficio1419Usado=false;
@@ -204,7 +208,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const actualizacionSancionPago={aplicada:false,fechaPago:pago.fecha,saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion),actualizacionTotal:0,tramos:[],eventos:[]};
       const intCalc=calcularInteresesAntesPago(pago);
 
-      if(saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
+      if(!articulo10Seleccionado&&saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
         const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,pago.fecha,{aniosAplicados:[...aniosActualizacionSancionAplicados]});
         if(act.valor>saldoSancion)saldoSancion=act.valor;
         if(act.tramos?.length){
@@ -225,7 +229,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         saldoSancion=roundMil(Math.max(reducido,minima));
         primerBeneficio1419Usado=true;
         detalleActualizacionSancion.push({fechaPago:pago.fecha,beneficio:pago.tipo,saldoAntesReduccion:roundMil(saldoAntes),porcentajeReduccion:Number(especial.factorSancion||0.15)*100,valorReducido:reducido,sancionMinima:minima,saldoDespuesReduccion:saldoSancion,actualizacionPrevia:roundMil(Math.max(0,saldoAntes-sancionBaseOriginal))});
-        actualizacionSancionPago.eventos.push({tipo:"REDUCCION POR BENEFICIO",beneficio:pago.tipo,saldoAntes:roundMil(saldoAntes),saldoDespues:saldoSancion,porcentaje:Number(especial.factorSancion||0.15)*100});
+        actualizacionSancionPago.eventos.push({tipo:"REDUCCION POR BENEFICIO",beneficio:pago.tipo,saldoAntesReduccion:roundMil(saldoAntes),saldoAntes:roundMil(saldoAntes),actualizacionPrevia:roundMil(Math.max(0,saldoAntes-sancionBaseOriginal)),porcentajeReduccion:Number(especial.factorSancion||0.15)*100,porcentaje:Number(especial.factorSancion||0.15)*100,valorReducido:reducido,sancionMinima:minima,saldoDespuesReduccion:saldoSancion,saldoDespues:saldoSancion});
       }
 
       const interesesPorCuota=saldosVto.map(v=>{

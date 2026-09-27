@@ -1,12 +1,12 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.27";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.27";
-import {importarDatosInteligente} from "./importador.js?v=16.33.27";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.27";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.27";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.27";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.27";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.27";
-import {TIPO_1419,esTipoDecreto1419,esArticulo10Correccion1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.27";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.39";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
+import {importarDatosInteligente} from "./importador.js?v=16.33.39";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.39";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.39";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.39";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.39";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -88,7 +88,7 @@ function montarFechaDual(root,onChange=()=>{}){
 function nuevoVto(numero=1){return {id:uid("VTO"),numero,periodo:numero,fecha:"",impuesto:0};}
 function nuevaObligacion(numero){
   return {
-    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",fechaPresentacionDeclaracion1419:"",fechaDeclaracionOriginal1419:"",beneficioSancion:"",beneficioTributario:"NINGUNO",
+    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",
     vencimientos:[nuevoVto(1)],pagos:[],importacion:""
   };
 }
@@ -202,39 +202,20 @@ function validarTipo1419TDJ(tipo,o,pago,{esTitulo=false}={}){
   const fechas=(o?.vencimientos||[]).filter(v=>v.fecha&&Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||"");
   return validarSeleccion1419({
     tipo,fechasVencimiento:fechas,
-    fechaPresentacion:o?.fechaPresentacionDeclaracion1419||"",
-    fechaDeclaracionOriginal:o?.fechaDeclaracionOriginal1419||"",
+    fechaPresentacion:o?.fechaSancion||"",
     fechaPago:esTitulo?"":pago?.fecha||"",
     fechaTitulo:esTitulo?pago?.fecha||"":"",esTitulo
   });
 }
 
-function actualizarCamposFecha1419TDJ(){
-  const tipos=[...obligaciones.flatMap(o=>o.pagos||[]).map(p=>p.tipo||""),...titulos.map(t=>t.tipo||"")];
-  const tipo10=tipos.some(t=>String(t).includes("ART. 10 DECRETO 1419"));
-  const correccion=tipos.some(esArticulo10Correccion1419);
-  document.querySelectorAll(".obligacion-card").forEach(sec=>{
-    const presentacion=sec.querySelector('[data-fecha-1419="presentacion"]');
-    const original=sec.querySelector('[data-fecha-1419="original"]');
-    if(presentacion)presentacion.hidden=!tipo10&&sec.dataset.abrir1419!=="1";
-    if(original)original.hidden=!correccion&&sec.dataset.abrir1419Correccion!=="1";
-  });
-}
-
 function rechazarTipo1419TDJ(tipo,pago,select,o,{esTitulo=false}={}){
   if(!esTipoDecreto1419(tipo))return false;
-  const sec=o?document.querySelector(`.obligacion-card[data-id="${o.id}"]`):null;
-  const destino=esTitulo?[...document.querySelectorAll(".obligacion-card")]:[sec].filter(Boolean);
-  if(tipo.includes("ART. 10"))destino.forEach(x=>x.dataset.abrir1419="1");
-  if(esArticulo10Correccion1419(tipo))destino.forEach(x=>x.dataset.abrir1419Correccion="1");
-  actualizarCamposFecha1419TDJ();
   const errores=validarTipo1419TDJ(tipo,o,pago,{esTitulo});
   if(!errores.length)return false;
-  if(select)select.value="TASA DIAN";
-  if(esTitulo)pago.tipo="TASA DIAN";else pago.tipo="TASA DIAN";
+  if(select)select.value=tipo;
+  pago.tipo=tipo;
   invalidarResultadoTDJ();
-  alert(`No se puede seleccionar ${tipo}:\n\n${errores.join("\n\n")}\n\nSe dejó TASA DIAN, sin beneficio.`);
-  actualizarCamposFecha1419TDJ();
+  alert(`La fecha no cumple las condiciones del Decreto 1419 para ${tipo}:\n\n${errores.join("\n\n")}\n\nCorrija la fecha o cambie manualmente el tratamiento. La liquidación no se ejecutará mientras la fecha no cumpla.`);
   return true;
 }
 
@@ -287,8 +268,6 @@ function renderObligaciones(){
         <label>SANCIÓN<select data-k="tieneSancion"><option value="NO">NO</option><option value="SI">SÍ</option></select></label>
         <label>VALOR SANCIÓN<input data-k="valorSancion" class="money" inputmode="numeric" value="${o.valorSancion?dinero(o.valorSancion):""}" placeholder="$ 0"></label>
         <label>FECHA SANCIÓN ${campoFecha(`fs-${o.id}`,o.fechaSancion)}</label>
-        <label data-fecha-1419="presentacion" hidden>FECHA PRESENTACIÓN DECLARACIÓN<input data-k="fechaPresentacionDeclaracion1419" type="date" value="${esc(o.fechaPresentacionDeclaracion1419||"")}"></label>
-        <label data-fecha-1419="original" hidden>FECHA DECLARACIÓN ORIGINAL<input data-k="fechaDeclaracionOriginal1419" type="date" value="${esc(o.fechaDeclaracionOriginal1419||"")}"></label>
         <label>BENEFICIO SANCIÓN<select data-k="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label><label>VALOR SANCIÓN CON BENEFICIO<input data-k="valorSancionBeneficio" class="money" readonly value="" placeholder="$ 0"></label>
       </div>
       <div class="subpanel"><div class="subhead"><strong>CUOTAS / VENCIMIENTOS</strong><button class="primario small" data-action="agregar-cuota">+ AGREGAR CUOTA</button></div>
@@ -308,7 +287,6 @@ function renderObligaciones(){
     renderCuotasEn(sec,o);actualizarCamposSancion(sec,o);actualizarValorBeneficioUI(sec,o);
   });
   actualizarSelectoresImportacion();
-  actualizarCamposFecha1419TDJ();
 }
 function renderPagos(){
   const root=$("listaPagos");if(!root)return;root.innerHTML="";
@@ -435,7 +413,6 @@ function renderPagosEn(sec,o){
         const tipoNuevo=upper(el.value);
         if(rechazarTipo1419TDJ(tipoNuevo,p,el,o))return;
         p.tipo=tipoNuevo;
-        actualizarCamposFecha1419TDJ();
       }
       else p[k]=String(el.value||'');
       if(k==='tipo'){ordenarPagosCronologicamente(o);renderPagos();renderObligaciones();}
@@ -549,7 +526,6 @@ function renderTitulos(){
           const tipoNuevo=upper(el.value),destino=obligaciones[0]||null;
           if(rechazarTipo1419TDJ(tipoNuevo,t,el,destino,{esTitulo:true}))return;
           t.tipo=tipoNuevo;
-          actualizarCamposFecha1419TDJ();
           const tasaActual=tasaParaPagoTDJ(t),celda=tr.querySelector('.tasa-titulo');
           if(celda)celda.textContent=tasaActual==null?"SIN DATOS":(tasaActual*100).toFixed(3)+"%";
           return;
@@ -697,7 +673,8 @@ function conceptoMotor(concepto){
   return upper(concepto);
 }
 function datosMotor(o,pagos,fechaCorte){
-  return {nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:upper($("razonGlobal").value),anio:Number(o.anio),concepto:conceptoMotor(o.concepto),periodo:o.periodo,tipoLiquidacion:upper(o.tipoLiquidacion||"PRIVADA"),fechaAutoAdmisorio:o.fechaAutoAdmisorio||"",fechaProvidenciaDefinitiva:o.fechaProvidenciaDefinitiva||"",fechaCorte:fechaCorte||hoyISO(),vencimientos:o.vencimientos,tieneSancion:o.tieneSancion,valorSancion:Number(o.valorSancion||0),fechaSancion:o.fechaSancion||o.vencimientos[0]?.fecha||"",beneficioSancion:o.beneficioSancion||"",beneficioTributario:o.beneficioTributario||"NINGUNO",pagos};
+  const fechaSancion=o.fechaSancion||o.vencimientos[0]?.fecha||"";
+  return {nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:upper($("razonGlobal").value),anio:Number(o.anio),concepto:conceptoMotor(o.concepto),periodo:o.periodo,tipoLiquidacion:upper(o.tipoLiquidacion||"PRIVADA"),fechaAutoAdmisorio:o.fechaAutoAdmisorio||"",fechaProvidenciaDefinitiva:o.fechaProvidenciaDefinitiva||"",fechaCorte:fechaCorte||hoyISO(),vencimientos:o.vencimientos,tieneSancion:o.tieneSancion,valorSancion:Number(o.valorSancion||0),fechaSancion,fechaPresentacionDeclaracion1419:fechaSancion,beneficioSancion:o.beneficioSancion||"",beneficioTributario:o.beneficioTributario||"NINGUNO",pagos};
 }
 function motorParaObligacion(o){
   return upper(o?.tipoLiquidacion||"PRIVADA")==="OFICIAL" && motorOficial ? motorOficial : motor;
@@ -735,13 +712,45 @@ function sincronizarTitulosVisiblesTDJ(){
   ordenarTitulosCronologicamente();
 }
 
-function aplicarTitulos(){
+function validarFechasTitulosDecreto1419TDJ(){
+  const corteArt9="2026-08-10";
+  const inicioPago="2026-09-17";
+  const finPago="2026-11-19";
+  for(const [i,t] of titulos.entries()){
+    const tipo=String(t.tipo||"").toUpperCase();
+    const art9=tipo.includes("ART. 9 DECRETO 1419");
+    const art10=tipo.includes("ART. 10 DECRETO 1419");
+    if(!art9&&!art10)continue;
+    const fecha=fechaISO(t.fecha)||"";
+    const fechaValida=art9?Boolean(fecha&&fecha<corteArt9):Boolean(fecha&&fecha>=inicioPago&&fecha<=finPago);
+    if(fechaValida)continue;
+    const identificador=String(t.tdj||"").trim()||`TDJ ${t.numero||i+1}`;
+    const fechaTexto=fecha?` (${fechaVisible(fecha)})`:"";
+    const regla=art9
+      ?"Los títulos deben haberse constituido antes del 10/08/2026."
+      :"Los títulos deben tener fecha entre el 17/09/2026 y el 19/11/2026.";
+    throw new Error(`La fecha registrada en el título ${identificador}${fechaTexto} no corresponde a la fecha admitida para ${t.tipo}. ${regla} Corríjala o seleccione la tasa correspondiente.`);
+  }
+}
+
+function observacionesBeneficio1419ComoLista(valor){
+  if(Array.isArray(valor))return valor.map(x=>String(x??"").trim()).filter(Boolean);
+  if(typeof valor==="string"&&valor.trim())return [valor.trim()];
+  return [];
+}
+
+function aplicarTitulos(observacionesBeneficio1419=[]){
   try{
+    // Los listeners de botones no deben pasar el MouseEvent como parámetro.
+    // Normalizamos también entradas antiguas/string para que PDF y Excel siempre
+    // reciban una lista de observaciones.
+    observacionesBeneficio1419=observacionesBeneficio1419ComoLista(observacionesBeneficio1419);
     // Cada clic es un cálculo nuevo. Primero se toma exactamente lo que está
     // visible en PAGOS y TÍTULOS; luego se elimina cualquier resultado previo
     // y finalmente se ejecuta nuevamente toda la secuencia cronológica.
     sincronizarPagosVisiblesTDJ();
     sincronizarTitulosVisiblesTDJ();
+    validarFechasTitulosDecreto1419TDJ();
     validarDatos();
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
 
@@ -805,7 +814,7 @@ function aplicarTitulos(){
           const deudaAntesActual=motorActual.calcular(datosMotor(o,pagosAnteriores,t.fecha));
           if(Number(deudaAntesActual.total||0)>0){
             const errores=validarTipo1419TDJ(t.tipo,o,t,{esTitulo:true});
-            if(errores.length){const e=new Error(`NO SE PUEDE APLICAR EL TÍTULO ${t.tdj||t.numero} A LA OBLIGACIÓN ${o.numero} CON ${t.tipo}:\n\n${errores.join("\n\n")}\n\nSe restableció TASA DIAN, sin beneficio.`);e.titulo1419=t.id;throw e;}
+            if(errores.length){throw new Error(`NO SE PUEDE APLICAR EL TÍTULO ${t.tdj||t.numero} A LA OBLIGACIÓN ${o.numero} CON ${t.tipo}:\n\n${errores.join("\n\n")}\n\nCorrija la fecha o cambie manualmente el tratamiento. No se liquidó con una fecha fuera de las condiciones del decreto.`);}
           }
         }
         const esTDJMinimoActual=Number.isInteger(Number(pagoActual.valor)) && Number(pagoActual.valor)>0 && Number(pagoActual.valor)<=1000;
@@ -986,6 +995,17 @@ function aplicarTitulos(){
     const saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
 
+    const hayBeneficio1419=obligaciones.some(o=>(o.pagos||[]).some(p=>esTipoDecreto1419(p.tipo)))
+      ||titulos.some(t=>esTipoDecreto1419(t.tipo));
+    if(hayBeneficio1419&&saldoPendienteObligaciones>1){
+      const articulos=[...new Set([
+        ...obligaciones.flatMap(o=>(o.pagos||[]).map(p=>p.tipo)),
+        ...titulos.map(t=>t.tipo)
+      ].filter(esTipoDecreto1419).map(tipo=>String(tipo).match(/ART\.\s*\d+/i)?.[0]?.toUpperCase()).filter(Boolean))].join(" / ");
+      const observacion=`Los pagos y/o títulos no cubrieron el total de la obligación para completar el beneficio del Decreto 1419${articulos?` (${articulos})`:""}. Faltó ${dinero(saldoPendienteObligaciones)}. La liquidación conserva el tipo de tasa/beneficio seleccionado por el funcionario y aplica los pagos y títulos; la trazabilidad detalla su distribución entre impuesto, intereses y sanción, así como el saldo pendiente.`;
+      observacionesBeneficio1419=[...observacionesBeneficio1419,observacion];
+    }
+
     // REGLA FUNDAMENTAL DE ENDOSO: un título solo puede quedar para endoso
     // cuando TODAS las obligaciones están completamente canceladas.
     // Si todavía existe deuda, ningún remanente del título puede convertirse
@@ -1008,7 +1028,7 @@ function aplicarTitulos(){
       throw new Error("INCONSISTENCIA TDJ: una obligación quedó con saldo negativo.");
     }
 
-    resultado={resumenObligaciones,resumenTitulos,endoso,fechaCalculo:hoyISO()};
+    resultado={resumenObligaciones,resumenTitulos,endoso,fechaCalculo:hoyISO(),observacionesBeneficio1419};
     resultadoDesactualizado=false;
     pintarResultado(resultado);
     renderPagos();
@@ -1016,7 +1036,6 @@ function aplicarTitulos(){
     setTimeout(()=>document.getElementById("resultadoTDJ")?.scrollIntoView({behavior:"smooth",block:"start"}),50);
   }catch(e){
     console.error(e);
-    if(e.titulo1419){const t=titulos.find(x=>x.id===e.titulo1419);if(t)t.tipo="TASA DIAN";renderTitulos();}
     alert(e.message||"No fue posible realizar la aplicación de títulos.");enfocarCampoErrorTDJ(e.focusTarget);
   }
 }
@@ -1176,6 +1195,7 @@ function construirFilasExcelTDJ(){
   push([]);
   push(["RESUMEN GENERAL"],{title:true});push(["TOTAL TÍTULOS","TOTAL APLICADO","SALDO OBLIGACIONES","TOTAL ENDOSO"],{header:true});
   push([titulos.reduce((a,t)=>a+Number(t.valor||0),0),resultado.resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Number(y.aplicado||0),0),0),resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0),resultado.endoso],{money:[1,2,3,4]});push([]);
+  observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).forEach(t=>push(["OBSERVACIÓN — BENEFICIO DECRETO 1419",t],{title:true}));
   resultado.resumenObligaciones.forEach((x,idx)=>{
     const o=x.obligacion,base=x.liquidacionBase||{};
     push([`OBLIGACIÓN ${idx+1} — LIQUIDACIÓN NORMAL`],{title:true});
@@ -1362,10 +1382,20 @@ function tablaInteresesTDJ(detalle,pagoFecha,contexto={}){
 }
 function bloqueActualizacionSancionTDJ(detalle,etiqueta){
   const tramos=detalle?.actualizacionSancion?.tramos||[];
-  if(!tramos.length)return "";
+  const eventos1419=(detalle?.actualizacionSancion?.eventos||[]).filter(e=>String(e.beneficio||"").toUpperCase().includes("DECRETO 1419"));
+  if(!tramos.length&&!eventos1419.length)return "";
   const rows=tramos.map(t=>`<tr><td>${escPdf(t.anio)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${escPdf(t.anioInflacion||Number(t.anio||0)-1)}</td><td>${dinero(t.saldoAntes||0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues||0)}</td></tr>`).join("");
   const total=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
-  return `<section class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — ${escPdf(etiqueta)}</h3><div class="pdf-descripcion">Se conserva la misma lógica normativa de actualización de sanción del liquidador normal: se muestra el año de actualización, IPC, valor anterior, actualización y saldo posterior.</div><table><thead><tr><th>AÑO</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN</th><th>${dinero(total)}</th><th></th></tr></tfoot></table></section>`;
+  const tablaActualizacion=tramos.length?`<table><thead><tr><th>AÑO</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN</th><th>${dinero(total)}</th><th></th></tr></tfoot></table>`:"<div class='pdf-descripcion'>No hubo actualización anual de sanción en este pago o título.</div>";
+  const tablaReduccion=eventos1419.length?`<h3>REDUCCIÓN DE SANCIÓN — DECRETO 1419 — ${escPdf(etiqueta)}</h3><table><thead><tr><th>SANCIÓN ANTES DE REDUCIR</th><th>ACTUALIZACIÓN PREVIA</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>SANCIÓN APLICADA</th></tr></thead><tbody>${eventos1419.map(e=>{const antes=Number(e.saldoAntesReduccion??e.saldoAntes??0),final=Number(e.saldoDespuesReduccion??e.saldoDespues??0);return `<tr><td>${dinero(antes)}</td><td>${dinero(e.actualizacionPrevia||0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??(antes*Number(e.porcentajeReduccion??e.porcentaje??15)/100))}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(final)}</td></tr>`;}).join("")}</tbody></table>`:"";
+  return `<section class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — ${escPdf(etiqueta)}</h3><div class="pdf-descripcion">Se muestra el año de actualización, IPC, valor anterior, actualización y saldo posterior.</div>${tablaActualizacion}${tablaReduccion}</section>`;
+}
+function bloqueSancionDeclaracion1419TDJ(detalle,o){
+  const tipo=String(detalle?.tipoAplicado||detalle?.pago?.tipo||"").toUpperCase();
+  if(!tipo.includes("DECRETO 1419")||!tipo.includes("ART. 10"))return "";
+  const declarada=Number(o?.valorSancion||0),reconocida=Number(detalle?.deudaAntes?.sancion||0);
+  if(declarada<=0&&reconocida<=0)return "";
+  return `<div class="pdf-descripcion"><b>SANCIÓN — ARTÍCULO 10:</b> valor registrado para la declaración presentada: ${dinero(declarada)}. Valor reconocido antes de aplicar este pago o título: ${dinero(reconocida)}. No se vuelve a aplicar la reducción del 15 % al momento del pago.</div>`;
 }
 function bloqueSoporteTDJMinimoDesdeAplicacion(a,detalle,o){
   const valor=Number(a?.valorAntes||0);
@@ -1399,7 +1429,7 @@ function bloqueDetallePagoTDJ(detalle,i,o,modo="PAGO REGISTRADO",contexto={}){
   const vtos=(detalle.aplicacionesVto||[]).filter(a=>Number(a.aplicado||0)>0||Number(a.aplicadoIntereses||0)>0||Number(a.aplicadoSancion||0)>0).map(a=>{const v=o.vencimientos.find(z=>z.id===a.id);return {fecha:v?.fecha||"",aplicado:a.aplicado||0,intereses:a.aplicadoIntereses||0,sancion:a.aplicadoSancion||0,saldo:a.saldo||0};});
   const rows=vtos.length?vtos.map(v=>`<tr><td>${escPdf(fechaVisible(v.fecha))}</td><td>${dinero(v.aplicado)}</td><td>${dinero(v.intereses)}</td><td>${dinero(v.sancion)}</td><td>${dinero(v.saldo)}</td></tr>`).join(""):"<tr><td colspan='5'>SIN IMPUTACIÓN POR VENCIMIENTO.</td></tr>";
   const deudaTotal=Number(detalle.deudaAntes?.impuesto||0)+Number(detalle.deudaAntes?.intereses||0)+Number(detalle.deudaAntes?.sancion||0);
-  return `<article class="pdf-pago-completo"><div class="pdf-pago-titulo">${escPdf(modo)} — ${escPdf(id)}</div><div class="pdf-datos"><div class="pdf-dato"><b>FECHA</b><strong>${escPdf(fechaVisible(p.fecha))}</strong></div><div class="pdf-dato"><b>VALOR</b><strong>${dinero(p.valor||0)}</strong></div><div class="pdf-dato"><b>TIPO / BENEFICIO</b><strong>${escPdf(detalle.tipoAplicado||p.tipo||"TASA DIAN")}</strong></div><div class="pdf-dato"><b>TASA</b><strong>${detalle.tasaVisible==null?"—":Number(detalle.tasaVisible).toFixed(3)+"%"}</strong></div></div>${esMinimoContexto ? "" : tablaInteresesTDJ(detalle,p.fecha,{...contexto,valorTDJ:valorContexto,esTDJ:esMinimoContexto,tdj:contexto?.tdj||p.tdj,titulo:contexto?.titulo||p.tdj})}${esMinimoContexto ? "" : bloqueSoporteTDJMinimo(detalle,p.fecha,{...contexto,valorTDJ:valorContexto,esTDJ:esMinimoContexto,tdj:contexto?.tdj||p.tdj,titulo:contexto?.titulo||p.tdj})}${bloqueActualizacionSancionTDJ(detalle,modo)}<table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>APLICADO</th><th>SALDO</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(detalle.deudaAntes?.impuesto)}</td><td>${dinero(detalle.aplicado?.impuesto)}</td><td>${dinero(detalle.saldo?.impuesto)}</td></tr><tr><td>INTERESES</td><td>${dinero(detalle.deudaAntes?.intereses)}</td><td>${dinero(detalle.aplicado?.intereses)}</td><td>${dinero(detalle.saldo?.intereses)}</td></tr><tr><td>SANCIÓN</td><td>${dinero(detalle.deudaAntes?.sancion)}</td><td>${dinero(detalle.aplicado?.sancion)}</td><td>${dinero(detalle.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero(deudaTotal)}</td><td>${dinero(detalle.aplicado?.total)}</td><td>${dinero(detalle.saldo?.total)}</td></tr></tbody></table><section class="pdf-aplicaciones"><h3>APLICACIÓN POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>IMPUESTO APLICADO</th><th>INTERESES APLICADOS</th><th>SANCIÓN APLICADA</th><th>SALDO</th></tr></thead><tbody>${rows}</tbody></table></section>${Number(detalle.excedente||detalle.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>EXCEDENTE:</b> ${dinero(detalle.excedente??detalle.aplicado?.excedente)}</div>`:""}</article>`;
+  return `<article class="pdf-pago-completo"><div class="pdf-pago-titulo">${escPdf(modo)} — ${escPdf(id)}</div><div class="pdf-datos"><div class="pdf-dato"><b>FECHA</b><strong>${escPdf(fechaVisible(p.fecha))}</strong></div><div class="pdf-dato"><b>VALOR</b><strong>${dinero(p.valor||0)}</strong></div><div class="pdf-dato"><b>TIPO / BENEFICIO</b><strong>${escPdf(detalle.tipoAplicado||p.tipo||"TASA DIAN")}</strong></div><div class="pdf-dato"><b>TASA</b><strong>${detalle.tasaVisible==null?"—":Number(detalle.tasaVisible).toFixed(3)+"%"}</strong></div></div>${esMinimoContexto ? "" : tablaInteresesTDJ(detalle,p.fecha,{...contexto,valorTDJ:valorContexto,esTDJ:esMinimoContexto,tdj:contexto?.tdj||p.tdj,titulo:contexto?.titulo||p.tdj})}${esMinimoContexto ? "" : bloqueSoporteTDJMinimo(detalle,p.fecha,{...contexto,valorTDJ:valorContexto,esTDJ:esMinimoContexto,tdj:contexto?.tdj||p.tdj,titulo:contexto?.titulo||p.tdj})}${bloqueActualizacionSancionTDJ(detalle,modo)}${bloqueSancionDeclaracion1419TDJ(detalle,o)}<table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>APLICADO</th><th>SALDO</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(detalle.deudaAntes?.impuesto)}</td><td>${dinero(detalle.aplicado?.impuesto)}</td><td>${dinero(detalle.saldo?.impuesto)}</td></tr><tr><td>INTERESES</td><td>${dinero(detalle.deudaAntes?.intereses)}</td><td>${dinero(detalle.aplicado?.intereses)}</td><td>${dinero(detalle.saldo?.intereses)}</td></tr><tr><td>SANCIÓN</td><td>${dinero(detalle.deudaAntes?.sancion)}</td><td>${dinero(detalle.aplicado?.sancion)}</td><td>${dinero(detalle.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero(deudaTotal)}</td><td>${dinero(detalle.aplicado?.total)}</td><td>${dinero(detalle.saldo?.total)}</td></tr></tbody></table><section class="pdf-aplicaciones"><h3>APLICACIÓN POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>IMPUESTO APLICADO</th><th>INTERESES APLICADOS</th><th>SANCIÓN APLICADA</th><th>SALDO</th></tr></thead><tbody>${rows}</tbody></table></section>${Number(detalle.excedente||detalle.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>EXCEDENTE:</b> ${dinero(detalle.excedente??detalle.aplicado?.excedente)}</div>`:""}</article>`;
 }
 function detallePDFDesdeAplicacionTDJ(a,o){
   const motorDetalle=a?.detalleMotor?.detalle||[];
@@ -1518,8 +1548,9 @@ async function exportarPdfTDJ(){
       }
     });
 
+    const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
     const endRows=resultado.resumenTitulos.filter(x=>Number(x.excedente||0)>0).map(x=>`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td></tr>`).join("")||`<tr><td colspan="5">NO HAY TÍTULOS SOBRANTES.</td></tr>`;
-    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(totalSaldo)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${endRows}</tbody><tfoot><tr><th colspan="3">TOTAL ENDOSO</th><th>${dinero(resultado.endoso)}</th><th>ENDOSO</th></tr></tfoot></table></section><div class="pdf-nota">Nota: la liquidación TDJ conserva la misma estructura de cálculo de obligaciones, pagos, intereses, sanciones y actualización; el título/TDJ se incorpora como pago adicional en la secuencia de imputación.</div></article></section>`);
+    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(totalSaldo)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${endRows}</tbody><tfoot><tr><th colspan="3">TOTAL ENDOSO</th><th>${dinero(resultado.endoso)}</th><th>ENDOSO</th></tr></tfoot></table></section>${observacionesBeneficio1419}<div class="pdf-nota">Nota: la liquidación TDJ conserva la misma estructura de cálculo de obligaciones, pagos, intereses, sanciones y actualización; el título/TDJ se incorpora como pago adicional en la secuencia de imputación.</div></article></section>`);
 
     const css=`  @page{size:A4 portrait;margin:22mm}
   *{box-sizing:border-box}
@@ -1602,7 +1633,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.27-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.39-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -1947,7 +1978,7 @@ function init(){
     razonGlobal.addEventListener("blur",()=>{razonGlobal.value=razonGlobal.value.trim();});
   }
   const bind=(id,event,fn)=>{const el=$(id);if(el)el.addEventListener(event,fn);};
-  bind("btnAgregarObligacion","click",agregarObligacion);bind("btnAgregarTitulo","click",agregarTitulo);document.querySelectorAll(".tdj-excel").forEach(b=>b.addEventListener("click",exportarExcelTDJ));document.querySelectorAll(".tdj-pdf").forEach(b=>b.addEventListener("click",exportarPdfTDJ));bind("btnProcesarImportTitulos","click",importarTitulos);bind("btnProcesarImportTitulosIA","click",importarTitulosIA);bind("btnImportarObligacionTDJ","click",()=>importarObligacionGlobal(false));bind("btnImportarObligacionTDJIA","click",()=>importarObligacionGlobal(true));bind("btnImportarPagosTDJ","click",()=>importarPagosGlobal(false));document.querySelectorAll(".tdj-import-excel").forEach(b=>b.addEventListener("click",importarExcelTDJ));bind("btnImportarPagosTDJIA","click",()=>importarPagosGlobal(true));document.querySelectorAll(".btn-calcular-tdj").forEach(b=>b.addEventListener("click",aplicarTitulos));document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",limpiarTodo));iniciarTabs();actualizarIndicadoresIA();renderPanelesTasasIPC();
+  bind("btnAgregarObligacion","click",agregarObligacion);bind("btnAgregarTitulo","click",agregarTitulo);document.querySelectorAll(".tdj-excel").forEach(b=>b.addEventListener("click",exportarExcelTDJ));document.querySelectorAll(".tdj-pdf").forEach(b=>b.addEventListener("click",exportarPdfTDJ));bind("btnProcesarImportTitulos","click",importarTitulos);bind("btnProcesarImportTitulosIA","click",importarTitulosIA);bind("btnImportarObligacionTDJ","click",()=>importarObligacionGlobal(false));bind("btnImportarObligacionTDJIA","click",()=>importarObligacionGlobal(true));bind("btnImportarPagosTDJ","click",()=>importarPagosGlobal(false));document.querySelectorAll(".tdj-import-excel").forEach(b=>b.addEventListener("click",importarExcelTDJ));bind("btnImportarPagosTDJIA","click",()=>importarPagosGlobal(true));document.querySelectorAll(".btn-calcular-tdj").forEach(b=>b.addEventListener("click",()=>aplicarTitulos()));document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",limpiarTodo));iniciarTabs();actualizarIndicadoresIA();renderPanelesTasasIPC();
   setStatus("CARGANDO MOTOR DE LIQUIDACIÓN...","loading");
   normalizarDatosLocal().then(()=>{renderPagos();renderObligaciones();refrescarTasasPagos();renderPanelesTasasIPC();setStatus("MOTOR DE LIQUIDACIÓN DISPONIBLE","ok");cargarSupabase();}).catch(e=>{console.error(e);setStatus("ERROR CARGANDO PARÁMETROS","error");});
   comprobarMotorIA().then(r=>{window.__tdjEstadoIA={estado:"CONECTADO",version:r?.version||"—"};actualizarIndicadoresIA();if(r?.disponible||r?.version)setStatus(`MOTOR DISPONIBLE · IA DIAN v${r.version||"—"}`,"ok");}).catch(()=>{window.__tdjEstadoIA={estado:"NO COMPROBADO",version:"—"};actualizarIndicadoresIA();});
