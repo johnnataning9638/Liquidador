@@ -845,6 +845,12 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         // La fecha de corte es la fecha del TDJ actual. Por tanto, cuando
         // llega el TDJ 2/3/4, los intereses se calculan hasta esa nueva fecha.
         const r=motorActual.calcular(datosMotor(o,todos,t.fecha,{permitirBeneficioFueraVigencia:true}));
+        // Las restricciones temporales de beneficios se informan, pero no
+        // cambian la tasa elegida ni bloquean la liquidación del TDJ.
+        (r.advertencias||[]).filter(x=>/vigencia|beneficio|fecha de sanción|fecha de pago/i.test(String(x))).forEach(x=>{
+          const aviso=`OBLIGACIÓN ${o.numero} — ${tipoTasaObligacion}: ${String(x)} La liquidación conserva la selección del funcionario.`;
+          if(!observacionesBeneficio1419.includes(aviso))observacionesBeneficio1419.push(aviso);
+        });
         // Buscar explícitamente el detalle generado por ESTE TDJ. No debemos
         // depender de que sea simplemente el último elemento del arreglo: si
         // existen pagos con la misma fecha, el orden interno del motor puede
