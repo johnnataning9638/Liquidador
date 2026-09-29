@@ -1,12 +1,12 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.40";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.40";
-import {importarDatosInteligente} from "./importador.js?v=16.33.40";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.40";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.40";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.40";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.40";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.40";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.40";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.42";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.42";
+import {importarDatosInteligente} from "./importador.js?v=16.33.42";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.42";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.42";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.42";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.42";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.42";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.42";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -64,6 +64,22 @@ function uid(pref){return `${pref}-${Date.now()}-${Math.random().toString(36).sl
 function opcionTipo(tipo="TASA DIAN"){
   return TIPOS.map(x=>`<option value="${esc(x)}" ${upper(tipo)===upper(x)?"selected":""}>${esc(x)}</option>`).join("");
 }
+function opcionTipoObligacionTDJ(tipo="TASA DIAN"){
+  const actual=upper(tipo||"TASA DIAN");
+  const opciones=[`<option value="TASA DIAN" ${actual==="TASA DIAN"?"selected":""}>TIPO DE TASA TDJ</option>`];
+  TIPOS.filter(x=>upper(x)!=="TASA DIAN").forEach(x=>{
+    opciones.push(`<option value="${esc(x)}" ${actual===upper(x)?"selected":""}>${esc(x)}</option>`);
+  });
+  return opciones.join("");
+}
+function hayTitulosTDJ(){
+  return titulos.length>1 || titulos.some(t=>String(t?.tdj||"").trim() || fechaISO(t?.fecha) || Number(t?.valor||0)>0);
+}
+function actualizarVisibilidadTasasObligacionesTDJ(){
+  const visible=hayTitulosTDJ();
+  document.querySelectorAll('.tdj-tasa-obligacion').forEach(el=>{el.hidden=!visible;});
+  if(visible)refrescarTasasObligacionesTDJ();
+}
 function opcionConcepto(concepto=""){
   const actual=upper(concepto);
   const normalizado=CONCEPTOS.find(x=>upper(x)===actual) || (actual?"OTROS":"");
@@ -75,6 +91,9 @@ function campoFecha(id,value=""){
 }
 function tasaVisibleObligacionTDJ(tipo,fechaReferencia=""){
   const t=upper(tipo||"TASA DIAN");
+  if(t==="TASA DIAN"){
+    return {texto:"TASA TDJ",tasa:null,nota:"TASA DE REFERENCIA PARA LA APLICACIÓN DE TÍTULOS / TDJ. SE DETERMINARÁ SEGÚN LA FECHA DEL TDJ."};
+  }
   if(!t)return {texto:"SIN DATOS",tasa:null,nota:"SELECCIONE EL TIPO DE TASA."};
   const fecha=fechaISO(fechaReferencia)||"";
   try{
@@ -328,7 +347,7 @@ function renderObligaciones(){
     const fs=sec.querySelector(`#fs-${o.id}`); if(fs) montarFechaDual(fs.parentElement,v=>o.fechaSancion=v);
     sec.querySelector('[data-action="eliminar"]').addEventListener("click",()=>{if(obligaciones.length===1)return alert("Debe existir al menos una obligación.");obligaciones=obligaciones.filter(x=>x.id!==o.id);renderObligaciones();renderPagos();});
     sec.querySelector('[data-action="agregar-cuota"]').addEventListener("click",()=>{o.vencimientos.push(nuevoVto(o.vencimientos.length+1));renderObligaciones();});
-    renderCuotasEn(sec,o);actualizarCamposSancion(sec,o);actualizarValorBeneficioUI(sec,o);actualizarTasaObligacionUI(sec,o);
+    renderCuotasEn(sec,o);actualizarCamposSancion(sec,o);actualizarValorBeneficioUI(sec,o);actualizarTasaObligacionUI(sec,o);actualizarVisibilidadTasasObligacionesTDJ();
   });
   actualizarSelectoresImportacion();
 }
@@ -577,7 +596,7 @@ function renderTitulos(){
       }
     }));
     const fecha=tr.querySelector(`#tdj-${t.id}`);
-    if(fecha)montarFechaDual(fecha.parentElement,iso=>{invalidarResultadoTDJ();t.fecha=iso;refrescarTasasObligacionesTDJ();});
+    if(fecha)montarFechaDual(fecha.parentElement,iso=>{invalidarResultadoTDJ();t.fecha=iso;actualizarVisibilidadTasasObligacionesTDJ();});
     configurarTabTitulo(tr,tbody);
     tr.querySelector('[data-del]').addEventListener('click',()=>{
       invalidarResultadoTDJ();
@@ -591,7 +610,7 @@ function renderTitulos(){
 function renumerarTitulos(){titulos.forEach((t,i)=>{t.numero=i+1;});}
 
 function agregarObligacion(){invalidarResultadoTDJ();obligaciones.push(nuevaObligacion(obligaciones.length+1));renderObligaciones();renderPagos();}
-function agregarTitulo(){invalidarResultadoTDJ();titulos.push(nuevoTitulo(titulos.length+1));renderTitulos();}
+function agregarTitulo(){invalidarResultadoTDJ();titulos.push(nuevoTitulo(titulos.length+1));renderTitulos();actualizarVisibilidadTasasObligacionesTDJ();}
 function sincronizarPagosVisiblesTDJ(){
   // La interfaz puede conservar temporalmente un valor escrito en pantalla
   // mientras el evento change aún no se dispara. Antes de CADA cálculo leemos
