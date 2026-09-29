@@ -64,10 +64,10 @@ function uid(pref){return `${pref}-${Date.now()}-${Math.random().toString(36).sl
 function opcionTipo(tipo="TASA DIAN"){
   return TIPOS.map(x=>`<option value="${esc(x)}" ${upper(tipo)===upper(x)?"selected":""}>${esc(x)}</option>`).join("");
 }
-function opcionTipoObligacionTDJ(tipo="TASA DIAN"){
-  const actual=upper(tipo||"TASA DIAN");
-  const opciones=[`<option value="TASA DIAN" ${actual==="TASA DIAN"?"selected":""}>TASA DIAN</option>`];
-  TIPOS.filter(x=>upper(x)!=="TASA DIAN").forEach(x=>{
+function opcionTipoObligacionTDJ(tipo=""){
+  const actual=upper(tipo||"");
+  const opciones=[`<option value="" ${!actual?"selected":""} disabled>SELECCIONE TASA</option>`];
+  TIPOS.forEach(x=>{
     opciones.push(`<option value="${esc(x)}" ${actual===upper(x)?"selected":""}>${esc(x)}</option>`);
   });
   return opciones.join("");
@@ -90,27 +90,33 @@ function campoFecha(id,value=""){
   return `<div class="fecha-dual"><input id="${esc(id)}" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa" value="${esc(fechaVisible(iso))}"><input id="${esc(id)}Picker" class="fecha-native" type="date" tabindex="-1" aria-label="Abrir calendario" title="Abrir calendario" value="${esc(iso)}"></div>`;
 }
 function tasaVisibleObligacionTDJ(tipo,fechaReferencia=""){
-  const t=upper(tipo||"TASA DIAN");
-  if(t==="TASA DIAN"){
-    return {texto:"TASA TDJ",tasa:null,nota:"TASA DE REFERENCIA PARA LA APLICACIÓN DE TÍTULOS / TDJ. SE DETERMINARÁ SEGÚN LA FECHA DEL TDJ."};
+  const t=upper(tipo||"");
+  if(!t){
+    return {texto:"",tasa:null,nota:"SELECCIONE TASA"};
   }
-  if(!t)return {texto:"SIN DATOS",tasa:null,nota:"SELECCIONE EL TIPO DE TASA."};
   const fecha=fechaISO(fechaReferencia)||"";
+  if(!fecha){
+    return {texto:"",tasa:null,nota:"SELECCIONE FECHA TDJ PARA DETERMINAR LA TASA"};
+  }
   try{
-    const especial=motor?.tasaEspecial(t,fecha||hoyISO());
-    const tasa=normalizarTasaTDJ(especial?.tasa);
+    let tasa=null;
+    const especial=motor?.tasaEspecial(t,fecha);
+    tasa=especial?.tasa;
+    if(tasa==null)tasa=motor?.tasaPorFecha(fecha,t);
+    if(tasa==null && t!=="TASA DIAN")tasa=motor?.tasaPorFecha(fecha,"TASA DIAN");
+    tasa=normalizarTasaTDJ(tasa);
     if(tasa!=null){
       return {
         texto:(tasa*100).toFixed(3)+"%",
         tasa,
-        nota:especial?.nota||"TRATAMIENTO SELECCIONADO PARA LOS TÍTULOS DE ESTA OBLIGACIÓN."
+        nota:especial?.nota||"TASA APLICABLE SEGÚN LA FECHA DEL TDJ."
       };
     }
   }catch{}
   return {
-    texto:"SEGÚN FECHA TDJ",
+    texto:"",
     tasa:null,
-    nota:"LA TASA EFECTIVA SE DETERMINARÁ CON LA FECHA DE CADA TDJ APLICADO A ESTA OBLIGACIÓN."
+    nota:"NO SE ENCONTRÓ UNA TASA PARA LA FECHA DEL TDJ."
   };
 }
 function actualizarTasaObligacionUI(sec,o,fechaReferencia=""){
@@ -123,9 +129,13 @@ function actualizarTasaObligacionUI(sec,o,fechaReferencia=""){
   campo.setAttribute("aria-label",info.nota);
 }
 function refrescarTasasObligacionesTDJ(){
+  const fechaTDJ=(titulos||[])
+    .map(t=>fechaISO(t?.fecha)||"")
+    .filter(Boolean)
+    .sort()[0]||"";
   document.querySelectorAll('.obligacion-card').forEach(sec=>{
     const o=obligaciones.find(x=>x.id===sec.dataset.id);
-    if(o)actualizarTasaObligacionUI(sec,o);
+    if(o)actualizarTasaObligacionUI(sec,o,fechaTDJ);
   });
 }
 
@@ -144,7 +154,7 @@ function montarFechaDual(root,onChange=()=>{}){
 function nuevoVto(numero=1){return {id:uid("VTO"),numero,periodo:numero,fecha:"",impuesto:0};}
 function nuevaObligacion(numero){
   return {
-    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"TASA DIAN",tipoTasaConfirmada:false,
+    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"",tipoTasaConfirmada:false,
     vencimientos:[nuevoVto(1)],pagos:[],importacion:""
   };
 }
@@ -327,7 +337,7 @@ function renderObligaciones(){
         <label>BENEFICIO SANCIÓN<select data-k="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
         <label>VALOR SANCIÓN CON BENEFICIO<input data-k="valorSancionBeneficio" class="money" readonly value="" placeholder="$ 0"></label>
         <label class="tdj-tasa-obligacion" hidden>TIPO DE TASA<select data-k="tipoTasa">${opcionTipoObligacionTDJ(o.tipoTasa||"TASA DIAN")}</select></label>
-        <label class="tdj-tasa-obligacion" hidden>TASA<input data-tasa-obligacion class="money" readonly value="TASA TDJ" placeholder="TASA TDJ"></label>
+        <label class="tdj-tasa-obligacion" hidden>TASA<input data-tasa-obligacion class="money" readonly value="" placeholder="SELECCIONE TASA"></label>
       </div>
       <div class="subpanel"><div class="subhead"><strong>CUOTAS / VENCIMIENTOS</strong><button class="primario small" data-action="agregar-cuota">+ AGREGAR CUOTA</button></div>
         <div class="tabla-scroll"><table class="mini-table cuotas-mini"><thead><tr><th>Nº</th><th>PERÍODO / CUOTA</th><th>FECHA VENCIMIENTO</th><th>IMPORTE / IMPUESTO</th><th></th></tr></thead><tbody></tbody></table></div>
@@ -336,7 +346,7 @@ function renderObligaciones(){
     sec.querySelector('[data-k="concepto"]').value=o.concepto||"";
     sec.querySelector('[data-k="tieneSancion"]').value=o.tieneSancion||"NO";
     sec.querySelector('[data-k="beneficioSancion"]').value=o.beneficioSancion||"";
-    sec.querySelector('[data-k="tipoTasa"]').value=o.tipoTasa||"TASA DIAN";
+    sec.querySelector('[data-k="tipoTasa"]').value=o.tipoTasa||"";
     sec.querySelectorAll('[data-k]').forEach(el=>el.addEventListener("change",()=>{
       syncObligacion(sec,o);actualizarValorBeneficioUI(sec,o);invalidarResultadoTDJ();
       if(el.dataset.k==="tipoTasa"){
