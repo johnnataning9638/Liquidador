@@ -606,6 +606,7 @@ function renderTitulos(){
     });
     tbody.appendChild(tr);
   });
+  actualizarVisibilidadTasasObligacionesTDJ();
 }
 function renumerarTitulos(){titulos.forEach((t,i)=>{t.numero=i+1;});}
 
