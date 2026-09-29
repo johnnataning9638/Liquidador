@@ -269,7 +269,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
           }
         }
         // Si el interés disponible no alcanza, el remanente va a impuesto.
-        for(const v of vencimientos){
+        for(const v of saldosVto){
           if(restante<=0)break;
           const disponibleImpuesto=Math.max(0,Number(v.saldo||0));
           if(disponibleImpuesto<=0)continue;
@@ -290,7 +290,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
           aplicadoSancion=Math.min(restante,saldoSancion);
           saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
           restante-=aplicadoSancion;
-          const vtoBase=vencimientos.find(v=>Number(v.saldo||0)>0)||vencimientos[0];
+          const vtoBase=saldosVto.find(v=>Number(v.saldo||0)>0)||saldosVto[0];
           if(vtoBase){
             const existente=aplicacionesVto.find(x=>x.id===vtoBase.id);
             if(existente)existente.aplicadoSancion=Number(existente.aplicadoSancion||0)+aplicadoSancion;
