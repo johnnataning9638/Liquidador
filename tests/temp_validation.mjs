@@ -97,7 +97,7 @@ for(let i=0;i<obligs.length;i++){
   const aplicado=Number(d?.aplicado?.total||0);
   const excedente=Number(d?.aplicado?.excedente||0);
   ok(aplicado<=disponible,'Nunca aplicar más TDJ que el disponible');
-  resultados.push({obligacion:i+1,tipo,tituloAntes:disponible,aplicado,excedente,saldo:r.saldo,detalle:d?.aplicado});
+  resultados.push({obligacion:i+1,tipo,tituloAntes:disponible,aplicado,excedente,saldoTotal:r.total,detalle:d?.aplicado});
   disponible=excedente;
 }
 ok(resultados.every(x=>Number(x.saldo?.total||0)>=0),'Saldos finales válidos');
