@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import { MotorLiquidacion } from '../js/motor-liquidacion.js';
+import { validarSeleccion1419, TIPO_1419 } from '../js/decreto-1419.js';
+import fs2 from 'node:fs';
 
 const tasas = JSON.parse(fs.readFileSync('datos/tasas-moratorias.json','utf8'));
 const beneficios = JSON.parse(fs.readFileSync('datos/beneficios.json','utf8'));
@@ -62,6 +64,28 @@ const d0240a4=motor.tasaEspecial('ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION'
 eq(d0240a4.tasa,0,'D0240 Art4 interes cero');
 eq(d0240a4.factorSancion,1,'D0240 Art4 conserva sancion ya reducida');
 ok(d0240a4.reduceSancion===false,'D0240 Art4 no vuelve a reducir sancion');
+
+
+// 3B) Tres pruebas de elegibilidad del nuevo beneficio para TDJ (D1419 Art.9):
+// a) título constituido antes del 10/08/2026 + obligación vencida al corte: procede;
+// b) título desde el 10/08/2026: no procede;
+// c) título dentro de la fecha del título, pero obligación posterior al 10/08/2026: no procede.
+ok(validarSeleccion1419({tipo:TIPO_1419.ART9,fechasVencimiento:['2026-07-20'],fechaTitulo:'2026-08-09',esTitulo:true}).length===0,'D1419 caso válido');
+ok(validarSeleccion1419({tipo:TIPO_1419.ART9,fechasVencimiento:['2026-07-20'],fechaTitulo:'2026-08-10',esTitulo:true}).length>0,'D1419 título fuera del corte exclusivo');
+ok(validarSeleccion1419({tipo:TIPO_1419.ART9,fechasVencimiento:['2026-08-11'],fechaTitulo:'2026-08-09',esTitulo:true}).length>0,'D1419 obligación no vencida al corte');
+
+// 3C) Verificación estática de continuidad de PDF/Excel e interoperabilidad.
+const appText=fs2.readFileSync('js/app.js','utf8');
+const tdjText=fs2.readFileSync('js/tdj.js','utf8');
+for(const campo of ['TIPO DE LIQUIDACIÓN','TIENE SANCIÓN','VALOR SANCIÓN','FECHA SANCIÓN']){
+  ok(appText.includes(campo),`Liquidador normal conserva campo Excel: ${campo}`);
+  ok(tdjText.includes(campo),`TDJ conserva campo Excel: ${campo}`);
+}
+ok(appText.includes('tipoLiquidacion:') && appText.includes('fechaSancion:'),'Liquidador normal mantiene importación de campos de sanción/tipo');
+ok(tdjText.includes('tipoLiquidacion:') && tdjText.includes('fechaSancion:'),'TDJ mantiene importación de campos de sanción/tipo');
+ok(appText.includes('@page{size:A4 portrait;margin:22mm}'),'PDF normal conserva A4 y margen actual');
+ok(tdjText.includes('@page{size:A4 portrait;margin:22mm}'),'PDF TDJ conserva A4 y margen actual');
+ok(tdjText.includes('.pdf-hoja{width:100%;height:253mm;min-height:253mm;page-break-after:always'),'PDF TDJ conserva una hoja por bloque');
 
 // 4) Tres obligaciones + dos pagos cada una + un único TDJ secuencial.
 // Cada pago previo deja saldo; el título se aplica a cada obligación en orden.
