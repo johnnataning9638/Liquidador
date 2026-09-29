@@ -164,6 +164,8 @@ function valorNumericoEstricto(v){
   const sci=expandirCientifico(s);
   if(sci!==null)return null; // la notación científica se reserva para documentos.
   if(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(s))return null;
+  // Acepta formatos monetarios colombianos con miles por punto o coma,
+  // incluyendo símbolo $ y espacios: 1.688.000 / 1,688,000 / $1,688,000.
   const n=numeroDesdeTexto(s);
   return Number.isFinite(n)?truncarValorEntero(n):null;
 }
@@ -174,8 +176,11 @@ function separarFilaPagos(linea){
   // Markdown/HTML copiado como tabla: | a | b | c |
   if(/\|/.test(s))return s.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split("|").map(limpiarCeldaPago);
   if(/;/.test(s)&&s.split(";").length>=3)return s.split(";").map(limpiarCeldaPago);
-  // CSV: solo dividir por coma cuando no parece decimal con coma ni notación científica.
-  if(/,(?=[^,]*\s*(?:\d|\$))/.test(s)&&s.split(",").length>=3)return s.split(",").map(limpiarCeldaPago);
+  // CSV: no separar por coma cuando la fila contiene un importe como
+  // 1,688,000 o $1,688,000. En ese caso la coma pertenece al valor.
+  const partesComa=s.split(",");
+  const pareceImporteMiles=/\$?\s*\d{1,3}(?:,\d{3})+(?:\s*)$/.test(s);
+  if(!pareceImporteMiles&&/,(?=[^,]*\s*(?:\d|\$))/.test(s)&&partesComa.length>=3)return partesComa.map(limpiarCeldaPago);
   return [s];
 }
 function detectarSeparadorFila(linea){
