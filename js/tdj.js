@@ -326,8 +326,8 @@ function renderObligaciones(){
         <label>FECHA SANCIÓN ${campoFecha(`fs-${o.id}`,o.fechaSancion)}</label>
         <label>BENEFICIO SANCIÓN<select data-k="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
         <label>VALOR SANCIÓN CON BENEFICIO<input data-k="valorSancionBeneficio" class="money" readonly value="" placeholder="$ 0"></label>
-        <label>TIPO DE TASA<select data-k="tipoTasa">${opcionTipo(o.tipoTasa||"TASA DIAN")}</select></label>
-        <label>TASA<input data-tasa-obligacion class="money" readonly value="SIN DATOS" placeholder="SIN DATOS"></label>
+        <label class="tdj-tasa-obligacion" hidden>TIPO DE TASA<select data-k="tipoTasa">${opcionTipoObligacionTDJ(o.tipoTasa||"TASA DIAN")}</select></label>
+        <label class="tdj-tasa-obligacion" hidden>TASA<input data-tasa-obligacion class="money" readonly value="TASA TDJ" placeholder="TASA TDJ"></label>
       </div>
       <div class="subpanel"><div class="subhead"><strong>CUOTAS / VENCIMIENTOS</strong><button class="primario small" data-action="agregar-cuota">+ AGREGAR CUOTA</button></div>
         <div class="tabla-scroll"><table class="mini-table cuotas-mini"><thead><tr><th>Nº</th><th>PERÍODO / CUOTA</th><th>FECHA VENCIMIENTO</th><th>IMPORTE / IMPUESTO</th><th></th></tr></thead><tbody></tbody></table></div>
