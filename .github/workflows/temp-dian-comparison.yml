@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - ".github/workflows/temp-dian-comparison.yml"
+      - "tests/temp_dian_comparison.mjs"
+      - "js/decreto-1419.js"
 jobs:
   test:
     runs-on: ubuntu-latest
