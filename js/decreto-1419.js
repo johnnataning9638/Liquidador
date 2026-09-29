@@ -63,7 +63,7 @@ export function validarSeleccion1419({
 
   if (esArticulo10Omiso1419(tipo)) {
     if (!fechaPresentacion) errores.push("Registre la fecha de sanción, que corresponde a la fecha de presentación de la declaración omitida.");
-    else if (fechaPresentacion > DECRETO_1419.finVigencia) errores.push("La declaración omitida se presentó después del 19/11/2026; no cumple el plazo del artículo 10.");
+    else if (fechaPresentacion < DECRETO_1419.inicioVigencia || fechaPresentacion > DECRETO_1419.finVigencia) errores.push("La declaración omitida debe presentarse entre el 17/09/2026 y el 19/11/2026.");
     else if (vencimientos.length && fechaPresentacion <= vencimientos.sort().at(-1)) errores.push("La fecha de presentación no es posterior al vencimiento; el caso no corresponde a una declaración omitida.");
     if (esTitulo) {
       if (!fechaTitulo || fechaTitulo < DECRETO_1419.inicioVigencia || fechaTitulo > DECRETO_1419.finVigencia) {
