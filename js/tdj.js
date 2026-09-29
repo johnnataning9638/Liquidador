@@ -351,7 +351,7 @@ function renderObligaciones(){
       syncObligacion(sec,o);actualizarValorBeneficioUI(sec,o);invalidarResultadoTDJ();
       if(el.dataset.k==="tipoTasa"){
         o.tipoTasaConfirmada=true;
-        actualizarTasaObligacionUI(sec,o);
+        refrescarTasasObligacionesTDJ();
       }
     }));
     const campoValorSancion=sec.querySelector('[data-k="valorSancion"]');
