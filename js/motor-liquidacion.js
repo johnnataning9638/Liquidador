@@ -1060,12 +1060,11 @@ export class MotorLiquidacion{
       };
 
       // TDJ DE CUANTÍA MÍNIMA: todo TDJ entero mayor que $0 y menor o igual
-      // a $1.000 requiere una imputación explícita y visible. La prioridad
-      // depende de la deuda REAL existente al momento del TDJ:
-      //   1) si existen intereses exigibles > 0, se imputa primero a intereses;
-      //   2) si no existen intereses pero existe sanción pendiente, se imputa
-      //      a sanción;
-      //   3) si no existen intereses ni sanción, se imputa al impuesto pendiente.
+      // a $1.000 usa una imputación especial exclusiva para títulos:
+      //   1) primero intereses;
+      //   2) si el interés disponible no alcanza, impuesto;
+      //   3) solo si no existen intereses ni impuesto pendiente, sanción.
+      // Los pagos normales no entran en esta ruta y conservan proporcionalidad.
       // Nunca se aplica más de lo adeudado y nunca se convierte en endoso si
       // todavía existe saldo que pueda recibir el título.
       const valorTDJMinimo=Number(pago.valor||0);
@@ -1107,24 +1106,6 @@ export class MotorLiquidacion{
         // el remanente pasa al IMPUESTO antes que a la sanción. Esta prioridad
         // es exclusiva de TDJ <= $1.000. Un pago normal nunca entra aquí.
         if(restante>0){
-          for(const v of saldosVto){
-            if(restante<=0)break;
-            const disponibleImpuesto=Math.max(0,Number(v.saldo||0));
-            if(disponibleImpuesto<=0)continue;
-            const aplicar=Math.min(restante,disponibleImpuesto);
-            v.saldo=Math.max(0,disponibleImpuesto-aplicar);
-            aplicadoImpuesto+=aplicar;
-            restante-=aplicar;
-            const existente=aplicacionesVto.find(x=>x.id===v.id);
-            if(existente){
-              existente.aplicado=Number(existente.aplicado||0)+aplicar;
-              existente.saldo=v.saldo;
-            }else{
-              aplicacionesVto.push({id:v.id,aplicado:aplicar,aplicadoIntereses:0,aplicadoSancion:0,saldo:v.saldo,notaAplicacion:"TDJ ≤ $1.000 — IMPUTACIÓN A IMPUESTO"});
-            }
-          }
-        }
-
         // 3. Solo si no existe interés ni impuesto pendiente, y aún queda
         // remanente, se atiende la sanción. Así se conserva la regla solicitada:
         // TDJ <= $1.000 prioriza intereses; agotado el interés, prioriza impuesto.
