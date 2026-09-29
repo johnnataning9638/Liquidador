@@ -66,7 +66,7 @@ function opcionTipo(tipo="TASA DIAN"){
 }
 function opcionTipoObligacionTDJ(tipo="TASA DIAN"){
   const actual=upper(tipo||"TASA DIAN");
-  const opciones=[`<option value="TASA DIAN" ${actual==="TASA DIAN"?"selected":""}>TIPO DE TASA TDJ</option>`];
+  const opciones=[`<option value="TASA DIAN" ${actual==="TASA DIAN"?"selected":""}>TASA DIAN</option>`];
   TIPOS.filter(x=>upper(x)!=="TASA DIAN").forEach(x=>{
     opciones.push(`<option value="${esc(x)}" ${actual===upper(x)?"selected":""}>${esc(x)}</option>`);
   });
