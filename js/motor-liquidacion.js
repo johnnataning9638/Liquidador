@@ -686,7 +686,8 @@ export class MotorLiquidacion{
     }));
 
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
-    const fechaSancion=fechaISO(datos.fechaSancion)||saldosVto[0]?.fecha||"";
+    const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
+    const fechaSancion=fechaSancionReal||saldosVto[0]?.fecha||"";
     // FIX: esta bandera se usa también al determinar la sanción mínima inicial.
     // Antes se utilizaba en este alcance sin declararla, provocando en producción
     // el error JavaScript: "esArt20o3 is not defined" y bloqueando toda
@@ -930,6 +931,10 @@ export class MotorLiquidacion{
       // Interés vigente para cada vencimiento antes de imputar el pago.
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
       const intCalc=calcularInteresesAntesPago(pago);
+      // La sanción solo puede participar en la imputación si el pago/Título
+      // tiene fecha igual o posterior a la fecha de sanción. Antes de esa fecha
+      // el pago se distribuye exclusivamente entre impuesto e intereses.
+      const sancionHabilitadaPorFecha=!fechaSancionReal || pago.fecha>=fechaSancionReal;
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
       // La sanción base es definitiva: primero se actualiza únicamente el
@@ -1080,7 +1085,7 @@ export class MotorLiquidacion{
       if(esTDJMinimo){
         const valorTDJ=valorTDJMinimo;
         const interesesDisponibles=Math.max(0,Number(intCalc.liquidadoExacto ?? intCalc.liquidado ?? 0));
-        const sancionDisponible=Math.max(0,Number(saldoSancion||0));
+        const sancionDisponible=sancionHabilitadaPorFecha?Math.max(0,Number(saldoSancion||0)):0;
         const impuestoDisponible=()=>saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0);
 
         let restante=valorTDJ;
@@ -1227,7 +1232,8 @@ export class MotorLiquidacion{
       const deudaProporcional={
         impuesto:impuestoExigible,
         intereses:interesesExigibles,
-        sancion:Math.max(0,saldoSancion)
+        // Antes de la fecha de sanción, el pago no puede imputarse a sanción.
+        sancion:sancionHabilitadaPorFecha?Math.max(0,saldoSancion):0
       };
 
       const aplicacionGlobal=this.aplicarProporcionalidad(
