@@ -60,7 +60,8 @@ eq(d0240.factorSancion,0.15,'D0240 Art3 sancion 15%');
 
 const d0240a4=motor.tasaEspecial('ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION','2026-04-15');
 eq(d0240a4.tasa,0,'D0240 Art4 interes cero');
-eq(d0240a4.factorSancion,0.15,'D0240 Art4 sancion 15%');
+eq(d0240a4.factorSancion,1,'D0240 Art4 conserva sancion ya reducida');
+ok(d0240a4.reduceSancion===false,'D0240 Art4 no vuelve a reducir sancion');
 
 // 4) Tres obligaciones + dos pagos cada una + un único TDJ secuencial.
 // Cada pago previo deja saldo; el título se aplica a cada obligación en orden.
