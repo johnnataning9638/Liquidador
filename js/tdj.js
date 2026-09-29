@@ -1749,7 +1749,7 @@ async function importarExcelTDJ(){
         const clave=`${tdjTxt}|${f}|${v}`;
         if(clavesTitulos.has(clave))return false;
         clavesTitulos.add(clave);
-        nuevosTitulos.push({id:uid("TDJ"),numero:nuevosTitulos.length+1,tdj:tdjTxt,fecha:f,valor:v,tipo:upper(tipo||"TASA DIAN"),observacion:upper(observacion||"")});
+        nuevosTitulos.push({id:uid("TDJ"),numero:nuevosTitulos.length+1,tdj:tdjTxt,fecha:f,valor:v,observacion:upper(observacion||"")});
         return true;
       };
       for(let m=0;m<marcas.length;m++){
@@ -1781,6 +1781,7 @@ async function importarExcelTDJ(){
           o.beneficioSancion=upper(v[5]||"");
           o.fechaSancion=fechaCampoTDJImport(v[6]);
           o.beneficioTributario=upper(v[7]||"NINGUNO");
+          o.tipoTasa=upper(v[8]||"TASA DIAN");
         }
 
         // Vencimientos: se leen únicamente hasta la siguiente sección.
