@@ -51,6 +51,7 @@ for (const valor of [1,157,999]) {
 
 // 3. Sin interés exigible: TDJ $1.000 pasa a impuesto.
 const sinInteres = run(base({valor:1000,esTDJ:true,tdj:"TDJ-SIN-INTERES",fechaPago:"2025-01-01"}));
+console.log("DEBUG SIN INTERES", JSON.stringify(sinInteres.detalle?.[0]?.aplicado), JSON.stringify(sinInteres.detalle?.[0]?.deudaAntes), JSON.stringify(sinInteres.detalle?.[0]?.pago));
 eq(sinInteres.detalle[0].aplicado.intereses, 0, "sin interés no se inventa interés");
 eq(sinInteres.detalle[0].aplicado.impuesto, 1000, "sin interés, TDJ <= $1.000 pasa a impuesto");
 eq(sinInteres.detalle[0].aplicado.total, 1000, "sin interés el TDJ se aplica por el valor exacto");
