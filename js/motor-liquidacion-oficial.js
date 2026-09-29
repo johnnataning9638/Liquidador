@@ -155,7 +155,8 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
 
     const saldosVto=vencimientos.map((v,i)=>({...v,numero:Number(v.numero||i+1),saldo:Math.max(0,Number(v.impuesto||0))}));
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
-    const fechaSancion=fechaISO(datos.fechaSancion)||saldosVto[0]?.fecha||"";
+    const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
+    const fechaSancion=fechaSancionReal||saldosVto[0]?.fecha||"";
     const fechaFirmezaSancion=fechaSancion;
     let saldoSancion=sancionBaseOriginal;
     const tipo1419Inicial=(datos.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
@@ -207,6 +208,9 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const especial=this.tasaEspecial(pago.tipo,pago.fecha);
       const actualizacionSancionPago={aplicada:false,fechaPago:pago.fecha,saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion),actualizacionTotal:0,tramos:[],eventos:[]};
       const intCalc=calcularInteresesAntesPago(pago);
+      // La sanción solo participa en la imputación cuando el pago/Título
+      // tiene fecha igual o posterior a la fecha de sanción.
+      const sancionHabilitadaPorFecha=!fechaSancionReal || pago.fecha>=fechaSancionReal;
 
       if(!articulo10Seleccionado&&saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
         const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,pago.fecha,{aniosAplicados:[...aniosActualizacionSancionAplicados]});
@@ -331,7 +335,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha);
       const impuestoExigible=vencimientosExigibles.reduce((a,v)=>a+Math.max(0,v.saldo),0);
       const interesesExigibles=intCalc.porVto.filter(x=>vencimientosExigibles.some(v=>v.id===x.id)).reduce((a,x)=>a+Math.max(0,Number(x.interes||0)),0);
-      const deudaProporcional={impuesto:impuestoExigible,intereses:interesesExigibles,sancion:Math.max(0,saldoSancion)};
+      const deudaProporcional={impuesto:impuestoExigible,intereses:interesesExigibles,sancion:sancionHabilitadaPorFecha?Math.max(0,saldoSancion):0};
       const aplicacionGlobal=this.aplicarProporcionalidad(Math.max(0,Number(pago.valor||0)),deudaProporcional);
       let impuestoRestante=Math.max(0,Number(aplicacionGlobal.impuesto||0));
       let interesesRestantes=Math.max(0,Number(aplicacionGlobal.intereses||0));
@@ -348,7 +352,9 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       }
 
       let remanentePago=Math.max(0,Number(pago.valor||0)-(Number(aplicadoImpuesto||0)+Number(aplicadoIntereses||0)));
-      const vtoSancion=vencimientosExigibles.find(v=>v.id===idVtoSancion)||vencimientosExigibles[0]||null;
+      const vtoSancion=sancionHabilitadaPorFecha
+        ?(vencimientosExigibles.find(v=>v.id===idVtoSancion)||vencimientosExigibles[0]||null)
+        :null;
       if(vtoSancion&&Number(aplicacionGlobal.sancion||0)>0){
         aplicadoSancion=Math.min(Math.max(0,saldoSancion),Number(aplicacionGlobal.sancion||0));
         saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
