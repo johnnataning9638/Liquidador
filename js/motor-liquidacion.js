@@ -101,9 +101,11 @@ export class MotorLiquidacion{
         || v.clave === "ART. 3 DECRETO 0240 DE 2026";
       if(!esArt20o3){
         if(!fechaSancion){
-          errores.push(`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`);
+          const msg=`Para seleccionar ${v.nombre} debe registrar la fecha de sanción/presentación.`;
+          (permitirBeneficioFueraVigencia?advertencias:errores).push(msg);
         }else if(fechaSancion<v.desde||fechaSancion>v.hasta){
-          errores.push(`La fecha de sanción/presentación (${fechaSancion}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${v.desde} a ${v.hasta}.`);
+          const msg=`La fecha de sanción/presentación (${fechaSancion}) está fuera de la vigencia de ${v.nombre}. Vigencia permitida: ${v.desde} a ${v.hasta}.`;
+          (permitirBeneficioFueraVigencia?advertencias:errores).push(msg);
         }
       }
       // SIEMPRE se valida cada pago que tenga seleccionado ese beneficio.
