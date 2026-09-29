@@ -95,6 +95,7 @@ export class MotorLiquidacion{
     const tiposBeneficio=[...(datos.pagos||[])].map(p=>normalizarTipoBeneficio(p.tipo));
     const beneficiosSeleccionados=ventanasBeneficio.filter(v=>tiposBeneficio.some(t=>t.includes(v.clave)));
     const fechaSancion=fechaISO(datos.fechaSancion)||"";
+    const permitirBeneficioFueraVigencia=datos.permitirBeneficioFueraVigencia===true;
     for(const v of beneficiosSeleccionados){
       const esArt20o3 = v.clave === "ART. 20 DECRETO 1474 DE 2025"
         || v.clave === "ART. 3 DECRETO 0240 DE 2026";
@@ -111,9 +112,11 @@ export class MotorLiquidacion{
         if(!t.includes(v.clave))return;
         const fp=fechaISO(p.fecha)||"";
         if(!fp){
-          errores.push(`El pago ${i+1}, seleccionado con ${v.nombre}, debe tener fecha de pago.`);
+          const msg=`El pago ${i+1}, seleccionado con ${v.nombre}, debe tener fecha de pago.`;
+          (permitirBeneficioFueraVigencia?advertencias:errores).push(msg);
         }else if(fp<v.desde||fp>v.hasta){
-          errores.push(`El pago ${i+1} (${fp}) seleccionado con ${v.nombre} está fuera de la vigencia. Vigencia permitida: ${v.desde} a ${v.hasta}.`);
+          const msg=`El pago ${i+1} (${fp}) seleccionado con ${v.nombre} está fuera de la vigencia. Vigencia permitida: ${v.desde} a ${v.hasta}.`;
+          (permitirBeneficioFueraVigencia?advertencias:errores).push(msg);
         }
       });
     }
