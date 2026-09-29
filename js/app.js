@@ -259,8 +259,6 @@ async function guardarTasaManual(){
   if(!Number.isInteger(mes)||mes<1||mes>12)return alert("Seleccione un mes válido.");
   if(!Number.isFinite(tasa)||tasa<0||tasa>100)return alert("Ingrese una tasa entre 0 y 100%.");
   const desde=primerDiaMes(anio,mes),hasta=ultimoDiaMes(anio,mes);
-  const primerDiaMesActual=primerDiaMes(Number(hoyISO().slice(0,4)),Number(hoyISO().slice(5,7)));
-  if(desde<primerDiaMesActual)return alert("Por seguridad, este panel no permite modificar períodos anteriores al mes actual.");
   const {data:existente,error:errExist}=await supabaseClient.from("tasas_liquidador").select("id,tasa,fecha_inicio,fecha_fin,tipo_tasa").eq("fecha_inicio",desde).eq("fecha_fin",hasta).eq("tipo_tasa","TASA DIAN").maybeSingle();
   if(errExist)return alert(`No fue posible consultar la tasa existente: ${errExist.message}`);
   const payload={fecha_inicio:desde,fecha_fin:hasta,tasa:Number((tasa/100).toFixed(8)),tipo_tasa:"TASA DIAN",fuente_url:URL_TIM_DIAN,norma,estado:"ACTIVA"};
