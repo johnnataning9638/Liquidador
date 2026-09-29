@@ -1,0 +1,21 @@
+name: Temporary regression tests
+on:
+  push:
+    paths:
+      - "js/motor-liquidacion.js"
+      - "js/motor-liquidacion-oficial.js"
+      - "js/tdj.js"
+      - "tmp_second_round_tests.mjs"
+      - ".github/workflows/tmp-second-round.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check js/motor-liquidacion.js
+      - run: node --check js/motor-liquidacion-oficial.js
+      - run: node --check js/tdj.js
+      - run: node tmp_second_round_tests.mjs
