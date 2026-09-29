@@ -675,7 +675,7 @@ function validarConfiguracionAntesCalcularTDJ(){
 }
 
 function validarDatos(){
-  if(!$("nitGlobal").value.trim()){const e=new Error("Ingrese el NIT.");e.focusTarget="#nitGlobal";
+  if(!$("nitGlobal").value.trim()){const e=new Error("Ingrese el NIT.");e.focusTarget="#nitGlobal";throw e;}
   if(!$("razonGlobal").value.trim()){const e=new Error("Ingrese la razón social.");e.focusTarget="#razonGlobal";throw e;}
   if(!obligaciones.length){const e=new Error("Debe existir al menos una obligación.");e.focusTarget="#listaObligaciones";throw e;}
   const activas=[];
