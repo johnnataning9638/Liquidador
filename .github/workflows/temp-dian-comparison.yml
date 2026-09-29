@@ -1,0 +1,16 @@
+name: TEMP DIAN comparison
+on:
+  push:
+    paths:
+      - ".github/workflows/temp-dian-comparison.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node --check js/app.js
+      - run: node --check js/decreto-1419.js
+      - run: node tests/temp_dian_comparison.mjs
