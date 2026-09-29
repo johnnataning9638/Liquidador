@@ -1,6 +1,25 @@
 export function truncarValorEntero(v){const n=Number(v||0);return Number.isFinite(n)?Math.trunc(n):0;}
 export function dinero(v){return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Math.round(Number(v||0)));}
-export function numeroDesdeTexto(v){if(typeof v==="number")return v;let s=String(v??"").trim().replace(/\s/g,"").replace(/\$/g,"");if(!s)return 0;if(s.includes(".")&&s.includes(","))s=s.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,"");else if(s.includes(","))s=s.replace(",",".");const n=Number(s);return Number.isFinite(n)?n:0;}
+export function numeroDesdeTexto(v){
+  if(typeof v==="number")return Number.isFinite(v)?v:0;
+  let s=String(v??"").trim().replace(/\s/g,"").replace(/\$/g,"");
+  if(!s)return 0;
+  // Acepta valores COP tanto con separador de miles por punto como por coma:
+  // 1.688.000 / 1,688,000 / $1.688.000 / $1,688,000.
+  // Si hay varios separadores iguales, se interpretan como miles.
+  if(/^[-+]?\d{1,3}(?:\.\d{3})+$/.test(s))s=s.replace(/\./g,"");
+  else if(/^[-+]?\d{1,3}(?:,\d{3})+$/.test(s))s=s.replace(/,/g,"");
+  else if(s.includes(".")&&s.includes(","))s=s.replace(/\./g,"").replace(",",".");
+  else if(s.includes(",")){
+    const partes=s.split(",");
+    // Una sola coma seguida de tres dígitos es normalmente separador de miles
+    // en los valores copiados de Excel/portales colombianos.
+    if(partes.length===2&&/^\d{3}$/.test(partes[1]))s=partes[0]+partes[1];
+    else s=s.replace(/,/g,".");
+  }
+  const n=Number(s);
+  return Number.isFinite(n)?n:0;
+}
 export function fechaISO(v){if(v===null||v===undefined)return "";if(v instanceof Date&&!isNaN(v.getTime()))return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;let s=String(v).trim();if(!s)return "";s=s.replace(/\s+/g,"/");let m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m){const y=+m[1],mo=+m[2],d=+m[3];return fechaValida(y,mo,d)?`${m[1]}-${m[2]}-${m[3]}`:"";}m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/);if(m){const d=+m[1],mo=+m[2],yy=m[3],y=yy.length===2?2000+Number(yy):Number(yy);return fechaValida(y,mo,d)?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:"";}m=s.match(/^(\d{2})(\d{2})(\d{2}|\d{4})$/);if(m){const d=+m[1],mo=+m[2],yy=m[3],y=yy.length===2?2000+Number(yy):Number(yy);return fechaValida(y,mo,d)?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:"";}m=s.match(/^(\d{4})(\d{2})(\d{2})$/);if(m){const y=+m[1],mo=+m[2],d=+m[3];return fechaValida(y,mo,d)?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:"";}return "";}
 function fechaValida(y,mo,d){if(y<1900||y>2100||mo<1||mo>12||d<1||d>31)return false;const x=new Date(y,mo-1,d);return x.getFullYear()===y&&x.getMonth()===mo-1&&x.getDate()===d;}
 export function fechaVisible(v){const iso=fechaISO(v);if(!iso)return "";const [y,m,d]=iso.split("-");return `${d}/${m}/${y}`;}
