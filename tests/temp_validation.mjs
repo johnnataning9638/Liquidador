@@ -100,7 +100,7 @@ for(let i=0;i<obligs.length;i++){
   resultados.push({obligacion:i+1,tipo,tituloAntes:disponible,aplicado,excedente,saldoTotal:r.total,detalle:d?.aplicado});
   disponible=excedente;
 }
-ok(resultados.every(x=>Number(x.saldo?.total||0)>=0),'Saldos finales válidos');
+ok(resultados.every(x=>Number(x.saldoTotal||0)>=0),'Saldos finales válidos');
 ok(resultados[0].tipo==='ART. 3 DECRETO 0240 DE 2026','O1 usa tasa/beneficio seleccionado');
 ok(resultados[1].tipo==='ART. 9 DECRETO 1419 DE 2026','O2 usa tasa/beneficio seleccionado');
 ok(resultados[2].tipo==='TASA DIAN','O3 usa tasa propia');
