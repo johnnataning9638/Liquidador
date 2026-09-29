@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Títulos / TDJ — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.39">
+<link rel="stylesheet" href="estilos.css?v=16.33.40">
 <style>
 .compact-grid label[hidden]{display:none!important}
 /* AJUSTE TDJ v16.32.82: únicamente organización visual de pestañas y botones. Lógica sin cambios. */
@@ -20,21 +20,25 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 .tdj-global-import .tdj-import-actions .indicador-ia{margin-top:2px;}
 @media(max-width:900px){.tdj-global-import .tdj-import-grid{grid-template-columns:1fr;}.tdj-global-import .tdj-import-grid .import-destino,.tdj-global-import .tdj-import-grid textarea,.tdj-global-import .tdj-import-grid .tdj-import-actions{grid-column:1;grid-row:auto;}.tdj-global-import .tdj-import-grid .tdj-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;}.tdj-global-import .tdj-import-actions button{width:auto;min-width:150px;}}
 .tdj-titulos-pane .tdj-sheet-actions{margin-top:14px}@media(max-width:900px){.tdj-title-import-grid{grid-template-columns:1fr}.tdj-title-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center}.tdj-title-import-actions button{width:auto;min-width:150px}.tdj-title-import-actions .indicador-ia{align-self:center}.tdj-title-import-actions #resultadoImportacionTitulos{width:auto}}
-/* AJUSTE VISUAL TDJ v16.32.84 — DISTRIBUCIÓN EQUILIBRADA DE COLUMNAS DE TÍTULOS, SOLO PRESENTACIÓN */
+/* AJUSTE VISUAL TDJ v16.33.40 — DISTRIBUCIÓN EQUILIBRADA DE COLUMNAS DE TÍTULOS, SOLO PRESENTACIÓN */
 #tablaTitulos{table-layout:fixed;width:100%;min-width:0}
 #tablaTitulos th,#tablaTitulos td{overflow:hidden}
 #tablaTitulos th:nth-child(1),#tablaTitulos td:nth-child(1){width:4%}
 #tablaTitulos th:nth-child(2),#tablaTitulos td:nth-child(2){width:13%}
 #tablaTitulos th:nth-child(3),#tablaTitulos td:nth-child(3){width:17%}
 #tablaTitulos th:nth-child(4),#tablaTitulos td:nth-child(4){width:15%}
-#tablaTitulos th:nth-child(5),#tablaTitulos td:nth-child(5){width:15%}
-#tablaTitulos th:nth-child(6),#tablaTitulos td:nth-child(6){width:8%;white-space:nowrap}
-#tablaTitulos th:nth-child(7),#tablaTitulos td:nth-child(7){width:17%}
-#tablaTitulos th:nth-child(8),#tablaTitulos td:nth-child(8){width:11%;white-space:nowrap}
+#tablaTitulos th:nth-child(5),#tablaTitulos td:nth-child(5){width:40%}
+#tablaTitulos th:nth-child(6),#tablaTitulos td:nth-child(6){width:11%;white-space:nowrap}
 #tablaTitulos input,#tablaTitulos select{width:100%;min-width:0;box-sizing:border-box}
 #tablaTitulos td:nth-child(7) input{min-width:0}
 /* AJUSTE VISUAL TDJ COMPACTO — SOLO PRESENTACIÓN, SIN CAMBIAR LÓGICA */
 .tdj-wrap{max-width:1500px;margin:0 auto;padding:10px 14px 24px}
+.obligation-fields{grid-template-columns:2.6fr .65fr .75fr .65fr 1.05fr 1.25fr 1.2fr 1.15fr 1.55fr .8fr}
+.obligation-fields input[readonly]{background:#f3f6f8;color:#36536a;font-weight:700}
+#tablaTitulos th:nth-child(5),#tablaTitulos td:nth-child(5){width:40%}
+#tablaTitulos th:nth-child(6),#tablaTitulos td:nth-child(6){width:11%;white-space:nowrap}
+@media(max-width:1050px){.obligation-fields{grid-template-columns:repeat(2,minmax(160px,1fr))}}
+@media(max-width:650px){.obligation-fields{grid-template-columns:1fr}}
 .tabs-nav{margin-bottom:8px}
 .tabs-nav .tab-btn{padding:8px 10px;font-size:12px}
 .card{border-radius:8px;margin-bottom:8px;box-shadow:0 2px 8px rgba(23,63,95,.05)}
@@ -154,7 +158,7 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
   <section class="tab-pane tdj-titulos-pane" data-pane="titulos">
     <div class="tab-pane-inner">
       <section class="card"><div class="card-head"><div><span class="kicker">3 · TÍTULOS / TDJ</span><h3>Recursos generales para aplicación</h3></div><button id="btnAgregarTitulo" class="primario">+ AGREGAR TÍTULO</button></div>
-        <div class="tabla-scroll"><table id="tablaTitulos" class="result-table"><thead><tr><th>Nº</th><th>TDJ</th><th>FECHA TDJ</th><th>VALOR TDJ</th><th>TIPO</th><th>TASA</th><th>OBSERVACIÓN</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tabla-scroll"><table id="tablaTitulos" class="result-table"><thead><tr><th>Nº</th><th>TDJ</th><th>FECHA TDJ</th><th>VALOR TDJ</th><th>OBSERVACIÓN</th><th></th></tr></thead><tbody></tbody></table></div>
         <div class="tdj-title-import"><h4 class="import-title">Importación de títulos</h4><div class="tdj-title-import-grid"><textarea id="importarTitulosTexto" placeholder="PEGUE DATOS DE TDJ / TÍTULOS. EL IMPORTADOR RECONOCE TDJ, FECHA Y VALOR."></textarea><div class="tdj-title-import-actions"><button id="btnProcesarImportTitulos" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>IMPORTAR</span></button><button id="btnProcesarImportTitulosIA" class="primario"><span>IMPORTAR IA</span></button><span id="estadoIAImportTitulos" class="indicador-parametros indicador-ia error" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span><span id="resultadoImportacionTitulos"></span></div></div></div>
       </section>
 
@@ -191,6 +195,6 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 
   <div class="nav-footer"><button class="secundario" type="button" onclick="window.location.href='index.html'">← MÓDULO DE INICIO</button><button class="secundario" type="button" onclick="window.location.href='liquidacion.html'">IR A LIQUIDACIÓN DE OBLIGACIONES</button></div>
 </main>
-<footer>Liquidador DIAN — módulo de Liquidación de Títulos / TDJ · v16.33.39</footer>
-<script type="module" src="js/tdj.js?v=16.33.39"></script>
+<footer>Liquidador DIAN — módulo de Liquidación de Títulos / TDJ · v16.33.40</footer>
+<script type="module" src="js/tdj.js?v=16.33.40"></script>
 </body></html>
