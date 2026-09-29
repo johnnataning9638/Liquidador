@@ -120,9 +120,18 @@ function tasaVisibleObligacionTDJ(tipo,fechaReferencia=""){
   };
 }
 function actualizarTasaObligacionUI(sec,o,fechaReferencia=""){
-  const tipo=upper(o?.tipoTasa||"TASA DIAN");
+  const tipo=upper(o?.tipoTasa||"");
   const campo=sec?.querySelector('[data-tasa-obligacion]');
   if(!campo)return;
+  // Si el funcionario aún no selecciona el tipo/beneficio, la tasa debe
+  // permanecer completamente vacía aunque exista una fecha de TDJ.
+  if(!tipo){
+    campo.value="";
+    campo.placeholder="SELECCIONE TASA";
+    campo.title="SELECCIONE TASA";
+    campo.setAttribute("aria-label","SELECCIONE TASA");
+    return;
+  }
   const info=tasaVisibleObligacionTDJ(tipo,fechaReferencia);
   campo.value=info.texto;
   campo.title=info.nota;
