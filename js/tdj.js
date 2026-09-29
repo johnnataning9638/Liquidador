@@ -1,12 +1,12 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.42";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.42";
-import {importarDatosInteligente} from "./importador.js?v=16.33.42";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.42";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.42";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.42";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.42";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.42";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.42";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.45";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.45";
+import {importarDatosInteligente} from "./importador.js?v=16.33.45";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.45";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -144,7 +144,7 @@ function montarFechaDual(root,onChange=()=>{}){
 function nuevoVto(numero=1){return {id:uid("VTO"),numero,periodo:numero,fecha:"",impuesto:0};}
 function nuevaObligacion(numero){
   return {
-    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"TASA DIAN",
+    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"TASA DIAN",tipoTasaConfirmada:false,
     vencimientos:[nuevoVto(1)],pagos:[],importacion:""
   };
 }
@@ -339,7 +339,10 @@ function renderObligaciones(){
     sec.querySelector('[data-k="tipoTasa"]').value=o.tipoTasa||"TASA DIAN";
     sec.querySelectorAll('[data-k]').forEach(el=>el.addEventListener("change",()=>{
       syncObligacion(sec,o);actualizarValorBeneficioUI(sec,o);invalidarResultadoTDJ();
-      if(el.dataset.k==="tipoTasa")actualizarTasaObligacionUI(sec,o);
+      if(el.dataset.k==="tipoTasa"){
+        o.tipoTasaConfirmada=true;
+        actualizarTasaObligacionUI(sec,o);
+      }
     }));
     const campoValorSancion=sec.querySelector('[data-k="valorSancion"]');
     campoValorSancion.addEventListener("input",e=>{o.valorSancion=numeroDesdeTexto(e.target.value);actualizarValorBeneficioUI(sec,o);});
@@ -402,11 +405,14 @@ function configurarTabPago(tr,tbody){
     if(siguiente){siguiente.focus();if(siguiente.select)siguiente.select();}
   }));
 }
-function enfocarCampoErrorTDJ(selector){
-  if(!selector)return;
-  const el=typeof selector==='string'?document.querySelector(selector):selector;
-  if(!el)return;
-  setTimeout(()=>{try{el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});}catch(_){} try{el.focus({preventScroll:true});}catch(_){try{el.focus();}catch(__){}} if(typeof el.select==='function'&&el.tagName!=='SELECT')el.select();},50);
+function enfocarCampoErrorTDJ(selector,tabTarget=""){
+  const ir=()=>{
+    if(tabTarget)activarTab(tabTarget);
+    const el=typeof selector==='string'?document.querySelector(selector):selector;
+    if(!el)return;
+    setTimeout(()=>{try{el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});}catch(_){} try{el.focus({preventScroll:true});}catch(_){try{el.focus();}catch(__){}} if(typeof el.select==='function'&&el.tagName!=='SELECT')el.select();},120);
+  };
+  ir();
 }
 function enfocarCampoTDJ(el){
   if(!el)return;
@@ -643,16 +649,41 @@ function sincronizarPagosVisiblesTDJ(){
   });
 }
 
+function validarConfiguracionAntesCalcularTDJ(){
+  const hayTitulos=hayTitulosTDJ();
+  if(!hayTitulos)return;
+  const titulosValidos=[...titulos].filter(t=>String(t?.tdj||"").trim()||fechaISO(t?.fecha)||Number(t?.valor||0)>0);
+  for(const t of titulosValidos){
+    if(!String(t?.tdj||"").trim()){
+      const e=new Error(`TÍTULO / TDJ ${t.numero||""}: falta el número o identificador del título.`);
+      e.tabTarget="titulos";e.focusTarget=`#tablaTitulos tbody tr[data-titulo-id="${CSS.escape(t.id)}"] [data-t="tdj"]`;throw e;
+    }
+    if(!fechaISO(t?.fecha)){
+      const e=new Error(`TÍTULO / TDJ ${t.numero||""}: falta la fecha del título.`);
+      e.tabTarget="titulos";e.focusTarget=`#tablaTitulos tbody tr[data-titulo-id="${CSS.escape(t.id)}"] .fecha-campo`;throw e;
+    }
+    if(!(Number(t?.valor)>0)){
+      const e=new Error(`TÍTULO / TDJ ${t.numero||""}: falta el valor del título.`);
+      e.tabTarget="titulos";e.focusTarget=`#tablaTitulos tbody tr[data-titulo-id="${CSS.escape(t.id)}"] [data-t="valor"]`;throw e;
+    }
+  }
+  const sinTasa=obligaciones.find(o=>!o.tipoTasaConfirmada);
+  if(sinTasa){
+    const e=new Error(`OBLIGACIÓN ${sinTasa.numero}: debe seleccionar el tipo de tasa que se aplicará a los títulos / TDJ antes de realizar la liquidación.`);
+    e.tabTarget="datos";e.focusTarget=`#listaObligaciones .obligacion-card[data-id="${CSS.escape(sinTasa.id)}"] [data-k="tipoTasa"]`;throw e;
+  }
+}
+
 function validarDatos(){
-  if(!$("nitGlobal").value.trim()){const e=new Error("Ingrese el NIT.");e.focusTarget="#nitGlobal";throw e;}
+  if(!$("nitGlobal").value.trim()){const e=new Error("Ingrese el NIT.");e.focusTarget="#nitGlobal";
   if(!$("razonGlobal").value.trim()){const e=new Error("Ingrese la razón social.");e.focusTarget="#razonGlobal";throw e;}
   if(!obligaciones.length){const e=new Error("Debe existir al menos una obligación.");e.focusTarget="#listaObligaciones";throw e;}
   const activas=[];
   for(const o of obligaciones){
     o.vencimientos=o.vencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0);
-    if(!o.concepto){const e=new Error(`OBLIGACIÓN ${o.numero}: seleccione el concepto/impuesto.`);e.focusTarget=`#listaObligaciones [data-k="concepto"]`;throw e;}
+    // CONCEPTO / IMPUESTO, AÑO GRAVABLE Y PERÍODO SON DATOS NO BLOQUEANTES.
+    // El motor continúa con el proceso y conserva la información disponible.
     if(o.periodo!=="" && (!/^\d+$/.test(String(o.periodo)) || Number(o.periodo)<1 || Number(o.periodo)>12))throw new Error(`OBLIGACIÓN ${o.numero}: el período debe estar entre 1 y 12.`);
-    if(!o.anio){const e=new Error(`OBLIGACIÓN ${o.numero}: indique el año gravable.`);e.focusTarget=`#listaObligaciones [data-k="anio"]`;throw e;}
     if(!o.vencimientos.length){const e=new Error(`OBLIGACIÓN ${o.numero}: registre al menos una cuota con fecha e importe.`);e.focusTarget=`#listaObligaciones .cuotas-mini .fecha-campo, #listaObligaciones .cuotas-mini [data-v="impuesto"]`;throw e;}
     if(!o.tieneSancion)o.tieneSancion="NO";
     if(o.tieneSancion==="SI"&&!Number(o.valorSancion||0)){const e=new Error(`OBLIGACIÓN ${o.numero}: indique el valor de la sanción.`);e.focusTarget=`#listaObligaciones [data-k="valorSancion"]`;throw e;}
@@ -779,6 +810,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     sincronizarTitulosVisiblesTDJ();
     // La elegibilidad de la tasa seleccionada en cada obligación se informa,
     // pero NO bloquea la liquidación ni cambia automáticamente la selección del funcionario.
+    validarConfiguracionAntesCalcularTDJ();
     validarDatos();
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
 
@@ -1068,7 +1100,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     setTimeout(()=>document.getElementById("resultadoTDJ")?.scrollIntoView({behavior:"smooth",block:"start"}),50);
   }catch(e){
     console.error(e);
-    alert(e.message||"No fue posible realizar la aplicación de títulos.");enfocarCampoErrorTDJ(e.focusTarget);
+    alert(e.message||"No fue posible realizar la aplicación de títulos.");enfocarCampoErrorTDJ(e.focusTarget,e.tabTarget);
   }
 }
 
@@ -1664,7 +1696,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.42-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.45-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -1807,7 +1839,7 @@ async function importarExcelTDJ(){
           o.beneficioSancion=upper(v[5]||"");
           o.fechaSancion=fechaCampoTDJImport(v[6]);
           o.beneficioTributario=upper(v[7]||"NINGUNO");
-          o.tipoTasa=upper(v[8]||"TASA DIAN");
+          o.tipoTasa=upper(v[8]||"TASA DIAN");o.tipoTasaConfirmada=Boolean(String(v[8]||"").trim());
         }
 
         // Vencimientos: se leen únicamente hasta la siguiente sección.
