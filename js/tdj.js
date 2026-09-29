@@ -1,12 +1,12 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.39";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
-import {importarDatosInteligente} from "./importador.js?v=16.33.39";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.39";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.39";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.39";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.39";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.40";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.40";
+import {importarDatosInteligente} from "./importador.js?v=16.33.40";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.40";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.40";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.40";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.40";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.40";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.40";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
