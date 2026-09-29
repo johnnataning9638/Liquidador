@@ -1103,7 +1103,31 @@ export class MotorLiquidacion{
           }
         }
 
-        // 2. Si no hay interés (o quedó remanente del título), atender sanción.
+        // 2. Si el interés disponible no alcanza a consumir todo el TDJ,
+        // el remanente pasa al IMPUESTO antes que a la sanción. Esta prioridad
+        // es exclusiva de TDJ <= $1.000. Un pago normal nunca entra aquí.
+        if(restante>0){
+          for(const v of saldosVto){
+            if(restante<=0)break;
+            const disponibleImpuesto=Math.max(0,Number(v.saldo||0));
+            if(disponibleImpuesto<=0)continue;
+            const aplicar=Math.min(restante,disponibleImpuesto);
+            v.saldo=Math.max(0,disponibleImpuesto-aplicar);
+            aplicadoImpuesto+=aplicar;
+            restante-=aplicar;
+            const existente=aplicacionesVto.find(x=>x.id===v.id);
+            if(existente){
+              existente.aplicado=Number(existente.aplicado||0)+aplicar;
+              existente.saldo=v.saldo;
+            }else{
+              aplicacionesVto.push({id:v.id,aplicado:aplicar,aplicadoIntereses:0,aplicadoSancion:0,saldo:v.saldo,notaAplicacion:"TDJ ≤ $1.000 — IMPUTACIÓN A IMPUESTO"});
+            }
+          }
+        }
+
+        // 3. Solo si no existe interés ni impuesto pendiente, y aún queda
+        // remanente, se atiende la sanción. Así se conserva la regla solicitada:
+        // TDJ <= $1.000 prioriza intereses; agotado el interés, prioriza impuesto.
         if(restante>0 && sancionDisponible>0){
           aplicadoSancion=Math.min(restante,sancionDisponible);
           saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
@@ -1115,11 +1139,6 @@ export class MotorLiquidacion{
             else aplicacionesVto.push({id:vtoBase.id,aplicado:0,aplicadoIntereses:0,aplicadoSancion:aplicadoSancion,saldo:Number(vtoBase.saldo||0),notaAplicacion:"TDJ ≤ $1.000 — IMPUTACIÓN A SANCIÓN"});
           }
         }
-
-        // 3. Si no hay interés ni sanción, o quedó algún remanente, imputarlo
-        // al impuesto pendiente. Esto es lo que permite que un TDJ de $2 siga
-        // reduciendo el impuesto pendiente real en el último pago.
-        if(restante>0){
           for(const v of saldosVto){
             if(restante<=0)break;
             const disponibleImpuesto=Math.max(0,Number(v.saldo||0));
