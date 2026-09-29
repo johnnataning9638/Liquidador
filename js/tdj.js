@@ -1,5 +1,5 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.45";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.45";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
 import {importarDatosInteligente} from "./importador.js?v=16.33.45";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.45";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
