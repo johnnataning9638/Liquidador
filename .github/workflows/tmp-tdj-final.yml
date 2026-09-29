@@ -1,0 +1,47 @@
+name: TDJ final verification
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntax and UI
+        run: |
+          node --check js/tdj.js
+          node --check js/motor-liquidacion.js
+          node --check js/motor-liquidacion-oficial.js
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const tdj=fs.readFileSync('js/tdj.js','utf8');
+          const html=fs.readFileSync('titulos.html','utf8');
+          const block=tdj.slice(tdj.indexOf('function renderTitulos()'),tdj.indexOf('function renumerarTitulos()'));
+          if(!tdj.includes('data-k="tipoTasa"')||!tdj.includes('data-tasa-obligacion')) throw new Error('Faltan campos de tasa en obligación');
+          if(!tdj.includes('tipo:tipoTasaObligacion')) throw new Error('TDJ no hereda tasa de obligación');
+          if(!tdj.includes('data-p="tipo"')) throw new Error('Pagos perdieron TIPO');
+          if(block.includes('data-t="tipo"')||block.includes('tasa-titulo')) throw new Error('TÍTULOS conservan TIPO/TASA');
+          if(html.includes('<th>TIPO</th>')||html.includes('<th>TASA</th>')) throw new Error('HTML conserva TIPO/TASA');
+          console.log('UI_FINAL_OK');
+          NODE
+      - name: Calculation
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { MotorLiquidacion } from './js/motor-liquidacion.js?v=16.33.40';
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const tasas=read('datos/tasas-moratorias.json');
+          const m=new MotorLiquidacion({uvt:read('datos/uvt.json'),intereses:tasas,tasasMoratorias:tasas,ipc:read('datos/ipc.json'),beneficios:read('datos/beneficios.json'),sanciones:read('datos/sanciones.json'),reglasObligaciones:read('datos/reglas-obligaciones.json')});
+          const base={nit:'900123456',razonSocial:'PRUEBA',anio:2026,concepto:'VENTAS',periodo:1,tipoLiquidacion:'PRIVADA',fechaCorte:'2026-09-01',vencimientos:[{id:'V1',numero:1,fecha:'2026-01-01',impuesto:10000000}],tieneSancion:'NO',valorSancion:0,fechaSancion:'',pagos:[]};
+          const r=m.calcular({...base,pagos:[{id:'T1',numero:1,fecha:'2026-09-01',valor:1000,tipo:'TASA DIAN',tdj:'TDJ1',esTDJ:true}]});
+          const d=r.detalle?.[0];
+          if(!d||Number(d.aplicado?.total||0)>1000||Number(d.aplicado?.intereses||0)!==1000) throw new Error('Regla TDJ <= 1000 falló');
+          const rn=m.calcular({...base,pagos:[{id:'P1',numero:1,fecha:'2026-09-01',valor:1000,tipo:'TASA DIAN'}]});
+          if(String(rn.detalle?.[0]?.tipoProporcion||'').includes('TDJ <= $1.000')) throw new Error('Pago normal tomó ruta TDJ');
+          console.log('CALC_FINAL_OK');
+          NODE
