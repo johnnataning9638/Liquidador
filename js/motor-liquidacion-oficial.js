@@ -246,15 +246,20 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       });
 
       const deudaAntes={impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:intCalc.liquidado,sancion:Math.max(0,saldoSancion)};
-      // TDJ de cuantía mínima: todo TDJ <= $1.000 se imputa exclusivamente
-      // a intereses, conservando exactamente el valor digitado. Se omite la
-      // proporcionalidad para impedir que $157 termine convertido en $1.000.
+      // TDJ de cuantía mínima: solo los títulos <= $1.000 usan esta ruta.
+      // Prioridad exclusiva del TDJ: INTERESES -> IMPUESTO -> SANCIÓN.
+      // Los pagos normales no entran en este bloque y mantienen la
+      // proporcionalidad ordinaria del motor.
       const valorTDJMinimo=Number(pago.valor||0);
       const esTDJMinimo=String(pago.tdj||"").trim()!=="" && Number.isInteger(valorTDJMinimo) && valorTDJMinimo>0 && valorTDJMinimo<=1000;
       if(esTDJMinimo){
         const valorTDJ=Number(pago.valor||0);
         const interesesDisponibles=Math.max(0,Number(intCalc.liquidado||0));
-        const aplicadoIntereses=Math.min(valorTDJ,interesesDisponibles);
+        let restante=valorTDJ;
+        let aplicadoIntereses=Math.min(restante,interesesDisponibles);
+        restante-=aplicadoIntereses;
+        let aplicadoImpuesto=0;
+        let aplicadoSancion=0;
         const aplicacionesVto=[];
         if(aplicadoIntereses>0){
           const vtoInteres=intCalc.porVto.find(x=>Number(x.interes||0)>0);
@@ -263,10 +268,39 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
             aplicacionesVto.push({id:vtoInteres.id,aplicado:0,aplicadoIntereses:aplicadoIntereses,aplicadoSancion:0,saldo:v?.saldo??0});
           }
         }
+        // Si el interés disponible no alcanza, el remanente va a impuesto.
+        for(const v of vencimientos){
+          if(restante<=0)break;
+          const disponibleImpuesto=Math.max(0,Number(v.saldo||0));
+          if(disponibleImpuesto<=0)continue;
+          const aplicar=Math.min(restante,disponibleImpuesto);
+          v.saldo=Math.max(0,disponibleImpuesto-aplicar);
+          aplicadoImpuesto+=aplicar;
+          restante-=aplicar;
+          const existente=aplicacionesVto.find(x=>x.id===v.id);
+          if(existente){
+            existente.aplicado=Number(existente.aplicado||0)+aplicar;
+            existente.saldo=v.saldo;
+          }else{
+            aplicacionesVto.push({id:v.id,aplicado:aplicar,aplicadoIntereses:0,aplicadoSancion:0,saldo:v.saldo});
+          }
+        }
+        // Solo si no existe interés ni impuesto pendiente, se atiende sanción.
+        if(restante>0 && saldoSancion>0){
+          aplicadoSancion=Math.min(restante,saldoSancion);
+          saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
+          restante-=aplicadoSancion;
+          const vtoBase=vencimientos.find(v=>Number(v.saldo||0)>0)||vencimientos[0];
+          if(vtoBase){
+            const existente=aplicacionesVto.find(x=>x.id===vtoBase.id);
+            if(existente)existente.aplicadoSancion=Number(existente.aplicadoSancion||0)+aplicadoSancion;
+            else aplicacionesVto.push({id:vtoBase.id,aplicado:0,aplicadoIntereses:0,aplicadoSancion:aplicadoSancion,saldo:vtoBase.saldo});
+          }
+        }
         saldoIntereses=Math.max(0,interesesDisponibles-aplicadoIntereses);
-        const excedente=Math.max(0,valorTDJ-aplicadoIntereses);
+        const excedente=Math.max(0,restante);
         excedenteTotal+=excedente;
-        const aplicado={impuesto:0,intereses:aplicadoIntereses,sancion:0,total:aplicadoIntereses,excedente,porcentaje:0,tipoProporcion:"TDJ <= $1.000 — SOLO INTERESES"};
+        const aplicado={impuesto:Math.round(aplicadoImpuesto),intereses:Math.round(aplicadoIntereses),sancion:Math.round(aplicadoSancion),total:Math.round(aplicadoImpuesto+aplicadoIntereses+aplicadoSancion),excedente,porcentaje:0,tipoProporcion:"TDJ <= $1.000 — INTERESES -> IMPUESTO -> SANCIÓN"};
         actualizacionSancionPago.saldoDespues=roundMil(saldoSancion);
         detalle.push({
           pago,
