@@ -1476,10 +1476,10 @@ function rechazarTipo1419Normal(tipo,pago,select){
 
 function obtenerVentanasBeneficios(){
   return [
-    {clave:"ART. 20 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-03-31",nombre:"ART. 20 DEL DECRETO 1474 DE 2025"},
-    {clave:"ART. 21 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-04-30",nombre:"ART. 21 DEL DECRETO 1474 DE 2025"},
-    {clave:"ART. 3 DECRETO 0240 DE 2026",desde:"2026-03-12",hasta:"2026-04-30",nombre:"ART. 3 DEL DECRETO 0240 DE 2026"},
-    {clave:"ART. 4 DECRETO 0240 DE 2026",desde:"2026-03-12",hasta:"2026-04-30",nombre:"ART. 4 DEL DECRETO 0240 DE 2026"}
+    {clave:"ART. 20 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-01-29",nombre:"ART. 20 DEL DECRETO 1474 DE 2025"},
+    {clave:"ART. 21 DECRETO 1474 DE 2025",desde:"2025-12-30",hasta:"2026-01-29",nombre:"ART. 21 DEL DECRETO 1474 DE 2025"},
+    {clave:"ART. 3 DECRETO 0240 DE 2026",desde:"2026-03-13",hasta:"2026-04-30",nombre:"ART. 3 DEL DECRETO 0240 DE 2026"},
+    {clave:"ART. 4 DECRETO 0240 DE 2026",desde:"2026-03-13",hasta:"2026-04-30",nombre:"ART. 4 DEL DECRETO 0240 DE 2026"}
   ];
 }
 
