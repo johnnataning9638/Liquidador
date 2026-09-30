@@ -2161,8 +2161,11 @@ function configurarBase(){
       // que el importador determinístico ya reconoció del texto pegado.
       const cuotasBase=Array.isArray(base.cuotas)?base.cuotas:[];
       const cuotasIA=Array.isArray(obj.cuotas)?obj.cuotas:[];
-      if(cuotasBase.length>cuotasIA.length)obj.cuotas=cuotasBase;
-      else obj.cuotas=cuotasIA.length?cuotasIA:cuotasBase;
+      // En DATOS Y VENCIMIENTOS, las fechas e importes pegados por el usuario
+      // son la fuente de verdad. La IA NO puede reemplazar, renumerar ni
+      // eliminar cuotas determinísticas; solo se usa si el parser base no
+      // encontró ninguna cuota.
+      obj.cuotas=cuotasBase.length?cuotasBase:cuotasIA;
       aplicarImportacionObligacion(obj);
       $("pegarDatosObligacion").value="";
       const confianza=Math.round(Number(ai.confidence||0)*100);
