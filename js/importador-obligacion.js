@@ -158,7 +158,25 @@ function extraerNumeroCuotaEnContexto(raw,index){
   return bare?Number(bare[1]):null;
 }
 
+function extraerCuotasTabularesDirectas(lineas){
+  const out=[];
+  for(const linea of lineas){
+    const limpia=String(linea??"").trim();
+    if(!limpia.includes("|"))continue;
+    const c=limpia.replace(/^\s*\|/,"").replace(/\|\s*$/,"").split("|").map(limpiarCelda).filter(Boolean);
+    if(c.length!==2)continue;
+    const fecha=fechaISO(c[0]);
+    if(!fecha)continue;
+    const valor=numeroDesdeTexto(c[1].replace(/&#(?:x[0-9a-f]+|\d+);/gi," ").replace(/&nbsp;/gi," "));
+    if(!(valor>0))continue;
+    out.push({numero:out.length+1,periodo:String(out.length+1),fecha,impuesto:Math.trunc(valor)});
+  }
+  return out;
+}
+
 function construirCuotas(raw,lineas,nit){
+  const directas=extraerCuotasTabularesDirectas(lineas);
+  if(directas.length>=1)return directas;
   const fechas=extraerFechas(raw);
   const numeros=extraerNumeros(raw,nit,fechas);
   if(!fechas.length)return [];
