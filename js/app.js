@@ -2156,7 +2156,13 @@ function configurarBase(){
       actualizarEstadoIndicador("cargando","IA DIAN: interpretando NIT, razón social y cuotas...");
       const base=importarDatosObligacionInteligente(text);
       const ai=await interpretarObligacionConIA(text,base);
-      const obj=ai.resultado;
+      const obj=ai.resultado||{};
+      // La IA puede complementar/validar, pero nunca puede eliminar cuotas
+      // que el importador determinístico ya reconoció del texto pegado.
+      const cuotasBase=Array.isArray(base.cuotas)?base.cuotas:[];
+      const cuotasIA=Array.isArray(obj.cuotas)?obj.cuotas:[];
+      if(cuotasBase.length>cuotasIA.length)obj.cuotas=cuotasBase;
+      else obj.cuotas=cuotasIA.length?cuotasIA:cuotasBase;
       aplicarImportacionObligacion(obj);
       $("pegarDatosObligacion").value="";
       const confianza=Math.round(Number(ai.confidence||0)*100);
