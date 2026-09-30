@@ -230,7 +230,11 @@ function construirCuotas(raw,lineas,nit){
     
     salida.push({...x,numero:n});usadosN.add(n);n++;
   }
-  return salida.sort((a,b)=>a.numero-b.numero).map(x=>({numero:x.numero,periodo:String(x.numero),fecha:x.fecha,impuesto:x.impuesto}));
+  // EL NÚMERO DE CUOTA/PERÍODO NUNCA SE IMPORTA.
+  // Se genera exclusivamente por posición: 1, 2, 3, 4...
+  return salida.sort((a,b)=>a.indice-b.indice).map((x,i)=>({
+    numero:i+1,periodo:String(i+1),fecha:x.fecha,impuesto:x.impuesto
+  }));
 }
 
 export function importarDatosObligacionInteligente(texto){
