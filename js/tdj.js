@@ -527,7 +527,18 @@ async function importarObligacionGlobal(usarIA){
   try{
     const o=obtenerObligacionDestino("destinoImportacionObligacion","Seleccione la obligación a la que desea aplicar la importación.");
     let obj=importarDatosObligacionInteligente(text);
-    if(usarIA){setStatus("IA DIAN — VALIDANDO DATOS Y VENCIMIENTOS...","loading");const ai=await interpretarObligacionConIA(text,obj);obj=ai.resultado||obj;setStatus(`IA DIAN — VALIDACIÓN ${Math.round(Number(ai.confidence||0)*100)}%`,"ok");}
+    if(usarIA){
+      setStatus("IA DIAN — VALIDANDO DATOS Y VENCIMIENTOS...","loading");
+      const base=obj;
+      const ai=await interpretarObligacionConIA(text,base);
+      const resultado=ai.resultado||{};
+      // La IA complementa/valida los datos, pero no puede eliminar cuotas
+      // reconocidas por el importador determinístico.
+      const cuotasBase=Array.isArray(base.cuotas)?base.cuotas:[];
+      const cuotasIA=Array.isArray(resultado.cuotas)?resultado.cuotas:[];
+      obj={...resultado,cuotas:cuotasBase.length>cuotasIA.length?cuotasBase:(cuotasIA.length?cuotasIA:cuotasBase)};
+      setStatus(`IA DIAN — VALIDACIÓN ${Math.round(Number(ai.confidence||0)*100)}%`,"ok");
+    }
     if(obj.concepto)o.concepto=CONCEPTOS.find(x=>upper(x)===upper(obj.concepto))||"OTROS";if(obj.anio)o.anio=Number(obj.anio);if(obj.periodo&&Number(obj.periodo)>=1&&Number(obj.periodo)<=12)o.periodo=String(Number(obj.periodo));
     if(obj.nit&&!$("nitGlobal").value)$("nitGlobal").value=obj.nit;if(obj.razonSocial&&!$("razonGlobal").value)$("razonGlobal").value=upper(obj.razonSocial);
     if(Array.isArray(obj.cuotas)&&obj.cuotas.length)o.vencimientos=obj.cuotas.map((x,i)=>({id:uid("VTO"),numero:Number(x.numero||i+1),periodo:x.periodo??x.numero??i+1,fecha:fechaISO(x.fecha)||"",impuesto:Number(x.impuesto||0)}));
