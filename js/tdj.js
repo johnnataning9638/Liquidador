@@ -536,7 +536,11 @@ async function importarObligacionGlobal(usarIA){
       // reconocidas por el importador determinístico.
       const cuotasBase=Array.isArray(base.cuotas)?base.cuotas:[];
       const cuotasIA=Array.isArray(resultado.cuotas)?resultado.cuotas:[];
-      obj={...resultado,cuotas:cuotasBase.length>cuotasIA.length?cuotasBase:(cuotasIA.length?cuotasIA:cuotasBase)};
+      // En DATOS Y VENCIMIENTOS, las fechas e importes pegados por el usuario
+      // son la fuente de verdad. La IA NO puede reemplazar, renumerar ni
+      // eliminar cuotas determinísticas; solo se usa si el parser base no
+      // encontró ninguna cuota.
+      obj={...resultado,cuotas:cuotasBase.length?cuotasBase:cuotasIA};
       setStatus(`IA DIAN — VALIDACIÓN ${Math.round(Number(ai.confidence||0)*100)}%`,"ok");
     }
     if(obj.concepto)o.concepto=CONCEPTOS.find(x=>upper(x)===upper(obj.concepto))||"OTROS";if(obj.anio)o.anio=Number(obj.anio);if(obj.periodo&&Number(obj.periodo)>=1&&Number(obj.periodo)<=12)o.periodo=String(Number(obj.periodo));
