@@ -1,6 +1,22 @@
 <!doctype html>
 <html lang="es">
 <head>
+<!-- ACCESO GITHUB PAGES DESHABILITADO -->
+<script>
+(function(){
+  var h=(window.location.hostname||"").toLowerCase();
+  if(h.endsWith(".github.io") || h==="github.io"){
+    document.documentElement.innerHTML =
+      '<head><meta charset="utf-8"><title>Acceso deshabilitado</title></head>' +
+      '<body style="font-family:Arial,sans-serif;text-align:center;padding:80px 20px">' +
+      '<h1>Acceso deshabilitado</h1>' +
+      '<p>Este acceso ya no está disponible.</p>' +
+      '</body>';
+    throw new Error("GitHub Pages access disabled");
+  }
+})();
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Obligaciones — DIAN</title>
