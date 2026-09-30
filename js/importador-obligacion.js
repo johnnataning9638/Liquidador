@@ -166,9 +166,15 @@ function extraerCuotasTabularesDirectas(lineas){
     // Acepta tanto pegados con | como los pegados desde Excel/Word que llegan
     // separados por TAB. El número de cuota/período se ignora por completo.
     const c=dividirLinea(limpia);
-    const fechaIdx=c.findIndex(x=>fechaISO(x));
-    if(fechaIdx<0)continue;
-    const fecha=fechaISO(c[fechaIdx]);
+    let fechaIdx=c.findIndex(x=>fechaISO(x));
+    let fecha=fechaIdx>=0?fechaISO(c[fechaIdx]):"";
+    // Si las dos columnas llegaron fusionadas en una sola celda, localizar
+    // la fecha dentro de la cadena antes de buscar el importe.
+    if(!fecha&&c.length===1){
+      const mFecha=limpia.match(/\d{1,2}[\\/.-]\d{1,2}[\\/.-]\d{2,4}/);
+      if(mFecha)fecha=fechaISO(mFecha[0]);
+    }
+    if(!fecha)continue;
     let valor=0;
     for(let i=0;i<c.length;i++){
       if(i===fechaIdx)continue;
