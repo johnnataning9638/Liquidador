@@ -175,10 +175,11 @@ function extraerCuotasTabularesDirectas(lineas){
       const n=numeroDesdeTexto(c[i].replace(/&#(?:x[0-9a-f]+|\\d+);/gi," ").replace(/&nbsp;/gi," "));
       if(n>0){valor=Math.trunc(n);break;}
     }
-    // Si las dos columnas llegaron colapsadas en una sola cadena, por ejemplo
-    // "15/04/2025 $ 3.471.000", extraemos igualmente FECHA + VALOR.
+    // Si las dos columnas llegaron colapsadas en una sola cadena,
+    // por ejemplo "15/04/2025 $ 3.471.000", extraemos FECHA + VALOR.
     if(!(valor>0)&&c.length===1){
-      const resto=limpia.replace(/\\b(?:\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.](?:20\\d{2}|\\d{2})|20\\d{2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{1,2})\\b/," ");
+      const mFecha=limpia.match(/\d{1,2}[\\/.-]\d{1,2}[\\/.-]\d{2,4}/);
+      const resto=mFecha?limpia.replace(mFecha[0]," "):limpia;
       const n=numeroDesdeTexto(resto);
       if(n>0)valor=Math.trunc(n);
     }
