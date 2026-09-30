@@ -326,7 +326,7 @@ function actualizarSelectoresImportacion(){
   selects.forEach(sel=>{
     const actual=sel.value;
     sel.innerHTML='<option value="">SELECCIONE LA OBLIGACIÓN DESTINO...</option>'+obligaciones.map((o,i)=>`<option value="${esc(o.id)}">OBLIGACIÓN ${i+1}${o.concepto?` — ${esc(o.concepto)}`:""}</option>`).join("");
-    if(obligaciones.length===1)sel.value=obligaciones[0].id;
+    // Con una sola obligación se conserva el placeholder visual; la función de destino\n    // resuelve internamente la obligación 1 al importar. Con 2+ queda sin selección.\n    sel.value="";
     else if(obligaciones.some(o=>o.id===actual))sel.value=actual;
   });
 }
@@ -516,8 +516,9 @@ function renderPagosEn(sec,o){
 }
 
 function obtenerObligacionDestino(selectId,mensaje){
-  // Si solo existe una obligación, es el destino inequívoco y no se debe
-  // obligar al usuario a seleccionarla manualmente.
+  // La interfaz conserva siempre el placeholder "SELECCIONE LA OBLIGACIÓN DESTINO...".
+  // Si solo existe una obligación, no es necesario que el usuario la seleccione:
+  // los datos/pagos se aplican automáticamente a la obligación 1.
   if(obligaciones.length===1)return obligaciones[0];
   const id=$(selectId)?.value||"";
   if(!id)throw new Error(mensaje||"Seleccione la obligación destino antes de importar.");
