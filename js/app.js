@@ -1790,16 +1790,15 @@ function aplicarImportacionObligacion(obj){
   if(obj.nit)$("nit").value=String(obj.nit).replace(/\D/g,"");
   if(obj.razonSocial)$("razonSocial").value=upper(obj.razonSocial);
   if(obj.cuotas?.length){
-    const existentes=new Map(obligacionVencimientos.map(v=>[Number(v.numero),v]));
-    for(const c of obj.cuotas){
-      const n=Math.max(1,Number(c.numero||1));
-      let x=existentes.get(n);
-      if(!x){x={id:`VTO-${n}`,numero:n,periodo:n,fecha:"",impuesto:0};obligacionVencimientos.push(x);existentes.set(n,x);}
-      if(c.fecha)x.fecha=fechaISO(c.fecha)||x.fecha;
-      if(Number(c.impuesto)>0)x.impuesto=Number(c.impuesto);
-      if(c.periodo!=null)x.periodo=String(c.periodo);
-    }
-    obligacionVencimientos.sort((a,b)=>Number(a.numero)-Number(b.numero));
+    // EL NÚMERO DE CUOTA/PERÍODO NO SE IMPORTA. Se genera siempre
+    // consecutivamente según el orden de las filas FECHA + IMPORTE.
+    obligacionVencimientos=obj.cuotas.map((c,i)=>({
+      id:`VTO-${i+1}`,
+      numero:i+1,
+      periodo:String(i+1),
+      fecha:fechaISO(c.fecha)||"",
+      impuesto:Number(c.impuesto||0)
+    }));
   }
   renderVencimientos();renderCalendario();
   const r=$("resultadoImportacionObligacion");
