@@ -162,14 +162,22 @@ function extraerCuotasTabularesDirectas(lineas){
   const out=[];
   for(const linea of lineas){
     const limpia=String(linea??"").trim();
-    if(!limpia.includes("|"))continue;
-    const c=limpia.replace(/^\s*\|/,"").replace(/\|\s*$/,"").split("|").map(limpiarCelda).filter(Boolean);
-    if(c.length!==2)continue;
-    const fecha=fechaISO(c[0]);
-    if(!fecha)continue;
-    const valor=numeroDesdeTexto(c[1].replace(/&#(?:x[0-9a-f]+|\d+);/gi," ").replace(/&nbsp;/gi," "));
+    if(!limpia)continue;
+    // Acepta tanto pegados con | como los pegados desde Excel/Word que llegan
+    // separados por TAB. El número de cuota/período se ignora por completo.
+    const c=dividirLinea(limpia);
+    if(c.length<2)continue;
+    const fechaIdx=c.findIndex(x=>fechaISO(x));
+    if(fechaIdx<0)continue;
+    const fecha=fechaISO(c[fechaIdx]);
+    let valor=0;
+    for(let i=0;i<c.length;i++){
+      if(i===fechaIdx)continue;
+      const n=numeroDesdeTexto(c[i].replace(/&#(?:x[0-9a-f]+|\\d+);/gi," ").replace(/&nbsp;/gi," "));
+      if(n>0){valor=Math.trunc(n);break;}
+    }
     if(!(valor>0))continue;
-    out.push({numero:out.length+1,periodo:String(out.length+1),fecha,impuesto:Math.trunc(valor)});
+    out.push({numero:out.length+1,periodo:String(out.length+1),fecha,impuesto:valor});
   }
   return out;
 }
