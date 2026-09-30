@@ -1615,6 +1615,51 @@ function calcular(){
   }catch(e){console.error(e);alert(e.message||"No fue posible calcular la liquidación.");enfocarCampoError(e.focusTarget);}
 }
 
+async function guardarFeedbackIALimpiezaNormal(tipo){
+  if(!feedbackIAPendientes.has(tipo))return;
+  try{
+    const ejemplos=tipo==="pagos"?construirFeedbackPagosIA():construirFeedbackObligacionIA();
+    if(ejemplos.length)await enviarFeedbackIA(ejemplos,"liquidador-ia-"+tipo+"-limpieza");
+  }catch(e){
+    console.warn("Aprendizaje IA al limpiar ("+tipo+"):",e);
+  }
+  feedbackIAPendientes.delete(tipo);
+}
+
+async function limpiarDatosPestanaNormal(){
+  if(limpiando)return;
+  limpiando=true;
+  try{
+    await guardarFeedbackIALimpiezaNormal("obligacion");
+    estadoSancionUI={tiene:"",valor:"",fecha:"",origen:"",beneficio:""};
+    const sancion=$("tieneSancion");
+    if(sancion){sancion.value="";delete sancion.dataset.tabValue;}
+    document.querySelectorAll('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea').forEach(el=>{
+      if(el.type==="file")el.value="";
+      else if(el.id==="tieneSancion"){el.value="";delete el.dataset.tabValue;}
+      else if(el.tagName==="SELECT")el.selectedIndex=0;
+      else if(!el.readOnly)el.value="";
+    });
+    obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
+    if($("sancionMinima"))$("sancionMinima").value="";
+    renderMetadatosConcepto();renderVencimientos();habilitarSancion();renderCalendario();renderBeneficio();
+  }finally{limpiando=false;}
+}
+
+async function limpiarPagosPestanaNormal(){
+  if(limpiando)return;
+  limpiando=true;
+  try{
+    await guardarFeedbackIALimpiezaNormal("pagos");
+    pagos=[];
+    document.querySelectorAll('[data-pane="pagos"] input,[data-pane="pagos"] textarea').forEach(el=>{
+      if(el.type==="file")el.value="";
+      else if(!el.readOnly)el.value="";
+    });
+    renderPagos();
+  }finally{limpiando=false;}
+}
+
 async function limpiar(){
   if(limpiando)return;
   limpiando=true;
@@ -2016,7 +2061,7 @@ function configurarBase(){
   sincronizarFechaDual("fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker",()=>{});
   actualizarCamposTipoLiquidacion();
   document.querySelectorAll(".btn-calcular-normal").forEach(b=>b.addEventListener("click",calcular));
-  document.querySelectorAll(".btn-limpiar-normal").forEach(b=>b.addEventListener("click",()=>{void limpiar();}));
+  document.querySelectorAll(".btn-limpiar-normal").forEach(b=>b.addEventListener("click",()=>{const pane=b.closest(".tab-pane")?.dataset.pane;if(pane==="datos")void limpiarDatosPestanaNormal();else if(pane==="pagos")void limpiarPagosPestanaNormal();else void limpiar();}));
   $("btnAgregarPago").addEventListener("click",()=>agregarPago());
   $("btnAgregarCuota")?.addEventListener("click",agregarCuota);
   $("btnCalcularVencimiento").addEventListener("click",renderCalendario);
