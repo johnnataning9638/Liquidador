@@ -96,7 +96,14 @@ function vencIndex(key){
 }
 
 function limpiarCeldaPago(v){
-  return String(v??"").replace(/\u00a0/g," ").replace(/\[([^\]]+)\]\([^)]*\)/g,"$1").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+  return String(v??"")
+    .replace(/&nbsp;|&#160;|&#xA0;|&#x20;/gi," ")
+    .replace(/&#(?:x[0-9a-f]+|\d+);/gi," ")
+    .replace(/\u00a0/g," ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g,"$1")
+    .replace(/<[^>]*>/g," ")
+    .replace(/\s+/g," ")
+    .trim();
 }
 function expandirCientifico(v){
   let s=limpiarCeldaPago(v).replace(/\s+/g,"");
@@ -411,6 +418,20 @@ function reconocerPagosTranspuestosInteligente(lines){
   return pagos;
 }
 
+function reconocerCuotasSinTitulos(lines){
+  const cuotas=[];
+  for(const linea of lines){
+    const c=separarFilaPagos(linea);
+    if(c.length!==2)continue;
+    const fecha=fechaISO(limpiarCeldaPago(c[0]));
+    if(!fecha)continue;
+    const valor=valorNumericoEstricto(c[1]);
+    if(!(valor>0))continue;
+    cuotas.push({numero:cuotas.length+1,periodo:String(cuotas.length+1),fecha,impuesto:truncarValorEntero(valor)});
+  }
+  return cuotas;
+}
+
 function reconocerPagosSinTitulos(lines){
   const encontrados=[];
   // Cada línea puede ser horizontal, vertical o tener los campos mezclados.
@@ -549,7 +570,18 @@ export function importarDatosInteligente(texto){
       existente.fecha=fechaISO(fecha); obligacion.vencimientos.push(existente);
     }
   }
-  obligacion.vencimientos=obligacion.vencimientos.filter((v,i,a)=>a.findIndex(x=>x.numero===v.numero)===i).map((v,i)=>({id:`VTO-${v.numero||i+1}`,numero:v.numero||i+1,fecha:v.fecha||"",impuesto:Number(v.impuesto||0)})).filter(v=>v.fecha||v.impuesto>0).sort((a,b)=>a.numero-b.numero);
+  obligacion.vencimientos=obligacion.vencimientos
+    .filter((v,i,a)=>a.findIndex(x=>x.numero===v.numero&&x.fecha===v.fecha&&Number(x.impuesto||0)===Number(v.impuesto||0))===i)
+    .map((v,i)=>({id:`VTO-${i+1}`,numero:i+1,periodo:v.periodo??String(i+1),fecha:v.fecha||"",impuesto:Number(v.impuesto||0)}))
+    .filter(v=>v.fecha||v.impuesto>0)
+    .sort((a,b)=>a.numero-b.numero);
+
+  // Importación inteligente de vencimientos/cuotas sin títulos: acepta
+  // filas de dos columnas FECHA | VALOR, incluyendo pegados desde Excel y
+  // tablas Markdown/HTML. Las filas de pagos (documento | fecha | valor) no
+  // se confunden con cuotas porque exigen exactamente dos columnas.
+  const cuotasSinTitulos=reconocerCuotasSinTitulos(lines);
+  if(cuotasSinTitulos.length) obligacion.vencimientos.push(...cuotasSinTitulos);
 
   // Importación inteligente de pagos: analiza encabezados, filas, columnas,
   // notación científica y pegados sin títulos sin depender de un orden fijo.
