@@ -1,7 +1,7 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.60";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.61";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
