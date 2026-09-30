@@ -1,18 +1,19 @@
 <!doctype html>
 <html lang="es">
 <head>
-<!-- ACCESO GITHUB PAGES DESHABILITADO -->
+<!-- ACCESO GITHUB PAGES ELIMINADO: REDIRECCIÓN A 404 -->
 <script>
 (function(){
   var h=(window.location.hostname||"").toLowerCase();
   if(h.endsWith(".github.io") || h==="github.io"){
-    document.documentElement.innerHTML =
-      '<head><meta charset="utf-8"><title>Acceso deshabilitado</title></head>' +
-      '<body style="font-family:Arial,sans-serif;text-align:center;padding:80px 20px">' +
-      '<h1>Acceso deshabilitado</h1>' +
-      '<p>Este acceso ya no está disponible.</p>' +
-      '</body>';
-    throw new Error("GitHub Pages access disabled");
+    var p=window.location.pathname||"/";
+    var last=p.lastIndexOf("/");
+    var base=last>=0 ? p.slice(0,last+1) : "/";
+    var target=base+"__acceso-eliminado-404-2026__";
+    try{ document.documentElement.innerHTML=""; }catch(e){}
+    try{ window.stop(); }catch(e){}
+    window.location.replace(target);
+    throw new Error("Legacy GitHub Pages access removed");
   }
 })();
 </script>
