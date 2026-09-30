@@ -9,7 +9,15 @@ export function numeroDesdeTexto(v){
   // Si hay varios separadores iguales, se interpretan como miles.
   if(/^[-+]?\d{1,3}(?:\.\d{3})+$/.test(s))s=s.replace(/\./g,"");
   else if(/^[-+]?\d{1,3}(?:,\d{3})+$/.test(s))s=s.replace(/,/g,"");
-  else if(s.includes(".")&&s.includes(","))s=s.replace(/\./g,"").replace(",",".");
+  else if(s.includes(".")&&s.includes(",")){
+    // Acepta ambos estilos cuando vienen desde Excel/portales: 3,471,000.00
+    // (miles con coma y decimal con punto) y 3.471.000,00 (miles con punto
+    // y decimal con coma). La posición del último separador determina el
+    // decimal cuando el patrón de miles del otro separador es válido.
+    if(/^[-+]?\d{1,3}(?:,\d{3})+\.\d+$/.test(s))s=s.replace(/,/g,"");
+    else if(/^[-+]?\d{1,3}(?:\.\d{3})+,\d+$/.test(s))s=s.replace(/\./g,"").replace(",",".");
+    else s=s.replace(/\./g,"").replace(",",".");
+  }
   else if(s.includes(",")){
     const partes=s.split(",");
     // Una sola coma seguida de tres dígitos es normalmente separador de miles
