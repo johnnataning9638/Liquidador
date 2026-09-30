@@ -1779,10 +1779,19 @@ function aplicarImportacion(obj){
   if(obj.aceptaGlosas&&$("aceptaGlosas"))$("aceptaGlosas").value=upper(obj.aceptaGlosas);
   if(obj.informaDian&&$("informaDian"))$("informaDian").value=upper(obj.informaDian);
   if(obj.resolucionReconsideracion&&$("resolucionReconsideracion"))$("resolucionReconsideracion").value=upper(obj.resolucionReconsideracion);
-  if(obj.vencimientos?.length)obligacionVencimientos=obj.vencimientos.map((v,i)=>({...v,id:v.id||`VTO-${v.numero||i+1}`,numero:Number(v.numero||i+1),periodo:v.periodo??(i+1),fecha:fechaISO(v.fecha)||"",impuesto:Number(v.impuesto||0)}));
+  if(obj.vencimientos?.length)obligacionVencimientos=obj.vencimientos.map((v,i)=>({...v,id:v.id||`VTO-${i+1}`,numero:i+1,periodo:String(i+1),fecha:fechaISO(v.fecha)||"",impuesto:Number(v.impuesto||0)}));
   if(obj.pagos?.length)pagos=[...pagos,...obj.pagos];
   renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();
   actualizarEstadoIndicador("listo",`Parámetros cargados · Importación aplicada: ${obj.pagos?.length||0} pago(s), ${obj.vencimientos?.length||0} vencimiento(s)`);
+}
+
+function aplicarImportacionPagosSolo(obj){
+  // IMPORTACIÓN DESDE LA PESTAÑA PAGOS:
+  // aquí SOLO se incorporan pagos. Nunca se deben crear/modificar
+  // vencimientos de DATOS Y VENCIMIENTOS.
+  if(obj.pagos?.length)pagos=[...pagos,...obj.pagos];
+  renderPagos();
+  actualizarEstadoIndicador("listo",`Parámetros cargados · Importación aplicada: ${obj.pagos?.length||0} pago(s)`);
 }
 
 function aplicarImportacionObligacion(obj){
@@ -1872,8 +1881,9 @@ function leerVencimientosFlexNormal(rows,headerIdx){
     const imp=truncarValorEntero(numExcel(ixI>=0?r[ixI]:""));
     if(!f||imp<=0)continue;
     const n=ixN>=0?Number(r[ixN]):NaN;
-    const periodo=ixP>=0&&String(r[ixP]??"").trim()!==""?r[ixP]:(Number.isFinite(n)&&n>0?n:out.length+1);
-    out.push({id:`VTO-IMP-${i}`,numero:Number.isFinite(n)&&n>0?n:out.length+1,periodo,fecha:f,impuesto:imp});
+    // EL PERÍODO/CUOTA NO SE IMPORTA: siempre se genera 1..N según
+    // el orden de las filas que contienen FECHA + IMPORTE.
+    out.push({id:`VTO-IMP-${i}`,numero:out.length+1,periodo:String(out.length+1),fecha:f,impuesto:imp});
   }
   out.forEach((v,i)=>v.numero=i+1);
   return out;
@@ -2073,7 +2083,7 @@ function configurarBase(){
   $("btnActualizarTasaDian").addEventListener("click",actualizarDesdeDIAN);
   $("btnIniciarAdmin")?.addEventListener("click",iniciarSesionAdmin);
   $("btnCerrarAdmin")?.addEventListener("click",cerrarSesionAdmin);
-  $("btnProcesarPegado").addEventListener("click",()=>{try{ocultarFeedbackIA();aplicarImportacion(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
+  $("btnProcesarPegado").addEventListener("click",()=>{try{ocultarFeedbackIA();aplicarImportacionPagosSolo(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
   $("btnProcesarPegadoIA")?.addEventListener("click",async()=>{
     const text=$("pegarDatos").value;
     try{
@@ -2087,7 +2097,7 @@ function configurarBase(){
       // reconocidos y se informa que la IA no pudo complementar el caso.
       if(!ai.pagos.length){
         if(!base.pagos?.length)throw new Error("Ni el importador determinístico ni la IA encontraron pagos completos con fecha, valor y documento/TDJ.");
-        aplicarImportacion(base);
+        aplicarImportacionPagosSolo(base);
         $("pegarDatos").value="";
         actualizarEstadoIndicador("listo",`IA DIAN: no estructuró pagos completos; se conservaron ${base.pagos.length} pago(s) reconocidos determinísticamente.`);
         return;
@@ -2097,7 +2107,7 @@ function configurarBase(){
       // La IA entrega únicamente registros estructurados de pagos.
       const fusion=fusionarPagosSeguros(base.pagos,ai.pagos);
       base.pagos=fusion.pagos;
-      aplicarImportacion(base);
+      aplicarImportacionPagosSolo(base);
       $("pegarDatos").value="";
       window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"PAGOS APLICADOS",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:base.pagos.length,anomalies:(ai.aiAnomalies||[]).length,timestamp:new Date().toISOString()}}));
       actualizarEstadoIndicador("listo",`IA DIAN: ${ai.pagosValidos} pago(s) estructurado(s) · ${base.pagos.length} pago(s) aplicados · confianza ${Math.round(Number(ai.confidence||0)*100)}%${fusion.advertencias?.length?` · ${fusion.advertencias.length} advertencia(s)`:""}`);
@@ -2138,7 +2148,7 @@ function configurarBase(){
   void comprobarIAAutomaticamente();
 
   $("btnImportar").addEventListener("click",()=>$("archivoImportacion").click());
-  $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{ocultarFeedbackIA();aplicarImportacion(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
+  $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{ocultarFeedbackIA();aplicarImportacionPagosSolo(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
 
   $("btnProcesarDatosObligacion").addEventListener("click",()=>{
     try{
