@@ -247,7 +247,7 @@ function construirCuotas(raw,lineas,nit){
 
 export function importarDatosObligacionInteligente(texto){
   const raw=String(texto??"").replace(/\r/g,"");
-  const lineas=raw.split("\n").map(limpiarCelda).filter(Boolean);
+  // CONSERVAR TABULADORES: desde Excel/Word las dos columnas FECHA + VALOR\n  // llegan separadas por TAB. No se deben colapsar antes de dividir la fila.\n  const lineas=raw.split("\n").map(x=>String(x??"").replace(/\\r/g,"").trim()).filter(Boolean);
   if(!lineas.length)throw new Error("No hay información para reconocer.");
   const nit=extraerNIT(raw,lineas);
   const razonSocial=extraerRazonSocial(raw,lineas);
