@@ -326,8 +326,7 @@ function actualizarSelectoresImportacion(){
   selects.forEach(sel=>{
     const actual=sel.value;
     sel.innerHTML='<option value="">SELECCIONE LA OBLIGACIÓN DESTINO...</option>'+obligaciones.map((o,i)=>`<option value="${esc(o.id)}">OBLIGACIÓN ${i+1}${o.concepto?` — ${esc(o.concepto)}`:""}</option>`).join("");
-    // Con una sola obligación se conserva el placeholder visual; la función de destino\n    // resuelve internamente la obligación 1 al importar. Con 2+ queda sin selección.\n    sel.value="";
-    else if(obligaciones.some(o=>o.id===actual))sel.value=actual;
+    // Con una sola obligación se conserva el placeholder visual; la función de destino\n    // resuelve internamente la obligación 1 al importar. Con 2+ queda sin selección.\n    sel.value=obligaciones.length===1 ? "" : (obligaciones.some(o=>o.id===actual) ? actual : "");
   });
 }
 
