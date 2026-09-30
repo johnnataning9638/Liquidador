@@ -1984,6 +1984,26 @@ async function importarExcelTDJ(){
   input.click();
 }
 
+function limpiarDatosPestanaTDJ(){
+  obligaciones=obligaciones.map((o,i)=>{const n=nuevaObligacion(i+1);n.pagos=Array.isArray(o.pagos)?o.pagos:[];return n;});
+  $("nitGlobal").value="";$("razonGlobal").value="";
+  document.querySelectorAll('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea').forEach(el=>{
+    if(el.type==="file")el.value="";
+    else if(el.tagName==="SELECT")el.selectedIndex=0;
+    else if(!el.readOnly)el.value="";
+  });
+  renderObligaciones();actualizarSelectoresImportacion();
+}
+
+function limpiarPagosPestanaTDJ(){
+  obligaciones.forEach(o=>{o.pagos=[];});
+  document.querySelectorAll('[data-pane="pagos"] input,[data-pane="pagos"] textarea').forEach(el=>{
+    if(el.type==="file")el.value="";
+    else if(!el.readOnly)el.value="";
+  });
+  renderPagos();
+}
+
 function limpiarTodo(){
   if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;
   $("nitGlobal").value="";$("razonGlobal").value="";
@@ -2059,7 +2079,7 @@ function init(){
     razonGlobal.addEventListener("blur",()=>{razonGlobal.value=razonGlobal.value.trim();});
   }
   const bind=(id,event,fn)=>{const el=$(id);if(el)el.addEventListener(event,fn);};
-  bind("btnAgregarObligacion","click",agregarObligacion);bind("btnAgregarTitulo","click",agregarTitulo);document.querySelectorAll(".tdj-excel").forEach(b=>b.addEventListener("click",exportarExcelTDJ));document.querySelectorAll(".tdj-pdf").forEach(b=>b.addEventListener("click",exportarPdfTDJ));bind("btnProcesarImportTitulos","click",importarTitulos);bind("btnProcesarImportTitulosIA","click",importarTitulosIA);bind("btnImportarObligacionTDJ","click",()=>importarObligacionGlobal(false));bind("btnImportarObligacionTDJIA","click",()=>importarObligacionGlobal(true));bind("btnImportarPagosTDJ","click",()=>importarPagosGlobal(false));document.querySelectorAll(".tdj-import-excel").forEach(b=>b.addEventListener("click",importarExcelTDJ));bind("btnImportarPagosTDJIA","click",()=>importarPagosGlobal(true));document.querySelectorAll(".btn-calcular-tdj").forEach(b=>b.addEventListener("click",()=>aplicarTitulos()));document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",limpiarTodo));iniciarTabs();actualizarIndicadoresIA();renderPanelesTasasIPC();
+  bind("btnAgregarObligacion","click",agregarObligacion);bind("btnAgregarTitulo","click",agregarTitulo);document.querySelectorAll(".tdj-excel").forEach(b=>b.addEventListener("click",exportarExcelTDJ));document.querySelectorAll(".tdj-pdf").forEach(b=>b.addEventListener("click",exportarPdfTDJ));bind("btnProcesarImportTitulos","click",importarTitulos);bind("btnProcesarImportTitulosIA","click",importarTitulosIA);bind("btnImportarObligacionTDJ","click",()=>importarObligacionGlobal(false));bind("btnImportarObligacionTDJIA","click",()=>importarObligacionGlobal(true));bind("btnImportarPagosTDJ","click",()=>importarPagosGlobal(false));document.querySelectorAll(".tdj-import-excel").forEach(b=>b.addEventListener("click",importarExcelTDJ));bind("btnImportarPagosTDJIA","click",()=>importarPagosGlobal(true));document.querySelectorAll(".btn-calcular-tdj").forEach(b=>b.addEventListener("click",()=>aplicarTitulos()));document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",()=>{const pane=b.closest(".tab-pane")?.dataset.pane;if(pane==="datos")limpiarDatosPestanaTDJ();else if(pane==="pagos")limpiarPagosPestanaTDJ();else limpiarTodo();}));iniciarTabs();actualizarIndicadoresIA();renderPanelesTasasIPC();
   setStatus("CARGANDO MOTOR DE LIQUIDACIÓN...","loading");
   normalizarDatosLocal().then(()=>{renderPagos();renderObligaciones();refrescarTasasPagos();renderPanelesTasasIPC();setStatus("MOTOR DE LIQUIDACIÓN DISPONIBLE","ok");cargarSupabase();}).catch(e=>{console.error(e);setStatus("ERROR CARGANDO PARÁMETROS","error");});
   comprobarMotorIA().then(r=>{window.__tdjEstadoIA={estado:"CONECTADO",version:r?.version||"—"};actualizarIndicadoresIA();if(r?.disponible||r?.version)setStatus(`MOTOR DISPONIBLE · IA DIAN v${r.version||"—"}`,"ok");}).catch(()=>{window.__tdjEstadoIA={estado:"NO COMPROBADO",version:"—"};actualizarIndicadoresIA();});
