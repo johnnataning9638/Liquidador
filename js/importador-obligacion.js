@@ -166,7 +166,6 @@ function extraerCuotasTabularesDirectas(lineas){
     // Acepta tanto pegados con | como los pegados desde Excel/Word que llegan
     // separados por TAB. El número de cuota/período se ignora por completo.
     const c=dividirLinea(limpia);
-    if(c.length<2)continue;
     const fechaIdx=c.findIndex(x=>fechaISO(x));
     if(fechaIdx<0)continue;
     const fecha=fechaISO(c[fechaIdx]);
@@ -175,6 +174,13 @@ function extraerCuotasTabularesDirectas(lineas){
       if(i===fechaIdx)continue;
       const n=numeroDesdeTexto(c[i].replace(/&#(?:x[0-9a-f]+|\\d+);/gi," ").replace(/&nbsp;/gi," "));
       if(n>0){valor=Math.trunc(n);break;}
+    }
+    // Si las dos columnas llegaron colapsadas en una sola cadena, por ejemplo
+    // "15/04/2025 $ 3.471.000", extraemos igualmente FECHA + VALOR.
+    if(!(valor>0)&&c.length===1){
+      const resto=limpia.replace(/\\b(?:\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.](?:20\\d{2}|\\d{2})|20\\d{2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{1,2})\\b/," ");
+      const n=numeroDesdeTexto(resto);
+      if(n>0)valor=Math.trunc(n);
     }
     if(!(valor>0))continue;
     out.push({numero:out.length+1,periodo:String(out.length+1),fecha,impuesto:valor});
