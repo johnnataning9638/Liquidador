@@ -260,7 +260,9 @@ function construirCuotas(raw,lineas,nit){
 
 export function importarDatosObligacionInteligente(texto){
   const raw=String(texto??"").replace(/\r/g,"");
-  // CONSERVAR TABULADORES: Excel/Word puede entregar FECHA + VALOR separados por TAB.\n  // Cada fila se limpia sin destruir ese separador antes de dividir columnas.\n  const lineas = raw.split("\n").map(x => String(x ?? "").replace(/\r/g, "").trim()).filter(Boolean);
+  // CONSERVAR TABULADORES: Excel/Word puede entregar FECHA + VALOR separados por TAB.
+  // Cada fila se limpia sin destruir ese separador antes de dividir columnas.
+  const lineas = raw.split("\n").map(x => String(x ?? "").replace(/\r/g, "").trim()).filter(Boolean);
   if(!lineas.length)throw new Error("No hay información para reconocer.");
   const nit=extraerNIT(raw,lineas);
   const razonSocial=extraerRazonSocial(raw,lineas);
