@@ -545,7 +545,7 @@ async function importarObligacionGlobal(usarIA){
     }
     if(obj.concepto)o.concepto=CONCEPTOS.find(x=>upper(x)===upper(obj.concepto))||"OTROS";if(obj.anio)o.anio=Number(obj.anio);if(obj.periodo&&Number(obj.periodo)>=1&&Number(obj.periodo)<=12)o.periodo=String(Number(obj.periodo));
     if(obj.nit&&!$("nitGlobal").value)$("nitGlobal").value=obj.nit;if(obj.razonSocial&&!$("razonGlobal").value)$("razonGlobal").value=upper(obj.razonSocial);
-    if(Array.isArray(obj.cuotas)&&obj.cuotas.length)o.vencimientos=obj.cuotas.map((x,i)=>({id:uid("VTO"),numero:Number(x.numero||i+1),periodo:x.periodo??x.numero??i+1,fecha:fechaISO(x.fecha)||"",impuesto:Number(x.impuesto||0)}));
+    if(Array.isArray(obj.cuotas)&&obj.cuotas.length)o.vencimientos=obj.cuotas.map((x,i)=>({id:uid("VTO"),numero:i+1,periodo:String(i+1),fecha:fechaISO(x.fecha)||"",impuesto:Number(x.impuesto||0)}));
     if(obj.tieneSancion)o.tieneSancion=upper(obj.tieneSancion);if(obj.valorSancion!=null)o.valorSancion=Number(obj.valorSancion||0);if(obj.fechaSancion)o.fechaSancion=fechaISO(obj.fechaSancion);if(obj.beneficioSancion)o.beneficioSancion=upper(obj.beneficioSancion);
     $("resultadoImportacionObligacionTDJ").textContent=`Importación asignada a OBLIGACIÓN ${o.numero}${obj.cuotas?.length?` · ${obj.cuotas.length} cuota(s) reconocida(s)`:""}.`;$("importarObligacionTexto").value="";renderObligaciones();
   }catch(e){setStatus("LISTO","ok");alert(e.message||"No fue posible procesar la importación.");}
@@ -567,9 +567,15 @@ async function procesarImportacionObligacion(o,sec,usarIA){
   const text=sec.querySelector('[data-import]').value.trim();if(!text)return alert("Pegue primero la información de la obligación.");
   try{
     let base=importarDatosObligacionInteligente(text);let obj=base;
-    if(usarIA){setStatus("IA DIAN — VALIDANDO IMPORTACIÓN...","loading");const ai=await interpretarObligacionConIA(text,base);obj=ai.resultado;setStatus(`IA DIAN — VALIDACIÓN ${Math.round(Number(ai.confidence||0)*100)}%`,"ok");}
+    if(usarIA){
+      setStatus("IA DIAN — VALIDANDO IMPORTACIÓN...","loading");
+      const ai=await interpretarObligacionConIA(text,base);
+      const resultado=ai.resultado||{};
+      obj={...resultado,cuotas:Array.isArray(base.cuotas)&&base.cuotas.length?base.cuotas:(Array.isArray(resultado.cuotas)?resultado.cuotas:[])};
+      setStatus(`IA DIAN — VALIDACIÓN ${Math.round(Number(ai.confidence||0)*100)}%`,"ok");
+    }
     if(obj.concepto)o.concepto=CONCEPTOS.find(x=>upper(x)===upper(obj.concepto))||"OTROS";if(obj.anio)o.anio=Number(obj.anio);if(obj.periodo && Number(obj.periodo)>=1 && Number(obj.periodo)<=12)o.periodo=String(Number(obj.periodo));if(obj.nit&&!( $("nitGlobal").value))$("nitGlobal").value=obj.nit;if(obj.razonSocial&&!$("razonGlobal").value)$("razonGlobal").value=upper(obj.razonSocial);
-    if(Array.isArray(obj.cuotas)&&obj.cuotas.length){o.vencimientos=obj.cuotas.map((x,i)=>({id:uid("VTO"),numero:Number(x.numero||i+1),periodo:x.periodo??x.numero??i+1,fecha:fechaISO(x.fecha)||"",impuesto:Number(x.impuesto||0)}));}
+    if(Array.isArray(obj.cuotas)&&obj.cuotas.length){o.vencimientos=obj.cuotas.map((x,i)=>({id:uid("VTO"),numero:i+1,periodo:String(i+1),fecha:fechaISO(x.fecha)||"",impuesto:Number(x.impuesto||0)}));}
     if(obj.tieneSancion)o.tieneSancion=upper(obj.tieneSancion);if(obj.valorSancion)o.valorSancion=Number(obj.valorSancion);if(obj.fechaSancion)o.fechaSancion=fechaISO(obj.fechaSancion);
     sec.querySelector('[data-import-result]').textContent=`Importación asignada a OBLIGACIÓN ${o.numero}${obj.cuotas?.length?` · ${obj.cuotas.length} cuota(s) reconocida(s)`:""}.`;
     renderObligaciones();
