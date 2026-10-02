@@ -1893,16 +1893,40 @@ async function importarExcelTDJ(){
           let tipoTasaImportada=upper(v[8]||"");
           if(!tipoTasaImportada){
             const numeroObligacion=nuevas.length+1;
+            // RECUPERACIÓN ROBUSTA: normExcel elimina tildes, por lo que
+            // "OBLIGACIÓN" llega como "OBLIGACION". La búsqueda anterior
+            // comparaba contra la versión acentuada y nunca encontraba el
+            // bloque canónico "RECUPERACIÓN COMPLETA".
             for(let ri=0;ri<rows.length&&!tipoTasaImportada;ri++){
               const marca=rows[ri]||[];
-              if(normExcel(marca[0])!=="OBLIGACIÓN" || Number(marca[1])!==numeroObligacion)continue;
-              for(let rj=ri+1;rj<Math.min(rows.length,ri+10);rj++){
+              const marcaNormalizada=normExcel(marca[0]);
+              if(marcaNormalizada!=="OBLIGACION" || Number(marca[1])!==numeroObligacion)continue;
+              for(let rj=ri+1;rj<Math.min(rows.length,ri+12);rj++){
                 const encabezado=rows[rj]||[];
                 const nhRec=encabezado.map(normExcel);
                 const ixTipoRec=nhRec.findIndex(x=>x==="TIPO DE TASA");
                 if(ixTipoRec<0)continue;
-                tipoTasaImportada=upper(rows[rj+1]?.[ixTipoRec]||"");
+                const valorRecuperado=upper(rows[rj+1]?.[ixTipoRec]||"");
+                if(valorRecuperado)tipoTasaImportada=valorRecuperado;
                 break;
+              }
+            }
+          }
+          // SEGUNDO RESPALDO: buscar el bloque de recuperación por su
+          // cabecera de datos, sin depender de tildes ni del texto del título.
+          if(!tipoTasaImportada){
+            let numeroObligacion=nuevas.length+1;
+            for(let ri=0;ri<rows.length&&!tipoTasaImportada;ri++){
+              const encabezado=(rows[ri]||[]).map(normExcel);
+              if(encabezado[0]!=="DATOS OBLIGACION" || !encabezado.includes("TIPO DE TASA"))continue;
+              const ixTipoRec=encabezado.findIndex(x=>x==="TIPO DE TASA");
+              const valorRecuperado=upper(rows[ri+1]?.[ixTipoRec]||"");
+              if(valorRecuperado){
+                // Si el archivo contiene varias obligaciones, el orden de
+                // los bloques canónicos coincide con el orden de importación.
+                // Contamos cuántos bloques "DATOS OBLIGACION" preceden a este.
+                const ordenBloque=rows.slice(0,ri).filter(row=>normExcel(row?.[0])==="DATOS OBLIGACION").length+1;
+                if(ordenBloque===numeroObligacion)tipoTasaImportada=valorRecuperado;
               }
             }
           }
