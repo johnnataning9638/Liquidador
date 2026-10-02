@@ -711,7 +711,10 @@ function validarConfiguracionAntesCalcularTDJ(){
       e.tabTarget="titulos";e.focusTarget=`#tablaTitulos tbody tr[data-titulo-id="${CSS.escape(t.id)}"] [data-t="valor"]`;throw e;
     }
   }
-  const sinTasa=obligaciones.find(o=>!o.tipoTasaConfirmada);
+  // LA VALIDACIÓN DEBE BASARSE EN EL DATO REAL IMPORTADO, NO SOLO EN
+  // EL INDICADOR HISTÓRICO. ASÍ, SI EL EXCEL YA TRAE "TASA DIAN" (U OTRO
+  // TRATAMIENTO), NO SE VUELVE A SOLICITAR LA SELECCIÓN.
+  const sinTasa=obligaciones.find(o=>!String(o?.tipoTasa||"").trim());
   if(sinTasa){
     const e=new Error(`OBLIGACIÓN ${sinTasa.numero}: debe seleccionar el tipo de tasa que se aplicará a los títulos / TDJ antes de realizar la liquidación.`);
     e.tabTarget="datos";e.focusTarget=`#listaObligaciones .obligacion-card[data-id="${CSS.escape(sinTasa.id)}"] [data-k="tipoTasa"]`;throw e;
@@ -1881,7 +1884,30 @@ async function importarExcelTDJ(){
           o.beneficioSancion=upper(v[5]||"");
           o.fechaSancion=fechaCampoTDJImport(v[6]);
           o.beneficioTributario=upper(v[7]||"NINGUNO");
-          o.tipoTasa=upper(v[8]||"TASA DIAN");o.tipoTasaConfirmada=Boolean(String(v[8]||"").trim());
+
+          // EL EXCEL EXPORTADO POR TDJ GUARDA EL TIPO DE TASA TAMBIÉN EN EL
+          // BLOQUE CANÓNICO DE RECUPERACIÓN. LA SECCIÓN "LIQUIDACIÓN NORMAL"
+          // PUEDE NO TENER ESA COLUMNA, POR LO QUE NO DEBEMOS INTERPRETAR
+          // SU AUSENCIA COMO "TASA NO CONFIRMADA" CUANDO EL ARCHIVO SÍ TRAE
+          // EL TIPO DE TASA EN EL BLOQUE DE RECUPERACIÓN.
+          let tipoTasaImportada=upper(v[8]||"");
+          if(!tipoTasaImportada){
+            const numeroObligacion=nuevas.length+1;
+            for(let ri=0;ri<rows.length&&!tipoTasaImportada;ri++){
+              const marca=rows[ri]||[];
+              if(normExcel(marca[0])!=="OBLIGACIÓN" || Number(marca[1])!==numeroObligacion)continue;
+              for(let rj=ri+1;rj<Math.min(rows.length,ri+10);rj++){
+                const encabezado=rows[rj]||[];
+                const nhRec=encabezado.map(normExcel);
+                const ixTipoRec=nhRec.findIndex(x=>x==="TIPO DE TASA");
+                if(ixTipoRec<0)continue;
+                tipoTasaImportada=upper(rows[rj+1]?.[ixTipoRec]||"");
+                break;
+              }
+            }
+          }
+          o.tipoTasa=tipoTasaImportada;
+          o.tipoTasaConfirmada=Boolean(tipoTasaImportada);
         }
 
         // Vencimientos: se leen únicamente hasta la siguiente sección.
