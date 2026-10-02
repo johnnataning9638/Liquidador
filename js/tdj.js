@@ -1602,54 +1602,35 @@ async function exportarPdfTDJ(){
     // PÁGINA INICIAL: conserva el resumen general del soporte TDJ.
     paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE TÍTULOS / TDJ — SOPORTE COMPLETO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>NIT</b><strong>${escPdf($("nitGlobal")?.value||"")}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ($("nitGlobal")?.value||""))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(upper($("razonGlobal")?.value||""))}</strong></div><div class="pdf-dato"><b>TIPO</b><strong>PRIVADA</strong></div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO OBLIGACIONES</b><strong>${dinero(totalSaldo)}</strong></div><div><b>ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>SECUENCIA DE APLICACIÓN</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>OBLIGACIÓN</th><th>DISPONIBLE</th><th>APLICADO</th><th>SALDO TDJ</th></tr></thead><tbody>${resultado.resumenTitulos.flatMap(x=>x.trazabilidad.length?x.trazabilidad.map(a=>`<tr><td>${escPdf(a.titulo)}</td><td>${escPdf(fechaVisible(a.fecha))}</td><td>${escPdf(a.obligacion)}</td><td>${dinero(a.valorAntes)}</td><td>${dinero(a.aplicado)}</td><td>${dinero(a.saldoTitulo)}</td></tr>`):[`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>ENDOSO</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(0)}</td><td>${dinero(x.excedente)}</td></tr>`]).join("")}</tbody></table></section></article></section>`);
 
-    // DETALLE COMPLETO DE CADA PAGO NORMAL — UNA HOJA POR PAGO.
-    // NO SE GENERA UNA PÁGINA INTERMEDIA DE "OBLIGACIÓN X — LIQUIDACIÓN COMPLETA".
-    // El soporte queda reducido a: página inicial TDJ, detalles de pagos, detalles
-    // de aplicaciones TDJ y página final de títulos/endoso.
+    // ORDEN CRONOLÓGICO POR OBLIGACIÓN:
+    // Cada obligación se documenta completa antes de pasar a la siguiente:
+    // 1) todos sus pagos normales, 2) inmediatamente sus aplicaciones TDJ.
+    // NO se agrupan los TDJ al final del PDF, porque eso rompe la trazabilidad
+    // visual entre el saldo pendiente y el título que lo cancela.
     resultado.resumenObligaciones.forEach((x,idx)=>{
       const o=x.obligacion,base=x.liquidacionBase||{};
-      // DETALLE COMPLETO DE CADA PAGO NORMAL — UNA HOJA POR PAGO.
+
+      // PRIMERO: TODOS LOS PAGOS NORMALES DE ESTA OBLIGACIÓN.
       (base.detalle||[]).forEach((d,j)=>{
         paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">OBLIGACIÓN ${idx+1} — DETALLE DEL PAGO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>OBLIGACIÓN</b><strong>${idx+1}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(upper(o.concepto))}</strong></div><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(o.anio)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(o.periodo||"")}</strong></div></div>${bloqueDetallePagoTDJ(d,j,o,"PAGO REGISTRADO")}</article></section>`);
       });
-    });
 
-    // DETALLE COMPLETO DE CADA TDJ — UNA HOJA POR IMPUTACIÓN.
-    // FUENTE ÚNICA: TODOS LOS TÍTULOS REGISTRADOS. Primero se renderiza la
-    // trazabilidad real. Si un título no quedó enlazado por una diferencia de
-    // estructura, se crea una página de respaldo; para TDJ enteros <= $1.000
-    // la regla exige además soporte visible de imputación exclusiva a intereses.
-    const idsTDJRenderizados=new Set();
-    resultado.resumenTitulos.forEach(rt=>{
-      const traz=Array.isArray(rt.trazabilidad)?rt.trazabilidad:[];
-      traz.forEach((a,j)=>{
-        const o=resultado.resumenObligaciones.find(x=>x.obligacionId===a.obligacionId)?.obligacion
-          ||obligaciones.find(z=>z.id===a.obligacionId);
-        if(!o)return;
-        const d=detallePDFDesdeAplicacionTDJ(a,o);
-        const idx=Number(o.numero||0)>0?Number(o.numero)-1:resultado.resumenObligaciones.findIndex(x=>x.obligacionId===o.id);
-        const valorPDF=Number(a.valorAntes||0);
-        const esMinimoPDF=Boolean(a.soportePDFObligatorio || a.esTDJMinimo || (Number.isInteger(valorPDF)&&valorPDF>0&&valorPDF<=1000));
-        const soporteMinimo=esMinimoPDF?bloqueSoporteTDJMinimoDesdeAplicacion(a,d,o):"";
-        const detalleNormal=bloqueDetallePagoTDJ(d,j,o,"APLICACIÓN DEL TDJ",{esTDJ:true,tdj:a.titulo,titulo:a.titulo,valorTDJ:a.valorAntes,valorAntes:a.valorAntes});
-        paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">OBLIGACIÓN ${idx+1} — APLICACIÓN DE TÍTULO / TDJ</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>TDJ</b><strong>${escPdf(a.titulo)}</strong></div><div class="pdf-dato"><b>FECHA TDJ</b><strong>${escPdf(fechaVisible(a.fecha))}</strong></div><div class="pdf-dato"><b>VALOR DISPONIBLE</b><strong>${dinero(a.valorAntes)}</strong></div><div class="pdf-dato"><b>OBLIGACIÓN</b><strong>${idx+1}</strong></div><div class="pdf-dato ancho-2"><b>CONCEPTO</b><strong>${escPdf(upper(o.concepto))}</strong></div><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(o.anio)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(o.periodo||"")}</strong></div></div>${soporteMinimo}${detalleNormal}</article></section>`);
-        idsTDJRenderizados.add(rt.titulo?.id||a.tituloId||a.titulo);
+      // SEGUNDO: INMEDIATAMENTE DESPUÉS DE LOS PAGOS, TODAS LAS
+      // APLICACIONES DE TDJ QUE CORRESPONDAN A ESTA OBLIGACIÓN.
+      // La fuente es la trazabilidad calculada, por lo que se conserva el
+      // orden real de aplicación de cada título y sus excedentes.
+      resultado.resumenTitulos.forEach(rt=>{
+        const traz=Array.isArray(rt.trazabilidad)?rt.trazabilidad:[];
+        traz.forEach((a,j)=>{
+          if(a.obligacionId!==o.id)return;
+          const d=detallePDFDesdeAplicacionTDJ(a,o);
+          const valorPDF=Number(a.valorAntes||0);
+          const esMinimoPDF=Boolean(a.soportePDFObligatorio || a.esTDJMinimo || (Number.isInteger(valorPDF)&&valorPDF>0&&valorPDF<=1000));
+          const soporteMinimo=esMinimoPDF?bloqueSoporteTDJMinimoDesdeAplicacion(a,d,o):"";
+          const detalleNormal=bloqueDetallePagoTDJ(d,j,o,"APLICACIÓN DEL TDJ",{esTDJ:true,tdj:a.titulo,titulo:a.titulo,valorTDJ:a.valorAntes,valorAntes:a.valorAntes});
+          paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">OBLIGACIÓN ${idx+1} — APLICACIÓN DE TÍTULO / TDJ</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>TDJ</b><strong>${escPdf(a.titulo)}</strong></div><div class="pdf-dato"><b>FECHA TDJ</b><strong>${escPdf(fechaVisible(a.fecha))}</strong></div><div class="pdf-dato"><b>VALOR DISPONIBLE</b><strong>${dinero(a.valorAntes)}</strong></div><div class="pdf-dato"><b>OBLIGACIÓN</b><strong>${idx+1}</strong></div><div class="pdf-dato ancho-2"><b>CONCEPTO</b><strong>${escPdf(upper(o.concepto))}</strong></div><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(o.anio)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(o.periodo||"")}</strong></div></div>${soporteMinimo}${detalleNormal}</article></section>`);
+        });
       });
-
-      // GARANTÍA DE VISUALIZACIÓN: si el título existe pero no tiene trazabilidad
-      // enlazada, nunca se omite silenciosamente. Se crea una hoja específica.
-      if(!traz.length){
-        const t=rt.titulo||{};
-        const valor=Number(t.valor||0);
-        const esMinimo=Number.isInteger(valor)&&valor>0&&valor<=1000;
-        if(esMinimo){
-          const o=resultado.resumenObligaciones[0]?.obligacion||obligaciones[0];
-          if(o){
-            const fecha=fechaVisible(t.fecha||"");
-            paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">APLICACIÓN DE TÍTULO / TDJ — SOPORTE ESPECIAL</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>TDJ</b><strong>${escPdf(t.tdj||`TDJ ${t.numero}`)}</strong></div><div class="pdf-dato"><b>FECHA TDJ</b><strong>${escPdf(fecha)}</strong></div><div class="pdf-dato"><b>VALOR</b><strong>${dinero(valor)}</strong></div><div class="pdf-dato"><b>DESTINO</b><strong>INTERESES</strong></div></div><section class="pdf-intereses pdf-tdj-minimo"><h3>LIQUIDACIÓN / IMPUTACIÓN DEL TDJ ≤ $1.000</h3><table><thead><tr><th>TDJ</th><th>VALOR TÍTULO</th><th>APLICADO A INTERESES</th><th>APLICADO A IMPUESTO</th><th>APLICADO A SANCIÓN</th><th>EXCEDENTE</th></tr></thead><tbody><tr><td>${escPdf(t.tdj||`TDJ ${t.numero}`)}</td><td>${dinero(valor)}</td><td>${dinero(valor)}</td><td>${dinero(0)}</td><td>${dinero(0)}</td><td>${dinero(0)}</td></tr></tbody></table><div class="pdf-regla-tdj-minimo"><b>REGLA ESPECIAL:</b> TODO TDJ ENTERO MAYOR QUE $0 Y MENOR O IGUAL A $1.000 SE IMPUTA EXCLUSIVAMENTE A INTERESES. ESTE TÍTULO DE ${dinero(valor)} SE SOPORTA COMO IMPUTACIÓN A INTERESES.</div></section></article></section>`);
-          }
-        }
-      }
     });
 
     const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
