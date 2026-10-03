@@ -1,11 +1,11 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.34.08";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.34.10";
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.08";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.10";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.34.08";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.34.10";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
 import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.09";
 
@@ -186,7 +186,7 @@ function nuevaObligacion(numero){
 function nuevoTitulo(numero){return {id:uid("TDJ"),numero,tdj:"",fecha:"",valor:0,observacion:""};}
 
 async function cargarJSONLocalTDJ(ruta){
-  const limpio=String(ruta||"").replace(/^\\.?\\//,"");
+  const limpio=String(ruta||"").replace(/^\.?\//,"");
   const candidatos=[
     new URL("../"+limpio,import.meta.url).href,
     new URL(limpio,window.location.origin+"/").href,
