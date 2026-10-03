@@ -15,7 +15,7 @@ let moduloPrioridadTDJ=null;
 async function cargarModuloPrioridadTDJ(){
   if(moduloPrioridadTDJ)return moduloPrioridadTDJ;
   try{
-    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.92");
+    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.98");
     return moduloPrioridadTDJ;
   }catch(e){
     console.error("No fue posible cargar la capa de prioridad TDJ.",e);
@@ -1757,7 +1757,7 @@ async function calcular(){
     // La capa de prioridad TDJ se carga SOLO cuando se va a liquidar.
     // Así un fallo de esa capa nunca puede impedir el arranque del liquidador.
     const {ajustarTDJParaPagosPosteriores}=await cargarModuloPrioridadTDJ();
-    const datosCalculo=ajustarTDJParaPagosPosteriores(motorCalculo,d);
+    const datosCalculo=ajustarTDJParaPagosPosteriores(motorCalculo,d,{cerrarSaldoFinal:true});
     let r=motorCalculo.calcular(datosCalculo);
     // La prioridad de pagos normales no altera el valor nominal del TDJ.
     // Conservamos ese valor para PDF/Excel y convertimos la diferencia no
