@@ -1173,8 +1173,58 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       }
       return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal};
     });
-    const saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
-    const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
+    let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    let remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
+
+    // CIERRE DEL REMANENTE: si queda un saldo final y el remanente del
+    // título alcanza para cubrirlo, primero se extingue ese saldo y solo
+    // después se reconoce como ENDOSO lo que realmente sobra.
+    const ajustesCierre=[];
+    if(saldoPendienteObligaciones>1 && remanenteTitulos>0 && remanenteTitulos>=saldoPendienteObligaciones){
+      let porAplicar=remanenteTitulos;
+      for(const resumen of resumenObligaciones){
+        if(porAplicar<=0)break;
+        const saldo=Math.max(0,Number(resumen.saldo||0));
+        if(saldo<=0)continue;
+        const aplicadoCierre=Math.min(porAplicar,saldo);
+        const ultima=resumen.ultima;
+        const item={
+          tituloId:ultima?.tituloId||null,
+          titulo:ultima?.titulo||"CIERRE TDJ",
+          fecha:ultima?.fecha||hoyISO(),
+          obligacionId:resumen.obligacion.id,
+          obligacionNumero:resumen.obligacion.numero,
+          obligacion:upper(resumen.obligacion.concepto)+" "+resumen.obligacion.anio+(resumen.obligacion.periodo?" · P"+resumen.obligacion.periodo:""),
+          valorAntes:porAplicar,
+          aplicado:aplicadoCierre,
+          saldoTitulo:Math.max(0,porAplicar-aplicadoCierre),
+          saldoObligacion:0,
+          aplicadoImpuesto:0,
+          aplicadoIntereses:aplicadoCierre,
+          aplicadoSancion:0,
+          interesesGenerados:0,
+          pagoId:null,
+          esCierreRemanente:true,
+          soportePDFObligatorio:false,
+          detalleMotor:resumen.liquidacionFinal||resumen.ultima?.detalleMotor||null,
+          tipoTasaObligacion:resumen.obligacion.tipoTasa||"TASA DIAN",
+          elegibilidadTasaTitulo:[],
+          deudaAntesSoporte:{impuesto:0,intereses:saldo,sancion:0,total:saldo},
+          saldoDespuesSoporte:{impuesto:0,intereses:0,sancion:0,total:0}
+        };
+        resumen.aplicaciones.push(item);
+        ajustesCierre.push(item);
+        resumen.totalTDJ+=aplicadoCierre;
+        resumen.saldo=0;
+        porAplicar-=aplicadoCierre;
+      }
+      remanenteTitulos=Math.max(0,porAplicar);
+      saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+      for(const ajuste of ajustesCierre){
+        const rt=resumenTitulos.find(x=>x.trazabilidad?.some(y=>y.tituloId===ajuste.tituloId));
+        if(rt)rt.trazabilidad.push(ajuste);
+      }
+    }
 
     const hayBeneficio1419=obligaciones.some(o=>esTipoDecreto1419(o.tipoTasa))
       ||obligaciones.some(o=>(o.pagos||[]).some(p=>esTipoDecreto1419(p.tipo)));
@@ -1187,13 +1237,10 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       observacionesBeneficio1419=[...observacionesBeneficio1419,observacion];
     }
 
-    // REGLA FUNDAMENTAL DE ENDOSO: un título solo puede quedar para endoso
-    // cuando TODAS las obligaciones están completamente canceladas.
-    // Si todavía existe deuda, ningún remanente del título puede convertirse
-    // en endoso. Esto protege especialmente los TDJ <= $1.000, que deben pasar
-    // por la regla especial de imputación exclusiva a intereses.
+    // ENDOSO: después del cierre anterior, solo queda como endoso lo que
+    // realmente sobra una vez satisfecho el saldo de las obligaciones.
     if(saldoPendienteObligaciones>1 && remanenteTitulos>0){
-      throw new Error(`INCONSISTENCIA TDJ: NO ES POSIBLE GENERAR ENDOSO MIENTRAS EXISTE SALDO DE OBLIGACIONES (${dinero(saldoPendienteObligaciones)}). EL REMANENTE ${dinero(remanenteTitulos)} DEBE SER IMPUTADO SEGÚN LAS REGLAS DE PAGO.`);
+      throw new Error(`INCONSISTENCIA TDJ: EL REMANENTE ${dinero(remanenteTitulos)} NO ALCANZA PARA CUBRIR EL SALDO DE OBLIGACIONES (${dinero(saldoPendienteObligaciones)}). DEBE CONTINUAR LA IMPUTACIÓN SEGÚN LAS REGLAS DE PAGO.`);
     }
     const endoso=saldoPendienteObligaciones<=1?remanenteTitulos:0;
 
@@ -1201,7 +1248,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // contra aplicado + endoso y ninguna obligación puede quedar negativa.
     const totalTitulos= titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Math.max(0,Number(t.valor||0)),0);
     const totalAplicado=resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Math.max(0,Number(y.aplicado||0)),0),0);
-    const diferenciaCierre=Math.round((totalTitulos-totalAplicado-endoso)*100)/100;
+    const diferenciaCierre=Math.round((totalTitulos-totalAplicado-endoso-saldoPendienteObligaciones)*100)/100;
     if(Math.abs(diferenciaCierre)>1){
       throw new Error(`INCONSISTENCIA DE CIERRE TDJ: TÍTULOS ${dinero(totalTitulos)}, APLICADO ${dinero(totalAplicado)}, ENDOSO ${dinero(endoso)}.`);
     }
