@@ -1209,7 +1209,8 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       }
       return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal,secuencia};
     });
-    let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);\n    for(const x of resumenObligaciones){
+    let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    for(const x of resumenObligaciones){
       for(const mov of (x.secuencia||[])){
         if(mov.esTDJ)continue;
         const excedenteNormal=Math.max(0,Number(mov.detalle?.excedente??mov.detalle?.aplicado?.excedente??0));
