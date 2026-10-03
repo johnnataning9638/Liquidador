@@ -7,6 +7,7 @@ import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.55";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -936,6 +937,24 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         const todos=[...pagosBase,...anteriores,pagoActual];
         todos.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.ordenInterno||0)-Number(b.ordenInterno||0)||Number(a.numero||0)-Number(b.numero||0));
 
+        // PRIORIDAD DE PAGOS NORMALES: si existen pagos del contribuyente
+        // posteriores a este TDJ, determinamos primero cuánto del título es
+        // realmente imputable sin convertir esos pagos en excedente. Para este
+        // ajuste se permite mirar hacia adelante; la liquidación definitiva
+        // del TDJ continúa usando la fecha real del título.
+        const pagosParaAjuste=ordenarMovimientosCronologicos([
+          ...o.pagos.map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i)})),
+          ...anteriores,
+          pagoActual
+        ]);
+        const fechaCorteAjuste=pagosParaAjuste.map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort().at(-1)||t.fecha;
+        const datosAjuste=datosMotor(o,pagosParaAjuste,fechaCorteAjuste,{permitirBeneficioFueraVigencia:true});
+        const datosAjustados=ajustarTDJParaPagosPosteriores(motorActual||motor,datosAjuste,{soloTDJId:pagoActual.id});
+        const pagoAjustado=datosAjustados.pagos?.find(p=>String(p.id)===String(pagoActual.id));
+        if(pagoAjustado)pagoActual.valor=truncarValorEntero(pagoAjustado.valor);
+        const todosAjustados=[...pagosBase,...anteriores,pagoActual];
+        todosAjustados.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.ordenInterno||0)-Number(b.ordenInterno||0)||Number(a.numero||0)-Number(b.numero||0));
+
         const motorActual=motorParaObligacion(o);
         const elegibilidadTasaTitulo=esTipoDecreto1419(tipoTasaObligacion)
           ?validarTipo1419TDJ(tipoTasaObligacion,o,t,{esTitulo:true})
@@ -962,7 +981,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
 
         // La fecha de corte es la fecha del TDJ actual. Por tanto, cuando
         // llega el TDJ 2/3/4, los intereses se calculan hasta esa nueva fecha.
-        const r=motorActual.calcular(datosMotor(o,todos,t.fecha,{permitirBeneficioFueraVigencia:true}));
+        const r=motorActual.calcular(datosMotor(o,todosAjustados,t.fecha,{permitirBeneficioFueraVigencia:true}));
         // Las restricciones temporales de beneficios se informan, pero no
         // cambian la tasa elegida ni bloquean la liquidación del TDJ.
         (r.advertencias||[]).filter(x=>/vigencia|beneficio|fecha de sanción|fecha de pago/i.test(String(x))).forEach(x=>{
