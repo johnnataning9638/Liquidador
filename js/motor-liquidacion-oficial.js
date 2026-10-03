@@ -397,7 +397,10 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
           if(aplicarFuturo>0){v.saldo=Math.max(0,v.saldo-aplicarFuturo);aplicadoImpuesto+=aplicarFuturo;remanentePago-=aplicarFuturo;const existente=aplicacionesVto.find(x=>x.id===v.id);if(existente)existente.aplicado+=aplicarFuturo;else aplicacionesVto.push({id:v.id,aplicado:aplicarFuturo,aplicadoIntereses:0,aplicadoSancion:0,saldo:v.saldo});}
         }
       }
-      saldoIntereses=roundMil(saldoInteresesNuevo);
+      const esTDJActual=(pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="");
+      // En TDJ conservamos el saldo real de intereses; roundMil() puede crear
+      // artificialmente un saldo de $1.000 cuando el saldo real es menor.
+      saldoIntereses=esTDJActual ? Math.max(0,Math.round(saldoInteresesNuevo)) : roundMil(saldoInteresesNuevo);
 
       // CIERRE AUTOMÁTICO DE RESIDUAL TDJ:
       // Si el TDJ ya tiene remanente real (ENDOSO) y el saldo residual
@@ -405,7 +408,6 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       // extinguir el saldo. No se aumenta el valor nominal del título.
       // La operación queda dentro del cálculo del motor para que pantalla,
       // trazabilidad, PDF y Excel reciban el recálculo real.
-      const esTDJActual=(pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="");
       if(esTDJActual && Number(pago?.valor||0)>1000 && saldoIntereses>0 && saldoIntereses<=2000){
         const disponibleCierre=Math.max(0,remanentePago);
         const cierre=Math.min(saldoIntereses,disponibleCierre,2000);
