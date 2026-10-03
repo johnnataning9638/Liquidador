@@ -122,6 +122,10 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     const tramos=[]; const advertencias=[];
     if(!saldo||!base||!corte||corte<=base)return {saldoInicial:roundMil(saldoInicial||0),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaCorte:corte,tramos,advertencias};
     const excl=new Set((aniosAplicados||[]).map(Number));
+    // LIQUIDACIÓN OFICIAL — ART. 867-1 E.T.: la actualización se aplica
+    // el 1 de enero siguiente a la firmeza y luego cada 1 de enero,
+    // acumulativamente, con el 100 % del IPC del año inmediatamente anterior.
+    // No se usa la lógica de aniversario de la liquidación privada.
     const primerAnio=Number(base.slice(0,4))+1;
     const ultimoAnio=Number(corte.slice(0,4));
     for(let anio=primerAnio;anio<=ultimoAnio;anio++){
@@ -136,7 +140,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         saldo=roundMil(antes+actualizacion);
         tramos.push({anio,desde:fechaAplicacion,hasta:`${anio}-12-31`,ipc,ipcPorcentaje:ipc*100,saldoInicial:antes,actualizacion,saldoFinal:saldo,disponible:true,aplicado:true,anioInflacion:anio-1});
       }else{
-        advertencias.push(`No existe IPC cargado para ${anio}; no se actualizó la sanción oficial en ${anio}.`);
+        advertencias.push(`No existe IPC cargado para ${anio-1}; no se actualizó la sanción oficial en ${anio}.`);
         tramos.push({anio,desde:fechaAplicacion,hasta:`${anio}-12-31`,ipc:0,ipcPorcentaje:0,saldoInicial:antes,actualizacion:0,saldoFinal:saldo,disponible:false,aplicado:false,anioInflacion:anio-1});
       }
     }
