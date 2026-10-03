@@ -1,13 +1,13 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.34.03";
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.02";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.03";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.34.03";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.02";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.03";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -2109,6 +2109,15 @@ function leerVencimientosExcel(rows,headerIdx){
   return out;
 }
 
+function normalizarNumeroTDJImportado(v){
+  const s=String(v??"").trim();
+  if(!s)return "";
+  if(/^[+-]?\d+(?:[.,]\d+)?[eE][+-]?\d+$/.test(s)){
+    const n=numExcel(s);
+    if(Number.isFinite(n))return String(Math.trunc(n));
+  }
+  return s;
+}
 function extraerTitulosExcelRobusto(rows, agregarTituloImportado){
   // IMPORTACIÓN DE TÍTULOS: soporta los formatos generados por el Liquidador
   // DIAN, por el Liquidador TDJ y versiones anteriores.
@@ -2216,15 +2225,6 @@ async function importarExcelTDJ(){
       // TÍTULOS / TDJ. Se conserva una sola representación como título.
       const nuevosTitulos=[];
       const clavesTitulos=new Set();
-      const normalizarNumeroTDJImportado=v=>{
-        const s=String(v??"").trim();
-        if(!s)return "";
-        if(/^[+-]?\d+(?:[.,]\d+)?[eE][+-]?\d+$/.test(s)){
-          const n=numExcel(s);
-          if(Number.isFinite(n))return String(Math.trunc(n));
-        }
-        return s;
-      };
       const agregarTituloImportado=(tdjNum,fecha,valor,tipo="TASA DIAN",observacion="")=>{
         const tdjTxt=normalizarNumeroTDJImportado(tdjNum);
         const f=fechaCampoTDJImport(fecha)||"";
