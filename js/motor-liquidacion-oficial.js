@@ -14,7 +14,7 @@ import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
  * 3. La suspensión empieza después de dos años desde la admisión de la
  *    demanda y termina con la ejecutoria de la providencia definitiva.
  * 4. La sanción oficial se actualiza independientemente de los intereses,
- *    tomando como fecha base la FECHA PROVIDENCIA DEFINITIVA registrada en
+ *    tomando como fecha base la fecha de sanción/presentación registrada en
  *    el formulario. La primera actualización se aplica el 1 de enero
  *    siguiente a esa fecha y continúa anualmente, acumulativamente por IPC.
  */
@@ -158,10 +158,9 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
     const fechaSancion=fechaSancionReal||saldosVto[0]?.fecha||"";
-    // LIQUIDACIÓN OFICIAL: la actualización de la sanción toma como fecha base
-    // la FECHA PROVIDENCIA DEFINITIVA. La primera actualización se aplica el
-    // 1 de enero siguiente a esa fecha y continúa anualmente, acumulativamente.
-    const fechaFirmezaSancion=fechaISO(datos.fechaProvidenciaDefinitiva)||"";
+    // LIQUIDACIÓN OFICIAL: conservar la fecha de sanción/presentación como
+    // fecha base de actualización, como en la lógica anterior.
+    const fechaFirmezaSancion=fechaSancion;
     let saldoSancion=sancionBaseOriginal;
     const tipo1419Inicial=(datos.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
     const articulo10Seleccionado=tipo1419Inicial.some(t=>t.includes("DECRETO 1419")&&t.includes("ART. 10"));
@@ -209,8 +208,8 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     };
 
     // LIQUIDACIÓN OFICIAL SIN PAGOS: al presionar CALCULAR, la fecha de corte
-    // debe permitir conocer intereses y sanción actualizada aunque no exista
-    // ningún pago. La sanción toma como base FECHA PROVIDENCIA DEFINITIVA.
+    // permite conocer intereses y sanción actualizada aunque no exista ningún
+    // valor de pago. La fecha base de sanción es fechaSancion.
     if(pagos.length===0){
       if(!fechaCorte) throw new Error("Debe existir una fecha de corte para liquidar una obligación oficial sin pagos.");
       const calcCorte=calcularInteresesAntesPago({fecha:fechaCorte,valor:0,tipo:"TASA DIAN"});
