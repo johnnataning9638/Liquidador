@@ -364,7 +364,16 @@ async function cargarDatos(){
   // ARRANQUE IGUAL AL MÓDULO TDJ:
   // los seis archivos que necesita directamente el motor se cargan primero,
   // sin mezclar calendario/normativa/auditoría ni Supabase en el camino crítico.
-  const cargarSimple=async ruta=>cargarJSONLocal(ruta,12000);
+  // Usamos la misma ruta relativa que el módulo TDJ. En este proyecto
+  // Render publica los JSON directamente desde la raíz; no necesitamos
+  // reconstruir la URL desde import.meta.url.
+  const cargarSimple=async ruta=>{
+    const respuesta=await fetch(ruta,{cache:"no-store"});
+    if(!respuesta.ok)throw new Error("HTTP "+respuesta.status+" al cargar "+ruta);
+    const texto=await respuesta.text();
+    if(!texto.trim())throw new Error("RESPUESTA_VACIA al cargar "+ruta);
+    try{return JSON.parse(texto);}catch{throw new Error("JSON_INVALIDO al cargar "+ruta);}
+  };
 
   [uvt,ipc,tasasMoratorias,beneficios,sanciones,reglasObligaciones]=await Promise.all([
     cargarSimple("datos/uvt.json"),
