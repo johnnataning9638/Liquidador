@@ -11,6 +11,7 @@ import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=1
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.47";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.86";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -1614,7 +1615,27 @@ function calcular(){
     motor=motorCalculo;
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
-    let r=motor.calcular(d);
+    const datosCalculo=ajustarTDJParaPagosPosteriores(motorCalculo,d);
+    let r=motorCalculo.calcular(datosCalculo);
+    // La prioridad de pagos normales no altera el valor nominal del TDJ.
+    // Conservamos ese valor para PDF/Excel y convertimos la diferencia no
+    // utilizada por el título en ENDOSO, nunca en excedente del pago normal.
+    const mapaTDJOriginal=new Map((d.pagos||[]).map((p,i)=>[String(p?.id||"P-"+i),Number(p?.valor||0)]));
+    (r.detalle||[]).forEach(x=>{
+      if(!String(x?.pago?.tdj||"").trim())return;
+      const id=String(x?.pago?.id||"");
+      const nominal=mapaTDJOriginal.get(id);
+      if(Number.isFinite(nominal)){
+        x.valorNominalTDJ=nominal;
+        x.excedentePrioridadTDJ=Math.max(0,nominal-Number(x?.pago?.valor||0));
+        if(x.excedentePrioridadTDJ>0){
+          x.observacionEndoso="ENDOSO — REMANENTE TDJ POR PRIORIDAD DE PAGOS NORMALES: "+dinero(x.excedentePrioridadTDJ);
+          x.excedente=Math.max(Number(x.excedente||0),x.excedentePrioridadTDJ);
+        }
+      }
+    });
+    const excedentePrioridadTotal=(r.detalle||[]).reduce((a,x)=>a+Number(x?.excedentePrioridadTDJ||0),0);
+    if(excedentePrioridadTotal>0)r.excedente=Number(r.excedente||0)+excedentePrioridadTotal;
     if(d.pagos.some(p=>esTipoDecreto1419(p.tipo))&&Number(r.total||0)>1){
       const saldoFaltanteBeneficio=Math.max(0,Number(r.total||0));
       const articulos=[...new Set(d.pagos.filter(p=>esTipoDecreto1419(p.tipo)).map(p=>String(p.tipo).match(/ART\.\s*\d+/i)?.[0]?.toUpperCase()).filter(Boolean))].join(" / ");
