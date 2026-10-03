@@ -24,14 +24,216 @@
 <title>Liquidadores DIAN</title>
 <link rel="stylesheet" href="estilos.css?v=16.33.46">
 <style>
-.inicio-shell{min-height:calc(100vh - 110px);padding:30px 18px 24px;position:relative;isolation:isolate;background:radial-gradient(circle at 12% 18%,rgba(73,156,205,.22),transparent 28%),radial-gradient(circle at 88% 78%,rgba(0,111,157,.18),transparent 30%),linear-gradient(135deg,#eef6fb 0%,#dcecf6 48%,#cbdfea 100%);overflow:hidden}.inicio-shell::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.34;background-image:linear-gradient(rgba(25,75,105,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(25,75,105,.12) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,transparent 0%,#000 14%,#000 86%,transparent 100%)}.inicio-shell::after{content:"∑  π  √x  01  10  100  +  −  ×  ÷  =  %";position:absolute;z-index:-1;left:4%;right:4%;bottom:6%;font:700 42px/2 "Segoe UI",Arial,sans-serif;letter-spacing:18px;color:rgba(21,72,103,.12);transform:rotate(-6deg);white-space:normal;word-spacing:20px;pointer-events:none}.inicio-panel{max-width:1180px;margin:0 auto;background:#fff;border:1px solid var(--borde);border-radius:8px;box-shadow:0 10px 30px rgba(20,48,71,.16);overflow:hidden}.inicio-panel{max-width:1180px;margin:0 auto;background:#fff;border:1px solid var(--borde);border-radius:8px;box-shadow:0 4px 16px rgba(20,48,71,.08);overflow:hidden}.inicio-cabecera{padding:22px 26px;border-bottom:1px solid var(--borde);background:#f7fafc;display:flex;justify-content:space-between;align-items:center;gap:18px}.inicio-cabecera h2{margin:0;color:var(--azul);font-size:24px}.inicio-cabecera p{margin:6px 0 0;color:#687783}.estado-sistema{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;font-weight:700;color:#17652b}.estado-punto{width:10px;height:10px;border-radius:50%;background:#2e9d52;box-shadow:0 0 0 3px #dff3e4}.modulos{padding:22px 26px 28px}.modulos-label{font-size:12px;font-weight:700;color:#687783;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}.modulo-item{display:flex;align-items:center;gap:18px;padding:18px 20px;margin-top:10px;border:1px solid var(--borde);border-radius:7px;background:#fff;transition:box-shadow .15s ease,border-color .15s ease,transform .15s ease}.modulo-item:hover{border-color:#8caac2;box-shadow:0 4px 12px rgba(20,48,71,.09);transform:translateY(-1px)}.modulo-icono{width:48px;height:48px;flex:0 0 48px;border-radius:7px;background:#e8eef3;color:var(--azul);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}.modulo-contenido{flex:1;min-width:0}.modulo-contenido h3{margin:0 0 5px;color:#173047;font-size:17px}.modulo-contenido p{margin:0;color:#596875;line-height:1.45}.modulo-estado{font-size:10px;font-weight:700;color:#385365;background:#e8eef3;border-radius:12px;padding:5px 9px;white-space:nowrap}.modulo-accion{flex:0 0 auto}.modulo-accion .primario{min-width:190px;padding:10px 14px}.modulo-item.titulos .modulo-icono{background:#e8f3f5;color:#007f9e}.modulo-item.titulos .modulo-estado{background:#e8f3f5;color:#006b8f}.inicio-nota{margin-top:16px;padding:10px 12px;background:#f7fafc;border-left:3px solid var(--azul3);color:#596875;font-size:12px}@media(max-width:800px){.inicio-cabecera{align-items:flex-start;flex-direction:column}.modulo-item{align-items:flex-start;flex-wrap:wrap}.modulo-contenido{flex-basis:calc(100% - 66px)}.modulo-estado{margin-left:66px}.modulo-accion{width:100%;margin-left:66px}.modulo-accion .primario{width:100%}}@media(max-width:600px){.inicio-shell{padding:12px}.inicio-cabecera,.modulos{padding:18px}.modulo-item{padding:15px}.modulo-contenido{flex-basis:calc(100% - 60px)}.modulo-estado,.modulo-accion{margin-left:60px}.estado-sistema{white-space:normal}}
+/* INICIO UI 16.33.50 — FONDO FINANCE-TECH
+   SOLO PRESENTACIÓN DEL MENÚ DE INICIO.
+   NO MODIFICA LA LÓGICA NI LOS ESTILOS DE LOS BOTONES DEL LIQUIDADOR. */
+.inicio-shell{
+  min-height:calc(100vh - 110px);
+  padding:34px 18px 26px;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 8% 18%,rgba(0,136,255,.30),transparent 25%),
+    radial-gradient(circle at 92% 28%,rgba(0,196,255,.18),transparent 26%),
+    radial-gradient(circle at 50% 100%,rgba(0,119,255,.25),transparent 38%),
+    linear-gradient(135deg,#020b25 0%,#041a42 42%,#00335b 72%,#03152f 100%);
+}
+.inicio-shell::before{
+  content:"";
+  position:absolute;
+  inset:-15%;
+  z-index:-2;
+  opacity:.55;
+  background:
+    linear-gradient(120deg,transparent 0 38%,rgba(0,196,255,.18) 38.2%,transparent 38.5%),
+    linear-gradient(165deg,transparent 0 56%,rgba(0,132,255,.16) 56.2%,transparent 56.5%),
+    linear-gradient(25deg,transparent 0 68%,rgba(0,218,255,.12) 68.2%,transparent 68.5%);
+  filter:blur(.2px);
+  transform:scale(1.08);
+}
+.inicio-shell::after{
+  content:"∑   ∫   π   √x   Δ   λ   μ   σ   ΣPₜ   i = C × r × t   %   +   −   ×   ÷   =      VF = VP(1+i)ⁿ      PV = FV/(1+r)ⁿ      A = P(1+r/n)ⁿ";
+  position:absolute;
+  z-index:-1;
+  left:3%;
+  right:3%;
+  bottom:5%;
+  font:600 27px/2.6 "Segoe UI",Arial,sans-serif;
+  letter-spacing:8px;
+  word-spacing:16px;
+  color:rgba(112,220,255,.20);
+  transform:rotate(-4deg);
+  pointer-events:none;
+  white-space:normal;
+  text-shadow:0 0 18px rgba(0,180,255,.12);
+}
+.inicio-shell > .inicio-decoracion{
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  overflow:hidden;
+}
+.inicio-decoracion::before,
+.inicio-decoracion::after{
+  content:"";
+  position:absolute;
+  width:620px;
+  height:260px;
+  border-radius:50%;
+  border-top:1px solid rgba(62,214,255,.38);
+  border-bottom:1px solid rgba(0,122,255,.20);
+  box-shadow:
+    0 0 28px rgba(0,183,255,.10),
+    0 0 70px rgba(0,106,255,.08);
+}
+.inicio-decoracion::before{
+  left:-90px;
+  bottom:30px;
+  transform:rotate(-9deg);
+}
+.inicio-decoracion::after{
+  right:-110px;
+  bottom:80px;
+  transform:rotate(10deg);
+}
+.inicio-particulas{
+  position:absolute;
+  inset:0;
+  background-image:
+    radial-gradient(circle at 7% 30%,rgba(51,211,255,.9) 0 2px,transparent 3px),
+    radial-gradient(circle at 18% 74%,rgba(27,151,255,.75) 0 2px,transparent 3px),
+    radial-gradient(circle at 31% 16%,rgba(63,203,255,.7) 0 2px,transparent 3px),
+    radial-gradient(circle at 48% 86%,rgba(37,174,255,.8) 0 2px,transparent 3px),
+    radial-gradient(circle at 67% 22%,rgba(0,204,255,.75) 0 2px,transparent 3px),
+    radial-gradient(circle at 82% 68%,rgba(55,212,255,.8) 0 2px,transparent 3px),
+    radial-gradient(circle at 94% 42%,rgba(0,184,255,.9) 0 3px,transparent 4px);
+  filter:drop-shadow(0 0 7px rgba(0,195,255,.55));
+}
+.inicio-panel{
+  max-width:1180px;
+  margin:0 auto;
+  background:rgba(4,24,54,.72);
+  border:1px solid rgba(72,205,255,.42);
+  border-radius:12px;
+  box-shadow:0 18px 55px rgba(0,0,0,.34),0 0 35px rgba(0,143,255,.10);
+  overflow:hidden;
+  backdrop-filter:blur(7px);
+}
+.inicio-cabecera{
+  padding:22px 26px 18px;
+  border-bottom:1px solid rgba(100,202,235,.22);
+  background:rgba(7,31,66,.48);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+}
+.inicio-cabecera h2{
+  margin:0;
+  color:#fff;
+  font-size:26px;
+  letter-spacing:.3px;
+  text-shadow:0 0 18px rgba(49,202,255,.24);
+}
+.inicio-cabecera p{margin:6px 0 0;color:#b7d5e7}
+.estado-sistema{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;font-weight:700;color:#79e3a0}
+.estado-punto{width:10px;height:10px;border-radius:50%;background:#43d879;box-shadow:0 0 0 3px rgba(67,216,121,.16),0 0 14px rgba(67,216,121,.65)}
+.modulos{padding:24px 26px 30px}
+.modulos-label{font-size:12px;font-weight:700;color:#9fc6dc;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.modulo-item{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:18px 20px;
+  margin-top:10px;
+  border:1px solid rgba(81,190,239,.34);
+  border-radius:9px;
+  background:linear-gradient(135deg,rgba(32,111,180,.32),rgba(8,71,128,.27));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 7px 20px rgba(0,0,0,.18);
+  transition:box-shadow .15s ease,border-color .15s ease,transform .15s ease;
+}
+.modulo-item:hover{border-color:rgba(91,215,255,.62);box-shadow:0 8px 24px rgba(0,0,0,.24),0 0 20px rgba(0,155,255,.10);transform:translateY(-1px)}
+.modulo-icono{width:48px;height:48px;flex:0 0 48px;border-radius:8px;background:rgba(78,169,229,.18);border:1px solid rgba(100,207,255,.24);color:#aeeaff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.modulo-contenido{flex:1;min-width:0}
+.modulo-contenido h3{margin:0 0 5px;color:#fff;font-size:17px}
+.modulo-contenido p{margin:0;color:#c0d7e5;line-height:1.45}
+.modulo-estado{font-size:10px;font-weight:700;color:#b9d8e8;background:rgba(104,176,218,.16);border:1px solid rgba(111,203,239,.18);border-radius:12px;padding:5px 9px;white-space:nowrap}
+.modulo-accion{flex:0 0 auto}
+/* Los botones .primario conservan exactamente su definición global existente. */
+.modulo-accion .primario{min-width:190px;padding:10px 14px}
+.modulo-item.titulos .modulo-icono{background:rgba(63,191,218,.17);color:#a9f2ff}
+.modulo-item.titulos .modulo-estado{background:rgba(63,191,218,.14);color:#a9e7f4}
+.inicio-nota{margin-top:16px;padding:10px 12px;background:rgba(247,250,252,.08);border-left:3px solid #24b8e8;color:#b9d4e2;font-size:12px}
+.inicio-marca{
+  text-align:center;
+  margin:-4px 0 20px;
+  color:#fff;
+}
+.inicio-marca-icono{
+  width:58px;
+  height:58px;
+  margin:0 auto 9px;
+  border-radius:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:31px;
+  background:linear-gradient(145deg,#0b6ed1,#19c8ee);
+  border:1px solid rgba(150,239,255,.70);
+  box-shadow:0 0 24px rgba(0,187,255,.30),inset 0 1px 8px rgba(255,255,255,.22);
+}
+.inicio-marca h1{
+  margin:0;
+  font-size:clamp(30px,4vw,48px);
+  line-height:1.05;
+  letter-spacing:-1px;
+  font-weight:800;
+  text-shadow:0 4px 22px rgba(0,0,0,.30);
+}
+.inicio-marca h1 span{
+  color:#35c9f2;
+  text-shadow:0 0 20px rgba(53,201,242,.24);
+}
+.inicio-marca p{
+  margin:9px 0 0;
+  color:#a9cde0;
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+@media(max-width:800px){
+  .inicio-cabecera{align-items:flex-start;flex-direction:column}
+  .modulo-item{align-items:flex-start;flex-wrap:wrap}
+  .modulo-contenido{flex-basis:calc(100% - 66px)}
+  .modulo-estado{margin-left:66px}
+  .modulo-accion{width:100%;margin-left:66px}
+  .modulo-accion .primario{width:100%}
+}
+@media(max-width:600px){
+  .inicio-shell{padding:18px 10px}
+  .inicio-cabecera,.modulos{padding:18px}
+  .modulo-item{padding:15px}
+  .modulo-contenido{flex-basis:calc(100% - 60px)}
+  .modulo-estado,.modulo-accion{margin-left:60px}
+  .estado-sistema{white-space:normal}
+  .inicio-shell::after{font-size:18px;letter-spacing:4px;word-spacing:7px}
+  .inicio-marca h1{font-size:32px}
+}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <div><h1>LIQUIDADORES DIAN</h1><p>Sistema integral de liquidación y aplicación de obligaciones tributarias</p></div>
+  <div><h1>LIQUIDADOR DE IMPUESTOS</h1><p>Sistema integral de liquidación y aplicación de obligaciones tributarias</p></div>
 </header>
 <main class="inicio-shell">
+  <div class="inicio-decoracion" aria-hidden="true"><div class="inicio-particulas"></div></div>
+  <div class="inicio-marca" aria-label="Liquidador de Impuestos">
+    <div class="inicio-marca-icono" aria-hidden="true">▦</div>
+    <h1>Liquidador de <span>Impuestos</span></h1>
+    <p>CÁLCULOS PRECISOS · NORMATIVA ACTUALIZADA · RESULTADOS CONFIABLES</p>
+  </div>
   <section class="inicio-panel" aria-labelledby="tituloInicio">
     <div class="inicio-cabecera">
       <div><h2 id="tituloInicio">MÓDULOS</h2><p>Seleccione el módulo de trabajo que desea utilizar.</p></div>
