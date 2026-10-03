@@ -1177,8 +1177,55 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         liquidacionBase:base,estadoFinal
       };
     });
-    const saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
+
+    // CIERRE CONTROLADO POR REDONDEO: si queda un saldo positivo de hasta
+    // $1.000 y existe remanente real de un TDJ, se utiliza ese remanente para
+    // cerrar la diferencia. No se modifica el valor nominal ni el motor.
+    const TOLERANCIA_CIERRE_REMANENTE_TDJ=1000;
+    let ajusteCierreRemanente=0;
+    const ajustesCierreRemanente=[];
+    if(saldoPendienteObligaciones>0 && saldoPendienteObligaciones<=TOLERANCIA_CIERRE_REMANENTE_TDJ && remanenteTitulos>0){
+      let pendienteCierre=saldoPendienteObligaciones;
+      for(const x of resumenObligaciones){
+        if(pendienteCierre<=0)break;
+        const saldoObligacion=Math.max(0,Number(x.saldo||0));
+        if(saldoObligacion<=0)continue;
+        let aplicadoCierre=Math.min(saldoObligacion,pendienteCierre);
+        let tituloDestino=null;
+        for(let ti=resumenTitulos.length-1;ti>=0&&!tituloDestino;ti--){
+          const rt=resumenTitulos[ti];
+          if(Number(rt.excedente||0)<=0)continue;
+          const vinculado=(rt.trazabilidad||[]).some(a=>a.obligacionId===x.obligacion.id);
+          if(vinculado||!tituloDestino)tituloDestino=rt;
+        }
+        if(!tituloDestino)continue;
+        aplicadoCierre=Math.min(aplicadoCierre,Math.max(0,Number(tituloDestino.excedente||0)));
+        if(aplicadoCierre<=0)continue;
+        const estadoFinal=x.estadoFinal||{};
+        const componente=Number(estadoFinal.intereses||0)>0?"INTERESES":(Number(estadoFinal.sancion||0)>0?"SANCIÓN":"IMPUESTO");
+        const anteriorSaldo=Number(x.saldo||0);
+        x.saldo=Math.max(0,anteriorSaldo-aplicadoCierre);
+        x.ajusteCierreRemanente=Number(x.ajusteCierreRemanente||0)+aplicadoCierre;
+        tituloDestino.excedente=Math.max(0,Number(tituloDestino.excedente||0)-aplicadoCierre);
+        tituloDestino.ajusteCierreRemanente=Number(tituloDestino.ajusteCierreRemanente||0)+aplicadoCierre;
+        ajusteCierreRemanente+=aplicadoCierre;
+        pendienteCierre-=aplicadoCierre;
+        ajustesCierreRemanente.push({
+          obligacionId:x.obligacion.id,
+          obligacion:`${upper(x.obligacion.concepto)} ${x.obligacion.anio}${x.obligacion.periodo?` · P${x.obligacion.periodo}`:""}`,
+          tituloId:tituloDestino.titulo?.id||"",
+          titulo:tituloDestino.titulo?.tdj||`TDJ ${tituloDestino.titulo?.numero||""}`,
+          fecha:tituloDestino.titulo?.fecha||"",
+          valor:aplicadoCierre,
+          componente,
+          saldoAntes:anteriorSaldo,
+          saldoDespues:Math.max(0,anteriorSaldo-aplicadoCierre)
+        });
+      }
+      saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    }
 
     const hayBeneficio1419=obligaciones.some(o=>esTipoDecreto1419(o.tipoTasa))
       ||obligaciones.some(o=>(o.pagos||[]).some(p=>esTipoDecreto1419(p.tipo)));
@@ -1196,15 +1243,15 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // Si todavía existe deuda, ningún remanente del título puede convertirse
     // en endoso. Esto protege especialmente los TDJ <= $1.000, que deben pasar
     // por la regla especial de imputación exclusiva a intereses.
-    if(saldoPendienteObligaciones>1 && remanenteTitulos>0){
-      throw new Error(`INCONSISTENCIA TDJ: NO ES POSIBLE GENERAR ENDOSO MIENTRAS EXISTE SALDO DE OBLIGACIONES (${dinero(saldoPendienteObligaciones)}). EL REMANENTE ${dinero(remanenteTitulos)} DEBE SER IMPUTADO SEGÚN LAS REGLAS DE PAGO.`);
+    if(saldoPendienteObligaciones>0 && remanenteTitulos>ajusteCierreRemanente){
+      throw new Error(`INCONSISTENCIA TDJ: NO ES POSIBLE GENERAR ENDOSO MIENTRAS EXISTE SALDO DE OBLIGACIONES (${dinero(saldoPendienteObligaciones)}). EL REMANENTE DISPONIBLE DEBE SER IMPUTADO SEGÚN LAS REGLAS DE PAGO.`);
     }
-    const endoso=saldoPendienteObligaciones<=1?remanenteTitulos:0;
+    const endoso=Math.max(0,remanenteTitulos-ajusteCierreRemanente);
 
-    // INVARIANTES DE SEGURIDAD TDJ: la suma de títulos debe cerrar exactamente
-    // contra aplicado + endoso y ninguna obligación puede quedar negativa.
-    const totalTitulos= titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Math.max(0,Number(t.valor||0)),0);
-    const totalAplicado=resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Math.max(0,Number(y.aplicado||0)),0),0);
+    // INVARIANTE: título nominal = aplicado final + endoso.
+    const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Math.max(0,Number(t.valor||0)),0);
+    const totalAplicadoBase=resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Math.max(0,Number(y.aplicado||0)),0),0);
+    const totalAplicado=totalAplicadoBase+ajusteCierreRemanente;
     const diferenciaCierre=Math.round((totalTitulos-totalAplicado-endoso)*100)/100;
     if(Math.abs(diferenciaCierre)>1){
       throw new Error(`INCONSISTENCIA DE CIERRE TDJ: TÍTULOS ${dinero(totalTitulos)}, APLICADO ${dinero(totalAplicado)}, ENDOSO ${dinero(endoso)}.`);
@@ -1213,7 +1260,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       throw new Error("INCONSISTENCIA TDJ: una obligación quedó con saldo negativo.");
     }
 
-    resultado={resumenObligaciones,resumenTitulos,endoso,fechaCalculo:hoyISO(),observacionesBeneficio1419};
+    resultado={resumenObligaciones,resumenTitulos,endoso,totalAplicadoFinal:totalAplicado,ajusteCierreRemanente,ajustesCierreRemanente,fechaCalculo:hoyISO(),observacionesBeneficio1419};
     resultadoDesactualizado=false;
     pintarResultado(resultado);
     renderPagos();
@@ -1228,7 +1275,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
 function pintarResultado(r){
   const box=$("resultadoTDJ");if(!box)return;box.hidden=false;box.style.display="";
   const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Number(t.valor||0),0);
-  const totalAplicado=r.resumenTitulos.reduce((a,t)=>a+t.trazabilidad.reduce((x,y)=>x+Number(y.aplicado||0),0),0);
+  const totalAplicado=Number(r.totalAplicadoFinal ?? r.resumenTitulos.reduce((a,t)=>a+t.trazabilidad.reduce((x,y)=>x+Number(y.aplicado||0),0),0));
   const totalSaldo=r.resumenObligaciones.reduce((a,o)=>a+Number(o.saldo||0),0);
   if($("resTotalTitulos"))$("resTotalTitulos").textContent=dinero(totalTitulos);if($("resAplicado"))$("resAplicado").textContent=dinero(totalAplicado);if($("resEndoso"))$("resEndoso").textContent=dinero(r.endoso);if($("resSaldo"))$("resSaldo").textContent=dinero(totalSaldo);
   const otbody=$("tablaResultadoObligaciones")?.querySelector("tbody");
@@ -1244,7 +1291,7 @@ function pintarResultado(r){
       x.trazabilidad.forEach(a=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(a.titulo)}</td><td>${fechaVisible(a.fecha)}</td><td>${esc(a.obligacion)}</td><td>${dinero(a.valorAntes)}</td><td>${dinero(a.aplicadoImpuesto)}</td><td>${dinero(a.aplicadoIntereses)}</td><td>${dinero(a.aplicadoSancion)}</td><td>${dinero(a.aplicado)}</td><td>${dinero(a.saldoTitulo)}</td><td>${dinero(a.saldoObligacion)}</td>`;ttbody.appendChild(tr);});
     });
   }
-  const nota=$("notaEndoso");if(nota)nota.textContent=r.endoso>0?`TÍTULOS SOBRANTES PARA ENDOSO: ${dinero(r.endoso)}.`:"NO QUEDARON TÍTULOS SOBRANTES PARA ENDOSO.";
+  const nota=$("notaEndoso");if(nota)nota.textContent=r.ajusteCierreRemanente>0?`TÍTULOS SOBRANTES PARA ENDOSO: ${dinero(r.endoso)}.`:"NO QUEDARON TÍTULOS SOBRANTES PARA ENDOSO.";
   const eb=$("tablaEndoso")?.querySelector("tbody");
   if(eb){eb.innerHTML="";r.resumenTitulos.filter(x=>Number(x.excedente||0)>0).forEach(x=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${fechaVisible(x.titulo.fecha)}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td>`;eb.appendChild(tr);});if(!eb.children.length){const tr=document.createElement("tr");tr.innerHTML="<td colspan=5>NO HAY TÍTULOS SOBRANTES.</td>";eb.appendChild(tr);}}
 }
@@ -1876,7 +1923,7 @@ async function exportarPdfTDJ(){
       if(resultadoDesactualizado || !resultado)return;
     }
     const totalTitulos=titulos.reduce((a,t)=>a+Number(t.valor||0),0);
-    const totalAplicado=resultado.resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Number(y.aplicado||0),0),0);
+    const totalAplicado=Number(resultado.totalAplicadoFinal ?? resultado.resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Number(y.aplicado||0),0),0));
     const totalSaldo=resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0);
     const paginas=[];
 
