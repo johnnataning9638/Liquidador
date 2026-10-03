@@ -12,7 +12,7 @@ function excedentePagoNormal(resultado,id,fecha,valor){
   return Math.max(0,Number(d?.excedente||d?.aplicado?.excedente||0));
 }
 
-export function ajustarTDJParaPagosPosteriores(motor,datos){
+export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   if(!motor||typeof motor.calcular!=="function")return datos;
   const originales=[...(datos?.pagos||[])].map((p,i)=>({...p,__ordenOriginal:i}));
   const tdjs=originales.filter(esTDJ).filter(p=>p.fecha&&Number(p.valor)>0);
@@ -38,7 +38,7 @@ export function ajustarTDJParaPagosPosteriores(motor,datos){
       if(excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)>0.5){normalProblema=p;break;}
     }
     if(!normalProblema)break;
-    const candidatos=ajustados.filter(p=>esTDJ(p)&&p.fecha&&String(p.fecha)<=String(normalProblema.fecha)&&Number(p.valor)>0)
+    const candidatos=ajustados.filter(p=>esTDJ(p)&&p.fecha&&String(p.fecha)<=String(normalProblema.fecha)&&Number(p.valor)>0 && (!opciones.soloTDJId || String(p.id)===String(opciones.soloTDJId)))
       .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||Number(b.__ordenOriginal||0)-Number(a.__ordenOriginal||0));
     const t=candidatos[0];
     if(!t)break;
