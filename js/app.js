@@ -1385,7 +1385,9 @@ function bloquePdfSinPagos(d,r){
   const detalle=Array.isArray(r.interesesPorCuota)?r.interesesPorCuota:[];
   const filasInteres=detalle.length?detalle.map((t,i)=>`<tr><td>${escPdf(t.vto||t.cuota||i+1)}</td><td>${dinero(t.base||t.capitalBase||0)}</td><td>${escPdf(fechaVisible(t.desde||t.fechaVencimiento||""))}</td><td>${escPdf(fechaVisible(t.hasta||t.fechaPago||r.fechaCorte||""))}</td><td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes??t.valor??0)}</td><td>${escPdf(t.metodologia||"INTERÉS CALCULADO")}</td></tr>`).join(""):
     `<tr><td colspan="8">NO SE GENERARON TRAMOS DE INTERÉS.</td></tr>`;
-  const tramosSancion=(r.sancionActualizacion?.tramos||[]).flatMap(x=>Array.isArray(x.tramos)?x.tramos:[]);
+  const tramosSancion=(Array.isArray(r.sancionActualizacion?.tramos)?r.sancionActualizacion.tramos:[])
+    .flatMap(x=>Array.isArray(x?.tramos)?x.tramos:[x])
+    .filter(t=>t&&typeof t==="object"&&Number.isFinite(Number(t.anio)));
   const filasSancion=tramosSancion.length?tramosSancion.map(t=>`<tr><td>${escPdf(t.anio||"")}</td><td>${escPdf(fechaVisible(t.desde||""))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${Number(t.ipcPorcentaje||0).toFixed(3)}%</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join(""):
     `<tr><td colspan="7">NO SE REALIZARON ACTUALIZACIONES DE SANCIÓN.</td></tr>`;
   const totalAct=tramosSancion.reduce((a,t)=>a+Number(t.actualizacion||0),0);
