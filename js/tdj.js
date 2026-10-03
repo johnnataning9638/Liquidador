@@ -1210,18 +1210,22 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal,secuencia};
     });
     let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
-    let remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
-    // EL REMANENTE DEL TDJ ES ENDOSO. Si la prioridad de pagos normales redujo
-    // un TDJ para reservar capacidad a un pago posterior, ese remanente no puede
-    // volver a utilizarse para cubrir el saldo después de dicho pago.
-    const endoso=remanenteTitulos;
-    // CIERRE DE TÍTULOS: cada peso queda exactamente en APLICADO o ENDOSO.
+    // CONSOLIDACIÓN FINAL: un título se divide una sola vez entre APLICADO y
+    // ENDOSO. Pantalla, PDF y Excel consumen exactamente estos mismos valores.
+    const resumenTitulosConsolidado=consolidarResumenTitulosTDJ(resumenTitulos);
+    const endoso=resumenTitulosConsolidado.reduce((a,x)=>a+Number(x.excedente||0),0);
     const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0)
       .reduce((a,t)=>a+Math.max(0,Number(t.valor||0)),0);
-    const totalAplicado=resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Math.max(0,Number(y.aplicado||0)),0),0);
+    const totalAplicado=resumenTitulosConsolidado.reduce((a,x)=>a+Number(x.aplicadoTotal||0),0);
     const diferenciaCierre=Math.round((totalTitulos-totalAplicado-endoso)*100)/100;
     if(Math.abs(diferenciaCierre)>1){
       throw new Error(`INCONSISTENCIA DE CIERRE TDJ: TÍTULOS ${dinero(totalTitulos)}, APLICADO ${dinero(totalAplicado)}, ENDOSO ${dinero(endoso)}.`);
+    }
+    for(const x of resumenTitulosConsolidado){
+      const diferenciaTitulo=Math.round((Number(x.nominal||0)-Number(x.aplicadoTotal||0)-Number(x.excedente||0))*100)/100;
+      if(Math.abs(diferenciaTitulo)>1){
+        throw new Error(`INCONSISTENCIA EN TDJ ${x.titulo?.tdj||x.titulo?.numero}: ORIGINAL ${dinero(x.nominal)}, APLICADO ${dinero(x.aplicadoTotal)}, ENDOSO ${dinero(x.excedente)}.`);
+      }
     }
     if(resumenObligaciones.some(x=>Number(x.saldo||0)<-1)){
       throw new Error("INCONSISTENCIA TDJ: una obligación quedó con saldo negativo.");
@@ -1238,7 +1242,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       observacionesBeneficio1419=[...observacionesBeneficio1419,observacion];
     }
 
-    resultado={resumenObligaciones,resumenTitulos,endoso,fechaCalculo:hoyISO(),observacionesBeneficio1419};
+    resultado={resumenObligaciones,resumenTitulos:resumenTitulosConsolidado,endoso,fechaCalculo:hoyISO(),observacionesBeneficio1419};
     resultadoDesactualizado=false;
     pintarResultado(resultado);
     renderPagos();
