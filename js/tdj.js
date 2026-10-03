@@ -1289,9 +1289,10 @@ function pintarResultado(r){
     r.resumenTitulos.forEach(x=>{
       if(!x.trazabilidad.length){const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${fechaVisible(x.titulo.fecha)}</td><td>—</td><td>${dinero(x.titulo.valor)}</td><td>$ 0</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td>`;ttbody.appendChild(tr);return;}
       x.trazabilidad.forEach(a=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(a.titulo)}</td><td>${fechaVisible(a.fecha)}</td><td>${esc(a.obligacion)}</td><td>${dinero(a.valorAntes)}</td><td>${dinero(a.aplicadoImpuesto)}</td><td>${dinero(a.aplicadoIntereses)}</td><td>${dinero(a.aplicadoSancion)}</td><td>${dinero(a.aplicado)}</td><td>${dinero(a.saldoTitulo)}</td><td>${dinero(a.saldoObligacion)}</td>`;ttbody.appendChild(tr);});
+      (r.ajustesCierreRemanente||[]).forEach(a=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(a.titulo)}</td><td>${fechaVisible(a.fecha)}</td><td>${esc(a.obligacion)} — CIERRE REMANENTE</td><td>${dinero(a.valor)}</td><td>${a.componente==="IMPUESTO"?dinero(a.valor):"$ 0"}</td><td>${a.componente==="INTERESES"?dinero(a.valor):"$ 0"}</td><td>${a.componente==="SANCIÓN"?dinero(a.valor):"$ 0"}</td><td>${dinero(a.valor)}</td><td>—</td><td>${dinero(a.saldoDespues)}</td>`;ttbody.appendChild(tr);});
     });
   }
-  const nota=$("notaEndoso");if(nota)nota.textContent=r.ajusteCierreRemanente>0?`TÍTULOS SOBRANTES PARA ENDOSO: ${dinero(r.endoso)}.`:"NO QUEDARON TÍTULOS SOBRANTES PARA ENDOSO.";
+  const nota=$("notaEndoso");if(nota)nota.textContent=r.ajusteCierreRemanente>0?`CIERRE POR REMANENTE TDJ: ${dinero(r.ajusteCierreRemanente)}. SALDO FINAL: $ 0. ENDOSO FINAL: ${dinero(r.endoso)}.`:(r.endoso>0?`TÍTULOS SOBRANTES PARA ENDOSO: ${dinero(r.endoso)}.`:"NO QUEDARON TÍTULOS SOBRANTES PARA ENDOSO.");
   const eb=$("tablaEndoso")?.querySelector("tbody");
   if(eb){eb.innerHTML="";r.resumenTitulos.filter(x=>Number(x.excedente||0)>0).forEach(x=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${fechaVisible(x.titulo.fecha)}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td>`;eb.appendChild(tr);});if(!eb.children.length){const tr=document.createElement("tr");tr.innerHTML="<td colspan=5>NO HAY TÍTULOS SOBRANTES.</td>";eb.appendChild(tr);}}
 }
@@ -1426,7 +1427,14 @@ function construirFilasExcelTDJ(){
   push(["FECHA SANCIÓN",primeraObligacion.fechaSancion||""]);
   push([]);
   push(["RESUMEN GENERAL"],{title:true});push(["TOTAL TÍTULOS","TOTAL APLICADO","SALDO OBLIGACIONES","TOTAL ENDOSO"],{header:true});
-  push([titulos.reduce((a,t)=>a+Number(t.valor||0),0),resultado.resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Number(y.aplicado||0),0),0),resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0),resultado.endoso],{money:[1,2,3,4]});push([]);
+  push([titulos.reduce((a,t)=>a+Number(t.valor||0),0),Number(resultado.totalAplicadoFinal||0),resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0),resultado.endoso],{money:[1,2,3,4]});
+  if(Number(resultado.ajusteCierreRemanente||0)>0){
+    push(["CIERRE POR REMANENTE TDJ"],{title:true});
+    push(["OBLIGACIÓN","TDJ","VALOR","COMPONENTE","SALDO ANTES","SALDO DESPUÉS"],{header:true});
+    (resultado.ajustesCierreRemanente||[]).forEach(a=>push([a.obligacion,a.titulo,a.valor,a.componente,a.saldoAntes,a.saldoDespues],{money:[3,5,6]}));
+    push(["TOTAL AJUSTE",resultado.ajusteCierreRemanente],{money:[2]});
+  }
+  push([]);
   observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).forEach(t=>push(["OBSERVACIÓN — BENEFICIO DECRETO 1419",t],{title:true}));
   resultado.resumenObligaciones.forEach((x,idx)=>{
     const o=x.obligacion,base=x.liquidacionBase||{};
@@ -1528,7 +1536,7 @@ function construirFilasExcelTDJ(){
   push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
   push([]);
   push(["TÍTULOS / TDJ — CONTROL FINAL"],{title:true});push(["Nº","TDJ","FECHA","VALOR ORIGINAL","OBSERVACIÓN","APLICADO","SOBRANTE / ENDOSO"],{header:true});
-  resultado.resumenTitulos.forEach((x,i)=>push([i+1,x.titulo.tdj||`TDJ ${i+1}`,x.titulo.fecha,x.titulo.valor||0,upper(x.titulo.observacion||""),x.trazabilidad.reduce((a,z)=>a+Number(z.aplicado||0),0),x.excedente||0],{money:[4,6,7]}));push([]);push(["TOTAL ENDOSO",resultado.endoso||0],{money:[2]});
+  resultado.resumenTitulos.forEach((x,i)=>push([i+1,x.titulo.tdj||`TDJ ${i+1}`,x.titulo.fecha,x.titulo.valor||0,upper(x.titulo.observacion||""),x.trazabilidad.reduce((a,z)=>a+Number(z.aplicado||0),0)+Number(x.ajusteCierreRemanente||0),x.excedente||0],{money:[4,6,7]}));push([]);push(["TOTAL ENDOSO",resultado.endoso||0],{money:[2]});
   return {rows,titleRows,headerRows,rowMoneyCols,rowPercentCols,nit};
 }
 function exportarExcelTDJ(){
