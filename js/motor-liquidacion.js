@@ -685,6 +685,16 @@ export class MotorLiquidacion{
       saldo:Math.max(0,Number(v.impuesto||0))
     }));
 
+    // REGLA DE SANCIÓN: SIMPLE POR ANTICIPOS vs. RÉGIMEN ORDINARIO.
+    // En este liquidador se identifica como SIMPLE por la combinación de:
+    // 1) concepto explícito SIMPLE; y 2) entre 4 y 6 cuotas/vencimientos,
+    // que corresponde al patrón operativo de anticipos que estamos usando.
+    // SIMPLE con 1-3 cuotas NO activa esta excepción y conserva la regla
+    // tradicional de fecha de sanción.
+    const conceptoObligacion=String(datos.concepto||"").trim().toUpperCase();
+    const cantidadCuotas=saldosVto.length;
+    const esSimplePorAnticipos=conceptoObligacion==="SIMPLE" && cantidadCuotas>=4 && cantidadCuotas<=6;
+
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
     const fechaSancion=fechaSancionReal||saldosVto[0]?.fecha||"";
@@ -931,14 +941,16 @@ export class MotorLiquidacion{
       // Interés vigente para cada vencimiento antes de imputar el pago.
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
       const intCalc=calcularInteresesAntesPago(pago);
-      // La sanción solo puede participar en la imputación si el pago/Título
-      // tiene fecha igual o posterior a la fecha de sanción. Antes de esa fecha
-      // el pago se distribuye exclusivamente entre impuesto e intereses.
-      // La sanción ya determinada forma parte de la deuda exigible para la imputación del pago.
-      // La fecha de presentación/sanción no bloquea su participación en la proporcionalidad:
-      // el soporte manual de referencia aplica la sanción desde el primer pago,
-      // incluso cuando este es anterior a la fecha de presentación registrada.
-      const sancionHabilitadaPorFecha=true;
+      // REGLA DE IMPUTACIÓN DE SANCIÓN:
+      // - SIMPLE identificado por 4 a 6 cuotas/anticipos: la sanción participa
+      //   desde el primer anticipo, incluso si el pago es anterior a la fecha
+      //   de presentación/sanción.
+      // - RÉGIMEN ORDINARIO (y SIMPLE con 1-3 cuotas): se conserva la regla
+      //   histórica: un pago anterior a la fecha de sanción no imputa sanción;
+      //   un pago en la misma fecha o posterior sí puede imputarla.
+      const sancionHabilitadaPorFecha=esSimplePorAnticipos
+        || !fechaSancionReal
+        || pago.fecha>=fechaSancionReal;
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
       // La sanción base es definitiva: primero se actualiza únicamente el
@@ -1236,8 +1248,10 @@ export class MotorLiquidacion{
       const deudaProporcional={
         impuesto:impuestoExigible,
         intereses:interesesExigibles,
-        // Antes de la fecha de sanción, el pago no puede imputarse a sanción.
-        sancion:Math.max(0,saldoSancion)
+        // La sanción solo entra en la proporcionalidad cuando la regla de
+        // imputación del pago la habilita. En SIMPLE 4-6 cuotas participa desde
+        // el primer anticipo; en régimen ordinario respeta la fecha de sanción.
+        sancion:sancionHabilitadaPorFecha?Math.max(0,saldoSancion):0
       };
 
       const aplicacionGlobal=this.aplicarProporcionalidad(
