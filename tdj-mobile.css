@@ -462,3 +462,114 @@
     margin-top:0!important;
   }
 }
+
+
+/* AJUSTE DEFINITIVO — CAMPOS DE OBLIGACIÓN Y PESTAÑAS EN CELULAR
+   SOLO PRESENTACIÓN. NO MODIFICA LÓGICA NI CARGA DE PARÁMETROS. */
+@media screen and (max-width:650px){
+
+  /* PESTAÑAS: cada nombre se distribuye en varias líneas dentro de su propia celda. */
+  .tdj-tab-buttons{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    align-items:stretch!important;
+  }
+  .tdj-tab-buttons .tab-btn{
+    width:100%!important;
+    min-width:0!important;
+    min-height:58px!important;
+    height:auto!important;
+    padding:8px 4px!important;
+    font-size:10px!important;
+    line-height:1.25!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+    text-align:center!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+
+  /* OBRIGACIÓN: TODOS LOS CAMPOS UNO DEBAJO DEL OTRO. */
+  .obligation-fields{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-flow:row!important;
+    gap:12px!important;
+    padding:14px 12px 16px!important;
+  }
+
+  .obligation-fields > label,
+  .obligation-fields > label:nth-child(n){
+    display:flex!important;
+    flex-direction:column!important;
+    grid-column:1!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    gap:5px!important;
+    font-size:11px!important;
+    line-height:1.3!important;
+    white-space:normal!important;
+    overflow:visible!important;
+  }
+
+  .obligation-fields > label input,
+  .obligation-fields > label select{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    height:43px!important;
+    min-height:43px!important;
+    margin:0!important;
+    padding:8px 10px!important;
+    font-size:14px!important;
+    line-height:1.2!important;
+  }
+
+  /* CONCEPTO / IMPUESTO, AÑO, PERÍODO, SANCIÓN, VALOR SANCIÓN,
+     FECHA SANCIÓN, BENEFICIO Y VALOR CON BENEFICIO quedan separados. */
+
+  /* Los dos campos de tasa TAMBIÉN se muestran y quedan uno debajo del otro. */
+  .obligation-fields > label.tdj-tasa-obligacion,
+  .obligation-fields > label.tdj-tasa-obligacion[hidden]{
+    display:flex!important;
+    grid-column:1!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  .obligation-fields > label.tdj-tasa-obligacion select,
+  .obligation-fields > label.tdj-tasa-obligacion input{
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  /* El contenedor de fecha no puede provocar desborde horizontal. */
+  .obligation-fields .fecha-dual{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 40px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    gap:6px!important;
+  }
+
+  .obligation-fields .fecha-dual input{
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  /* El texto de etiquetas largas siempre ocupa su propia línea y se lee completo. */
+  .obligation-fields > label{
+    overflow-wrap:anywhere!important;
+  }
+
+  /* Separación adicional antes de cuotas para que el formulario respire. */
+  .obligacion-card .subpanel{
+    margin:0 12px 14px!important;
+  }
+}
