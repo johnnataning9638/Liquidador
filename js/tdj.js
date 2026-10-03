@@ -1209,7 +1209,16 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       }
       return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal,secuencia};
     });
-    let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);\n    for(const x of resumenObligaciones){
+      for(const mov of (x.secuencia||[])){
+        if(mov.esTDJ)continue;
+        const excedenteNormal=Math.max(0,Number(mov.detalle?.excedente??mov.detalle?.aplicado?.excedente??0));
+        if(excedenteNormal>1){
+          throw new Error("INCONSISTENCIA DE PRIORIDAD: UN PAGO NORMAL POSTERIOR QUEDO CON EXCEDENTE. EL TDJ ANTERIOR DEBE REDUCIRSE Y EL REMANENTE DEBE QUEDAR COMO ENDOSO.");
+        }
+      }
+    }
+
     // CONSOLIDACIÓN FINAL: un título se divide una sola vez entre APLICADO y
     // ENDOSO. Pantalla, PDF y Excel consumen exactamente estos mismos valores.
     const resumenTitulosConsolidado=consolidarResumenTitulosTDJ(resumenTitulos);
