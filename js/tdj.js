@@ -185,11 +185,38 @@ function nuevaObligacion(numero){
 }
 function nuevoTitulo(numero){return {id:uid("TDJ"),numero,tdj:"",fecha:"",valor:0,observacion:""};}
 
-function normalizarDatosLocal(){
-  return Promise.all([
-    fetch("datos/uvt.json").then(r=>r.json()),fetch("datos/ipc.json").then(r=>r.json()),fetch("datos/tasas-moratorias.json").then(r=>r.json()),
-    fetch("datos/beneficios.json").then(r=>r.json()),fetch("datos/sanciones.json").then(r=>r.json()),fetch("datos/reglas-obligaciones.json").then(r=>r.json())
-  ]).then(([a,b,c,d,e,f])=>{uvt=a||[];ipc=b||[];tasas=c||[];window.__tdjBeneficios=d||[];window.__tdjSanciones=e||[];window.__tdjReglas=f||[];reconstruirMotor();});
+async function cargarJSONLocalTDJ(ruta){
+  const limpio=String(ruta||"").replace(/^\\.?\\//,"");
+  const candidatos=[
+    new URL("../"+limpio,import.meta.url).href,
+    new URL(limpio,window.location.origin+"/").href,
+    new URL(limpio,document.baseURI||window.location.href).href
+  ].filter((u,i,a)=>a.indexOf(u)===i);
+  let ultimoError=null;
+  for(const url of candidatos){
+    for(let intento=1;intento<=2;intento++){
+      const controller=typeof AbortController!=="undefined"?new AbortController():null;
+      const timer=controller?setTimeout(()=>controller.abort(),8000):null;
+      try{
+        const respuesta=await fetch(url,{cache:intento===1?"no-store":"reload",signal:controller?.signal});
+        if(!respuesta.ok)throw new Error("HTTP "+respuesta.status);
+        const texto=await respuesta.text();
+        if(!texto.trim())throw new Error("RESPUESTA_VACIA");
+        try{return JSON.parse(texto);}catch{throw new Error("JSON_INVALIDO");}
+      }catch(e){
+        ultimoError=e?.name==="AbortError"?new Error("TIEMPO_ESPERA"):e;
+        if(intento<2)await new Promise(resolve=>setTimeout(resolve,250));
+      }finally{if(timer)clearTimeout(timer);}
+    }
+  }
+  throw new Error("No se pudo cargar el parámetro "+limpio+" · "+(ultimoError?.message||"ERROR_DESCONOCIDO"));
+}
+async function normalizarDatosLocal(){
+  const [a,b,c,d,e,f]=await Promise.all([
+    cargarJSONLocalTDJ("datos/uvt.json"),cargarJSONLocalTDJ("datos/ipc.json"),cargarJSONLocalTDJ("datos/tasas-moratorias.json"),
+    cargarJSONLocalTDJ("datos/beneficios.json"),cargarJSONLocalTDJ("datos/sanciones.json"),cargarJSONLocalTDJ("datos/reglas-obligaciones.json")
+  ]);
+  uvt=a||[];ipc=b||[];tasas=c||[];window.__tdjBeneficios=d||[];window.__tdjSanciones=e||[];window.__tdjReglas=f||[];reconstruirMotor();
 }
 function reconstruirMotor(){
   const cfg={uvt,intereses:tasas,ipc,tasasMoratorias:tasas,beneficios:window.__tdjBeneficios||[],sanciones:window.__tdjSanciones||[],reglasObligaciones:window.__tdjReglas||[]};
