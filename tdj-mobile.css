@@ -1,0 +1,232 @@
+/* TDJ MOBILE — CAPA EXCLUSIVA DE PRESENTACIÓN
+   NO MODIFICA LÓGICA, MOTOR, PARÁMETROS, IMPORTADORES NI EXPORTADORES.
+   Se carga únicamente para pantallas de hasta 650px. */
+@media screen and (max-width:650px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden}
+  body{font-size:13px}
+
+  .topbar{
+    padding:10px 12px;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .topbar .ruta-modulo{width:100%}
+  .topbar .btn-inicio{
+    width:100%;
+    min-height:38px;
+  }
+  .topbar #estadoMotorTDJ{
+    margin-left:auto;
+    max-width:100%;
+    text-align:center;
+  }
+
+  .tdj-wrap{
+    width:100%;
+    max-width:none;
+    margin:0;
+    padding:8px 7px 28px;
+  }
+
+  /* Pestañas: compactas y utilizables con una sola mano. */
+  .tabs-nav{
+    display:block!important;
+    width:100%;
+    margin:0 0 8px;
+    padding:0;
+    overflow:visible;
+  }
+  .tdj-tab-buttons{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    width:100%;
+    min-width:0;
+    gap:0;
+  }
+  .tdj-tab-buttons .tab-btn{
+    min-width:0;
+    width:100%;
+    min-height:42px;
+    padding:7px 4px;
+    font-size:10px;
+    line-height:1.15;
+    white-space:normal;
+    word-break:normal;
+  }
+
+  .tab-pane-inner{gap:7px}
+  .card{margin-bottom:7px;border-radius:8px}
+  .card-head{
+    padding:10px 11px;
+    gap:8px;
+    align-items:stretch;
+  }
+  .card-head h3{font-size:14px}
+  .kicker{font-size:10px}
+
+  .compact-grid{
+    grid-template-columns:1fr!important;
+    gap:7px;
+    padding:10px 11px;
+  }
+  .compact-grid label{font-size:11px}
+  .compact-grid input,
+  .compact-grid select{
+    min-height:38px;
+    font-size:13px;
+  }
+
+  /* Botones principales: ancho completo, sin romper la lógica de eventos. */
+  .card-head>.primario,
+  .card-head>.secundario,
+  .tdj-sheet-actions button{
+    min-height:40px;
+  }
+  .card-head>.primario{
+    width:100%;
+  }
+  .tdj-sheet-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:6px;
+    margin:8px 0;
+  }
+  .tdj-sheet-actions button{
+    width:100%;
+    margin:0;
+    padding:9px 10px;
+  }
+
+  /* Importadores: controles apilados, sin desbordamiento horizontal. */
+  .import-box{
+    margin:0 0 8px;
+    padding:9px;
+  }
+  .tdj-global-import .tdj-import-grid,
+  .tdj-title-import-grid{
+    display:grid;
+    grid-template-columns:1fr!important;
+    gap:7px;
+    width:100%;
+  }
+  .tdj-global-import .tdj-import-grid>*,
+  .tdj-title-import-grid>*{
+    grid-column:1!important;
+    grid-row:auto!important;
+    min-width:0;
+    width:100%;
+  }
+  .tdj-global-import textarea,
+  .tdj-title-import textarea{
+    min-height:92px;
+    font-size:12px;
+  }
+  .tdj-global-import .tdj-import-actions,
+  .tdj-title-import-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    width:100%;
+    min-width:0;
+    align-items:stretch;
+    justify-content:stretch;
+  }
+  .tdj-global-import .tdj-import-actions button,
+  .tdj-title-import-actions button{
+    width:100%;
+    min-width:0;
+    min-height:40px;
+    margin:0;
+  }
+  .tdj-global-import .tdj-import-actions .indicador-ia,
+  .tdj-title-import-actions .indicador-ia{
+    grid-column:1 / -1;
+    justify-self:center;
+    align-self:center;
+  }
+  #resultadoImportacionObligacionTDJ,
+  #resultadoImportacionPagosTDJ,
+  #resultadoImportacionTitulos{
+    display:block;
+    width:100%;
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+
+  /* Tablas: nunca se aplastan; se desplazan dentro de su contenedor. */
+  .tabla-scroll{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tabla-scroll table{
+    width:max-content;
+    min-width:760px;
+  }
+  #tablaTitulos{min-width:760px!important}
+  #tablaTitulos input,
+  #tablaTitulos select{
+    min-width:95px;
+    min-height:34px;
+    font-size:12px;
+  }
+
+  .subpanel{margin:0 10px 9px}
+  .subhead{padding:8px 9px}
+  .mini-table th,.mini-table td,
+  .result-table th,.result-table td{
+    padding:6px 7px;
+    font-size:11px;
+  }
+
+  /* Resultados: una métrica por fila, legible en teléfono. */
+  .summary-grid{
+    grid-template-columns:1fr!important;
+    gap:7px;
+    margin-bottom:8px;
+    padding:10px 11px 0!important;
+  }
+  .metric{padding:10px}
+  .metric strong{font-size:18px}
+
+  .resultado-head{
+    padding:10px 11px;
+  }
+  .resultado-head h2{
+    font-size:14px;
+    line-height:1.25;
+  }
+  .endoso{
+    margin:8px 10px;
+    padding:9px 10px;
+    font-size:12px;
+  }
+  .nota-endoso{margin:8px 10px 10px}
+
+  .nav-footer{
+    flex-direction:column;
+    gap:6px;
+    margin-top:10px;
+  }
+  .nav-footer button{
+    width:100%;
+    min-height:40px;
+  }
+
+  /* Paneles de tasas/IPC: se conservan intactos y solo se adaptan al ancho. */
+  .tdj-parametros-panel{
+    width:100%;
+    max-width:100%;
+    overflow:hidden;
+  }
+  .tdj-parametros-panel .tasas-admin-bar{
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+  }
+  .tdj-parametros-panel .tabla-scroll table{
+    min-width:760px;
+  }
+}
