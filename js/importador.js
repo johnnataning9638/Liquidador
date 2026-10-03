@@ -603,62 +603,6 @@ export function importarDatosInteligente(texto){
 }
 
 
-export function importarTitulosInteligente(texto){
-  const raw=String(texto??"").replace(/\r/g,"");
-  const lines=raw.split("\n").filter(x=>x.trim());
-  if(!lines.length)throw new Error("No hay información para reconocer títulos.");
-
-  const titulo=[];
-  const visto=new Set();
-  const agregar=p=>{
-    if(!p||!p.tdj||!p.fecha||!(Number(p.valor)>0))return;
-    const tdj=normalizarDocumento(p.tdj);
-    const clave=`T|${tdj}|${p.fecha}|${truncarValorEntero(p.valor)}`;
-    if(!tdj||visto.has(clave))return;
-    visto.add(clave);
-    titulo.push({...p,tdj,recibo:"",tipo:"TDJ",valor:truncarValorEntero(p.valor)});
-  };
-
-  // REUTILIZA EL MISMO MOTOR QUE YA FUNCIONA PARA PAGOS DEL LIQUIDADOR DIAN:
-  // documento + fecha + valor. Para títulos solo cambiamos el documento por TDJ.
-  for(let h=0;h<Math.min(lines.length,20);h++){
-    const headers=separarFilaPagos(lines[h]);
-    const nh=headers.map(norm);
-    const ixT=nh.findIndex(x=>x==="tdj"||x.includes("tdj no")||x.includes("tdj numero")||x==="titulo"||x==="titulo no"||x==="titulo numero"||x.includes("titulo de deposito"));
-    const ixF=nh.findIndex(x=>x==="fecha"||x.includes("fecha tdj")||x.includes("fecha titulo")||x.includes("fecha pago"));
-    const ixV=nh.findIndex(x=>x==="valor"||x==="valor tdj"||x.includes("valor titulo")||x.includes("valor original")||x.includes("valor pagado")||x.includes("valor pago"));
-    if(ixT<0||ixF<0||ixV<0)continue;
-
-    // Convertimos la tabla de títulos a la misma estructura que el importador
-    // de pagos espera: TDJ | FECHA PAGO | VALOR PAGO.
-    const canon=["TDJ","FECHA PAGO","VALOR PAGO"];
-    for(let r=h+1;r<lines.length;r++){
-      const c=separarFilaPagos(lines[r]);
-      if(!c.length)continue;
-      const textoFila=norm(c.filter(Boolean).join(" | "));
-      if(/^(TOTAL|ENDOSO|OBSERVACION|OBSERVACIONES|RECUPERACION COMPLETA|FIN RECUPERACION|RESUMEN FINAL)/.test(textoFila))break;
-      const fila=[c[ixT]??"",c[ixF]??"",c[ixV]??""];
-      if(!fila[0]&&!fila[1]&&!fila[2])continue;
-      const p=reconocerPagosTabularesInteligente([canon.join("\t"),fila.join("\t")])[0];
-      agregar(p);
-    }
-    if(titulo.length)break;
-  }
-
-  // Segundo paso: dejar que el importador general de pagos resuelva formatos
-  // que no traen cabecera explícita o que vienen como "TDJ: ...".
-  if(!titulo.length){
-    const candidatos=[
-      ...reconocerPagosTabularesInteligente(lines),
-      ...reconocerPagosTranspuestosInteligente(lines),
-      ...reconocerPagosSinTitulos(lines)
-    ];
-    candidatos.filter(p=>p?.tdj).forEach(agregar);
-  }
-
-  return deduplicarPagos(titulo).map((p,i)=>({...p,numero:i+1,tipo:"TDJ"}));
-}
-
 export function importarTabulado(texto){
   const r=importarDatosInteligente(texto);
   if(!r.pagos.length) throw new Error("Se reconocieron los datos, pero no encontré pagos válidos. Verifica Fecha Pago y Valor Pago.");
