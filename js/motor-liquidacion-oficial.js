@@ -208,6 +208,25 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       return {liquidado:roundMil(liquidado),tramos,porVto};
     };
 
+    // LIQUIDACIÓN OFICIAL SIN PAGOS: al presionar CALCULAR, la fecha de corte
+    // debe permitir conocer intereses y sanción actualizada aunque no exista
+    // ningún pago. La sanción toma como base FECHA PROVIDENCIA DEFINITIVA.
+    if(pagos.length===0){
+      if(!fechaCorte) throw new Error("Debe existir una fecha de corte para liquidar una obligación oficial sin pagos.");
+      const calcCorte=calcularInteresesAntesPago({fecha:fechaCorte,valor:0,tipo:"TASA DIAN"});
+      saldoIntereses=roundMil(calcCorte.liquidado||0);
+      if(saldoSancion>0&&fechaFirmezaSancion&&fechaCorte>fechaFirmezaSancion){
+        const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,fechaCorte,{aniosAplicados:[]});
+        if(act.valor>saldoSancion)saldoSancion=act.valor;
+        if(act.tramos?.length){
+          detalleActualizacionSancion.push({fechaCorte,...act});
+          advertenciasSancion.push(...(act.advertencias||[]));
+        }
+      }
+      const impuestoSinPagos=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);
+      return {tipoLiquidacion:"OFICIAL",vencimientos:saldosVto,impuesto:impuestoSinPagos,intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:impuestoSinPagos+saldoIntereses+Math.max(0,saldoSancion),excedente:0,ultimo:null,detalle:[],interesesPorCuota:calcCorte.porVto||[],advertencias:[...validacion.advertencias,...advertenciasSancion],beneficiosAplicados:[],reglaObligacion:validacion.regla,validacionObligacion:validacion,verificacionObligacion:this.verificarImpuestoPlastico(datos),fechaCorte,sinPagos:true,sancionActualizacion:{fechaBase:fechaFirmezaSancion,fechaUltimaActualizacion:detalleActualizacionSancion.at(-1)?.fechaCorte||fechaFirmezaSancion,saldoOriginal:roundMil(sancionBaseOriginal),saldoFinal:roundMil(saldoSancion),actualizacionAcumulada:roundMil(Math.max(0,saldoSancion-sancionBaseOriginal)),tramos:detalleActualizacionSancion}};
+    }
+
     for(const pago of pagos){
       const especial=this.tasaEspecial(pago.tipo,pago.fecha);
       const actualizacionSancionPago={aplicada:false,fechaPago:pago.fecha,saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion),actualizacionTotal:0,tramos:[],eventos:[]};
