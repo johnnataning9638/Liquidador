@@ -2,7 +2,7 @@ import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
 import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.39";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.83";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.84";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.39";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.39";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.39";
@@ -304,7 +304,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.83"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.84"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1599,6 +1599,14 @@ function calcular(){
     if(erroresVigencia.length){
       throw new Error("NO SE PUEDE CONTINUAR CON LA LIQUIDACIÓN:\n\n"+erroresVigencia.join("\n\n"));
     }
+    // Selección defensiva del motor en cada cálculo:
+    // OFICIAL siempre usa exclusivamente MotorLiquidacionOficial y PRIVADA
+    // siempre usa MotorLiquidacion. Esto evita que una importación, una
+    // restauración de formulario o un cambio de tipo deje en memoria el motor
+    // anterior y genere una actualización de sanción equivocada.
+    const motorCalculo=d.tipoLiquidacion==="OFICIAL"?motorOficial:motorPrivado;
+    if(!motorCalculo)throw new Error("El motor de liquidación seleccionado no está disponible.");
+    motor=motorCalculo;
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
     let r=motor.calcular(d);
