@@ -1355,6 +1355,32 @@ export class MotorLiquidacion{
 
       saldoIntereses=roundMil(saldoInteresesNuevo);
 
+      // CIERRE AUTOMÁTICO DE RESIDUAL TDJ:
+      // Si el TDJ ya tiene remanente real (ENDOSO) y el saldo residual
+      // de intereses es <= $2.000, ese mismo remanente se utiliza para
+      // extinguir el saldo. No se aumenta el valor nominal del título.
+      // La operación queda dentro del cálculo del motor para que pantalla,
+      // trazabilidad, PDF y Excel reciban el recálculo real.
+      const esTDJActual=(pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="");
+      if(esTDJActual && Number(pago?.valor||0)>1000 && saldoIntereses>0 && saldoIntereses<=2000){
+        const disponibleCierre=Math.max(0,remanentePago);
+        const cierre=Math.min(saldoIntereses,disponibleCierre,2000);
+        if(cierre>0){
+          saldoIntereses=Math.max(0,saldoIntereses-cierre);
+          aplicadoIntereses+=cierre;
+          remanentePago=Math.max(0,remanentePago-cierre);
+          const vtoInteresCierre=(intCalc?.porVto||[]).find(x=>Number(x?.interes||0)>0);
+          if(vtoInteresCierre){
+            const filaCierre=aplicacionesVto.find(x=>x.id===vtoInteresCierre.id);
+            if(filaCierre) filaCierre.aplicadoIntereses=Number(filaCierre.aplicadoIntereses||0)+cierre;
+            else aplicacionesVto.push({
+              id:vtoInteresCierre.id,aplicado:0,aplicadoIntereses:cierre,
+              aplicadoSancion:0,saldo:Number(saldosVto.find(v=>v.id===vtoInteresCierre.id)?.saldo||0)
+            });
+          }
+        }
+      }
+
       const aplicado={
         impuesto:Math.round(aplicadoImpuesto),
         intereses:Math.round(aplicadoIntereses),
