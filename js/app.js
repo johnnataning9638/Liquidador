@@ -15,7 +15,7 @@ let moduloPrioridadTDJ=null;
 async function cargarModuloPrioridadTDJ(){
   if(moduloPrioridadTDJ)return moduloPrioridadTDJ;
   try{
-    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.99");
+    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.34.00");
     return moduloPrioridadTDJ;
   }catch(e){
     console.error("No fue posible cargar la capa de prioridad TDJ.",e);
@@ -1759,6 +1759,16 @@ async function calcular(){
     const {ajustarTDJParaPagosPosteriores}=await cargarModuloPrioridadTDJ();
     const datosCalculo=ajustarTDJParaPagosPosteriores(motorCalculo,d,{cerrarSaldoFinal:true});
     let r=motorCalculo.calcular(datosCalculo);
+     // Cierre residual: si un TDJ dejó hasta $2.000 de saldo y conserva
+     // remanente suficiente, se consume ese remanente y se reduce el ENDOSO.
+     if(typeof moduloPrioridadTDJ?.cerrarSaldoResidualTDJ==="function"){
+       for(const det of (r.detalle||[])){
+         if(det?.pago?.esTDJ===true || String(det?.pago?.tdj||"").trim()!==""){
+           const nominal=Number(det?.valorNominalTDJ ?? det?.pago?.valor ?? 0);
+           moduloPrioridadTDJ.cerrarSaldoResidualTDJ(r,Number(det?.pago?.valor ?? nominal),2000);
+         }
+       }
+     }
     // La prioridad de pagos normales no altera el valor nominal del TDJ.
     // Conservamos ese valor para PDF/Excel y convertimos la diferencia no
     // utilizada por el título en ENDOSO, nunca en excedente del pago normal.
