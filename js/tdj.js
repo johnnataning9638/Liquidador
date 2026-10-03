@@ -2110,32 +2110,28 @@ function leerVencimientosExcel(rows,headerIdx){
 }
 
 function extraerTitulosExcelRobusto(rows, agregarTituloImportado){
-  // El Excel del Liquidador DIAN puede contener el TDJ en dos lugares:
-  // 1) PAGOS Y APLICACIÓN, como pago con “TDJ Nº”.
-  // 2) TÍTULOS / TDJ — TÍTULOS REGISTRADOS.
-  // Esta rutina busca TODAS las cabeceras compatibles, sin depender del texto
-  // exacto de la versión del informe ni de la posición de la sección.
+  // IMPORTACIÓN DE TÍTULOS: soporta los formatos generados por el Liquidador
+  // DIAN, por el Liquidador TDJ y versiones anteriores.
   const candidatos=[];
   for(let i=0;i<rows.length;i++){
     const n=(rows[i]||[]).map(normExcel);
-    const tieneTDJ=n.includes("TDJ");
-    const tieneFecha=n.includes("FECHA")||n.includes("FECHA TDJ")||n.includes("FECHA TITULO");
-    const tieneValor=n.includes("VALOR")||n.includes("VALOR ORIGINAL")||n.includes("VALOR TDJ")||n.includes("VALOR DEL TITULO");
+    const tieneTDJ=n.some(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
+    const tieneFecha=n.some(x=>x==="FECHA"||x==="FECHA TDJ"||x==="FECHA TITULO");
+    const tieneValor=n.some(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR TDJ"||x==="VALOR DEL TITULO");
     if(tieneTDJ&&tieneFecha&&tieneValor)candidatos.push(i);
   }
 
-  const limites=/^(TOTAL ENDOSO|FIN RECUPERACION|PAGOS Y APLICACION|PAGOS REGISTRADOS|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|OBLIGACION d+ -|DATOS OBLIGACION|VENCIMIENTOS|RECUPERACION COMPLETA)/;
+  const limites=/^(TOTAL ENDOSO|FIN RECUPERACION|PAGOS Y APLICACION|PAGOS REGISTRADOS|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|OBLIGACION\s+\d+\s*-|DATOS OBLIGACION|VENCIMIENTOS|RECUPERACION COMPLETA)/;
   let encontrados=0;
 
   for(let h=0;h<candidatos.length;h++){
     const hi=candidatos[h], nextHeader=candidatos[h+1]??rows.length;
-    const header=rows[hi]||[], nh=header.map(normExcel);
+    const nh=(rows[hi]||[]).map(normExcel);
     const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
     const ixF=nh.findIndex(x=>x==="FECHA"||x==="FECHA TDJ"||x==="FECHA TITULO");
     const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR TDJ"||x==="VALOR DEL TITULO");
     const ixTipo=nh.findIndex(x=>x==="TIPO"||x==="TIPO DE TASA");
     const ixObs=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
-
     if(ixT<0||ixF<0||ixV<0)continue;
 
     for(let i=hi+1;i<Math.min(nextHeader,rows.length);i++){
@@ -2143,20 +2139,49 @@ function extraerTitulosExcelRobusto(rows, agregarTituloImportado){
       const s=normExcel(r.filter(Boolean).join(" | "));
       if(!s)continue;
       if(limites.test(s))break;
-
       const f=fechaCampoTDJImport(r[ixF]);
       const v=truncarValorEntero(numExcel(r[ixV]));
-      const tdj=upper(r[ixT]??"").trim();
+      const tdj=normalizarNumeroTDJImportado(r[ixT]);
       if(!f||v<=0||!tdj)continue;
+      if(agregarTituloImportado(tdj,f,v,upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),upper(ixObs>=0?r[ixObs]||"":"")))encontrados++;
+    }
+  }
 
-      const ok=agregarTituloImportado(
-        tdj,
-        f,
-        v,
-        upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),
-        upper(ixObs>=0?r[ixObs]||"":"")
-      );
-      if(ok)encontrados++;
+  // FALLBACK: si el encabezado de una versión antigua no coincide exactamente,
+  // buscamos filas que contengan una fecha + valor + identificador TDJ dentro
+  // de una sección de títulos. Esto evita perder el número o el valor.
+  if(!encontrados){
+    let enSeccionTitulos=false, filasRestantes=0;
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i]||[];
+      const s=normExcel(r.filter(Boolean).join(" | "));
+      if(/TITULOS?(?:\s+TDJ)?\s*\/\s*TDJ|TITULOS\s+TDJ|TITULO\/TDJ/.test(s)){
+        enSeccionTitulos=true;filasRestantes=12;continue;
+      }
+      if(enSeccionTitulos&&/^(RECUPERACION COMPLETA|FIN RECUPERACION|PAGOS Y APLICACION|PAGOS|TOTAL ENDOSO|RESUMEN GENERAL)/.test(s)){
+        enSeccionTitulos=false;continue;
+      }
+      if(!enSeccionTitulos)continue;
+      if(filasRestantes--<=0){enSeccionTitulos=false;continue;}
+
+      const fechaIdx=r.findIndex(v=>!!fechaCampoTDJImport(v));
+      const fecha=fechaIdx>=0?fechaCampoTDJImport(r[fechaIdx]):"";
+      if(!fecha)continue;
+
+      const nums=r.map((v,idx)=>({idx,v,n:truncarValorEntero(numExcel(v))})).filter(x=>x.n>0);
+      if(nums.length<2)continue;
+
+      let tdj="",valor=0;
+      if(fechaIdx>=0){
+        const before=nums.filter(x=>x.idx<fechaIdx);
+        const after=nums.filter(x=>x.idx>fechaIdx);
+        if(before.length&&after.length){
+          tdj=normalizarNumeroTDJImportado(r[before.at(-1).idx]);
+          valor=after[0].n;
+        }
+      }
+      if(!tdj||!valor)continue;
+      if(agregarTituloImportado(tdj,fecha,valor,"TASA DIAN",""))encontrados++;
     }
   }
   return encontrados;
@@ -2191,8 +2216,17 @@ async function importarExcelTDJ(){
       // TÍTULOS / TDJ. Se conserva una sola representación como título.
       const nuevosTitulos=[];
       const clavesTitulos=new Set();
+      const normalizarNumeroTDJImportado=v=>{
+        const s=String(v??"").trim();
+        if(!s)return "";
+        if(/^[+-]?\d+(?:[.,]\d+)?[eE][+-]?\d+$/.test(s)){
+          const n=numExcel(s);
+          if(Number.isFinite(n))return String(Math.trunc(n));
+        }
+        return s;
+      };
       const agregarTituloImportado=(tdjNum,fecha,valor,tipo="TASA DIAN",observacion="")=>{
-        const tdjTxt=upper(tdjNum||"").trim();
+        const tdjTxt=normalizarNumeroTDJImportado(tdjNum);
         const f=fechaCampoTDJImport(fecha)||"";
         const v=truncarValorEntero(valor);
         if(!f||v<=0)return false;
@@ -2404,6 +2438,7 @@ function limpiarPagosPestanaTDJ(){
 
 function limpiarTodo(){
   if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;
+  // Limpieza fuerte: el estado de títulos queda realmente vacío.
 
   // LIMPIEZA GLOBAL DESDE “TÍTULOS Y RESULTADO”.
   // Este botón no limpia únicamente la pestaña visible: reinicia de forma
@@ -2414,7 +2449,7 @@ function limpiarTodo(){
   $("razonGlobal").value="";
   obligaciones=[nuevaObligacion(1)];
   obligaciones[0].pagos=[];
-  titulos=[nuevoTitulo(1)];
+  titulos=[];
   resultado=null;
   resultadoDesactualizado=false;
   $("resultadoTDJ").hidden=true;
