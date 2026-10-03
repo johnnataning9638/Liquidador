@@ -898,6 +898,20 @@ function construirSecuenciaObligacionTDJ(o,aplicaciones=[]){
   });
 }
 
+function consolidarResumenTitulosTDJ(resumen=[]){
+  return (Array.isArray(resumen)?resumen:[]).map(x=>{
+    const nominal=Math.max(0,truncarValorEntero(x?.titulo?.valor||0));
+    const aplicadoTotal=Math.max(0,truncarValorEntero(
+      (Array.isArray(x?.trazabilidad)?x.trazabilidad:[])
+        .reduce((a,y)=>a+Math.max(0,Number(y?.aplicado||0)),0)
+    ));
+    // El endoso sale de una sola ecuación: ORIGINAL - APLICADO.
+    // Esto evita que un remanente calculado por otra ruta produzca diferencias.
+    const excedente=Math.max(0,nominal-aplicadoTotal);
+    return {...x,nominal,aplicadoTotal,excedente};
+  });
+}
+
 function aplicarTitulos(observacionesBeneficio1419=[]){
   try{
     // Los listeners de botones no deben pasar el MouseEvent como parámetro.
