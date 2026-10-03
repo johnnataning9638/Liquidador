@@ -7,7 +7,7 @@ import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.99";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.00";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1030,6 +1030,14 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         // La fecha de corte es la fecha del TDJ actual. Por tanto, cuando
         // llega el TDJ 2/3/4, los intereses se calculan hasta esa nueva fecha.
         const r=motorActual.calcular(datosMotor(o,todosAjustados,t.fecha,{permitirBeneficioFueraVigencia:true}));
+        // Si queda un saldo residual pequeño y el propio TDJ conserva remanente
+        // suficiente, ese remanente se usa para cerrar la obligación. El valor
+        // nominal del título no cambia: únicamente disminuye el ENDOSO.
+        cerrarSaldoResidualTDJ(r,pagoActual.valor,2000);
+        // Si queda un saldo residual pequeño y el propio TDJ conserva remanente
+        // suficiente, ese remanente se usa para cerrar la obligación. El valor
+        // nominal del título no cambia: únicamente disminuye el ENDOSO.
+        cerrarSaldoResidualTDJ(r,pagoActual.valor,2000);
         // Las restricciones temporales de beneficios se informan, pero no
         // cambian la tasa elegida ni bloquean la liquidación del TDJ.
         (r.advertencias||[]).filter(x=>/vigencia|beneficio|fecha de sanción|fecha de pago/i.test(String(x))).forEach(x=>{
