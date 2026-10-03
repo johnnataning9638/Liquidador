@@ -1,6 +1,6 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
-import {importarDatosInteligente,importarTitulosInteligente} from "./importador.js?v=16.33.98";
+import {importarDatosInteligente} from "./importador.js?v=16.33.99";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45";
@@ -630,7 +630,7 @@ function renderTitulos(){
   titulos.forEach((t,i)=>{
     const tr=document.createElement('tr');
     tr.dataset.tituloId=t.id;
-    tr.innerHTML=`<td>${i+1}</td><td><input data-t="tdj" value="${esc(t.tdj||"")}" placeholder="TDJ Nº"></td><td>${campoFecha(`tdj-${t.id}`,t.fecha)}</td><td><input data-t="valor" class="money" inputmode="numeric" value="${t.valor?dinero(t.valor):""}" placeholder="$ 0"></td><td><input data-t="observacion" value="${esc(upper(t.observacion||""))}" placeholder="OBSERVACIÓN"></td><td><button class="peligro" data-del>Eliminar</button></td>`;
+    tr.innerHTML=`<td>${i+1}</td><td><input data-t="tdj" autocomplete="off" value="${esc(t.tdj||"")}" placeholder="TDJ Nº"></td><td>${campoFecha(`tdj-${t.id}`,t.fecha)}</td><td><input data-t="valor" autocomplete="off" class="money" inputmode="numeric" value="${t.valor?dinero(t.valor):""}" placeholder="$ 0"></td><td><input data-t="observacion" autocomplete="off" value="${esc(upper(t.observacion||""))}" placeholder="OBSERVACIÓN"></td><td><button class="peligro" data-del>Eliminar</button></td>`;
     const sincronizarCampoTitulo=el=>{
       const k=el.dataset.t;
       invalidarResultadoTDJ();
@@ -2433,95 +2433,158 @@ function limpiarPagosPestanaTDJ(){
 function limpiarTodo(){
   if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;
   $("nitGlobal").value="";$("razonGlobal").value="";
-  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;
+  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;resultadoDesactualizado=false;
   $("resultadoTDJ").hidden=true;
   renderObligaciones();renderPagos();renderTitulos();actualizarSelectoresImportacion();
+
+  // LIMPIEZA FORZADA DEL DOM: elimina cualquier valor que el navegador
+  // haya conservado/autocompletado, incluida la fecha visible y su calendario.
+  const limpiarCampo=(el)=>{if(!el)return;el.value="";el.defaultValue="";el.removeAttribute("value");el.setAttribute("autocomplete","off");};
+  document.querySelectorAll("#tablaTitulos input").forEach(limpiarCampo);
+  document.querySelectorAll("#tablaTitulos .fecha-native").forEach(limpiarCampo);
+  limpiarCampo($("importarTitulosTexto"));
+  const resImp=$("resultadoImportacionTitulos");if(resImp)resImp.textContent="";
+  const nota=$("notaEndoso");if(nota)nota.textContent="";
+  ["resTotalTitulos","resAplicado","resSaldo","resEndoso"].forEach(id=>{const el=$(id);if(el)el.textContent="$ 0";});
+  ["tablaResultadoObligaciones","tablaAplicacion","tablaEndoso"].forEach(id=>{const tb=$(id)?.querySelector("tbody");if(tb)tb.innerHTML="";});
+
+  // Estado canónico final: una única fila nueva completamente vacía.
+  titulos=[nuevoTitulo(1)];
+  renderTitulos();
+  document.querySelectorAll("#tablaTitulos input").forEach(limpiarCampo);
+  document.querySelectorAll("#tablaTitulos .fecha-native").forEach(limpiarCampo);
+  actualizarVisibilidadTasasObligacionesTDJ();
   refrescarTabActualTDJ();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
 
-function separarFilaTitulosTDJImport(linea){
+// ================================================================
+// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.99
+// Regla: un título tiene únicamente TDJ + FECHA + VALOR.
+// ================================================================
+function separarFilaImportacionTDJ(linea){
   const s=String(linea??"").trim();
   if(!s)return [];
   if(s.includes("\t"))return s.split("\t").map(x=>String(x??"").trim());
-  if(/\|/.test(s))return s.replace(/^\s*\|/,"").replace(/\|\s*$/,"").split("|").map(x=>String(x??"").trim());
-  if(/;/.test(s))return s.split(";").map(x=>String(x??"").trim());
-  const partes=s.split(",");
-  const pareceImporteMiles=/^\$?\s*\d{1,3}(?:,\d{3})+(?:\s*)$/.test(s);
-  if(!pareceImporteMiles&&partes.length>=3)return partes.map(x=>String(x??"").trim());
+  if(s.includes("|"))return s.replace(/^\s*\|/,"").replace(/\|\s*$/,"").split("|").map(x=>String(x??"").trim());
+  if(s.includes(";"))return s.split(";").map(x=>String(x??"").trim());
+  const csv=s.split(",");
+  const esMontoConComas=/^\$?\s*\d{1,3}(?:,\d{3})+(?:\s*)$/.test(s);
+  if(!esMontoConComas&&csv.length>=3)return csv.map(x=>String(x??"").trim());
   const dobles=s.split(/\s{2,}/).map(x=>x.trim()).filter(Boolean);
-  if(dobles.length>=2)return dobles;
+  if(dobles.length>=3)return dobles;
   return s.split(/\s+/).map(x=>x.trim()).filter(Boolean);
 }
-
-function normalizarDocumentoTDJImport(v){
-  let s=String(v??"").trim().replace(/\s+/g,"");
+function normImportacionTDJ(v){
+  return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim();
+}
+function numeroTituloImportacion(v){
+  let s=String(v??"").trim().replace(/^TDJ\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?/i,"").trim();
   if(!s)return "";
-  if(/^[+-]?\d+(?:[\.,]\d+)?[eE][+-]?\d+$/.test(s)){
-    const n=Number(s.replace(",",""));
+  const sci=s.match(/^[+-]?\d+(?:[\.,]\d+)?[eE][+-]?\d+$/);
+  if(sci){
+    const n=Number(s.replace(",","."));
     if(Number.isFinite(n))s=String(Math.trunc(n));
   }
-  const d=s.replace(/\D/g,"");
-  return d;
+  return s.replace(/\D/g,"");
 }
-
-function reconocerTitulosTabularesTDJ(texto){
+function fechaTituloImportacion(v){return fechaISO(v)||"";}
+function valorTituloImportacion(v){
+  const raw=String(v??"").trim();
+  if(!raw)return 0;
+  const sci=raw.match(/^[+-]?\d+(?:[\.,]\d+)?[eE][+-]?\d+$/);
+  if(sci){
+    const n=Number(raw.replace(",","."));
+    return Number.isFinite(n)?truncarValorEntero(n):0;
+  }
+  const n=numeroDesdeTexto(raw);
+  return Number.isFinite(n)?truncarValorEntero(n):0;
+}
+function importarTitulosTDJNuevo(texto){
   const lines=String(texto??"").replace(/\r/g,"").split("\n").filter(x=>x.trim());
+  if(!lines.length)throw new Error("No hay información para importar títulos / TDJ.");
   const encontrados=[];
   const vistos=new Set();
-  const agregar=(tdj,fecha,valor,tipo="TASA DIAN",observacion="")=>{
-    const t=normalizarDocumentoTDJImport(tdj);
-    const f=fechaISO(fecha)||"";
-    const v=truncarValorEntero(valor);
-    if(!t||t.length<5||!f||!(v>0))return;
-    const key=`${t}|${f}|${v}`;
+  const agregar=(tdj,fecha,valor,observacion="")=>{
+    const t=numeroTituloImportacion(tdj), f=fechaTituloImportacion(fecha), v=valorTituloImportacion(valor);
+    if(!t||!f||!(v>0))return;
+    const key=t+"|"+f+"|"+v;
     if(vistos.has(key))return;
     vistos.add(key);
-    encontrados.push({tdj:t,fecha:f,valor:v,tipo,observacion});
+    encontrados.push({tdj:t,fecha:f,valor:v,observacion:upper(observacion||"")});
   };
 
-  for(let h=0;h<Math.min(lines.length,12);h++){
-    const cells=separarFilaTitulosTDJImport(lines[h]);
-    if(cells.length<3)continue;
-    const nh=cells.map(x=>normExcel(x).replace(/[º°]/g,""));
-    const ixT=nh.findIndex(x=>x==="TDJ"||x.includes("TDJ ")||x==="TITULO"||x.includes("TITULO NUMERO")||x.includes("TITULO N"));
-    const ixF=nh.findIndex(x=>x==="FECHA"||x.includes("FECHA TDJ")||x.includes("FECHA TITULO"));
-    const ixV=nh.findIndex(x=>x==="VALOR"||x.includes("VALOR TDJ")||x.includes("VALOR TITULO")||x.includes("VALOR ORIGINAL"));
+  // TABLA CON ENCABEZADOS: TDJ + FECHA + VALOR, en cualquier orden.
+  for(let h=0;h<Math.min(lines.length,25);h++){
+    const c=separarFilaImportacionTDJ(lines[h]);
+    if(c.length<3)continue;
+    const n=c.map(normImportacionTDJ);
+    const ixT=n.findIndex(x=>x==="TDJ"||x.includes("TDJ N")||x.includes("NUMERO TDJ")||x==="TITULO"||x.includes("TITULO N")||x.includes("TITULO DE DEPOSITO"));
+    const ixF=n.findIndex(x=>x==="FECHA"||x.includes("FECHA TDJ")||x.includes("FECHA TITULO")||x.includes("FECHA DEPOSITO")||x.includes("FECHA PAGO"));
+    const ixV=n.findIndex(x=>x==="VALOR"||x.includes("VALOR TDJ")||x.includes("VALOR TITULO")||x.includes("VALOR ORIGINAL")||x.includes("VALOR DEPOSITO"));
     if(ixT<0||ixF<0||ixV<0)continue;
     for(let r=h+1;r<lines.length;r++){
-      const c=separarFilaTitulosTDJImport(lines[r]);
-      if(!c.length)continue;
-      const rowNorm=normExcel(c.filter(Boolean).join(" | "));
-      if(/^(TOTAL|ENDOSO|OBSERVACION|FIN|RECUPERACION COMPLETA)/.test(rowNorm))break;
-      const fecha=fechaExcel(c[ixF]??"");
-      const tdj=String(c[ixT]??"").replace(/\bTDJ\b\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?/i,"").trim();
-      const valor=numExcel(c[ixV]??"");
-      const tipo=c.find(x=>TIPOS.some(t=>upper(t)===upper(x)))||"TASA DIAN";
-      agregar(tdj,fecha,valor,upper(tipo),"");
+      const row=separarFilaImportacionTDJ(lines[r]);
+      if(!row.length)continue;
+      const textoFila=normImportacionTDJ(row.join(" | "));
+      if(/^(TOTAL|ENDOSO|OBSERVACION|OBSERVACIONES|FIN|RECUPERACION COMPLETA|RESUMEN FINAL)/.test(textoFila))break;
+      const f=fechaTituloImportacion(row[ixF]??""), t=numeroTituloImportacion(row[ixT]??""), v=valorTituloImportacion(row[ixV]??"");
+      if(t&&f&&v>0){
+        const ixO=n.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIONES");
+        agregar(t,f,v,ixO>=0?row[ixO]:"");
+      }
     }
-    // Continuar leyendo todas las filas de la misma tabla de títulos.
-
+    if(encontrados.length)return encontrados;
   }
 
-  // Formato sin encabezados: TDJ | FECHA | VALOR, FECHA | TDJ | VALOR,
-  // o los mismos campos separados por espacios. La fecha identifica la fila
-  // y los dos números restantes se interpretan por posición, nunca por
-  // "documento largo", porque un TDJ puede tener menos de 10 dígitos.
+  // SIN ENCABEZADO: TDJ | FECHA | VALOR, FECHA | TDJ | VALOR,
+  // o columnas separadas por espacios.
   for(const line of lines){
-    const c=separarFilaTitulosTDJImport(line);
+    const c=separarFilaImportacionTDJ(line);
     if(c.length<3)continue;
     let ixF=-1;
-    for(let i=0;i<c.length;i++){if(fechaExcel(c[i])){ixF=i;break;}}
+    for(let i=0;i<c.length;i++){if(fechaTituloImportacion(c[i])){ixF=i;break;}}
     if(ixF<0)continue;
-    const nums=c.map((x,i)=>({i,n:numExcel(x),raw:String(x??"").trim()}))
-      .filter(x=>x.i!==ixF&&x.n>0);
-    if(nums.length<2)continue;
-    const before=nums.filter(x=>x.i<ixF), after=nums.filter(x=>x.i>ixF);
-    const tdjCell=before.at(-1)||nums[0];
-    const valCell=after[0]||nums.find(x=>x.i!==tdjCell.i&&(/[\.,$]/.test(x.raw)||x.n>=10000))||nums[1];
-    agregar(tdjCell.raw,c[ixF],valCell.n,"TASA DIAN","");
+    const candidatos=[];
+    for(let i=0;i<c.length;i++){
+      if(i===ixF)continue;
+      const raw=String(c[i]??"").trim();
+      if(!raw)continue;
+      const n=valorTituloImportacion(raw);
+      if(!(n>0))continue;
+      candidatos.push({i,raw,n,tieneSeparadorMonetario:/[\$\.]/.test(raw)});
+    }
+    if(candidatos.length<2)continue;
+    const antes=candidatos.filter(x=>x.i<ixF), despues=candidatos.filter(x=>x.i>ixF);
+    let tdjCell=null,valCell=null;
+    if(antes.length&&despues.length){
+      tdjCell=antes[antes.length-1]; valCell=despues[0];
+    }else{
+      valCell=candidatos.find(x=>x.tieneSeparadorMonetario)||candidatos[candidatos.length-1];
+      tdjCell=candidatos.find(x=>x!==valCell)||candidatos[0];
+    }
+    if(tdjCell&&valCell)agregar(tdjCell.raw,c[ixF],valCell.n);
   }
+
+  // FORMATO VERTICAL: TDJ, FECHA y VALOR en líneas etiquetadas.
+  if(!encontrados.length){
+    let tdj="",fecha="",valor=0;
+    for(const line of lines){
+      const n=normImportacionTDJ(line), raw=String(line).trim();
+      if(n.startsWith("TDJ")||n.startsWith("TITULO DE DEPOSITO")){
+        tdj=numeroTituloImportacion(raw);
+      }else if(n.startsWith("FECHA")){
+        const m=raw.split(/[:\t|;]/).slice(1).join(" ").trim();
+        fecha=fechaTituloImportacion(m)||fechaTituloImportacion(raw.replace(/^.*?FECHA[^:]*[:\-]?/i,""));
+      }else if(n.startsWith("VALOR")){
+        const m=raw.split(/[:\t|;]/).slice(1).join(" ").trim();
+        valor=valorTituloImportacion(m)||valorTituloImportacion(raw.replace(/^.*?VALOR[^:]*[:\-]?/i,""));
+      }
+      if(tdj&&fecha&&valor>0){agregar(tdj,fecha,valor);tdj="";fecha="";valor=0;}
+    }
+  }
+  if(!encontrados.length)throw new Error("No se encontraron títulos / TDJ. El formato mínimo es: TDJ | FECHA | VALOR.");
   return encontrados;
 }
 
@@ -2529,29 +2592,17 @@ function importarTitulos(){
   const text=$("importarTitulosTexto").value.trim();
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
-    // EL IMPORTADOR DE TÍTULOS USA EL MISMO MOTOR QUE YA PROCESA PAGOS
-    // CORRECTAMENTE EN EL LIQUIDADOR DIAN: DOCUMENTO + FECHA + VALOR.
-    // En TDJ el documento fuente simplemente es el número TDJ.
-    const encontrados=importarTitulosInteligente(text);
-    if(!encontrados.length){
-      throw new Error("No se encontraron títulos/TDJ válidos. Use TDJ | FECHA | VALOR.");
-    }
-    titulos=encontrados.map((p,i)=>({
-      id:uid("TDJ"),
-      numero:i+1,
-      tdj:normalizarDocumentoTDJImport(p.tdj||""),
-      fecha:fechaISO(p.fecha)||"",
-      valor:truncarValorEntero(p.valor),
-      observacion:upper(p.observacion||""),
-      _orden:Date.now()+i
-    })).filter(t=>t.tdj&&t.fecha&&t.valor>0);
+    const encontrados=importarTitulosTDJNuevo(text);
+    titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:p.fecha,valor:p.valor,observacion:p.observacion||"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
+    resultado=null;
+    $("resultadoTDJ").hidden=true;
     renderTitulos();
     $("importarTitulosTexto").value="";
-    $("resultadoImportacionTitulos").textContent=`Se reconocieron ${titulos.length} título(s)/TDJ usando el importador de pagos.`;
+    $("resultadoImportacionTitulos").textContent="Se reconocieron "+titulos.length+" título(s)/TDJ correctamente.";
   }catch(e){
-    console.error("IMPORTACIÓN TÍTULOS TDJ",e);
-    alert(e.message||"No fue posible reconocer los títulos.");
+    console.error("IMPORTACIÓN NUEVA DE TÍTULOS TDJ",e);
+    alert(e.message||"No fue posible reconocer los títulos / TDJ.");
   }
 }
 
@@ -2560,26 +2611,28 @@ async function importarTitulosIA(){
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
     setStatus("IA DIAN — VALIDANDO TÍTULOS...","loading");
-    const base=reconocerTitulosTabularesTDJ(text);
+    const base=importarTitulosTDJNuevo(text);
     const ai=await interpretarPagosConIA(text);
     const combinados=[...(base||[]),...(ai?.pagos||[])];
     const mapa=new Map();
     for(const p of combinados){
-      const tdj=normalizarDocumentoTDJImport(p?.tdj||p?.recibo||"");
+      const tdj=numeroTituloImportacion(p?.tdj||p?.recibo||"");
       const fecha=fechaISO(p?.fecha)||"";
       const valor=truncarValorEntero(p?.valor);
-      if(!tdj||tdj.length<5||!fecha||!(valor>0))continue;
-      const key=`${tdj}|${fecha}|${valor}`;
-      if(!mapa.has(key))mapa.set(key,{tdj,fecha,valor,tipo:TIPOS.find(x=>upper(x)===upper(p?.tipo))||"TASA DIAN",observacion:upper(p?.observacion||"")});
+      if(!tdj||!fecha||!(valor>0))continue;
+      const key=tdj+"|"+fecha+"|"+valor;
+      if(!mapa.has(key))mapa.set(key,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});
     }
     const encontrados=[...mapa.values()];
     if(!encontrados.length)throw new Error("La IA no reconoció títulos/TDJ válidos con TDJ, fecha y valor.");
     titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:p.fecha,valor:p.valor,observacion:p.observacion||"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
+    resultado=null;
+    $("resultadoTDJ").hidden=true;
     renderTitulos();
     $("importarTitulosTexto").value="";
-    $("resultadoImportacionTitulos").textContent=`IA DIAN reconoció ${titulos.length} título(s)/TDJ.`;
-    setStatus(`IA DIAN — TÍTULOS VALIDADOS ${Math.round(Number(ai?.confidence||0)*100)}%`,"ok");
+    $("resultadoImportacionTitulos").textContent="IA DIAN reconoció "+titulos.length+" título(s)/TDJ.";
+    setStatus("IA DIAN — TÍTULOS VALIDADOS "+Math.round(Number(ai?.confidence||0)*100)+"%","ok");
   }catch(e){setStatus("LISTO","ok");alert(e.message||"No fue posible procesar los títulos con IA.");}
 }
 
