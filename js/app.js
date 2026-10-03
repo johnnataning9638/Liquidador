@@ -1034,12 +1034,15 @@ function resumenFinalPdf(r){
   (r.detalle||[]).forEach((x,i)=>{
     (x.actualizacionSancion?.tramos||[]).forEach(t=>tramos.push({pago:i+1,fechaPago:x.pago?.fecha||"",...t}));
   });
+  if(!tramos.length && r.sancionActualizacion?.tramos?.length){
+    r.sancionActualizacion.tramos.forEach(t=>tramos.push({pago:"SIN PAGOS",fechaPago:r.fechaCorte||"",...t}));
+  }
   const filas=tramos.length?tramos.map(t=>`<tr><td>${t.pago}</td><td>${escPdf(fechaVisible(t.fechaPago))}</td><td>${t.anio}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join(""):"<tr><td colspan='8'>No se realizaron actualizaciones de sanción.</td></tr>";
   const excedentes=(r.detalle||[]).map((x,i)=>({pago:i+1,fecha:x.pago?.fecha||"",valor:Number(x.excedente||x.aplicado?.excedente||0)}));
   const filasExcedentes=excedentes.length?excedentes.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.valor)}</td></tr>`).join(""):"<tr><td colspan='3'>No se registraron pagos.</td></tr>";
   const excedenteTotal=excedentes.reduce((a,e)=>a+e.valor,0);
   const totalIntereses=r.detalle.reduce((a,x)=>a+Number(x.interesGenerado??x.interesLiquidado??0),0);
-  const totalActualizacionSancion=r.detalle.reduce((a,x)=>a+Number(x.actualizacionSancion?.actualizacionTotal||0),0);
+  const totalActualizacionSancion=r.detalle.length?r.detalle.reduce((a,x)=>a+Number(x.actualizacionSancion?.actualizacionTotal||0),0):Number(r.sancionActualizacion?.actualizacionAcumulada||0);
   const reducciones1419=r.detalle.flatMap((x,i)=>(x.actualizacionSancion?.eventos||[]).filter(e=>String(e.beneficio||"").toUpperCase().includes("DECRETO 1419")).map(e=>({pago:i+1,fecha:x.pago?.fecha||"",...e})));
   const totalReduccion1419=reducciones1419.reduce((a,e)=>a+Math.max(0,Number(e.saldoAntesReduccion??e.saldoAntes??0)-Number(e.saldoDespuesReduccion??e.saldoDespues??0)),0);
   const filasReduccion1419=reducciones1419.length?reducciones1419.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.saldoAntesReduccion??e.saldoAntes??0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??0)}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(e.saldoDespuesReduccion??e.saldoDespues??0)}</td></tr>`).join(""):`<tr><td colspan="7">No se registró reducción de sanción del artículo 9 en los pagos liquidados.</td></tr>`;
