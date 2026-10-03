@@ -230,3 +230,95 @@
     min-width:760px;
   }
 }
+
+
+/* AJUSTE FINO DE CAMPOS DE OBLIGACIÓN — MÓVIL
+   Solo presentación. La estructura y los eventos de JS permanecen intactos. */
+@media screen and (max-width:650px){
+  .obligacion-card .card-head{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:8px;
+  }
+  .obligacion-card .card-head .card-actions{
+    justify-content:flex-end;
+    width:auto;
+  }
+  .obligacion-card .card-head .peligro{
+    width:auto;
+    min-height:34px;
+    padding:7px 10px;
+    font-size:10px;
+  }
+
+  /* Distribución limpia: dos columnas solo donde ayuda a ahorrar espacio.
+     Concepto, fecha y beneficio ocupan el ancho completo. */
+  .obligation-fields{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:9px 8px!important;
+    padding:11px!important;
+    align-items:end;
+  }
+  .obligation-fields > label{
+    display:flex!important;
+    flex-direction:column!important;
+    min-width:0!important;
+    width:100%!important;
+    grid-column:auto!important;
+    gap:4px!important;
+    font-size:10px!important;
+    line-height:1.15!important;
+    overflow:visible!important;
+  }
+  .obligation-fields > label:nth-child(1),
+  .obligation-fields > label:nth-child(6),
+  .obligation-fields > label:nth-child(7),
+  .obligation-fields > label:nth-child(8){
+    grid-column:1 / -1!important;
+  }
+  .obligation-fields > label:nth-child(9),
+  .obligation-fields > label:nth-child(10){
+    display:none!important;
+  }
+  .obligation-fields input,
+  .obligation-fields select{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    min-height:38px;
+    height:38px;
+    margin:0!important;
+    padding:7px 8px!important;
+    font-size:13px!important;
+    line-height:1.2;
+  }
+  .obligation-fields select{
+    text-overflow:ellipsis;
+  }
+  .obligation-fields .money{
+    text-align:right;
+  }
+  .obligation-fields .fecha-dual{
+    width:100%!important;
+    min-width:0!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 34px!important;
+    gap:5px!important;
+  }
+  .obligation-fields .fecha-dual input{
+    width:100%!important;
+  }
+
+  .obligacion-card .subpanel{
+    margin:0 11px 10px!important;
+  }
+  .obligacion-card .subhead{
+    min-height:40px;
+  }
+  .obligacion-card .subhead .small{
+    min-height:34px;
+    padding:7px 9px!important;
+  }
+}
