@@ -934,6 +934,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           tdj:t.tdj||`TDJ ${t.numero}`,esTDJ:true,ordenInterno:1,
           tipoTasaObligacion
         };
+        const motorActual=motorParaObligacion(o);
         const todos=[...pagosBase,...anteriores,pagoActual];
         todos.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.ordenInterno||0)-Number(b.ordenInterno||0)||Number(a.numero||0)-Number(b.numero||0));
 
@@ -955,7 +956,6 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         const todosAjustados=[...pagosBase,...anteriores,pagoActual];
         todosAjustados.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.ordenInterno||0)-Number(b.ordenInterno||0)||Number(a.numero||0)-Number(b.numero||0));
 
-        const motorActual=motorParaObligacion(o);
         const elegibilidadTasaTitulo=esTipoDecreto1419(tipoTasaObligacion)
           ?validarTipo1419TDJ(tipoTasaObligacion,o,t,{esTitulo:true})
           :[];
