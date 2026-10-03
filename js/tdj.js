@@ -186,28 +186,22 @@ function nuevaObligacion(numero){
 function nuevoTitulo(numero){return {id:uid("TDJ"),numero,tdj:"",fecha:"",valor:0,observacion:""};}
 
 async function cargarJSONLocalTDJ(ruta){
-  const limpio=String(ruta||"").replace(/^\.?\//,"");
-  const candidatos=[
-    new URL("../"+limpio,import.meta.url).href,
-    new URL(limpio,window.location.origin+"/").href,
-    new URL(limpio,document.baseURI||window.location.href).href
-  ].filter((u,i,a)=>a.indexOf(u)===i);
+  const limpio=String(ruta||"").replace(/^\.\//,"");
+  const url=new URL("/"+limpio,window.location.origin).href;
   let ultimoError=null;
-  for(const url of candidatos){
-    for(let intento=1;intento<=2;intento++){
-      const controller=typeof AbortController!=="undefined"?new AbortController():null;
-      const timer=controller?setTimeout(()=>controller.abort(),8000):null;
-      try{
-        const respuesta=await fetch(url,{cache:intento===1?"no-store":"reload",signal:controller?.signal});
-        if(!respuesta.ok)throw new Error("HTTP "+respuesta.status);
-        const texto=await respuesta.text();
-        if(!texto.trim())throw new Error("RESPUESTA_VACIA");
-        try{return JSON.parse(texto);}catch{throw new Error("JSON_INVALIDO");}
-      }catch(e){
-        ultimoError=e?.name==="AbortError"?new Error("TIEMPO_ESPERA"):e;
-        if(intento<2)await new Promise(resolve=>setTimeout(resolve,250));
-      }finally{if(timer)clearTimeout(timer);}
-    }
+  for(let intento=1;intento<=3;intento++){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),7000);
+    try{
+      const respuesta=await fetch(url,{cache:"no-store",signal:controller.signal});
+      if(!respuesta.ok)throw new Error("HTTP "+respuesta.status);
+      const texto=await respuesta.text();
+      if(!texto.trim())throw new Error("RESPUESTA_VACIA");
+      try{return JSON.parse(texto);}catch{throw new Error("JSON_INVALIDO");}
+    }catch(e){
+      ultimoError=e?.name==="AbortError"?new Error("TIEMPO_ESPERA"):e;
+      if(intento<3)await new Promise(resolve=>setTimeout(resolve,300));
+    }finally{clearTimeout(timer);}
   }
   throw new Error("No se pudo cargar el parámetro "+limpio+" · "+(ultimoError?.message||"ERROR_DESCONOCIDO"));
 }
