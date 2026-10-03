@@ -1217,6 +1217,61 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       }
       return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal,secuencia};
     });
+    // CIERRE FINAL TDJ: si después de TODOS los movimientos cronológicos
+    // queda un saldo residual <= $2.000 y existe ENDOSO real de un TDJ aplicado
+    // a esa obligación, el remanente se utiliza para dejar el saldo en cero.
+    // Esto corrige el caso en que el residual aparece por el último pago normal
+    // posterior al TDJ. Nunca aumenta el valor nominal del título.
+    for(const resumen of resumenObligaciones){
+      let saldoFinal=Math.max(0,Math.round(Number(resumen.saldo||0)));
+      if(saldoFinal<=0||saldoFinal>2000)continue;
+
+      const candidatos=resumen.aplicaciones
+        .map(a=>({a,titulo:resumenTitulos.find(rt=>rt.trazabilidad.some(z=>z.tituloId===a.tituloId))}))
+        .filter(x=>x.titulo&&Number(x.a.saldoTitulo||0)>=saldoFinal)
+        .sort((a,b)=>String(b.a.fecha||"").localeCompare(String(a.a.fecha||"")));
+
+      const candidato=candidatos[0];
+      if(!candidato)continue;
+
+      const a=candidato.a;
+      const tituloResumen=candidato.titulo;
+      const fila=tituloResumen.trazabilidad.find(z=>z.tituloId===a.tituloId&&z.obligacionId===resumen.obligacion.id);
+      if(!fila)continue;
+
+      const detalleFinal=resumen.secuencia.at(-1)?.detalle;
+      const saldoComp={
+        intereses:Math.max(0,Math.round(Number(detalleFinal?.saldo?.intereses||0))),
+        sancion:Math.max(0,Math.round(Number(detalleFinal?.saldo?.sancion||0))),
+        impuesto:Math.max(0,Math.round(Number(detalleFinal?.saldo?.impuesto||0)))
+      };
+      const componente=saldoComp.intereses>=saldoFinal?"intereses":(saldoComp.sancion>=saldoFinal?"sancion":"impuesto");
+
+      a.aplicado=Number(a.aplicado||0)+saldoFinal;
+      a["aplicado"+componente.charAt(0).toUpperCase()+componente.slice(1)]=Number(a["aplicado"+componente.charAt(0).toUpperCase()+componente.slice(1)]||0)+saldoFinal;
+      a.saldoTitulo=Math.max(0,Number(a.saldoTitulo||0)-saldoFinal);
+      a.saldoObligacion=0;
+      a.cierreResidualTDJ=saldoFinal;
+      a.notaCierreResidualTDJ="SALDO FINAL <= $2.000 CERRADO CON REMANENTE REAL DEL TDJ.";
+
+      fila.aplicado=Number(fila.aplicado||0)+saldoFinal;
+      fila.aplicadoImpuesto=Number(fila.aplicadoImpuesto||0);
+      fila.aplicadoIntereses=Number(fila.aplicadoIntereses||0);
+      fila.aplicadoSancion=Number(fila.aplicadoSancion||0);
+      if(componente==="impuesto")fila.aplicadoImpuesto+=saldoFinal;
+      else if(componente==="intereses")fila.aplicadoIntereses+=saldoFinal;
+      else fila.aplicadoSancion+=saldoFinal;
+      fila.saldoTitulo=Math.max(0,Number(fila.saldoTitulo||0)-saldoFinal);
+      fila.saldoObligacion=0;
+      fila.saldoDespuesSoporte={...(fila.saldoDespuesSoporte||{}),[componente]:0,total:0};
+      fila.cierreResidualTDJ=saldoFinal;
+      fila.notaCierreResidualTDJ="SALDO FINAL <= $2.000 CERRADO CON REMANENTE REAL DEL TDJ.";
+
+      tituloResumen.excedente=Math.max(0,Number(tituloResumen.excedente||0)-saldoFinal);
+      resumen.totalTDJ=Number(resumen.totalTDJ||0)+saldoFinal;
+      resumen.saldo=0;
+      if(resumen.ultima)resumen.ultima.saldoObligacion=0;
+    }
     let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
     for(const x of resumenObligaciones){
       for(const mov of (x.secuencia||[])){
@@ -2118,6 +2173,43 @@ function normalizarNumeroTDJImportado(v){
   }
   return s;
 }
+function extraerTitulosCanonicosExcel(rows, agregarTituloImportado){
+  let encontrados=0;
+  for(let i=0;i<rows.length;i++){
+    const encabezado=normExcel((rows[i]||[]).filter(x=>String(x??"").trim()!=="").join(" | "));
+    if(!/^(TITULOS TDJ|TITULOS \/ TDJ)(?:\s*—.*)?$/.test(encabezado))continue;
+
+    const h=rows[i]||[];
+    const nh=h.map(normExcel);
+    // Caso canónico del Excel TDJ: Nº | TDJ | FECHA | VALOR | ...
+    // Caso canónico del Excel DIAN: Nº | TDJ | FECHA | VALOR | TIPO | ...
+    const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº");
+    const ixF=nh.findIndex(x=>x==="FECHA"||x==="FECHA TDJ"||x==="FECHA TITULO");
+    const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR TDJ"||x==="VALOR DEL TITULO");
+    const ixTipo=nh.findIndex(x=>x==="TIPO"||x==="TIPO DE TASA");
+    const ixObs=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
+    if(ixT<0||ixF<0||ixV<0)continue;
+
+    for(let j=i+1;j<rows.length;j++){
+      const r=rows[j]||[];
+      const s=normExcel(r.filter(x=>String(x??"").trim()!=="").join(" | "));
+      if(!s)continue;
+      if(/^(FIN RECUPERACION|RECUPERACION COMPLETA|RESUMEN|PAGOS|OBLIGACION\s+\d+)/.test(s))break;
+
+      const tdj=normalizarNumeroTDJImportado(r[ixT]);
+      const fecha=fechaCampoTDJImport(r[ixF]);
+      const valor=truncarValorEntero(numExcel(r[ixV]));
+      if(!tdj||!fecha||valor<=0)continue;
+
+      if(agregarTituloImportado(
+        tdj,fecha,valor,
+        upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),
+        upper(ixObs>=0?r[ixObs]||"":"")
+      ))encontrados++;
+    }
+  }
+  return encontrados;
+}
 function extraerTitulosExcelRobusto(rows, agregarTituloImportado){
   // IMPORTACIÓN DE TÍTULOS: soporta los formatos generados por el Liquidador
   // DIAN, por el Liquidador TDJ y versiones anteriores.
@@ -2386,7 +2478,9 @@ async function importarExcelTDJ(){
       // se leen tanto los TDJ que vienen en “PAGOS Y APLICACIÓN” como las
       // secciones “TÍTULOS / TDJ” del Excel del Liquidador DIAN.
       // No dependemos de una única versión de encabezados.
-      const totalTitulosImportados=extraerTitulosExcelRobusto(rows,agregarTituloImportado);
+      const titulosCanonicos=extraerTitulosCanonicosExcel(rows,agregarTituloImportado);
+      const titulosRobustos=extraerTitulosExcelRobusto(rows,agregarTituloImportado);
+      const totalTitulosImportados=titulosCanonicos+titulosRobustos;
       if(totalTitulosImportados>0){
         console.info("TDJ MIGRADOS DESDE EXCEL",totalTitulosImportados,nuevosTitulos);
       }
