@@ -2500,7 +2500,8 @@ function reconocerTitulosTabularesTDJ(texto){
       const tipo=c.find(x=>TIPOS.some(t=>upper(t)===upper(x)))||"TASA DIAN";
       agregar(tdj,fecha,valor,upper(tipo),"");
     }
-    if(encontrados.length)return encontrados;
+    // Continuar leyendo todas las filas de la misma tabla de títulos.
+
   }
 
   // Formato sin encabezados: TDJ | FECHA | VALOR, FECHA | TDJ | VALOR,
