@@ -43,10 +43,19 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
     let normalProblema=null;
     for(let i=0;i<normales.length;i++){
       const p=normales[i];
-      if(excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)>0.5){normalProblema=p;break;}
+      if(excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)>1000.5){normalProblema=p;break;}
     }
-    if(!normalProblema)break;
-    const candidatos=ajustados.filter(p=>esTDJ(p)&&p.fecha&&String(p.fecha)<=String(normalProblema.fecha)&&Number(p.valor)>0 && (!opciones.soloTDJId || String(p.id)===String(opciones.soloTDJId)))
+    // También debemos intervenir cuando ningún pago normal tiene excedente,
+    // pero la secuencia todavía conserva saldo positivo. Ese es precisamente
+    // el caso en que el último pago queda corto por intereses generados sobre
+    // el impuesto remanente después del TDJ.
+    const saldoProblema=Math.max(0,Number(r?.total||0))>0.5;
+    if(!normalProblema && !saldoProblema)break;
+    const fechaProblema=normalProblema?.fecha
+      ||normales.map(p=>p.fecha).filter(Boolean).sort().at(-1)
+      ||datos.fechaCorte
+      ||"9999-12-31";
+    const candidatos=ajustados.filter(p=>esTDJ(p)&&p.fecha&&String(p.fecha)<=String(fechaProblema)&&Number(p.valor)>0 && (!opciones.soloTDJId || String(p.id)===String(opciones.soloTDJId)))
       .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||Number(b.__ordenOriginal||0)-Number(a.__ordenOriginal||0));
     const t=candidatos[0];
     if(!t)break;
