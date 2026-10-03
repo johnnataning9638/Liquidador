@@ -1,13 +1,13 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.34.03";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.34.08";
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.03";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.08";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.34.03";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.34.08";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.07";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.08";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -2173,6 +2173,55 @@ function normalizarNumeroTDJImportado(v){
   }
   return s;
 }
+function extraerTitulosPorSeccionExactaExcel(rows, agregarTituloImportado){
+  // FORMATO CANÓNICO DE LOS EXCEL DEL LIQUIDADOR:
+  // SECCIÓN "TÍTULOS / TDJ..." O "TÍTULOS TDJ" -> ENCABEZADOS -> DATOS.
+  // No dependemos de que el texto de la sección y el encabezado estén en
+  // la misma fila. Esta rutina lee por nombre de columna y conserva TDJ,
+  // FECHA y VALOR como un solo registro.
+  let encontrados=0;
+  const esSeccion=s=>/^(TITULOS\s*\/\s*TDJ|TITULOS\s+TDJ)(?:\s*-\s*.*)?$/.test(normExcel(s));
+  const esFin=s=>/^(FIN RECUPERACION|RECUPERACION COMPLETA|RESUMEN FINAL|RESUMEN GENERAL|TOTAL ENDOSO|OBSERVACION)/.test(normExcel(s));
+  for(let i=0;i<rows.length;i++){
+    const s=normExcel((rows[i]||[]).filter(x=>String(x??"").trim()!=="").join(" | "));
+    if(!esSeccion(s))continue;
+    let hi=i+1;
+    while(hi<rows.length && !(rows[hi]||[]).some(x=>String(x??"").trim()!==""))hi++;
+    if(hi>=rows.length)continue;
+
+    const h=rows[hi]||[];
+    const nh=h.map(normExcel);
+    const ixT=nh.findIndex(x=>["TDJ","TDJ Nº","TITULO","TITULO Nº"].includes(x));
+    const ixF=nh.findIndex(x=>["FECHA","FECHA TDJ","FECHA TITULO"].includes(x));
+    const ixV=nh.findIndex(x=>["VALOR","VALOR ORIGINAL","VALOR TDJ","VALOR DEL TITULO","VALOR DEL TÍTULO"].includes(x));
+    const ixTipo=nh.findIndex(x=>["TIPO","TIPO DE TASA"].includes(x));
+    const ixObs=nh.findIndex(x=>["OBSERVACION","OBSERVACIÓN"].includes(x));
+    if(ixT<0||ixF<0||ixV<0)continue;
+
+    for(let j=hi+1;j<rows.length;j++){
+      const r=rows[j]||[];
+      const texto=r.filter(x=>String(x??"").trim()!=="").join(" | ");
+      if(!texto)continue;
+      const sr=normExcel(texto);
+      if(esFin(sr)||esSeccion(sr))break;
+
+      const tdj=normalizarNumeroTDJImportado(r[ixT]);
+      const fecha=fechaCampoTDJImport(r[ixF]);
+      const valor=truncarValorEntero(numExcel(r[ixV]));
+      if(!tdj||!fecha||valor<=0)continue;
+
+      if(agregarTituloImportado(
+        tdj,
+        fecha,
+        valor,
+        upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),
+        upper(ixObs>=0?r[ixObs]||"":"")
+      ))encontrados++;
+    }
+  }
+  return encontrados;
+}
+
 function extraerTitulosCanonicosExcel(rows, agregarTituloImportado){
   let encontrados=0;
   for(let i=0;i<rows.length;i++){
@@ -2482,9 +2531,9 @@ async function importarExcelTDJ(){
       // se leen tanto los TDJ que vienen en “PAGOS Y APLICACIÓN” como las
       // secciones “TÍTULOS / TDJ” del Excel del Liquidador DIAN.
       // No dependemos de una única versión de encabezados.
-      const titulosCanonicos=extraerTitulosCanonicosExcel(rows,agregarTituloImportado);
+      const titulosSeccion=extraerTitulosPorSeccionExactaExcel(rows,agregarTituloImportado);\n      const titulosCanonicos=extraerTitulosCanonicosExcel(rows,agregarTituloImportado);
       const titulosRobustos=extraerTitulosExcelRobusto(rows,agregarTituloImportado);
-      const totalTitulosImportados=titulosCanonicos+titulosRobustos;
+      const totalTitulosImportados=titulosSeccion+titulosCanonicos+titulosRobustos;
       if(totalTitulosImportados>0){
         console.info("TDJ MIGRADOS DESDE EXCEL",totalTitulosImportados,nuevosTitulos);
       }
