@@ -73,9 +73,24 @@ function opcionTipoObligacionTDJ(tipo=""){
   return opciones.join("");
 }
 function hayTitulosTDJ(){
-  return titulos.length>1 || titulos.some(t=>String(t?.tdj||"").trim() || fechaISO(t?.fecha) || Number(t?.valor||0)>0);
+  // La existencia de un TDJ depende siempre del estado actual de la captura,
+  // nunca de si anteriormente se ejecutó CALCULAR LIQUIDACIÓN.
+  const hayEstado=titulos.some(t=>String(t?.tdj||"").trim() || fechaISO(t?.fecha) || Number(t?.valor||0)>0);
+  if(hayEstado)return true;
+  // Cubrimos también el instante en que el usuario acaba de diligenciar un
+  // título y el estado interno todavía no recibió el evento de cambio.
+  const filas=document.querySelectorAll("#tablaTitulos tbody tr");
+  return [...filas].some(tr=>{
+    const tdj=String(tr.querySelector('[data-t="tdj"]')?.value||"").trim();
+    const fecha=fechaISO(tr.querySelector('.fecha-campo')?.value||"")||fechaISO(tr.querySelector('.fecha-native')?.value||"");
+    const valor=numeroDesdeTexto(tr.querySelector('[data-t="valor"]')?.value||"");
+    return Boolean(tdj||fecha||Number(valor)>0);
+  });
 }
 function actualizarVisibilidadTasasObligacionesTDJ(){
+  // Sincronizamos primero el título visible para que agregar, editar o volver
+  // a una pestaña nunca deje bloqueado el selector de tasa.
+  if(typeof sincronizarTitulosVisiblesTDJ==="function")sincronizarTitulosVisiblesTDJ(false);
   const visible=hayTitulosTDJ();
   document.querySelectorAll('.tdj-tasa-obligacion').forEach(el=>{el.hidden=!visible;});
   if(visible)refrescarTasasObligacionesTDJ();
@@ -627,8 +642,14 @@ function renderTitulos(){
       }
     };
     tr.querySelectorAll('[data-t]').forEach(el=>{
-      el.addEventListener('input',()=>sincronizarCampoTitulo(el));
-      el.addEventListener('change',()=>sincronizarCampoTitulo(el));
+      el.addEventListener('input',()=>{
+        sincronizarCampoTitulo(el);
+        actualizarVisibilidadTasasObligacionesTDJ();
+      });
+      el.addEventListener('change',()=>{
+        sincronizarCampoTitulo(el);
+        actualizarVisibilidadTasasObligacionesTDJ();
+      });
     });
     const valorTitulo=tr.querySelector('[data-t="valor"]');
     if(valorTitulo)valorTitulo.addEventListener('blur',()=>{
@@ -805,7 +826,7 @@ function calcularLiquidacionBaseTDJ(o){
   return motorParaObligacion(o).calcular(datosMotor(o,pagos,fechaCorte));
 }
 
-function sincronizarTitulosVisiblesTDJ(){
+function sincronizarTitulosVisiblesTDJ(actualizarUI=true){
   const filas=[...document.querySelectorAll("#tablaTitulos tbody tr")];
   filas.forEach((tr,i)=>{
     const id=tr.dataset.tituloId;
@@ -828,7 +849,7 @@ function sincronizarTitulosVisiblesTDJ(){
   });
   titulos=titulos.map((t,i)=>({...t,numero:i+1,fecha:fechaISO(t.fecha)||"",valor:truncarValorEntero(t.valor||0)}));
   ordenarTitulosCronologicamente();
-  refrescarTasasObligacionesTDJ();
+  if(actualizarUI)refrescarTasasObligacionesTDJ();
 }
 
 function validarFechasTitulosDecreto1419TDJ(){
