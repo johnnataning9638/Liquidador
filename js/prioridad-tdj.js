@@ -1,4 +1,4 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.34.00
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.34.06
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Solo ajusta el valor imputable de un TDJ anterior a pagos normales posteriores.
 
@@ -27,7 +27,14 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
     const maxFecha=pagos.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||"";
     return motor.calcular({...datos,pagos,fechaCorte:maxFecha});
   };
-  const todosNormalesAplicados=r=>normales.every((p,i)=>excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)<=0.5);
+  // REGLA GENERAL TDJ: los pagos normales posteriores deben quedar
+  // completamente cubiertos. Se admite únicamente un EXCEDENTE MÁXIMO DE
+  // $1.000 en el pago normal; nunca se acepta un SALDO POSITIVO.
+  const todosNormalesAplicados=r=>{
+    const sinExcesoMayorAMil=normales.every((p,i)=>excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)<=1000.5);
+    const saldoFinal=Math.max(0,Number(r?.total||0));
+    return sinExcesoMayorAMil && saldoFinal<=0.5;
+  };
 
   if(hayTDJPosterior) for(let pasada=0;pasada<Math.max(4,tdjs.length*3);pasada++){
     let r;
@@ -56,19 +63,32 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
       t.valor=anterior;
       return ok;
     };
-    if(esFactible(hi)){
-      mejor=hi;
-    }else if(!esFactible(0)){
-      continue;
-    }else{
-      for(let k=0;k<32;k++){
-        if(lo>hi)break;
-        const mid=Math.floor((lo+hi)/2);
-        if(esFactible(mid)){mejor=mid;lo=mid+1;}else hi=mid-1;
+    // La corrección del TDJ se expresa en MÚLTIPLOS DE $1.000.
+    // Buscamos el MENOR valor del título que consigue saldo final $0 y
+    // ningún pago normal posterior con excedente superior a $1.000.
+    // Así el TDJ cubre exactamente el remanente necesario y conserva
+    // el máximo ENDOSO posible.
+    const unidad=1000;
+    const hiMil=Math.floor(hi/unidad);
+    const esFactibleMil=k=>esFactible(Math.min(hi,Math.max(0,k*unidad)));
+    if(esFactibleMil(hiMil)){
+      let bajo=0,alto=hiMil,mejorMil=hiMil;
+      while(bajo<=alto){
+        const mid=Math.floor((bajo+alto)/2);
+        if(esFactibleMil(mid)){
+          mejorMil=mid;
+          alto=mid-1;
+        }else{
+          bajo=mid+1;
+        }
       }
+      mejor=mejorMil*unidad;
+    }else{
+      // Si ni siquiera aplicando el máximo disponible se consigue cerrar
+      // la secuencia, no inventamos dinero ni forzamos un cero.
+      continue;
     }
-    t.valor=mejor;
-    if(mejor===0)t.valor=0;
+    t.valor=Math.min(nominal,Math.max(0,mejor));
   }
   // CIERRE DE SALDO RESIDUAL TDJ:
   // Si el último TDJ ya cubre la obligación y todavía conserva remanente,
