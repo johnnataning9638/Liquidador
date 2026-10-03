@@ -15,7 +15,7 @@ let moduloPrioridadTDJ=null;
 async function cargarModuloPrioridadTDJ(){
   if(moduloPrioridadTDJ)return moduloPrioridadTDJ;
   try{
-    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.98");
+    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.99");
     return moduloPrioridadTDJ;
   }catch(e){
     console.error("No fue posible cargar la capa de prioridad TDJ.",e);
