@@ -864,6 +864,40 @@ function observacionesBeneficio1419ComoLista(valor){
   return [];
 }
 
+function construirSecuenciaObligacionTDJ(o,aplicaciones=[]){
+  const movimientos=[
+    ...(o?.pagos||[]).filter(p=>p?.fecha&&Number(p?.valor)>0).map((p,i)=>({
+      id:p.id||uid("PAG-SEQ"),fecha:fechaISO(p.fecha)||p.fecha,valor:truncarValorEntero(p.valor||0),
+      esTDJ:false,pago:{...p},ordenInterno:Number(p.ordenInterno??p.numero??i)
+    })),
+    ...aplicaciones.filter(a=>a?.fecha&&Number(a?.aplicado)>0).map((a,i)=>({
+      id:a.pagoId||uid("TDJ-SEQ"),fecha:fechaISO(a.fecha)||a.fecha,valor:truncarValorEntero(a.aplicado||0),
+      esTDJ:true,
+      pago:{id:a.pagoId||uid("TDJ-PDF"),numero:100000+i,fecha:fechaISO(a.fecha)||a.fecha,valor:truncarValorEntero(a.aplicado||0),
+        tipo:a.tipoTasaObligacion||o.tipoTasa||"TASA DIAN",tdj:a.titulo||"",esTDJ:true,observacion:""},
+      aplicacion:a,ordenInterno:100000+i
+    }))
+  ].sort((a,b)=>String(a.fecha||"9999-12-31").localeCompare(String(b.fecha||"9999-12-31"))||
+    Number(a.esTDJ)-Number(b.esTDJ)||Number(a.ordenInterno||0)-Number(b.ordenInterno||0));
+  const motorSecuencial=motorParaObligacion(o),prev=[];
+  return movimientos.map(mov=>{
+    const actuales=[...prev,{...mov.pago,valor:mov.valor,fecha:mov.fecha,id:mov.id,esTDJ:mov.esTDJ,tdj:mov.pago.tdj||"",ordenInterno:mov.ordenInterno}];
+    const detalleCompleto=motorSecuencial.calcular(datosMotor(o,actuales,mov.fecha,{permitirBeneficioFueraVigencia:true}));
+    const detalle=detalleCompleto?.detalle?.find(d=>String(d?.pago?.id)===String(mov.id))||detalleCompleto?.detalle?.at(-1)||{};
+    const fila={...mov,detalleMotor:detalleCompleto,detalle};
+    if(mov.aplicacion){
+      mov.aplicacion.detalleSecuencial=detalleCompleto;
+      mov.aplicacion.detalleAplicacionSecuencial=detalle;
+      mov.aplicacion.saldoObligacion=Number(detalle?.saldo?.total??mov.aplicacion.saldoObligacion??0);
+      mov.aplicacion.aplicadoImpuesto=Number(detalle?.aplicado?.impuesto??mov.aplicacion.aplicadoImpuesto??0);
+      mov.aplicacion.aplicadoIntereses=Number(detalle?.aplicado?.intereses??mov.aplicacion.aplicadoIntereses??0);
+      mov.aplicacion.aplicadoSancion=Number(detalle?.aplicado?.sancion??mov.aplicacion.aplicadoSancion??0);
+    }
+    prev.push({...mov.pago,valor:mov.valor,fecha:mov.fecha,id:mov.id,esTDJ:mov.esTDJ,tdj:mov.pago.tdj||"",ordenInterno:mov.ordenInterno});
+    return fila;
+  });
+}
+
 function aplicarTitulos(observacionesBeneficio1419=[]){
   try{
     // Los listeners de botones no deben pasar el MouseEvent como parámetro.
@@ -1135,103 +1169,48 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     const resumenObligaciones=obligaciones.map(o=>{
       const apps=aplicaciones.find(x=>x.obligacionId===o.id)?.items||[];
       const base=liquidacionesBase.get(o.id);
-      const last=apps.at(-1)?.detalleMotor;
       const totalPagos=o.pagos.reduce((a,p)=>a+Number(p.valor||0),0);
       const totalTDJ=apps.reduce((a,x)=>a+Number(x.aplicado||0),0);
-
-      // SALDO FINAL REAL: el último detalle de un TDJ está calculado a la
-      // fecha de ese título. Si después del último TDJ existe un pago normal,
-      // ese pago no aparecía en "last" y podía dejar un saldo ficticiamente
-      // alto, impidiendo reconocer un sobrante legítimo como ENDOSO.
-      // Recalculamos ahora la obligación completa a la última fecha de todos
-      // sus movimientos, incluyendo TODOS los pagos normales y TODOS los TDJ
-      // efectivamente aplicados.
-      const pagosFinales=[
-        ...(o.pagos||[]).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i),esTDJ:Boolean(p.esTDJ&&p.tdj)})),
-        ...apps.map((x,i)=>({
-          id:x.pagoId||uid("FIN-TDJ"),
-          numero:100000+i,
-          fecha:x.fecha,
-          valor:truncarValorEntero(x.aplicado||0),
-          tipo:x.tipoTasaObligacion||o.tipoTasa||"TASA DIAN",
-          tdj:x.titulo,
-          esTDJ:true,
-          ordenInterno:100000+i
-        }))
-      ].filter(p=>fechaISO(p.fecha)&&Number(p.valor)>0);
-      const fechaFinal=pagosFinales.map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort().at(-1)||"";
-      let liquidacionFinal=null;
-      let saldo=Number(last?.total ?? base?.total ?? 0);
-      if(fechaFinal){
-        try{
-          const motorFinal=motorParaObligacion(o);
-          liquidacionFinal=motorFinal.calcular(datosMotor(o,pagosFinales,fechaFinal,{permitirBeneficioFueraVigencia:true}));
-          saldo=Number(liquidacionFinal?.total??saldo);
-        }catch(e){
-          console.warn("No fue posible recalcular el saldo final de la obligación TDJ; se conserva el último estado disponible.",e);
-        }
+      // LEDGER ÚNICO Y CRONOLÓGICO: cada pago normal y cada TDJ se recalculan
+      // sobre el saldo que dejó exactamente el movimiento anterior.
+      const secuencia=construirSecuenciaObligacionTDJ(o,apps);
+      const ultimoSecuencial=secuencia.at(-1);
+      let liquidacionFinal=ultimoSecuencial?.detalleMotor||null;
+      let saldo=Number(ultimoSecuencial?.detalle?.saldo?.total??ultimoSecuencial?.detalleMotor?.total??base?.total??0);
+      if(!secuencia.length){liquidacionFinal=base;saldo=Number(base?.total||0);}
+      // El soporte TDJ usa exactamente el mismo detalle secuencial que verá el
+      // pago normal posterior.
+      for(const mov of secuencia){
+        if(!mov.esTDJ||!mov.aplicacion)continue;
+        const a=mov.aplicacion;
+        a.detalleMotor=mov.detalleMotor;
+        a.detalleAplicacion=mov.detalle;
+        a.saldoDespuesSoporte={
+          impuesto:Number(mov.detalle?.saldo?.impuesto??mov.detalleMotor?.impuesto??0),
+          intereses:Number(mov.detalle?.saldo?.intereses??mov.detalleMotor?.intereses??0),
+          sancion:Number(mov.detalle?.saldo?.sancion??mov.detalleMotor?.sancion??0),
+          total:Number(mov.detalle?.saldo?.total??mov.detalleMotor?.total??a.saldoObligacion??0)
+        };
+        a.saldoObligacion=Number(a.saldoDespuesSoporte.total||0);
       }
-      return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal};
+      return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal,secuencia};
     });
     let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
     let remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
-
-    // CIERRE DEL REMANENTE: el saldo residual se absorbe dentro de la
-    // MISMA APLICACIÓN DEL TDJ que todavía conserva saldo disponible.
-    // Nunca se crea una fila/pago ficticio: eso duplicaba el último pago normal
-    // en el PDF y mezclaba la deuda final con la distribución del pago.
-    if(saldoPendienteObligaciones>1 && remanenteTitulos>0 && remanenteTitulos>=saldoPendienteObligaciones){
-      let porAplicar=remanenteTitulos;
-      for(const resumen of resumenObligaciones){
-        if(porAplicar<=0)break;
-        let saldo=Math.max(0,Number(resumen.saldo||0));
-        if(saldo<=0)continue;
-
-        const itemsDisponibles=(resumen.aplicaciones||[])
-          .filter(a=>Number(a.saldoTitulo||0)>0)
-          .sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||"")));
-        for(const item of itemsDisponibles){
-          if(porAplicar<=0||saldo<=0)break;
-          const cierre=Math.min(porAplicar,saldo,Math.max(0,Number(item.saldoTitulo||0)));
-          if(cierre<=0)continue;
-
-          // El residual se imputa sobre la deuda REAL que quedó al cierre.
-          // Se conserva la misma regla de proporcionalidad del motor; en el
-          // caso del soporte aportado, el saldo residual es $1.000 de intereses.
-          const deudaFinal={
-            impuesto:Math.max(0,Number(resumen.liquidacionFinal?.impuesto||0)),
-            intereses:Math.max(0,Number(resumen.liquidacionFinal?.intereses||0)),
-            sancion:Math.max(0,Number(resumen.liquidacionFinal?.sancion||0))
-          };
-          const totalDeudaFinal=deudaFinal.impuesto+deudaFinal.intereses+deudaFinal.sancion;
-          const factor=totalDeudaFinal>0?cierre/totalDeudaFinal:0;
-          const addImp=Math.min(deudaFinal.impuesto,Math.round(deudaFinal.impuesto*factor));
-          const addInt=Math.min(deudaFinal.intereses,Math.max(0,cierre-addImp));
-          const addSan=Math.min(deudaFinal.sancion,Math.max(0,cierre-addImp-addInt));
-          const sumaComponentes=addImp+addInt+addSan;
-          const ajusteFinal=Math.max(0,cierre-sumaComponentes);
-
-          item.aplicado=Number(item.aplicado||0)+cierre;
-          item.aplicadoImpuesto=Number(item.aplicadoImpuesto||0)+addImp;
-          item.aplicadoIntereses=Number(item.aplicadoIntereses||0)+addInt+ajusteFinal;
-          item.aplicadoSancion=Number(item.aplicadoSancion||0)+addSan;
-          item.saldoTitulo=Math.max(0,Number(item.saldoTitulo||0)-cierre);
-          item.saldoObligacion=Math.max(0,Number(item.saldoObligacion||0)-cierre);
-          item.saldoDespuesSoporte={
-            impuesto:Math.max(0,Number(item.saldoDespuesSoporte?.impuesto||0)-addImp),
-            intereses:Math.max(0,Number(item.saldoDespuesSoporte?.intereses||0)-addInt-ajusteFinal),
-            sancion:Math.max(0,Number(item.saldoDespuesSoporte?.sancion||0)-addSan),
-            total:Math.max(0,Number(item.saldoDespuesSoporte?.total||0)-cierre)
-          };
-
-          resumen.totalTDJ=Number(resumen.totalTDJ||0)+cierre;
-          saldo=Math.max(0,saldo-cierre);
-          porAplicar=Math.max(0,porAplicar-cierre);
-        }
-        resumen.saldo=saldo;
-      }
-      remanenteTitulos=Math.max(0,porAplicar);
-      saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    // EL REMANENTE DEL TDJ ES ENDOSO. Si la prioridad de pagos normales redujo
+    // un TDJ para reservar capacidad a un pago posterior, ese remanente no puede
+    // volver a utilizarse para cubrir el saldo después de dicho pago.
+    const endoso=remanenteTitulos;
+    // CIERRE DE TÍTULOS: cada peso queda exactamente en APLICADO o ENDOSO.
+    const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0)
+      .reduce((a,t)=>a+Math.max(0,Number(t.valor||0)),0);
+    const totalAplicado=resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Math.max(0,Number(y.aplicado||0)),0),0);
+    const diferenciaCierre=Math.round((totalTitulos-totalAplicado-endoso)*100)/100;
+    if(Math.abs(diferenciaCierre)>1){
+      throw new Error(`INCONSISTENCIA DE CIERRE TDJ: TÍTULOS ${dinero(totalTitulos)}, APLICADO ${dinero(totalAplicado)}, ENDOSO ${dinero(endoso)}.`);
+    }
+    if(resumenObligaciones.some(x=>Number(x.saldo||0)<-1)){
+      throw new Error("INCONSISTENCIA TDJ: una obligación quedó con saldo negativo.");
     }
 
     const hayBeneficio1419=obligaciones.some(o=>esTipoDecreto1419(o.tipoTasa))
