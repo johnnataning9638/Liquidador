@@ -1052,13 +1052,30 @@ function resumenFinalPdf(r){
 }
 
 function resumenEndosoTDJNormalPdf(d,r){
-  const titulosOriginales=(d?.pagos||[]).filter(p=>Boolean(String(p?.tdj||"").trim())||p?.esTDJ===true);
+  // MISMA ESTRUCTURA DEL RESUMEN DE ENDOSO DEL MÓDULO TDJ.
+  // El título viaja dentro de PAGOS, pero conserva su valor nominal.
+  const titulosOriginales=(d?.pagos||[]).filter(p=>{
+    const tdj=String(p?.tdj||"").trim();
+    return tdj||p?.esTDJ===true;
+  });
   if(!titulosOriginales.length)return "";
   const detalles=Array.isArray(r?.detalle)?r.detalle:[];
   const filas=titulosOriginales.map((p)=>{
     const nominal=Math.max(0,Number(p?.valor||0));
-    const aplicaciones=detalles.filter(x=>String(x?.pago?.id||"")===String(p?.id||""));
-    const aplicado=aplicaciones.reduce((a,x)=>a+Math.max(0,Number(x?.aplicado?.total??x?.aplicado??0)),0);
+    const id=String(p?.id||"");
+    let aplicaciones=detalles.filter(x=>String(x?.pago?.id||"")===id);
+    if(!aplicaciones.length){
+      const tdj=String(p?.tdj||"").trim();
+      const fecha=fechaISO(p?.fecha)||"";
+      aplicaciones=detalles.filter(x=>{
+        const xp=String(x?.pago?.tdj||"").trim();
+        return xp===tdj && (!fecha || fechaISO(x?.pago?.fecha)===fecha);
+      });
+    }
+    const aplicado=aplicaciones.reduce((a,x)=>{
+      const valor=Number(x?.aplicado?.total??x?.aplicado??0);
+      return a+Math.max(0,Number.isFinite(valor)?valor:0);
+    },0);
     const endoso=Math.max(0,nominal-aplicado);
     return {tdj:p?.tdj||"TDJ",fecha:p?.fecha||"",nominal,aplicado,endoso};
   });
@@ -1066,8 +1083,9 @@ function resumenEndosoTDJNormalPdf(d,r){
   const totalAplicado=filas.reduce((a,x)=>a+x.aplicado,0);
   const totalEndoso=filas.reduce((a,x)=>a+x.endoso,0);
   const rows=filas.map(x=>`<tr><td>${escPdf(x.tdj)}</td><td>${escPdf(fechaVisible(x.fecha))}</td><td>${dinero(x.nominal)}</td><td>${dinero(x.aplicado)}</td><td>${dinero(x.endoso)}</td><td>ENDOSO</td></tr>`).join("");
-  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(r?.total||0)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(totalEndoso)}</strong></div></div><div class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>APLICADO</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${rows||"<tr><td colspan=\"6\">NO HAY TÍTULOS SOBRANTES.</td></tr>"}</tbody><tfoot><tr><th colspan="4">TOTAL ENDOSO</th><th>${dinero(totalEndoso)}</th><th>ENDOSO</th></tr></tfoot></table></div><div class="pdf-nota">Nota: el valor a endosar corresponde al remanente del valor nominal del título después de su aplicación efectiva en la liquidación.</div></article></div></section>`;
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(r?.total||0)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(totalEndoso)}</strong></div></div><div class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>APLICADO</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${rows||"<tr><td colspan='6'>NO HAY TÍTULOS SOBRANTES.</td></tr>"}</tbody><tfoot><tr><th colspan="4">TOTAL ENDOSO</th><th>${dinero(totalEndoso)}</th><th>ENDOSO</th></tr></tfoot></table></div><div class="pdf-nota">Nota: el valor a endosar corresponde al remanente del valor nominal del título después de su aplicación efectiva en la liquidación.</div></article></div></section>`;
 }
+
 function exportarExcel(){
   try{
     const {d,r}=construirDatosSoporte();
