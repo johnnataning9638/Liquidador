@@ -365,21 +365,35 @@ async function cargarDatos(){
   // los seis archivos que necesita directamente el motor se cargan primero,
   // sin mezclar calendario/normativa/auditoría ni Supabase en el camino crítico.
   const cargarSimple=async ruta=>{
-    const url=new URL("../"+String(ruta).replace(/^\.\//,""),import.meta.url);
+    const limpio=String(ruta||"").replace(/^\.\//,"");
+    // Render sirve el proyecto como sitio estático. Intentamos primero la URL
+    // resuelta desde app.js y luego la URL absoluta desde la raíz del sitio.
+    // Así el arranque no depende de la URL del documento ni de un path relativo
+    // alterado por navegación/redirecciones.
+    const candidatos=[
+      new URL("../"+limpio,import.meta.url).href,
+      new URL(limpio,window.location.origin+"/").href,
+      new URL(limpio,document.baseURI||window.location.href).href
+    ].filter((u,i,a)=>a.indexOf(u)===i);
     let ultimoError=null;
-    for(let intento=1;intento<=2;intento++){
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),8000);
-      try{
-        const respuesta=await fetch(url.href,{cache:"no-store",signal:controller.signal});
-        if(!respuesta.ok)throw new Error("HTTP "+respuesta.status+" al cargar "+ruta);
-        return await respuesta.json();
-      }catch(e){
-        ultimoError=e?.name==="AbortError"?new Error("Tiempo de espera agotado al cargar "+ruta):e;
-        if(intento<2)await new Promise(resolve=>setTimeout(resolve,250));
-      }finally{clearTimeout(timer);}
+    for(const url of candidatos){
+      for(let intento=1;intento<=2;intento++){
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),8000);
+        try{
+          const respuesta=await fetch(url,{cache:intento===1?"no-store":"reload",signal:controller.signal});
+          if(!respuesta.ok)throw new Error("HTTP "+respuesta.status);
+          const texto=await respuesta.text();
+          if(!texto.trim())throw new Error("RESPUESTA_VACIA");
+          try{return JSON.parse(texto);}
+          catch{throw new Error("JSON_INVALIDO");}
+        }catch(e){
+          ultimoError=e?.name==="AbortError"?new Error("TIEMPO_ESPERA"):e;
+          if(intento<2)await new Promise(resolve=>setTimeout(resolve,250));
+        }finally{clearTimeout(timer);}
+      }
     }
-    throw ultimoError||new Error("No fue posible cargar "+ruta);
+    throw new Error("No se pudo cargar el parámetro "+limpio+" · "+(ultimoError?.message||"ERROR_DESCONOCIDO"));
   };
 
   [uvt,ipc,tasasMoratorias,beneficios,sanciones,reglasObligaciones]=await Promise.all([
