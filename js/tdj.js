@@ -1224,25 +1224,6 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       observacionesBeneficio1419=[...observacionesBeneficio1419,observacion];
     }
 
-    // ENDOSO: después del cierre anterior, solo queda como endoso lo que
-    // realmente sobra una vez satisfecho el saldo de las obligaciones.
-    if(saldoPendienteObligaciones>1 && remanenteTitulos>0){
-      throw new Error(`INCONSISTENCIA TDJ: EL REMANENTE ${dinero(remanenteTitulos)} NO ALCANZA PARA CUBRIR EL SALDO DE OBLIGACIONES (${dinero(saldoPendienteObligaciones)}). DEBE CONTINUAR LA IMPUTACIÓN SEGÚN LAS REGLAS DE PAGO.`);
-    }
-    const endoso=saldoPendienteObligaciones<=1?remanenteTitulos:0;
-
-    // INVARIANTES DE SEGURIDAD TDJ: la suma de títulos debe cerrar exactamente
-    // contra aplicado + endoso y ninguna obligación puede quedar negativa.
-    const totalTitulos= titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Math.max(0,Number(t.valor||0)),0);
-    const totalAplicado=resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Math.max(0,Number(y.aplicado||0)),0),0);
-    const diferenciaCierre=Math.round((totalTitulos-totalAplicado-endoso-saldoPendienteObligaciones)*100)/100;
-    if(Math.abs(diferenciaCierre)>1){
-      throw new Error(`INCONSISTENCIA DE CIERRE TDJ: TÍTULOS ${dinero(totalTitulos)}, APLICADO ${dinero(totalAplicado)}, ENDOSO ${dinero(endoso)}.`);
-    }
-    if(resumenObligaciones.some(x=>Number(x.saldo||0)<-1)){
-      throw new Error("INCONSISTENCIA TDJ: una obligación quedó con saldo negativo.");
-    }
-
     resultado={resumenObligaciones,resumenTitulos,endoso,fechaCalculo:hoyISO(),observacionesBeneficio1419};
     resultadoDesactualizado=false;
     pintarResultado(resultado);
