@@ -934,7 +934,11 @@ export class MotorLiquidacion{
       // La sanción solo puede participar en la imputación si el pago/Título
       // tiene fecha igual o posterior a la fecha de sanción. Antes de esa fecha
       // el pago se distribuye exclusivamente entre impuesto e intereses.
-      const sancionHabilitadaPorFecha=!fechaSancionReal || pago.fecha>=fechaSancionReal;
+      // La sanción ya determinada forma parte de la deuda exigible para la imputación del pago.
+      // La fecha de presentación/sanción no bloquea su participación en la proporcionalidad:
+      // el soporte manual de referencia aplica la sanción desde el primer pago,
+      // incluso cuando este es anterior a la fecha de presentación registrada.
+      const sancionHabilitadaPorFecha=true;
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
       // La sanción base es definitiva: primero se actualiza únicamente el
@@ -1233,7 +1237,7 @@ export class MotorLiquidacion{
         impuesto:impuestoExigible,
         intereses:interesesExigibles,
         // Antes de la fecha de sanción, el pago no puede imputarse a sanción.
-        sancion:sancionHabilitadaPorFecha?Math.max(0,saldoSancion):0
+        sancion:Math.max(0,saldoSancion)
       };
 
       const aplicacionGlobal=this.aplicarProporcionalidad(
