@@ -1,4 +1,4 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.86
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.98
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Solo ajusta el valor imputable de un TDJ anterior a pagos normales posteriores.
 
@@ -69,6 +69,52 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
     t.valor=mejor;
     if(mejor===0)t.valor=0;
   }
+  // CIERRE DE SALDO RESIDUAL TDJ:
+  // Si el último TDJ ya cubre la obligación y todavía conserva remanente,
+  // usamos ese remanente para cerrar pequeños saldos causados por redondeo.
+  // Nunca se supera el valor nominal del título y nunca se toca un TDJ que
+  // deba reservarse para un pago normal posterior.
+  if(opciones.cerrarSaldoFinal!==false){
+    let rFinal=null;
+    try{rFinal=simular();}catch{rFinal=null;}
+    const saldoFinalActual=Math.max(0,Number(rFinal?.total||0));
+    if(saldoFinalActual>0.5){
+      const candidatosCierre=ajustados.filter(p=>
+        esTDJ(p)&&p.fecha&&Number(p.valor)>0&&
+        (!opciones.soloTDJId||String(p.id)===String(opciones.soloTDJId))&&
+        !normales.some(n=>String(n.fecha)>String(p.fecha))
+      ).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||Number(b.__ordenOriginal||0)-Number(a.__ordenOriginal||0));
+      const tCierre=candidatosCierre[0];
+      if(tCierre){
+        const nominal=Math.max(0,Math.trunc(Number(tCierre.__valorNominal??tCierre.valor??0)));
+        const actual=Math.max(0,Math.trunc(Number(tCierre.valor||0)));
+        if(nominal>actual){
+          const saldoObjetivo=saldoFinalActual;
+          const evaluaCierre=v=>{
+            const anterior=tCierre.valor;
+            tCierre.valor=Math.min(nominal,Math.max(0,Math.trunc(v)));
+            let rr=null;
+            try{rr=simular();}catch{rr=null;}
+            tCierre.valor=anterior;
+            return rr;
+          };
+          const maxR=evaluaCierre(nominal);
+          const maxSaldo=Math.max(0,Number(maxR?.total||0));
+          if(maxR && maxSaldo<=0.5){
+            let lo=actual,hi=nominal,mejor=nominal;
+            for(let k=0;k<40&&lo<=hi;k++){
+              const mid=Math.floor((lo+hi)/2);
+              const rr=evaluaCierre(mid);
+              const s=Math.max(0,Number(rr?.total||0));
+              if(s<=0.5){mejor=mid;hi=mid-1;}else{lo=mid+1;}
+            }
+            tCierre.valor=mejor;
+          }
+        }
+      }
+    }
+  }
+
   const pagosFinales=ajustados.map(p=>{
     const q={...p};
     delete q.__ordenOriginal;
