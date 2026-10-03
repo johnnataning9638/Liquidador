@@ -3,11 +3,11 @@ import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.01";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.02";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.01";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.02";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -2109,6 +2109,59 @@ function leerVencimientosExcel(rows,headerIdx){
   return out;
 }
 
+function extraerTitulosExcelRobusto(rows, agregarTituloImportado){
+  // El Excel del Liquidador DIAN puede contener el TDJ en dos lugares:
+  // 1) PAGOS Y APLICACIÓN, como pago con “TDJ Nº”.
+  // 2) TÍTULOS / TDJ — TÍTULOS REGISTRADOS.
+  // Esta rutina busca TODAS las cabeceras compatibles, sin depender del texto
+  // exacto de la versión del informe ni de la posición de la sección.
+  const candidatos=[];
+  for(let i=0;i<rows.length;i++){
+    const n=(rows[i]||[]).map(normExcel);
+    const tieneTDJ=n.includes("TDJ");
+    const tieneFecha=n.includes("FECHA")||n.includes("FECHA TDJ")||n.includes("FECHA TITULO");
+    const tieneValor=n.includes("VALOR")||n.includes("VALOR ORIGINAL")||n.includes("VALOR TDJ")||n.includes("VALOR DEL TITULO");
+    if(tieneTDJ&&tieneFecha&&tieneValor)candidatos.push(i);
+  }
+
+  const limites=/^(TOTAL ENDOSO|FIN RECUPERACION|PAGOS Y APLICACION|PAGOS REGISTRADOS|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|OBLIGACION d+ -|DATOS OBLIGACION|VENCIMIENTOS|RECUPERACION COMPLETA)/;
+  let encontrados=0;
+
+  for(let h=0;h<candidatos.length;h++){
+    const hi=candidatos[h], nextHeader=candidatos[h+1]??rows.length;
+    const header=rows[hi]||[], nh=header.map(normExcel);
+    const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
+    const ixF=nh.findIndex(x=>x==="FECHA"||x==="FECHA TDJ"||x==="FECHA TITULO");
+    const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR TDJ"||x==="VALOR DEL TITULO");
+    const ixTipo=nh.findIndex(x=>x==="TIPO"||x==="TIPO DE TASA");
+    const ixObs=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
+
+    if(ixT<0||ixF<0||ixV<0)continue;
+
+    for(let i=hi+1;i<Math.min(nextHeader,rows.length);i++){
+      const r=rows[i]||[];
+      const s=normExcel(r.filter(Boolean).join(" | "));
+      if(!s)continue;
+      if(limites.test(s))break;
+
+      const f=fechaCampoTDJImport(r[ixF]);
+      const v=truncarValorEntero(numExcel(r[ixV]));
+      const tdj=upper(r[ixT]??"").trim();
+      if(!f||v<=0||!tdj)continue;
+
+      const ok=agregarTituloImportado(
+        tdj,
+        f,
+        v,
+        upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),
+        upper(ixObs>=0?r[ixObs]||"":"")
+      );
+      if(ok)encontrados++;
+    }
+  }
+  return encontrados;
+}
+
 async function importarExcelTDJ(){
   // IMPORTACIÓN DE RECUPERACIÓN COMPLETA:
   // Un Excel generado por este módulo es un respaldo de trabajo. La importación
@@ -2295,37 +2348,13 @@ async function importarExcelTDJ(){
         nuevas.push(o);
       }
 
-      // TÍTULOS: preferimos el CONTROL FINAL, que contiene todos los títulos
-      // originales aunque alguno no haya sido aplicado. Si no existe, usamos
-      // la sección TÍTULOS REGISTRADOS.
-      const headerTitle=(from=0)=>{
-        for(let i=from;i<rows.length;i++){
-          const n=(rows[i]||[]).map(normExcel);
-          if(n[0]==="Nº"&&n[1]==="TDJ"&&n[2]==="FECHA"&&(n[3]==="VALOR ORIGINAL"||n[3]==="VALOR"))return i;
-        }
-        return -1;
-      };
-      let th=idxFila(rows,r=>/^TITULOS \/ TDJ\s*-?\s*CONTROL FINAL/.test(normExcel(r?.filter(Boolean).join(" "))));
-      if(th<0)th=idxFila(rows,r=>/^TITULOS \/ TDJ\s*-?\s*TITULOS REGISTRADOS/.test(normExcel(r?.filter(Boolean).join(" "))));
-      const hh=headerTitle(th>=0?th:0);
-      if(hh>=0){
-        const h=rows[hh]||[], nh=h.map(normExcel);
-        const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
-        const ixT=nh.findIndex(x=>x==="TDJ");
-        const ixF=nh.findIndex(x=>x==="FECHA");
-        const ixV=nh.findIndex(x=>x==="VALOR ORIGINAL"||x==="VALOR");
-        const ixTipo=nh.findIndex(x=>x==="TIPO");
-        const ixObs=nh.findIndex(x=>x==="OBSERVACION");
-        for(let i=hh+1;i<rows.length;i++){
-          const r=rows[i]||[], s=normExcel(r.filter(Boolean).join(" | "));
-          if(!s||/^TOTAL ENDOSO/.test(s))break;
-          if(ixT<0||ixF<0||ixV<0)continue;
-          const f=fechaCampoTDJImport(r[ixF]), val=truncarValorEntero(numExcel(r[ixV]));
-          const tdjNum=upper(r[ixT]||"");
-          if(f&&(tdjNum||val>0)){
-            agregarTituloImportado(tdjNum,f,val,upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),upper(ixObs>=0?r[ixObs]||"":""));
-          }
-        }
+      // MIGRACIÓN ROBUSTA DE TÍTULOS / TDJ:
+      // se leen tanto los TDJ que vienen en “PAGOS Y APLICACIÓN” como las
+      // secciones “TÍTULOS / TDJ” del Excel del Liquidador DIAN.
+      // No dependemos de una única versión de encabezados.
+      const totalTitulosImportados=extraerTitulosExcelRobusto(rows,agregarTituloImportado);
+      if(totalTitulosImportados>0){
+        console.info("TDJ MIGRADOS DESDE EXCEL",totalTitulosImportados,nuevosTitulos);
       }
 
       if(!nuevas.length&&!nuevosTitulos.length){
@@ -2375,10 +2404,33 @@ function limpiarPagosPestanaTDJ(){
 
 function limpiarTodo(){
   if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;
-  $("nitGlobal").value="";$("razonGlobal").value="";
-  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;
+
+  // LIMPIEZA GLOBAL DESDE “TÍTULOS Y RESULTADO”.
+  // Este botón no limpia únicamente la pestaña visible: reinicia de forma
+  // explícita obligaciones, pagos, TDJ/títulos y resultado de todo el módulo.
+  // Se reasignan los arreglos antes de renderizar para evitar que una referencia
+  // antigua vuelva a pintar títulos que ya fueron eliminados.
+  $("nitGlobal").value="";
+  $("razonGlobal").value="";
+  obligaciones=[nuevaObligacion(1)];
+  obligaciones[0].pagos=[];
+  titulos=[nuevoTitulo(1)];
+  resultado=null;
+  resultadoDesactualizado=false;
   $("resultadoTDJ").hidden=true;
-  renderObligaciones();renderPagos();renderTitulos();actualizarSelectoresImportacion();
+
+  // Vaciar también los campos de importación de las tres pestañas.
+  document.querySelectorAll('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea,[data-pane="pagos"] input,[data-pane="pagos"] select,[data-pane="pagos"] textarea,[data-pane="titulos"] input,[data-pane="titulos"] select,[data-pane="titulos"] textarea').forEach(el=>{
+    if(el.type==="file")el.value="";
+    else if(el.tagName==="SELECT")el.selectedIndex=0;
+    else if(!el.readOnly)el.value="";
+  });
+
+  renderObligaciones();
+  renderPagos();
+  renderTitulos();
+  actualizarSelectoresImportacion();
+  actualizarVisibilidadTasasObligacionesTDJ();
   refrescarTabActualTDJ();
   window.scrollTo({top:0,behavior:"smooth"});
 }
