@@ -305,13 +305,34 @@ async function actualizarDesdeDIAN(){
   $("estadoTasas").textContent="Tasas centrales recargadas desde Supabase.";
 }
 
-async function cargarJSONLocal(ruta,ms=10000){
-  const respuesta=await Promise.race([
-    fetch(ruta,{cache:"no-store"}),
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error("TIEMPO_ESPERA_PARAMETRO:"+ruta)),ms))
-  ]);
-  if(!respuesta.ok)throw new Error("No se pudo cargar "+ruta+" (HTTP "+respuesta.status+").");
-  return respuesta.json();
+async function cargarJSONLocal(ruta,ms=12000){
+  const limpio=String(ruta||"").replace(/^\.?\//,"");
+  // Resolver desde el propio módulo evita depender de la URL de la página,
+  // del historial de navegación o de una ruta relativa alterada por Render.
+  const url=new URL("../"+limpio,import.meta.url).href;
+  let ultimoError=null;
+  for(let intento=1;intento<=2;intento++){
+    const controlador=typeof AbortController!=="undefined"?new AbortController():null;
+    const temporizador=controlador?setTimeout(()=>controlador.abort(),ms):null;
+    try{
+      const respuesta=await fetch(url,{
+        cache:intento===1?"no-store":"reload",
+        signal:controlador?.signal
+      });
+      if(!respuesta.ok)throw new Error("HTTP "+respuesta.status);
+      const texto=await respuesta.text();
+      if(!texto.trim())throw new Error("RESPUESTA_VACIA");
+      try{return JSON.parse(texto);}
+      catch(e){throw new Error("JSON_INVALIDO");}
+    }catch(e){
+      ultimoError=e;
+      if(intento===1)await new Promise(r=>setTimeout(r,350));
+    }finally{
+      if(temporizador)clearTimeout(temporizador);
+    }
+  }
+  const detalle=ultimoError?.name==="AbortError"?"TIEMPO_ESPERA":(ultimoError?.message||"ERROR_DESCONOCIDO");
+  throw new Error("No se pudo cargar el parámetro "+limpio+" · "+detalle);
 }
 
 async function sincronizarParametrosRemotos(){
@@ -2297,16 +2318,47 @@ if(typeof window!=="undefined"){
   // No hay credenciales privadas en el navegador.
 }
 
-window.addEventListener("DOMContentLoaded",async()=>{
+async function inicializarLiquidador(){
+  const estado=$("estadoSistema");
+  const pintarError=(e)=>{
+    console.error("ARRANQUE LIQUIDADOR",e);
+    if(estado){
+      estado.className="indicador-parametros error";
+      estado.title="Error cargando parámetros: "+(e?.message||"error desconocido");
+      estado.setAttribute("aria-label","Error cargando parámetros");
+    }
+  };
+  // Primer intento: carga completa de parámetros locales.
+  try{
+    await cargarDatos();
+  }catch(e1){
+    console.warn("Primer intento de carga de parámetros falló. Se reintenta.",e1);
+    // Segundo intento automático para absorber fallos transitorios de CDN/Render.
+    try{
+      await cargarDatos();
+    }catch(e2){
+      pintarError(e2);
+      alert("No se pudieron cargar los parámetros históricos. Detalle técnico: "+(e2?.message||"error desconocido"));
+      return;
+    }
+  }
   try{
     configurarBase();
-    await cargarDatos();
-    renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();renderTasasPersonalizadas();renderIPC();mensajeActualizacionesPendientes();
+    renderMetadatosConcepto();
+    renderVencimientos();
+    renderPagos();
+    habilitarSancion();
+    renderCalendario();
+    renderBeneficio();
+    renderTasasPersonalizadas();
+    renderIPC();
+    mensajeActualizacionesPendientes();
   }catch(e){
-    console.error(e);
-    $("estadoSistema").className="indicador-parametros error";
-    $("estadoSistema").title="Error cargando parámetros";
-    $("estadoSistema").setAttribute("aria-label","Error cargando parámetros");
-    alert("No se pudieron cargar los parámetros históricos. Verifique que el proyecto se esté ejecutando mediante un servidor local.");
+    // Los parámetros ya están cargados; si un control visual falla, dejamos
+    // el diagnóstico en consola y en el indicador sin perder la inicialización.
+    pintarError(e);
+    alert("Los parámetros cargaron, pero hubo un error inicializando la interfaz: "+(e?.message||"error desconocido"));
   }
-});
+}
+
+window.addEventListener("DOMContentLoaded",()=>{void inicializarLiquidador();});
