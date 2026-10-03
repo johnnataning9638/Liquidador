@@ -1184,6 +1184,12 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       };
     });
     let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    // SALDO PARA SOPORTE PDF: conservar el saldo real de la obligación
+    // antes del cierre técnico con el remanente TDJ. El módulo RIAN utiliza
+    // directamente su saldo final de obligación para el soporte; en TDJ el
+    // cierre controlado puede llevar internamente x.saldo a cero, pero ese
+    // ajuste no debe ocultar en el PDF la deuda que seguía pendiente.
+    const saldoObligacionesPDF=saldoPendienteObligaciones;
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
 
     // CIERRE CONTROLADO POR REDONDEO: si queda un saldo positivo de hasta
@@ -1266,7 +1272,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       throw new Error("INCONSISTENCIA TDJ: una obligación quedó con saldo negativo.");
     }
 
-    resultado={resumenObligaciones,resumenTitulos,endoso,totalAplicadoFinal:totalAplicado,ajusteCierreRemanente,ajustesCierreRemanente,fechaCalculo:hoyISO(),observacionesBeneficio1419};
+    resultado={resumenObligaciones,resumenTitulos,endoso,totalAplicadoFinal:totalAplicado,ajusteCierreRemanente,ajustesCierreRemanente,saldoObligacionesPDF,fechaCalculo:hoyISO(),observacionesBeneficio1419};
     resultadoDesactualizado=false;
     pintarResultado(resultado);
     renderPagos();
@@ -1938,12 +1944,11 @@ async function exportarPdfTDJ(){
     }
     const totalTitulos=titulos.reduce((a,t)=>a+Number(t.valor||0),0);
     const totalAplicado=Number(resultado.totalAplicadoFinal ?? resultado.resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Number(y.aplicado||0),0),0));
-    // PDF: conservar visible el saldo pendiente que fue cerrado internamente
-    // contra el remanente TDJ. Ese valor NO se suma al endoso ni modifica el
-    // cálculo; únicamente permite que el soporte informe la deuda que sigue
-    // pendiente de pago (p. ej. $1.000) en sus dos resúmenes.
-    const totalSaldo=resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0);
-    const saldoPendientePDF=totalSaldo+Math.max(0,Number(resultado.ajusteCierreRemanente||0));
+    // PDF: usar el saldo real de obligación que existía antes del cierre
+    // técnico del remanente TDJ. Esto replica el criterio del liquidador RIAN:
+    // el soporte debe informar la deuda pendiente aunque el remanente se haya
+    // utilizado en el cierre técnico interno. No modifica cálculo ni endoso.
+    const saldoPendientePDF=Math.max(0,Number(resultado.saldoObligacionesPDF??resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0)));
     const paginas=[];
 
     // PÁGINA INICIAL: conserva el resumen general del soporte TDJ.
