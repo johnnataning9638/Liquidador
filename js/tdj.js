@@ -7,7 +7,7 @@ import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.55";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.98";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -998,7 +998,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         ]);
         const fechaCorteAjuste=pagosParaAjuste.map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort().at(-1)||t.fecha;
         const datosAjuste=datosMotor(o,pagosParaAjuste,fechaCorteAjuste,{permitirBeneficioFueraVigencia:true});
-        const datosAjustados=ajustarTDJParaPagosPosteriores(motorActual||motor,datosAjuste,{soloTDJId:pagoActual.id});
+        const datosAjustados=ajustarTDJParaPagosPosteriores(motorActual||motor,datosAjuste,{soloTDJId:pagoActual.id,cerrarSaldoFinal:true});
         const pagoAjustado=datosAjustados.pagos?.find(p=>String(p.id)===String(pagoActual.id));
         if(pagoAjustado)pagoActual.valor=truncarValorEntero(pagoAjustado.valor);
         const todosAjustados=[...pagosBase,...anteriores,pagoActual];
