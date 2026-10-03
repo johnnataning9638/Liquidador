@@ -1,6 +1,6 @@
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
-import {importarDatosInteligente} from "./importador.js?v=16.33.55";
+import {importarDatosInteligente,importarTitulosInteligente} from "./importador.js?v=16.33.96";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45";
@@ -2529,31 +2529,30 @@ function importarTitulos(){
   const text=$("importarTitulosTexto").value.trim();
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
-    const tabulares=reconocerTitulosTabularesTDJ(text);
-    let encontrados=tabulares.length?tabulares:null;
-    if(!encontrados){
-      const r=importarDatosInteligente(text);
-      const pagosReconocidos=r.pagos||[];
-      const tituladosExplicitos=pagosReconocidos.filter(p=>p.tdj||upper(p.tipo)==="TDJ");
-      encontrados=(tituladosExplicitos.length?tituladosExplicitos:pagosReconocidos.filter(p=>p.fecha&&Number(p.valor)>0)).map(p=>({
-        tdj:normalizarDocumentoTDJImport(p.tdj||p.recibo||""),
-        fecha:fechaISO(p.fecha)||"",
-        valor:truncarValorEntero(p.valor),
-        tipo:p.tipo||"TASA DIAN",
-        observacion:p.observacion||""
-      })).filter(p=>p.tdj&&p.fecha&&p.valor>0);
+    // EL IMPORTADOR DE TÍTULOS USA EL MISMO MOTOR QUE YA PROCESA PAGOS
+    // CORRECTAMENTE EN EL LIQUIDADOR DIAN: DOCUMENTO + FECHA + VALOR.
+    // En TDJ el documento fuente simplemente es el número TDJ.
+    const encontrados=importarTitulosInteligente(text);
+    if(!encontrados.length){
+      throw new Error("No se encontraron títulos/TDJ válidos. Use TDJ | FECHA | VALOR.");
     }
-    if(!encontrados.length)throw new Error("No se encontraron títulos/TDJ válidos. Use TDJ | FECHA | VALOR.");
     titulos=encontrados.map((p,i)=>({
-      id:uid("TDJ"),numero:i+1,tdj:normalizarDocumentoTDJImport(p.tdj||p.recibo||""),
-      fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),
-      observacion:upper(p.observacion||""),_orden:Date.now()+i
-    }));
+      id:uid("TDJ"),
+      numero:i+1,
+      tdj:normalizarDocumentoTDJImport(p.tdj||""),
+      fecha:fechaISO(p.fecha)||"",
+      valor:truncarValorEntero(p.valor),
+      observacion:upper(p.observacion||""),
+      _orden:Date.now()+i
+    })).filter(t=>t.tdj&&t.fecha&&t.valor>0);
     ordenarTitulosCronologicamente();
     renderTitulos();
     $("importarTitulosTexto").value="";
-    $("resultadoImportacionTitulos").textContent=`Se reconocieron ${titulos.length} título(s)/TDJ.`;
-  }catch(e){alert(e.message||"No fue posible reconocer los títulos.");}
+    $("resultadoImportacionTitulos").textContent=`Se reconocieron ${titulos.length} título(s)/TDJ usando el importador de pagos.`;
+  }catch(e){
+    console.error("IMPORTACIÓN TÍTULOS TDJ",e);
+    alert(e.message||"No fue posible reconocer los títulos.");
+  }
 }
 
 async function importarTitulosIA(){
