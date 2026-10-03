@@ -2,7 +2,7 @@ import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "
 import {importarDatosInteligente} from "./importador.js?v=16.33.55";
 import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.39";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.39";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.83";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.39";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.39";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.39";
@@ -304,7 +304,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.39"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.83"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1064,7 +1064,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.39"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.83"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la
