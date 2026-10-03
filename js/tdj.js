@@ -1132,14 +1132,50 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       resumenTitulos.push({titulo:t,trazabilidad:traz,excedente:disponible});
     }
 
+    // CIERRE FINAL: el saldo de una obligación NO puede tomarse del último TDJ
+    // si existen pagos normales posteriores. El último detalle TDJ representa
+    // el saldo justo después de ese título, no el saldo final de la obligación.
+    // Recalculamos la obligación completa en orden cronológico con TODOS los
+    // pagos normales y todos los TDJ efectivamente aplicados.
     const resumenObligaciones=obligaciones.map(o=>{
       const apps=aplicaciones.find(x=>x.obligacionId===o.id)?.items||[];
       const base=liquidacionesBase.get(o.id);
-      const last=apps.at(-1)?.detalleMotor;
-      const totalPagos=o.pagos.reduce((a,p)=>a+Number(p.valor||0),0);
+      const movimientosFinales=[
+        ...(o.pagos||[]).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i)})),
+        ...apps.map((x,i)=>({
+          id:x.pagoId||uid("APTDJFINAL"),
+          numero:999999,
+          fecha:x.fecha,
+          valor:Math.max(0,Number(x.aplicado||0)),
+          tipo:x.tipoTasaObligacion||upper(o.tipoTasa||"TASA DIAN"),
+          observacion:upper(x.titulo||""),
+          tdj:x.titulo||("TDJ "+(i+1)),
+          esTDJ:true,
+          ordenInterno:100000+i,
+          tipoTasaObligacion:x.tipoTasaObligacion||upper(o.tipoTasa||"TASA DIAN")
+        })).filter(p=>p.fecha&&Number(p.valor)>0)
+      ];
+      const fechaCorteFinal=movimientosFinales
+        .map(p=>fechaISO(p.fecha)||"")
+        .filter(Boolean)
+        .sort().at(-1)||hoyISO();
+      let estadoFinal=null;
+      try{
+        const motorFinal=motorParaObligacion(o)||motor;
+        estadoFinal=motorFinal?.calcular(
+          datosMotor(o,movimientosFinales,fechaCorteFinal,{permitirBeneficioFueraVigencia:true})
+        );
+      }catch{
+        estadoFinal=null;
+      }
+      const totalPagos=(o.pagos||[]).reduce((a,p)=>a+Number(p.valor||0),0);
       const totalTDJ=apps.reduce((a,x)=>a+Number(x.aplicado||0),0);
-      const saldo=Number(last?.total ?? base?.total ?? 0);
-      return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base};
+      const saldo=Number(estadoFinal?.total ?? base?.total ?? 0);
+      return {
+        obligacion:o,totalPagos,totalTDJ,saldo,
+        ultima:apps.at(-1)||null,aplicaciones:apps,
+        liquidacionBase:base,estadoFinal
+      };
     });
     const saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
