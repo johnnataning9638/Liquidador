@@ -1,5 +1,5 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.39";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.84";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.84";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -227,7 +227,8 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         }
       }
       const impuestoSinPagos=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);
-      return {tipoLiquidacion:"OFICIAL",vencimientos:saldosVto,impuesto:impuestoSinPagos,intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:impuestoSinPagos+saldoIntereses+Math.max(0,saldoSancion),excedente:0,ultimo:null,detalle:[],interesesPorCuota:calcCorte.porVto||[],advertencias:[...validacion.advertencias,...advertenciasSancion],beneficiosAplicados:[],reglaObligacion:validacion.regla,validacionObligacion:validacion,verificacionObligacion:this.verificarImpuestoPlastico(datos),fechaCorte,sinPagos:true,sancionActualizacion:{fechaBase:fechaFirmezaSancion,fechaUltimaActualizacion:detalleActualizacionSancion.at(-1)?.fechaCorte||fechaFirmezaSancion,saldoOriginal:roundMil(sancionBaseOriginal),saldoFinal:roundMil(saldoSancion),actualizacionAcumulada:roundMil(Math.max(0,saldoSancion-sancionBaseOriginal)),tramos:detalleActualizacionSancion}};
+      const trazasSancionOficial=detalleActualizacionSancion.flatMap(x=>Array.isArray(x.tramos)?x.tramos:[]);
+      return {tipoLiquidacion:"OFICIAL",vencimientos:saldosVto,impuesto:impuestoSinPagos,intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:impuestoSinPagos+saldoIntereses+Math.max(0,saldoSancion),excedente:0,ultimo:null,detalle:[],interesesPorCuota:calcCorte.porVto||[],advertencias:[...validacion.advertencias,...advertenciasSancion],beneficiosAplicados:[],reglaObligacion:validacion.regla,validacionObligacion:validacion,verificacionObligacion:this.verificarImpuestoPlastico(datos),fechaCorte,sinPagos:true,sancionActualizacion:{fechaBase:fechaFirmezaSancion,fechaUltimaActualizacion:trazasSancionOficial.at(-1)?.desde||fechaFirmezaSancion,saldoOriginal:roundMil(sancionBaseOriginal),saldoFinal:roundMil(saldoSancion),actualizacionAcumulada:roundMil(Math.max(0,saldoSancion-sancionBaseOriginal),),tramos:trazasSancionOficial,detallePagos:detalleActualizacionSancion,regla:"OFICIAL — ART. 867-1 E.T. — 1 DE ENERO DE CADA AÑO"}};
     }
 
     for(const pago of pagos){
