@@ -1277,8 +1277,11 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       for(const mov of (x.secuencia||[])){
         if(mov.esTDJ)continue;
         const excedenteNormal=Math.max(0,Number(mov.detalle?.excedente??mov.detalle?.aplicado?.excedente??0));
-        if(excedenteNormal>1){
-          throw new Error("INCONSISTENCIA DE PRIORIDAD: UN PAGO NORMAL POSTERIOR QUEDO CON EXCEDENTE. EL TDJ ANTERIOR DEBE REDUCIRSE Y EL REMANENTE DEBE QUEDAR COMO ENDOSO.");
+        // Se permite hasta $1.000 de excedente; el objetivo prioritario
+        // es que la obligación termine en $0. Si el excedente supera $1.000,
+        // el TDJ anterior debe reducirse y ese valor debe pasar a ENDOSO.
+        if(excedenteNormal>1000.5){
+          throw new Error("INCONSISTENCIA DE PRIORIDAD: UN PAGO NORMAL POSTERIOR QUEDÓ CON EXCEDENTE SUPERIOR A $1.000. DEBE AJUSTARSE EL TDJ ANTERIOR PARA CONVERTIR ESE EXCESO EN ENDOSO.");
         }
       }
     }
