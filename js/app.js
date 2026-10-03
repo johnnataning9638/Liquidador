@@ -202,7 +202,21 @@ async function verificarAdministrador(){
   const {data:{user}}=authData;
   adminEmail=user?.email||null;
   if(!user){actualizarUIAdmin();return false;}
-  const {data,error}=await supabaseClient.from("admin_users").select("email").eq("email",user.email).maybeSingle();
+  let adminConsulta;
+  try{
+    adminConsulta=await conTiempoLimite(
+      supabaseClient.from("admin_users").select("email").eq("email",user.email).maybeSingle(),
+      6000
+    );
+  }catch(e){
+    // La verificación administrativa es complementaria y NUNCA puede
+    // bloquear la carga de parámetros ni el funcionamiento del liquidador.
+    console.warn("La verificación de administrador no respondió a tiempo; se continúa en modo consulta.",e);
+    adminEmail=null;
+    actualizarUIAdmin();
+    return false;
+  }
+  const {data,error}=adminConsulta||{};
   if(error){console.warn("No fue posible verificar administrador",error);adminEmail=null;actualizarUIAdmin();return false;}
   if(!data)adminEmail=null;
   actualizarUIAdmin();
