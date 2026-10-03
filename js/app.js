@@ -15,7 +15,7 @@ let moduloPrioridadTDJ=null;
 async function cargarModuloPrioridadTDJ(){
   if(moduloPrioridadTDJ)return moduloPrioridadTDJ;
   try{
-    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.91");
+    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.92");
     return moduloPrioridadTDJ;
   }catch(e){
     console.error("No fue posible cargar la capa de prioridad TDJ.",e);
@@ -364,15 +364,10 @@ async function cargarDatos(){
   // ARRANQUE IGUAL AL MÓDULO TDJ:
   // los seis archivos que necesita directamente el motor se cargan primero,
   // sin mezclar calendario/normativa/auditoría ni Supabase en el camino crítico.
-  // Usamos la misma ruta relativa que el módulo TDJ. En este proyecto
-  // Render publica los JSON directamente desde la raíz; no necesitamos
-  // reconstruir la URL desde import.meta.url.
   const cargarSimple=async ruta=>{
     const respuesta=await fetch(ruta,{cache:"no-store"});
     if(!respuesta.ok)throw new Error("HTTP "+respuesta.status+" al cargar "+ruta);
-    const texto=await respuesta.text();
-    if(!texto.trim())throw new Error("RESPUESTA_VACIA al cargar "+ruta);
-    try{return JSON.parse(texto);}catch{throw new Error("JSON_INVALIDO al cargar "+ruta);}
+    return respuesta.json();
   };
 
   [uvt,ipc,tasasMoratorias,beneficios,sanciones,reglasObligaciones]=await Promise.all([
@@ -394,7 +389,7 @@ async function cargarDatos(){
   reconstruirMotor();
 
   // Auditoría no depende de archivos adicionales para arrancar.
-  try{auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.91"});}catch(e){console.warn("Auditoría no disponible al arranque; no bloquea el liquidador.",e);auditoria=null;}
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.89"});
 
   if(estado){
     estado.className="indicador-parametros listo";
@@ -2391,16 +2386,10 @@ async function inicializarLiquidador(){
     renderIPC();
     mensajeActualizacionesPendientes();
   }catch(e){
-    // Los parámetros ya están cargados y el indicador ya fue puesto en verde.
-    // Un fallo de un control visual opcional no debe hacer parecer que falló
-    // la carga de parámetros ni bloquear el cálculo.
-    console.error("INTERFAZ LIQUIDADOR",e);
-    if(estado){
-      estado.className="indicador-parametros listo";
-      estado.title="Parámetros cargados. Se detectó una incidencia visual no bloqueante.";
-      estado.setAttribute("aria-label","Parámetros cargados");
-    }
-    console.warn("Los parámetros cargaron; se omitió el bloqueo visual por este error de interfaz.",e);
+    // Los parámetros ya están cargados; si un control visual falla, dejamos
+    // el diagnóstico en consola y en el indicador sin perder la inicialización.
+    pintarError(e);
+    alert("Los parámetros cargaron, pero hubo un error inicializando la interfaz: "+(e?.message||"error desconocido"));
   }
 }
 
