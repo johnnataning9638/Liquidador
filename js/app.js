@@ -11,7 +11,17 @@ import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=1
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.47";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.86";
+let moduloPrioridadTDJ=null;
+async function cargarModuloPrioridadTDJ(){
+  if(moduloPrioridadTDJ)return moduloPrioridadTDJ;
+  try{
+    moduloPrioridadTDJ=await import("./prioridad-tdj.js?v=16.33.88");
+    return moduloPrioridadTDJ;
+  }catch(e){
+    console.error("No fue posible cargar la capa de prioridad TDJ.",e);
+    throw new Error("No fue posible cargar la regla de prioridad de pagos TDJ. La liquidación no se ejecutó.");
+  }
+}
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -295,32 +305,65 @@ async function actualizarDesdeDIAN(){
   $("estadoTasas").textContent="Tasas centrales recargadas desde Supabase.";
 }
 
+async function cargarJSONLocal(ruta,ms=10000){
+  const respuesta=await Promise.race([
+    fetch(ruta,{cache:"no-store"}),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error("TIEMPO_ESPERA_PARAMETRO:"+ruta)),ms))
+  ]);
+  if(!respuesta.ok)throw new Error("No se pudo cargar "+ruta+" (HTTP "+respuesta.status+").");
+  return respuesta.json();
+}
+
+async function sincronizarParametrosRemotos(){
+  try{
+    supabaseClient=await iniciarSupabase();
+    if(!supabaseClient){
+      mensajeActualizacionesPendientes();
+      return;
+    }
+    // Estas consultas son complementarias: nunca bloquean el arranque ni
+    // impiden trabajar con los parámetros locales ya cargados.
+    await cargarTasasRemotas();
+    await cargarIPCRemotos();
+    await verificarAdministrador();
+    mensajeActualizacionesPendientes();
+  }catch(e){
+    console.warn("Sincronización remota de parámetros omitida; se mantienen los parámetros locales.",e);
+  }
+}
+
 async function cargarDatos(){
   const estado=$("estadoSistema");
   if(estado){estado.className="indicador-parametros cargando";estado.title="Cargando parámetros";estado.setAttribute("aria-label","Cargando parámetros");}
   let normativoData;
-  [uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones,calendarioData,normativoData]=await Promise.all([
-    fetch("datos/uvt.json").then(r=>r.json()),
-    fetch("datos/tasas-moratorias.json").then(r=>r.json()),
-    fetch("datos/ipc.json").then(r=>r.json()),
-    fetch("datos/beneficios.json").then(r=>r.json()),
-    fetch("datos/sanciones.json").then(r=>r.json()),
-    fetch("datos/reglas-obligaciones.json").then(r=>r.json()),
-    fetch("datos/calendario.json").then(r=>r.json()),
-    fetch("datos/reglas-historicas.json").then(r=>r.json())
-  ]);
-  tasasBase=JSON.parse(JSON.stringify(tasasMoratorias));
-  leerTasasPersonalizadas();
-  aplicarTasasGuardadas();
-  supabaseClient=await iniciarSupabase();
-  await cargarTasasRemotas();
-  await cargarIPCRemotos();
-  await verificarAdministrador();
-  mensajeActualizacionesPendientes();
-  calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
-  normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.84"});
-  if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
+  try{
+    // Los parámetros locales son la fuente de arranque. Cada archivo tiene
+    // límite propio para que una respuesta de red nunca deje el indicador
+    // indefinidamente en "Cargando parámetros".
+    [uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones,calendarioData,normativoData]=await Promise.all([
+      cargarJSONLocal("datos/uvt.json"),
+      cargarJSONLocal("datos/tasas-moratorias.json"),
+      cargarJSONLocal("datos/ipc.json"),
+      cargarJSONLocal("datos/beneficios.json"),
+      cargarJSONLocal("datos/sanciones.json"),
+      cargarJSONLocal("datos/reglas-obligaciones.json"),
+      cargarJSONLocal("datos/calendario.json"),
+      cargarJSONLocal("datos/reglas-historicas.json")
+    ]);
+    tasasBase=JSON.parse(JSON.stringify(tasasMoratorias));
+    leerTasasPersonalizadas();
+    aplicarTasasGuardadas();
+    calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
+    normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
+    auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.88"});
+    if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
+  }catch(e){
+    if(estado){estado.className="indicador-parametros error";estado.title="Error cargando parámetros";estado.setAttribute("aria-label","Error cargando parámetros");}
+    throw e;
+  }
+  // Supabase queda fuera del camino crítico. Los parámetros locales ya están
+  // listos y el usuario puede trabajar mientras se actualizan TIM/IPC.
+  void sincronizarParametrosRemotos();
 }
 
 function opcionesTipo(actual){return TIPOS.map(t=>`<option value="${esc(t)}" ${actual===t?"selected":""}>${esc(t)}</option>`).join("");}
@@ -1594,7 +1637,7 @@ function enfocarCampoError(selector){
   },50);
 }
 
-function calcular(){
+async function calcular(){
   try{
     let d=leerFormulario();
     // Tipo de liquidación solo es obligatorio cuando la obligación tiene sanción,
@@ -1632,6 +1675,9 @@ function calcular(){
     motor=motorCalculo;
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
+    // La capa de prioridad TDJ se carga SOLO cuando se va a liquidar.
+    // Así un fallo de esa capa nunca puede impedir el arranque del liquidador.
+    const {ajustarTDJParaPagosPosteriores}=await cargarModuloPrioridadTDJ();
     const datosCalculo=ajustarTDJParaPagosPosteriores(motorCalculo,d);
     let r=motorCalculo.calcular(datosCalculo);
     // La prioridad de pagos normales no altera el valor nominal del TDJ.
