@@ -11,7 +11,6 @@ import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=1
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.47";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.55";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -1602,7 +1601,7 @@ function calcular(){
     }
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
-    // PRIORIDAD TDJ/PAGOS: los pagos normales posteriores son protegidos;\n    // solo se ajusta el valor imputable de TDJ anteriores. El motor existente\n    // conserva intactas sus formulas de impuesto, intereses y sancion.\n    d={...d,pagos:ordenarMovimientosCronologicos(d.pagos)};\n    d=ajustarTDJParaPagosPosteriores(motor,d);\n    let r=motor.calcular(d);
+    let r=motor.calcular(d);
     if(d.pagos.some(p=>esTipoDecreto1419(p.tipo))&&Number(r.total||0)>1){
       const saldoFaltanteBeneficio=Math.max(0,Number(r.total||0));
       const articulos=[...new Set(d.pagos.filter(p=>esTipoDecreto1419(p.tipo)).map(p=>String(p.tipo).match(/ART\.\s*\d+/i)?.[0]?.toUpperCase()).filter(Boolean))].join(" / ");
