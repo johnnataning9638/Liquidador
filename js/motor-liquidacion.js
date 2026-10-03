@@ -692,11 +692,10 @@ export class MotorLiquidacion{
     // importado o representado por su familia normativa.
     // Para anticipos SIMPLE se mantiene la regla definida: 4, 5 o 6 cuotas.
     const cantidadCuotas=saldosVto.length;
-    const familiaObligacion=String(validacion.regla?.familia||"").trim().toUpperCase();
-    const conceptoObligacion=String(datos.concepto||"").trim().toUpperCase();
-    const esSimplePorAnticipos=
-      (familiaObligacion==="SIMPLE" || conceptoObligacion==="SIMPLE") &&
-      cantidadCuotas>=4 && cantidadCuotas<=6;
+    // REGLA OPERATIVA: 4, 5 o 6 cuotas se tratan como RÉGIMEN SIMPLE,
+    // sin exigir que el concepto o la familia normativa lo identifiquen como SIMPLE.
+    // Con 1, 2 o 3 cuotas se conserva el tratamiento ordinario/tradicional.
+    const esSimplePorAnticipos=cantidadCuotas>=4 && cantidadCuotas<=6;
 
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
