@@ -686,14 +686,17 @@ export class MotorLiquidacion{
     }));
 
     // REGLA DE SANCIÓN: SIMPLE POR ANTICIPOS vs. RÉGIMEN ORDINARIO.
-    // En este liquidador se identifica como SIMPLE por la combinación de:
-    // 1) concepto explícito SIMPLE; y 2) entre 4 y 6 cuotas/vencimientos,
-    // que corresponde al patrón operativo de anticipos que estamos usando.
-    // SIMPLE con 1-3 cuotas NO activa esta excepción y conserva la regla
-    // tradicional de fecha de sanción.
-    const conceptoObligacion=String(datos.concepto||"").trim().toUpperCase();
+    // La identificación del SIMPLE debe provenir de la regla normativa cargada
+    // para el concepto, no de comparar únicamente el texto del campo Concepto.
+    // Así se evita perder la condición cuando el concepto llega normalizado,
+    // importado o representado por su familia normativa.
+    // Para anticipos SIMPLE se mantiene la regla definida: 4, 5 o 6 cuotas.
     const cantidadCuotas=saldosVto.length;
-    const esSimplePorAnticipos=conceptoObligacion==="SIMPLE" && cantidadCuotas>=4 && cantidadCuotas<=6;
+    const familiaObligacion=String(validacion.regla?.familia||"").trim().toUpperCase();
+    const conceptoObligacion=String(datos.concepto||"").trim().toUpperCase();
+    const esSimplePorAnticipos=
+      (familiaObligacion==="SIMPLE" || conceptoObligacion==="SIMPLE") &&
+      cantidadCuotas>=4 && cantidadCuotas<=6;
 
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
