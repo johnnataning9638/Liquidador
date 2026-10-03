@@ -1,4 +1,4 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.98
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.99
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Solo ajusta el valor imputable de un TDJ anterior a pagos normales posteriores.
 
@@ -17,10 +17,11 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   const originales=[...(datos?.pagos||[])].map((p,i)=>({...p,__ordenOriginal:i}));
   const tdjs=originales.filter(esTDJ).filter(p=>p.fecha&&Number(p.valor)>0);
   const normales=originales.filter(p=>!esTDJ(p)&&p.fecha&&Number(p.valor)>0);
-  if(!tdjs.length||!normales.length)return datos;
+  if(!tdjs.length)return datos;
   const ajustados=originales.map(p=>({...p}));
   const hayPosterior=t=>normales.some(p=>String(p.fecha)>String(t.fecha));
-  if(!tdjs.some(hayPosterior))return datos;
+  const hayTDJPosterior=tdjs.some(hayPosterior);
+  if(!hayTDJPosterior&&opciones.cerrarSaldoFinal!==true)return datos;
   const simular=()=>{
     const pagos=ajustados.map(p=>({...p}));
     const maxFecha=pagos.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||"";
@@ -28,7 +29,7 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   };
   const todosNormalesAplicados=r=>normales.every((p,i)=>excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)<=0.5);
 
-  for(let pasada=0;pasada<Math.max(4,tdjs.length*3);pasada++){
+  if(hayTDJPosterior) for(let pasada=0;pasada<Math.max(4,tdjs.length*3);pasada++){
     let r;
     try{r=simular();}catch{return datos;}
     if(todosNormalesAplicados(r))break;
