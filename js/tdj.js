@@ -1033,11 +1033,11 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         // Si queda un saldo residual pequeño y el propio TDJ conserva remanente
         // suficiente, ese remanente se usa para cerrar la obligación. El valor
         // nominal del título no cambia: únicamente disminuye el ENDOSO.
-        cerrarSaldoResidualTDJ(r,pagoActual.valor,2000);
+        cerrarSaldoResidualTDJ(r,pagoActual.valor,1000);
         // Si queda un saldo residual pequeño y el propio TDJ conserva remanente
         // suficiente, ese remanente se usa para cerrar la obligación. El valor
         // nominal del título no cambia: únicamente disminuye el ENDOSO.
-        cerrarSaldoResidualTDJ(r,pagoActual.valor,2000);
+        cerrarSaldoResidualTDJ(r,pagoActual.valor,1000);
         // Las restricciones temporales de beneficios se informan, pero no
         // cambian la tasa elegida ni bloquean la liquidación del TDJ.
         (r.advertencias||[]).filter(x=>/vigencia|beneficio|fecha de sanción|fecha de pago/i.test(String(x))).forEach(x=>{
@@ -1224,7 +1224,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // posterior al TDJ. Nunca aumenta el valor nominal del título.
     for(const resumen of resumenObligaciones){
       let saldoFinal=Math.max(0,Math.round(Number(resumen.saldo||0)));
-      if(saldoFinal<=0||saldoFinal>2000)continue;
+      if(saldoFinal<=0||saldoFinal>1000)continue;
 
       const candidatos=resumen.aplicaciones
         .map(a=>({a,titulo:resumenTitulos.find(rt=>rt.trazabilidad.some(z=>z.tituloId===a.tituloId))}))
@@ -1252,7 +1252,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       a.saldoTitulo=Math.max(0,Number(a.saldoTitulo||0)-saldoFinal);
       a.saldoObligacion=0;
       a.cierreResidualTDJ=saldoFinal;
-      a.notaCierreResidualTDJ="SALDO FINAL <= $2.000 CERRADO CON REMANENTE REAL DEL TDJ.";
+      a.notaCierreResidualTDJ="SALDO FINAL <= $1.000 CERRADO CON REMANENTE REAL DEL TDJ.";
 
       fila.aplicado=Number(fila.aplicado||0)+saldoFinal;
       fila.aplicadoImpuesto=Number(fila.aplicadoImpuesto||0);
