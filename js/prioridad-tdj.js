@@ -22,7 +22,14 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   const hayPosterior=t=>normales.some(p=>String(p.fecha)>String(t.fecha));
   if(!tdjs.some(hayPosterior))return datos;
   const simular=()=>{
-    const pagos=ajustados.map(p=>({...p}));
+    // La simulación de prioridad DEBE respetar las fechas reales.
+    // Antes, el arreglo conservaba el TDJ después de un pago posterior y el
+    // motor procesaba primero ese pago, haciendo parecer que no existía
+    // excedente y evitando reducir el TDJ. Aquí el orden cronológico es
+    // obligatorio: PAGO -> TDJ -> PAGO, según las fechas efectivas.
+    const pagos=ordenarMovimientosCronologicos(
+      ajustados.map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)}))
+    );
     const maxFecha=pagos.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||"";
     return motor.calcular({...datos,pagos,fechaCorte:maxFecha});
   };
