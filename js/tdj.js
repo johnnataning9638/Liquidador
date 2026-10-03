@@ -2176,13 +2176,16 @@ function normalizarNumeroTDJImportado(v){
 function extraerTitulosCanonicosExcel(rows, agregarTituloImportado){
   let encontrados=0;
   for(let i=0;i<rows.length;i++){
-    const encabezado=normExcel((rows[i]||[]).filter(x=>String(x??"").trim()!=="").join(" | "));
-    if(!/^(TITULOS TDJ|TITULOS \/ TDJ)(?:\s*—.*)?$/.test(encabezado))continue;
+    const seccion=normExcel((rows[i]||[]).filter(x=>String(x??"").trim()!=="").join(" | "));
+    if(!/^(TITULOS \/ TDJ|TITULOS TDJ)(?:\s*-\s*.*)?$/.test(seccion))continue;
 
-    const h=rows[i]||[];
-    const nh=h.map(normExcel);
-    // Caso canónico del Excel TDJ: Nº | TDJ | FECHA | VALOR | ...
-    // Caso canónico del Excel DIAN: Nº | TDJ | FECHA | VALOR | TIPO | ...
+    // En los Excel reales la fila de sección y la fila de encabezados están
+    // separadas: SECCIÓN -> ENCABEZADOS -> DATOS.
+    let hi=i+1;
+    while(hi<rows.length && !(rows[hi]||[]).some(x=>String(x??"").trim()!==""))hi++;
+    if(hi>=rows.length)continue;
+
+    const nh=(rows[hi]||[]).map(normExcel);
     const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº");
     const ixF=nh.findIndex(x=>x==="FECHA"||x==="FECHA TDJ"||x==="FECHA TITULO");
     const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR TDJ"||x==="VALOR DEL TITULO");
@@ -2190,7 +2193,7 @@ function extraerTitulosCanonicosExcel(rows, agregarTituloImportado){
     const ixObs=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
     if(ixT<0||ixF<0||ixV<0)continue;
 
-    for(let j=i+1;j<rows.length;j++){
+    for(let j=hi+1;j<rows.length;j++){
       const r=rows[j]||[];
       const s=normExcel(r.filter(x=>String(x??"").trim()!=="").join(" | "));
       if(!s)continue;
@@ -2210,6 +2213,7 @@ function extraerTitulosCanonicosExcel(rows, agregarTituloImportado){
   }
   return encontrados;
 }
+
 function extraerTitulosExcelRobusto(rows, agregarTituloImportado){
   // IMPORTACIÓN DE TÍTULOS: soporta los formatos generados por el Liquidador
   // DIAN, por el Liquidador TDJ y versiones anteriores.
