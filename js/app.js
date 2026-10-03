@@ -384,18 +384,9 @@ async function cargarDatos(){
   aplicarTasasGuardadas();
 
   // El motor queda disponible inmediatamente, igual que en TDJ.
-  const cfg={
-    uvt,
-    intereses:tasasMoratorias,
-    ipc,
-    tasasMoratorias,
-    beneficios,
-    sanciones,
-    reglasObligaciones
-  };
-  motorPrivado=new MotorLiquidacion(cfg);
-  motorOficial=new MotorLiquidacionOficial(cfg);
-  motor=motorPrivado;
+  // Usamos la misma rutina de reconstrucción del proyecto para conservar
+  // ActualizadorSancion, motor privado y motor oficial.
+  reconstruirMotor();
 
   // Auditoría no depende de archivos adicionales para arrancar.
   auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.89"});
