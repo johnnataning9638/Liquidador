@@ -1938,7 +1938,12 @@ async function exportarPdfTDJ(){
     }
     const totalTitulos=titulos.reduce((a,t)=>a+Number(t.valor||0),0);
     const totalAplicado=Number(resultado.totalAplicadoFinal ?? resultado.resumenTitulos.reduce((a,x)=>a+x.trazabilidad.reduce((z,y)=>z+Number(y.aplicado||0),0),0));
+    // PDF: conservar visible el saldo pendiente que fue cerrado internamente
+    // contra el remanente TDJ. Ese valor NO se suma al endoso ni modifica el
+    // cálculo; únicamente permite que el soporte informe la deuda que sigue
+    // pendiente de pago (p. ej. $1.000) en sus dos resúmenes.
     const totalSaldo=resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0);
+    const saldoPendientePDF=totalSaldo+Math.max(0,Number(resultado.ajusteCierreRemanente||0));
     const paginas=[];
 
     // PÁGINA INICIAL: conserva el resumen general del soporte TDJ.
