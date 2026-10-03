@@ -355,35 +355,76 @@ async function sincronizarParametrosRemotos(){
 
 async function cargarDatos(){
   const estado=$("estadoSistema");
-  if(estado){estado.className="indicador-parametros cargando";estado.title="Cargando parámetros";estado.setAttribute("aria-label","Cargando parámetros");}
-  let normativoData;
-  try{
-    // Los parámetros locales son la fuente de arranque. Cada archivo tiene
-    // límite propio para que una respuesta de red nunca deje el indicador
-    // indefinidamente en "Cargando parámetros".
-    [uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones,calendarioData,normativoData]=await Promise.all([
-      cargarJSONLocal("datos/uvt.json"),
-      cargarJSONLocal("datos/tasas-moratorias.json"),
-      cargarJSONLocal("datos/ipc.json"),
-      cargarJSONLocal("datos/beneficios.json"),
-      cargarJSONLocal("datos/sanciones.json"),
-      cargarJSONLocal("datos/reglas-obligaciones.json"),
-      cargarJSONLocal("datos/calendario.json"),
-      cargarJSONLocal("datos/reglas-historicas.json")
-    ]);
-    tasasBase=JSON.parse(JSON.stringify(tasasMoratorias));
-    leerTasasPersonalizadas();
-    aplicarTasasGuardadas();
-    calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
-    normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-    auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.88"});
-    if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
-  }catch(e){
-    if(estado){estado.className="indicador-parametros error";estado.title="Error cargando parámetros";estado.setAttribute("aria-label","Error cargando parámetros");}
-    throw e;
+  if(estado){
+    estado.className="indicador-parametros cargando";
+    estado.title="Cargando parámetros";
+    estado.setAttribute("aria-label","Cargando parámetros");
   }
-  // Supabase queda fuera del camino crítico. Los parámetros locales ya están
-  // listos y el usuario puede trabajar mientras se actualizan TIM/IPC.
+
+  // ARRANQUE IGUAL AL MÓDULO TDJ:
+  // los seis archivos que necesita directamente el motor se cargan primero,
+  // sin mezclar calendario/normativa/auditoría ni Supabase en el camino crítico.
+  const cargarSimple=async ruta=>{
+    const respuesta=await fetch(ruta,{cache:"no-store"});
+    if(!respuesta.ok)throw new Error("HTTP "+respuesta.status+" al cargar "+ruta);
+    return respuesta.json();
+  };
+
+  [uvt,ipc,tasasMoratorias,beneficios,sanciones,reglasObligaciones]=await Promise.all([
+    cargarSimple("datos/uvt.json"),
+    cargarSimple("datos/ipc.json"),
+    cargarSimple("datos/tasas-moratorias.json"),
+    cargarSimple("datos/beneficios.json"),
+    cargarSimple("datos/sanciones.json"),
+    cargarSimple("datos/reglas-obligaciones.json")
+  ]);
+
+  tasasBase=JSON.parse(JSON.stringify(tasasMoratorias));
+  leerTasasPersonalizadas();
+  aplicarTasasGuardadas();
+
+  // El motor queda disponible inmediatamente, igual que en TDJ.
+  const cfg={
+    uvt,
+    intereses:tasasMoratorias,
+    ipc,
+    tasasMoratorias,
+    beneficios,
+    sanciones,
+    reglasObligaciones
+  };
+  motorPrivado=new MotorLiquidacion(cfg);
+  motorOficial=new MotorLiquidacionOficial(cfg);
+  motor=motorPrivado;
+
+  // Auditoría no depende de archivos adicionales para arrancar.
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.89"});
+
+  if(estado){
+    estado.className="indicador-parametros listo";
+    estado.title="Parámetros cargados";
+    estado.setAttribute("aria-label","Parámetros cargados");
+  }
+
+  // Estos tres recursos son complementarios. Se cargan DESPUÉS de dejar
+  // disponible el motor, exactamente para que un problema en ellos nunca
+  // bloquee la liquidación principal.
+  void (async()=>{
+    try{
+      const [cal,norm]=await Promise.all([
+        cargarSimple("datos/calendario.json"),
+        cargarSimple("datos/reglas-historicas.json")
+      ]);
+      calendarioData=cal;
+      calendarioMotor=new CalendarioTributario({datos:cal?.tablas||[]});
+      normativoHistorico=new MotorNormativoHistorico({datos:norm});
+      mensajeActualizacionesPendientes();
+    }catch(e){
+      console.warn("Calendario/normativa histórica no disponibles en este arranque; el motor principal continúa disponible.",e);
+    }
+  })();
+
+  // Supabase también queda fuera del camino crítico.
   void sincronizarParametrosRemotos();
 }
 
