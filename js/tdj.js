@@ -1174,7 +1174,13 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       return {
         obligacion:o,totalPagos,totalTDJ,saldo,
         ultima:apps.at(-1)||null,aplicaciones:apps,
-        liquidacionBase:base,estadoFinal
+        liquidacionBase:base,
+        estadoFinal,
+        // Soporte cronológico final: el motor vuelve a procesar la obligación
+        // con TODOS los movimientos en su fecha real. Esto es la fuente del
+        // detalle de PDF para evitar mostrar un pago normal sobre una deuda
+        // anterior al TDJ que ya había sido aplicado.
+        detalleCronologicoFinal:Array.isArray(estadoFinal?.detalle)?estadoFinal.detalle:[]
       };
     });
     let saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
@@ -1939,33 +1945,20 @@ async function exportarPdfTDJ(){
     paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE TÍTULOS / TDJ — SOPORTE COMPLETO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>NIT</b><strong>${escPdf($("nitGlobal")?.value||"")}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ($("nitGlobal")?.value||""))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(upper($("razonGlobal")?.value||""))}</strong></div><div class="pdf-dato"><b>TIPO</b><strong>PRIVADA</strong></div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO OBLIGACIONES</b><strong>${dinero(totalSaldo)}</strong></div><div><b>ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>SECUENCIA DE APLICACIÓN</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>OBLIGACIÓN</th><th>DISPONIBLE</th><th>APLICADO</th><th>SALDO TDJ</th></tr></thead><tbody>${resultado.resumenTitulos.flatMap(x=>x.trazabilidad.length?x.trazabilidad.map(a=>`<tr><td>${escPdf(a.titulo)}</td><td>${escPdf(fechaVisible(a.fecha))}</td><td>${escPdf(a.obligacion)}</td><td>${dinero(a.valorAntes)}</td><td>${dinero(a.aplicado)}</td><td>${dinero(a.saldoTitulo)}</td></tr>`):[`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>ENDOSO</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(0)}</td><td>${dinero(x.excedente)}</td></tr>`]).join("")}</tbody></table></section></article></section>`);
 
     // ORDEN CRONOLÓGICO POR OBLIGACIÓN:
-    // Cada obligación se documenta completa antes de pasar a la siguiente:
-    // 1) todos sus pagos normales, 2) inmediatamente sus aplicaciones TDJ.
-    // NO se agrupan los TDJ al final del PDF, porque eso rompe la trazabilidad
-    // visual entre el saldo pendiente y el título que lo cancela.
-    resultado.resumenObligaciones.forEach((x,idx)=>{
-      const o=x.obligacion,base=x.liquidacionBase||{};
-
-      // PRIMERO: TODOS LOS PAGOS NORMALES DE ESTA OBLIGACIÓN.
-      (base.detalle||[]).forEach((d,j)=>{
-        paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(d,j,datosPDFTDJ(o,d.pago||{}),base)}</section>`);
-      });
-
-      // SEGUNDO: INMEDIATAMENTE DESPUÉS DE LOS PAGOS, TODAS LAS
-      // APLICACIONES DE TDJ QUE CORRESPONDAN A ESTA OBLIGACIÓN.
-      // La fuente es la trazabilidad calculada, por lo que se conserva el
-      // orden real de aplicación de cada título y sus excedentes.
-      resultado.resumenTitulos.forEach(rt=>{
-        const traz=Array.isArray(rt.trazabilidad)?rt.trazabilidad:[];
-        traz.forEach((a,j)=>{
-          if(a.obligacionId!==o.id)return;
-          const d=detallePDFDesdeAplicacionTDJ(a,o);
-          const valorPDF=Number(a.valorAntes||0);
-          const esMinimoPDF=Boolean(a.soportePDFObligatorio || a.esTDJMinimo || (Number.isInteger(valorPDF)&&valorPDF>0&&valorPDF<=1000));
-          const soporteMinimo="";
-          const detalleNormal=bloqueDetallePagoTDJ(d,j,o,"APLICACIÓN DEL TDJ",{esTDJ:true,tdj:a.titulo,titulo:a.titulo,valorTDJ:a.valorAntes,valorAntes:a.valorAntes});
-          paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(d,j,datosPDFTDJ(o,d.pago||{}),{detalle:[d],vencimientos:o.vencimientos||[]})}</section>`);
-        });
+    // El PDF debe mostrar exactamente la secuencia en que el motor aplicó
+    // los movimientos: PAGO NORMAL -> TDJ -> PAGO NORMAL POSTERIOR.
+    // Nunca se agrupan primero todos los pagos y después todos los TDJ,
+    // porque eso hace que un pago posterior parezca imputado sobre una deuda
+    // que ya fue reducida por el título.
+    resultado.resumenObligaciones.forEach((x)=>{
+      const o=x.obligacion;
+      const detalles=Array.isArray(x.detalleCronologicoFinal)?x.detalleCronologicoFinal:[];
+      detalles.forEach((d,j)=>{
+        const rSoporte={
+          detalle:detalles.slice(0,j+1),
+          vencimientos:o.vencimientos||[]
+        };
+        paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(d,j,datosPDFTDJ(o,d.pago||{}),rSoporte)}</section>`);
       });
     });
 
