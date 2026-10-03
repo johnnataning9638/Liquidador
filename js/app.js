@@ -11,6 +11,7 @@ import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=1
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.47";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.90";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -1614,7 +1615,23 @@ function calcular(){
     motor=motorCalculo;
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
-    let r=motor.calcular(d);
+
+    // PRIORIDAD CRONOLÓGICA TDJ/PAGOS — MISMA LÓGICA DEL MÓDULO TDJ.
+    // Cuando existe un título antes de uno o más pagos normales posteriores,
+    // el título se reduce solo en la medida necesaria para que esos pagos
+    // posteriores puedan aplicarse íntegramente. La simulación de esta capa
+    // respeta las fechas reales y, por tanto, procesa PAGO -> TDJ -> PAGO.
+    // Si no existen TDJ con pagos posteriores, la función devuelve los datos
+    // sin alterarlos. No se modifica la interfaz ni el valor nominal digitado.
+    const datosCalculo=ajustarTDJParaPagosPosteriores(motor,d);
+    datosCalculo.pagos=ordenarMovimientosCronologicos(
+      (datosCalculo.pagos||[]).map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)}))
+    ).map(p=>{
+      const q={...p};
+      delete q.__ordenOriginal;
+      return q;
+    });
+    let r=motor.calcular(datosCalculo);
     if(d.pagos.some(p=>esTipoDecreto1419(p.tipo))&&Number(r.total||0)>1){
       const saldoFaltanteBeneficio=Math.max(0,Number(r.total||0));
       const articulos=[...new Set(d.pagos.filter(p=>esTipoDecreto1419(p.tipo)).map(p=>String(p.tipo).match(/ART\.\s*\d+/i)?.[0]?.toUpperCase()).filter(Boolean))].join(" / ");
