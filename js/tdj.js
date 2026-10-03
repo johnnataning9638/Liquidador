@@ -1138,8 +1138,40 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       const last=apps.at(-1)?.detalleMotor;
       const totalPagos=o.pagos.reduce((a,p)=>a+Number(p.valor||0),0);
       const totalTDJ=apps.reduce((a,x)=>a+Number(x.aplicado||0),0);
-      const saldo=Number(last?.total ?? base?.total ?? 0);
-      return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base};
+
+      // SALDO FINAL REAL: el último detalle de un TDJ está calculado a la
+      // fecha de ese título. Si después del último TDJ existe un pago normal,
+      // ese pago no aparecía en "last" y podía dejar un saldo ficticiamente
+      // alto, impidiendo reconocer un sobrante legítimo como ENDOSO.
+      // Recalculamos ahora la obligación completa a la última fecha de todos
+      // sus movimientos, incluyendo TODOS los pagos normales y TODOS los TDJ
+      // efectivamente aplicados.
+      const pagosFinales=[
+        ...(o.pagos||[]).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i),esTDJ:Boolean(p.esTDJ&&p.tdj)})),
+        ...apps.map((x,i)=>({
+          id:x.pagoId||uid("FIN-TDJ"),
+          numero:100000+i,
+          fecha:x.fecha,
+          valor:truncarValorEntero(x.aplicado||0),
+          tipo:x.tipoTasaObligacion||o.tipoTasa||"TASA DIAN",
+          tdj:x.titulo,
+          esTDJ:true,
+          ordenInterno:100000+i
+        }))
+      ].filter(p=>fechaISO(p.fecha)&&Number(p.valor)>0);
+      const fechaFinal=pagosFinales.map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort().at(-1)||"";
+      let liquidacionFinal=null;
+      let saldo=Number(last?.total ?? base?.total ?? 0);
+      if(fechaFinal){
+        try{
+          const motorFinal=motorParaObligacion(o);
+          liquidacionFinal=motorFinal.calcular(datosMotor(o,pagosFinales,fechaFinal,{permitirBeneficioFueraVigencia:true}));
+          saldo=Number(liquidacionFinal?.total??saldo);
+        }catch(e){
+          console.warn("No fue posible recalcular el saldo final de la obligación TDJ; se conserva el último estado disponible.",e);
+        }
+      }
+      return {obligacion:o,totalPagos,totalTDJ,saldo,ultima:apps.at(-1)||null,aplicaciones:apps,liquidacionBase:base,liquidacionFinal};
     });
     const saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
