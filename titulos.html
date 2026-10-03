@@ -114,50 +114,6 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 @media(min-width:1200px){.compact-grid{gap:6px;padding:7px 12px}.tdj-wrap{padding-left:12px;padding-right:12px}}
 @media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}}
 @media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}
-
-/* AJUSTE RESPONSIVO TDJ — SOLO PRESENTACIÓN EN MÓVIL */
-html,body{max-width:100%;overflow-x:hidden}
-.tdj-wrap{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
-.tdj-wrap,.tdj-wrap *{box-sizing:border-box}
-.tdj-wrap .card,.tdj-wrap .import-box,.tdj-wrap .tdj-title-import,.tdj-wrap .tab-pane-inner,
-.tdj-wrap .compact-grid,.tdj-wrap .obligation-fields,.tdj-wrap .subpanel{min-width:0;max-width:100%}
-.tdj-wrap input,.tdj-wrap select,.tdj-wrap textarea,.tdj-wrap button{max-width:100%}
-@media(max-width:650px){
-  .tdj-wrap{padding:8px 5px 24px}
-  .topbar{padding:10px 8px;gap:8px}
-  .topbar h1{font-size:16px;line-height:1.2}
-  .topbar p{font-size:11px;line-height:1.25}
-  .tdj-tab-buttons{width:100%;min-width:0;grid-template-columns:1fr}
-  .tabs-nav{width:100%;min-width:0;margin-bottom:8px}
-  .tabs-nav .tab-btn{width:100%;min-width:0;white-space:normal;padding:8px 7px;font-size:11px}
-  .card-head{padding:8px 9px;align-items:stretch}
-  .card-head>button{width:100%;align-self:stretch}
-  .compact-grid{grid-template-columns:1fr!important;padding:7px 9px;gap:7px}
-  .compact-grid label{min-width:0;width:100%}
-  .compact-grid input,.compact-grid select{width:100%;min-width:0;height:34px}
-  .obligation-fields{grid-template-columns:1fr!important;min-width:0!important;width:100%}
-  .obligation-fields>label{grid-column:auto!important;min-width:0;width:100%}
-  .obligation-fields input,.obligation-fields select,.obligation-fields textarea{width:100%;min-width:0;max-width:100%}
-  .tdj-global-import .tdj-import-grid,.tdj-title-import-grid{grid-template-columns:1fr!important;min-width:0}
-  .tdj-global-import .tdj-import-grid .import-destino,
-  .tdj-global-import .tdj-import-grid textarea,
-  .tdj-global-import .tdj-import-grid .tdj-import-actions{grid-column:1;grid-row:auto;width:100%;min-width:0}
-  .tdj-global-import .tdj-import-grid textarea,.tdj-title-import-grid textarea{width:100%;min-width:0;max-width:100%;min-height:78px}
-  .tdj-global-import .tdj-import-actions,.tdj-title-import-actions{width:100%;min-width:0;flex-direction:column;align-items:stretch}
-  .tdj-global-import .tdj-import-actions button,.tdj-title-import-actions button{width:100%;min-width:0}
-  .tdj-title-import{margin:0 7px 8px;padding:8px}
-  .tdj-sheet-actions{width:100%;min-width:0;display:grid;grid-template-columns:1fr;gap:6px;margin:8px 0}
-  .tdj-sheet-actions button{width:100%;min-width:0;white-space:normal;padding:9px 10px}
-  .tabla-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .result-table,.mini-table{max-width:none}
-  #tablaTitulos{width:100%;min-width:620px}
-  #tablaResultadoObligaciones{min-width:650px}
-  #tablaAplicacion{min-width:1050px}
-  #tablaEndoso{min-width:700px}
-  .nav-footer{width:100%;flex-direction:column;gap:6px}
-  .nav-footer button{width:100%}
-}
-
 </style>
 </head>
 <body>
