@@ -1,4 +1,4 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.34.08
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.34.09
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Solo ajusta el valor imputable de un TDJ anterior a pagos normales posteriores.
 
@@ -159,13 +159,13 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
  * Cierra un saldo residual pequeño usando ÚNICAMENTE el remanente real
  * del TDJ que ya fue entregado al motor. No aumenta el valor nominal del
  * título ni inventa dinero: reduce ENDOSO y aumenta APLICADO por el mismo
- * valor. Se admite como máximo un cierre residual de $2.000.
+ * valor. Se admite como máximo un cierre residual de $1.000.
  */
-export function cerrarSaldoResidualTDJ(resultado, valorTDJDisponible, limite=2000){
+export function cerrarSaldoResidualTDJ(resultado, valorTDJDisponible, limite=1000){
   if(!resultado||!Array.isArray(resultado.detalle))return {resultado,cerrado:0};
   const saldo=Math.max(0,Math.round(Number(resultado.total||0)));
   const disponible=Math.max(0,Math.trunc(Number(valorTDJDisponible||0)));
-  if(saldo<=0 || saldo>Math.max(0,Number(limite||2000)))return {resultado,cerrado:0};
+  if(saldo<=0 || saldo>Math.max(0,Number(limite||1000)))return {resultado,cerrado:0};
   const detalle=resultado.detalle.find(d=>String(d?.pago?.id||"") && (d?.pago?.esTDJ===true || String(d?.pago?.tdj||"").trim()!==""))
     || resultado.detalle.at(-1);
   if(!detalle)return {resultado,cerrado:0};
