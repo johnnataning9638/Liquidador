@@ -1948,7 +1948,18 @@ async function exportarPdfTDJ(){
     // técnico del remanente TDJ. Esto replica el criterio del liquidador RIAN:
     // el soporte debe informar la deuda pendiente aunque el remanente se haya
     // utilizado en el cierre técnico interno. No modifica cálculo ni endoso.
-    const saldoPendientePDF=Math.max(0,Number(resultado.saldoObligacionesPDF??resultado.resumenObligaciones.reduce((a,x)=>a+Number(x.saldo||0),0)));
+    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+    const ajusteRemanentePDF=(resultado.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);
+    // Fuente de verdad del PDF: conservar el saldo pendiente previo al cierre.
+    // Si se abre una liquidación generada por una versión anterior, el soporte
+    // usa como respaldo el saldo actual o el valor efectivamente cerrado por
+    // remanente, sin tocar el cálculo ni el endoso.
+    const saldoPendientePDF=Math.max(
+      0,
+      Number(resultado.saldoObligacionesPDF||0),
+      saldoActualPDF,
+      ajusteRemanentePDF
+    );
     const paginas=[];
 
     // PÁGINA INICIAL: conserva el resumen general del soporte TDJ.
@@ -2287,7 +2298,10 @@ async function importarExcelTDJ(){
         // duplicados cuando además existe la sección TÍTULOS / TDJ.
         const ph=idxFila(seg,r=>{
           const n=(r||[]).map(normExcel);
-          return n[0]==="Nº"&&(n[1]==="RECIBO"||n[1]==="RECIBO Nº")&&(n[2]==="FECHA"||n[2]==="FECHA PAGO")&&(n[3]==="VALOR"||n[3]==="VALOR PAGO")&&n.includes("TIPO");
+          const fecha=n.find(x=>x==="FECHA"||x==="FECHA PAGO"||x==="FECHA PAGO / CORTE"||x==="FECHA DE PAGO"||x==="FECHA DE PAGO / CORTE");
+          const valor=n.find(x=>x==="VALOR"||x==="VALOR PAGO"||x==="VALOR DEL PAGO"||x==="VALOR PAGADO");
+          const recibo=n[1]==="RECIBO"||n[1]==="RECIBO Nº"||n[1]==="RECIBO N";
+          return n[0]==="Nº"&&recibo&&Boolean(fecha)&&Boolean(valor)&&n.includes("TIPO");
         });
         o.pagos=[];
         if(ph>=0){
@@ -2320,38 +2334,50 @@ async function importarExcelTDJ(){
         nuevas.push(o);
       }
 
-      // TÍTULOS: preferimos el CONTROL FINAL, que contiene todos los títulos
-      // originales aunque alguno no haya sido aplicado. Si no existe, usamos
-      // la sección TÍTULOS REGISTRADOS.
-      const headerTitle=(from=0)=>{
-        for(let i=from;i<rows.length;i++){
-          const n=(rows[i]||[]).map(normExcel);
-          if(n[0]==="Nº"&&n[1]==="TDJ"&&n[2]==="FECHA"&&(n[3]==="VALOR ORIGINAL"||n[3]==="VALOR"))return i;
-        }
-        return -1;
+      // TÍTULOS / TDJ: leer TODAS las tablas explícitas de títulos del Excel.
+      // Se admiten TÍTULOS / TDJ — TÍTULOS REGISTRADOS, CONTROL FINAL y
+      // TÍTULOS TDJ del bloque de RECUPERACIÓN COMPLETA. Todos se deduplican
+      // por TDJ + fecha + valor para evitar duplicados del mismo título.
+      const esCabeceraTitulos=(r)=>{
+        const n=(r||[]).map(normExcel);
+        return n[0]==="Nº" &&
+          (n[1]==="TDJ"||n[1]==="TDJ Nº"||n[1]==="TITULO"||n[1]==="TITULO Nº") &&
+          n[2]==="FECHA" &&
+          (n[3]==="VALOR"||n[3]==="VALOR ORIGINAL"||n[3]==="VALOR DEL TITULO");
       };
-      let th=idxFila(rows,r=>/^TITULOS \/ TDJ\s*-?\s*CONTROL FINAL/.test(normExcel(r?.filter(Boolean).join(" "))));
-      if(th<0)th=idxFila(rows,r=>/^TITULOS \/ TDJ\s*-?\s*TITULOS REGISTRADOS/.test(normExcel(r?.filter(Boolean).join(" "))));
-      const hh=headerTitle(th>=0?th:0);
-      if(hh>=0){
+      const esFinTablaTitulos=(s)=>{
+        return /^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|TOTAL ENDOSO)/.test(s);
+      };
+      const cabecerasTitulos=[];
+      for(let i=0;i<rows.length;i++){
+        if(esCabeceraTitulos(rows[i]))cabecerasTitulos.push(i);
+      }
+      cabecerasTitulos.forEach(hh=>{
         const h=rows[hh]||[], nh=h.map(normExcel);
-        const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
-        const ixT=nh.findIndex(x=>x==="TDJ");
+        const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
         const ixF=nh.findIndex(x=>x==="FECHA");
-        const ixV=nh.findIndex(x=>x==="VALOR ORIGINAL"||x==="VALOR");
-        const ixTipo=nh.findIndex(x=>x==="TIPO");
-        const ixObs=nh.findIndex(x=>x==="OBSERVACION");
+        const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO");
+        const ixTipo=nh.findIndex(x=>x==="TIPO"||x==="TIPO DE TASA");
+        const ixObs=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
         for(let i=hh+1;i<rows.length;i++){
-          const r=rows[i]||[], s=normExcel(r.filter(Boolean).join(" | "));
-          if(!s||/^TOTAL ENDOSO/.test(s))break;
+          const r=rows[i]||[];
+          const nonEmpty=r.filter(x=>String(x??"").trim()!=="");
+          const s=normExcel(nonEmpty.join(" | "));
+          if(!s)break;
+          if(esFinTablaTitulos(s))break;
           if(ixT<0||ixF<0||ixV<0)continue;
-          const f=fechaCampoTDJImport(r[ixF]), val=truncarValorEntero(numExcel(r[ixV]));
+          const f=fechaCampoTDJImport(r[ixF]);
+          const val=truncarValorEntero(numExcel(r[ixV]));
           const tdjNum=upper(r[ixT]||"");
           if(f&&(tdjNum||val>0)){
-            agregarTituloImportado(tdjNum,f,val,upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),upper(ixObs>=0?r[ixObs]||"":""));
+            agregarTituloImportado(
+              tdjNum,f,val,
+              upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),
+              upper(ixObs>=0?r[ixObs]||"":"")
+            );
           }
         }
-      }
+      });
 
       if(!nuevas.length&&!nuevosTitulos.length){
         throw new Error("No se encontraron obligaciones ni títulos reconocibles.");
