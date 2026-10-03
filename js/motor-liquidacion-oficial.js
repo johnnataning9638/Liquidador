@@ -14,8 +14,9 @@ import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.39";
  * 3. La suspensión empieza después de dos años desde la admisión de la
  *    demanda y termina con la ejecutoria de la providencia definitiva.
  * 4. La sanción oficial se actualiza independientemente de los intereses,
- *    conforme al art. 867-1 E.T.: desde el 1 de enero siguiente a la firmeza
- *    administrativa del acto sancionatorio, acumulativamente por IPC.
+ *    tomando como fecha base la FECHA PROVIDENCIA DEFINITIVA registrada en
+ *    el formulario. La primera actualización se aplica el 1 de enero
+ *    siguiente a esa fecha y continúa anualmente, acumulativamente por IPC.
  */
 export class MotorLiquidacionOficial extends MotorLiquidacion{
   validarObligacion(datos){
@@ -157,7 +158,10 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     const sancionBaseOriginal=datos.tieneSancion==="SI"?Number(datos.valorSancion||0):0;
     const fechaSancionReal=fechaISO(datos.fechaSancion)||"";
     const fechaSancion=fechaSancionReal||saldosVto[0]?.fecha||"";
-    const fechaFirmezaSancion=fechaSancion;
+    // LIQUIDACIÓN OFICIAL: la actualización de la sanción toma como fecha base
+    // la FECHA PROVIDENCIA DEFINITIVA. La primera actualización se aplica el
+    // 1 de enero siguiente a esa fecha y continúa anualmente, acumulativamente.
+    const fechaFirmezaSancion=fechaISO(datos.fechaProvidenciaDefinitiva)||"";
     let saldoSancion=sancionBaseOriginal;
     const tipo1419Inicial=(datos.pagos||[]).map(p=>String(p?.tipo||"").toUpperCase());
     const articulo10Seleccionado=tipo1419Inicial.some(t=>t.includes("DECRETO 1419")&&t.includes("ART. 10"));
