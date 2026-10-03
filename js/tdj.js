@@ -7,7 +7,7 @@ import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.34.03
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.34.03";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.06";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos,cerrarSaldoResidualTDJ} from "./prioridad-tdj.js?v=16.34.07";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
