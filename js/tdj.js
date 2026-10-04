@@ -1,13 +1,13 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.101";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.101";
-import {importarDatosInteligente} from "./importador.js?v=16.33.101";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.101";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.101";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.101";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.101";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.101";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.101";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.101";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.104";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.104";
+import {importarDatosInteligente} from "./importador.js?v=16.33.104";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.104";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.104";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.104";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.104";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.104";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.104";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.104";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1967,6 +1967,23 @@ function detallePDFDesdeAplicacionTDJ(a,o){
   };
 }
 
+function bloqueExcedentesPorObligacionTDJPdf(o,detalles){
+  const movimientos=Array.isArray(detalles)?detalles:[];
+  const pagos=movimientos
+    .filter(d=>d?.pago && d.pago?.esTDJ!==true && !String(d.pago?.tdj||"").trim())
+    .map((d,i)=>({
+      pago:i+1,
+      recibo:String(d.pago?.recibo||"").trim(),
+      fecha:d.pago?.fecha||"",
+      valor:Number(d.pago?.valor||0),
+      excedente:Math.max(0,Number(d.excedente??d.aplicado?.excedente??0))
+    }));
+  if(!pagos.length || !pagos.some(p=>p.excedente>0))return "";
+  const total=pagos.reduce((a,p)=>a+p.excedente,0);
+  const rows=pagos.map(p=>`<tr><td>PAGO ${p.pago}</td><td>${escPdf(p.recibo||"—")}</td><td>${escPdf(fechaVisible(p.fecha))}</td><td>${dinero(p.valor)}</td><td>${dinero(p.excedente)}</td></tr>`).join("");
+  return `<section class="pdf-bloque pdf-excedentes-obligacion"><h2>EXCEDENTES DE PAGOS — OBLIGACIÓN ${escPdf(o?.numero||"")}</h2><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES DE LA OBLIGACIÓN</th><th>${dinero(total)}</th></tr></tfoot></table></section>`;
+}
+
 function claveAplicacionTDJPDF(a){
   return [a?.tituloId||a?.titulo||"",a?.obligacionId||"",a?.fecha||"",a?.valorAntes??"",a?.aplicado??""].join("|");
 }
@@ -2021,6 +2038,8 @@ async function exportarPdfTDJ(){
         };
         paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(d,j,datosPDFTDJ(o,d.pago||{}),rSoporte)}</section>`);
       });
+      const bloqueExcedentes=bloqueExcedentesPorObligacionTDJPdf(o,detalles);
+      if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja">${bloqueExcedentes}</section>`);
     });
 
     const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
