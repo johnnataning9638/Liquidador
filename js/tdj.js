@@ -1,13 +1,13 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.100";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.100";
-import {importarDatosInteligente} from "./importador.js?v=16.33.100";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.100";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.100";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.100";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.100";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.100";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.100";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.100";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.101";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.101";
+import {importarDatosInteligente} from "./importador.js?v=16.33.101";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.101";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.101";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.101";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.101";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.101";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.101";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.101";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -404,15 +404,48 @@ function renderPagos(){
 }
 function syncObligacion(sec,o){sec.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;if(k==="valorSancion")o[k]=numeroDesdeTexto(el.value);else o[k]=k==="anio"?Number(el.value||0):upper(el.value);});actualizarCamposSancion(sec,o);}
 function actualizarCamposSancion(sec,o){const si=sec.querySelector('[data-k="tieneSancion"]')?.value==="SI";["valorSancion","fechaSancion","beneficioSancion"].forEach(k=>{const el=sec.querySelector(`[data-k="${k}"]`)||sec.querySelector(`#fs-${o.id}`);if(el)el.disabled=!si;});}
+function configurarTabCuota(tr,tbody){
+  // FLUJO DE CAPTURA SOLICITADO:
+  // FECHA VENCIMIENTO -> IMPORTE/IMPUESTO -> FECHA VENCIMIENTO SIGUIENTE -> IMPORTE/IMPUESTO...
+  // PERÍODO/CUOTA queda fuera del flujo de TAB y el selector/calendario nativo
+  // de la fecha mantiene tabindex=-1.
+  const fecha=tr.querySelector('.fecha-campo');
+  const impuesto=tr.querySelector('[data-v="impuesto"]');
+  if(fecha)fecha.addEventListener('keydown',e=>{
+    if(e.key!=="Tab"||e.shiftKey)return;
+    e.preventDefault();
+    if(impuesto){impuesto.focus();impuesto.select?.();}
+  });
+  if(impuesto)impuesto.addEventListener('keydown',e=>{
+    if(e.key!=="Tab"||e.shiftKey)return;
+    const n=numeroDesdeTexto(impuesto.value);
+    impuesto.value=n?dinero(n):"";
+    const id=tr.dataset.vtoId;
+    const o=obligaciones.find(x=>x.vencimientos?.some(v=>v.id===id));
+    const v=o?.vencimientos?.find(x=>x.id===id);
+    if(v)v.impuesto=n;
+    const filas=[...tbody.querySelectorAll('tr')];
+    const actual=filas.indexOf(tr);
+    const siguiente=filas[actual+1]?.querySelector('.fecha-campo');
+    if(siguiente){
+      e.preventDefault();
+      siguiente.focus();
+      siguiente.select?.();
+    }
+  });
+}
+
 function renderCuotasEn(sec,o){
   const tbody=sec.querySelector('.cuotas-mini tbody');tbody.innerHTML="";
   o.vencimientos.sort((a,b)=>Number(a.numero)-Number(b.numero)).forEach((v,i)=>{
-    const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td><input data-v="periodo" value="${esc(v.periodo??i+1)}"></td><td>${campoFecha(`vto-${v.id}`,v.fecha)}</td><td><input data-v="impuesto" class="money" inputmode="numeric" value="${v.impuesto?dinero(v.impuesto):""}" placeholder="$ 0"></td><td><button class="secundario" data-vdel tabindex="-1">Eliminar</button></td>`;
+    const tr=document.createElement('tr');tr.dataset.vtoId=v.id;
+    tr.innerHTML=`<td>${i+1}</td><td><input data-v="periodo" tabindex="-1" value="${esc(v.periodo??i+1)}"></td><td>${campoFecha(`vto-${v.id}`,v.fecha)}</td><td><input data-v="impuesto" class="money" inputmode="numeric" value="${v.impuesto?dinero(v.impuesto):""}" placeholder="$ 0"></td><td><button class="secundario" data-vdel tabindex="-1">Eliminar</button></td>`;
     tr.querySelector('[data-v="periodo"]').addEventListener('change',e=>v.periodo=upper(e.target.value));
     tr.querySelector('[data-v="impuesto"]').addEventListener('blur',e=>{v.impuesto=numeroDesdeTexto(e.target.value);e.target.value=v.impuesto?dinero(v.impuesto):"";});
     montarFechaDual(tr.querySelector(`#vto-${v.id}`).parentElement,iso=>v.fecha=iso);
     tr.querySelector('[data-vdel]').addEventListener('click',()=>{if(o.vencimientos.length===1){v.fecha="";v.impuesto=0;}else{o.vencimientos=o.vencimientos.filter(x=>x.id!==v.id);o.vencimientos.forEach((x,j)=>{x.numero=j+1;if(!x.periodo)x.periodo=j+1;});}renderObligaciones();});
     tbody.appendChild(tr);
+    configurarTabCuota(tr,tbody);
   });
 }
 function enfocarSiguienteFila(tbody, fila, selectores, idx){

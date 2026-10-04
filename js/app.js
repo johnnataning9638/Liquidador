@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.100";
-import {importarDatosInteligente} from "./importador.js?v=16.33.100";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.100";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.100";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.100";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.100";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.100";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.100";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.100";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.100";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.100";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.100";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.100";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.100";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.101";
+import {importarDatosInteligente} from "./importador.js?v=16.33.101";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.101";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.101";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.101";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.101";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.101";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.101";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.101";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.101";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.101";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.101";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.101";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.101";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -1419,7 +1419,25 @@ function estilosPdf(){
 
 function bloquePdfSinPagos(d,r){
   const detalle=Array.isArray(r.interesesPorCuota)?r.interesesPorCuota:[];
-  const filasInteres=detalle.length?detalle.map((t,i)=>`<tr><td>${escPdf(t.vto||t.cuota||i+1)}</td><td>${dinero(t.base||t.capitalBase||0)}</td><td>${escPdf(fechaVisible(t.desde||t.fechaVencimiento||""))}</td><td>${escPdf(fechaVisible(t.hasta||t.fechaPago||r.fechaCorte||""))}</td><td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes??t.valor??0)}</td><td>${escPdf(t.metodologia||"INTERÉS CALCULADO")}</td></tr>`).join(""):
+  // LIQUIDACIÓN OFICIAL SIN PAGOS: el motor entrega el interés por vencimiento
+  // con sus tramos, pero en este escenario no existe un pago real que complete
+  // todos los metadatos de presentación. Para el PDF reconstruimos únicamente
+  // la información de soporte desde el vencimiento y los tramos ya calculados.
+  // NO se recalcula ningún interés aquí.
+  const filasInteres=detalle.length?detalle.map((t,i)=>{
+    const vto=(r.vencimientos||[]).find(v=>v.id===t.vto)||null;
+    const tramos=Array.isArray(t.tramos)?t.tramos:[];
+    const normales=tramos.filter(z=>z&&z.tipo!=="SUSPENSION_INTERESES");
+    const primer=normales[0]||tramos[0]||{};
+    const desde=t.desde||t.fechaVencimiento||primer.desde||vto?.fecha||"";
+    const hasta=t.hasta||t.fechaPago||primer.hasta||r.fechaCorte||"";
+    const dias=t.dias!=null?Number(t.dias):normales.reduce((a,z)=>a+Number(z.dias||0),0);
+    const tasa=t.tasa!=null?Number(t.tasa):(primer.tasa==null?null:Number(primer.tasa));
+    const capital=t.base!=null?Number(t.base):(t.capitalBase!=null?Number(t.capitalBase):Number(vto?.saldo??vto?.impuesto??0));
+    const interes=t.interes??t.valor??normales.reduce((a,z)=>a+Number(z.valor||0),0);
+    const metodologia=t.metodologia||primer.metodologia||"INTERÉS CALCULADO";
+    return `<tr><td>${escPdf(t.vto||t.cuota||vto?.numero||i+1)}</td><td>${dinero(capital)}</td><td>${escPdf(fechaVisible(desde))}</td><td>${escPdf(fechaVisible(hasta))}</td><td>${dias}</td><td>${tasa==null?"—":(tasa*100).toFixed(3)+"%"}</td><td>${dinero(interes)}</td><td>${escPdf(metodologia)}</td></tr>`;
+  }).join(""):
     `<tr><td colspan="8">NO SE GENERARON TRAMOS DE INTERÉS.</td></tr>`;
   const tramosSancion=(Array.isArray(r.sancionActualizacion?.tramos)?r.sancionActualizacion.tramos:[])
     .flatMap(x=>Array.isArray(x?.tramos)?x.tramos:[x])
