@@ -68,8 +68,8 @@ for (const count of [1, 2, 3]) {
 
 // SIMPLE 4–6 cuotas: se conserva la participación de sanción aun en el primer anticipo.
 for (const count of [4, 5, 6]) {
-  const r = motor().calcular(obligation({ count, paymentDate: "2026-01-01", paymentValue: 100000 }));
-  ok(`SIMPLE ${count} cuotas: sanción permanece habilitada`, r.detalle[0].aplicado.sancion > 0);
+  const r = motor().calcular(obligation({ count, paymentDate: "2026-01-02", paymentValue: 100000 }));
+  ok(`SIMPLE ${count} cuotas: sanción permanece habilitada después del vencimiento`, r.detalle[0].aplicado.sancion > 0);
 }
 
 // Proporcionalidad: el pago de $1.001 nunca puede convertirse en $2.000 por redondeo.
