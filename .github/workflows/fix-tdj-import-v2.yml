@@ -1,0 +1,75 @@
+name: Fix TDJ text import v2
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply prepared TDJ correction
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re, textwrap
+          old = Path('.github/workflows/fix-tdj-import.yml').read_text(encoding='utf-8')
+          m = re.search(r"python3 <<'PY'\n(.*?)\n          PY", old, re.S)
+          if not m:
+              raise SystemExit('No se encontró el script de corrección preparado.')
+          script = textwrap.dedent(m.group(1)).replace('tdj.js?v=16.33.107', 'tdj.js?v=16.33.111')
+          ns = {}
+          exec(compile(script, '<tdj-fix>', 'exec'), ns, ns)
+          PY
+
+      - name: Regression test exact DIAN table
+        shell: bash
+        run: |
+          node --check js/tdj.js
+          grep -q 'tdj.js?v=16.33.111' titulos.html
+          node <<'NODE'
+          const fs=require('fs');
+          const src=fs.readFileSync('js/tdj.js','utf8');
+          const start=src.indexOf('function separarFilaImportacionTDJ(');
+          const end=src.indexOf('function importarTitulos(){',start);
+          if(start<0||end<0)throw new Error('No se pudo aislar el importador TDJ.');
+          const chunk=src.slice(start,end);
+          const norm=v=>String(v??'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+          const fechaISO=v=>{const s=String(v??'').trim(),m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/);if(!m)return '';let y=Number(m[3]);if(y<100)y+=2000;return `${y}-${String(Number(m[2])).padStart(2,'0')}-${String(Number(m[1])).padStart(2,'0')}`};
+          const numeroDesdeTexto=v=>Number(String(v??'').replace(/[^0-9-]/g,''))||0;
+          const truncarValorEntero=v=>Math.trunc(Number(v)||0);
+          const dinero=v=>String(v),upper=v=>String(v??'').trim().toUpperCase(),$=()=>({value:'',hidden:false,textContent:''});
+          const fn=eval(`(function(normImportacionTDJ,fechaISO,numeroDesdeTexto,truncarValorEntero,dinero,upper,$){${chunk};return importarTitulosTDJNuevo;})`)(norm,fechaISO,numeroDesdeTexto,truncarValorEntero,dinero,upper,$);
+          const rows=[
+            'No.\tDocumento Fuente\tRepetición\tNombre Formato\tFecha Presentacion\tEstado\tClase Documento\tValor Pagado',
+            '4911089297230\t1\tRecibo Oficial de Pago\t5/03/2026\tINICIAL\t\t4.137.000',
+            '4911095388931\t1\tRecibo Oficial de Pago\t18/03/2026\tINICIAL\t\t3.579.000',
+            '4911096796139\t1\tRecibo Oficial de Pago\t21/03/2026\tINICIAL\t\t2.093.000',
+            '4911097894062\t1\tRecibo Oficial de Pago\t26/03/2026\tINICIAL\t\t1.482.000',
+            '4911098513361\t1\tRecibo Oficial de Pago\t30/03/2026\tINICIAL\t\t3.047.000',
+            '4911098761609\t1\tRecibo Oficial de Pago\t31/03/2026\tINICIAL\t\t10.924.000',
+            '3004724916099\t1\tImpuesto sobre las Ventas\t3/04/2026\tVALIDA/ACTIVA\t\t',
+            '4911099029075\t1\tRecibo Oficial de Pago\t4/04/2026\tINICIAL\t\t2.294.000'
+          ];
+          const out=fn(rows.join('\n'));
+          const exp=['4911089297230','4911095388931','4911096796139','4911097894062','4911098513361','4911098761609','4911099029075'];
+          if(out.length!==exp.length||JSON.stringify(out.map(x=>x.tdj))!==JSON.stringify(exp)||out.some(x=>x.tdj==='1'))throw new Error('Falló la reconstrucción TDJ DIAN: '+JSON.stringify(out));
+          console.log('PASS: importador normal reconoce Documento Fuente completo; 7 títulos, sin TDJ=1.');
+          NODE
+
+      - name: Commit correction and clean temporary files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/fix-tdj-import.yml .github/workflows/fix-tdj-import-v2.yml fix-trigger.txt
+          git add js/tdj.js titulos.html .github/workflows/fix-tdj-import.yml .github/workflows/fix-tdj-import-v2.yml fix-trigger.txt
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: corregir importación TDJ DIAN normal e IA"
+          git push
