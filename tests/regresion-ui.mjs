@@ -43,3 +43,9 @@ assert.match(tdjSrc,/EXCEDENTE":"PAGO EN EXCESO/);
 assert.match(tdjSrc,/const excedenteTDJ=trazaMovimiento/);
 assert.match(tdjSrc,/saldoTitulo\|\|0/);
 console.log("REGRESIÓN EXCEDENTE EN DETALLE PDF TDJ OK");
+
+assert.match(tdjSrc,/function leerTitulosTDJRegistradosExcel\(rows\)/);
+assert.match(tdjSrc,/const titulosCanonicos=leerTitulosTDJRegistradosExcel\(rows\)/);
+assert.match(tdjSrc,/nuevosTitulos\.length=0/);
+assert.match(tdjSrc,/numero: nuevosTitulos\.length\+1/);
+console.log("REGRESIÓN IMPORTACIÓN EXCEL TDJ PRIMER TÍTULO OK");
