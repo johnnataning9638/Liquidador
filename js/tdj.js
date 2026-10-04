@@ -2626,9 +2626,6 @@ function separarFilaImportacionTDJ(linea){
   if(dobles.length>=3)return dobles;
   return s.split(/\s+/).map(x=>x.trim()).filter(Boolean);
 }
-function normImportacionTDJ(v){
-  return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim();
-}
 function numeroTituloImportacion(v){
   let s=String(v??"").trim().replace(/^TDJ\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?/i,"").trim();
   if(!s)return "";
