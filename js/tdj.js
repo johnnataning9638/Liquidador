@@ -8,6 +8,7 @@ import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.107";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.107";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.107";
 import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.107";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.109";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -2797,18 +2798,16 @@ function importarTitulos(){
   const text=$("importarTitulosTexto").value.trim();
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
-    const encontrados=importarTitulosTDJNuevo(text);
-    titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:p.fecha,valor:p.valor,observacion:p.observacion||"",_orden:Date.now()+i}));
+    const encontrados=extraerRegistrosTDJTexto(text);
+    if(!encontrados.length)throw new Error("No se encontraron registros TDJ válidos. El documento fuente debe tener entre 10 y 15 dígitos, además de fecha y valor.");
+    titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
     resultado=null;
     $("resultadoTDJ").hidden=true;
     renderTitulos();
     $("importarTitulosTexto").value="";
-    $("resultadoImportacionTitulos").textContent="Se reconocieron "+titulos.length+" título(s)/TDJ correctamente.";
-  }catch(e){
-    console.error("IMPORTACIÓN NUEVA DE TÍTULOS TDJ",e);
-    alert(e.message||"No fue posible reconocer los títulos / TDJ.");
-  }
+    $("resultadoImportacionTitulos").textContent=`Se reconocieron ${titulos.length} título(s)/TDJ.`;
+  }catch(e){console.error("IMPORTACIÓN TDJ",e);alert(e.message||"No fue posible reconocer los títulos/TDJ.");}
 }
 
 async function importarTitulosIA(){
@@ -2816,29 +2815,26 @@ async function importarTitulosIA(){
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
     setStatus("IA DIAN — VALIDANDO TÍTULOS...","loading");
-    const base=importarTitulosTDJNuevo(text);
-    const ai=await interpretarPagosConIA(text);
-    const combinados=[...(base||[]),...(ai?.pagos||[])];
-    const mapa=new Map();
-    for(const p of combinados){
-      const tdj=numeroTituloImportacion(p?.tdj||p?.recibo||"");
-      const fecha=fechaISO(p?.fecha)||"";
-      const valor=truncarValorEntero(p?.valor);
-      if(!tdj||!fecha||!(valor>0))continue;
-      const key=tdj+"|"+fecha+"|"+valor;
-      if(!mapa.has(key))mapa.set(key,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});
+    let encontrados=extraerRegistrosTDJTexto(text);
+    let ai=null;
+    if(!encontrados.length){
+      ai=await interpretarPagosConIA(text);
+      const candidatos=(ai?.pagos||[]).map(p=>({tdj:String(p?.tdj||p?.recibo||"").trim(),fecha:fechaISO(p?.fecha)||"",valor:truncarValorEntero(p?.valor||0)})).filter(p=>esDocumentoFuenteTDJ(p.tdj)&&p.fecha&&p.valor>0);
+      const mapa=new Map();
+      for(const p of candidatos){const key=`${p.tdj}|${p.fecha}|${p.valor}`;if(!mapa.has(key))mapa.set(key,p);}
+      encontrados=[...mapa.values()];
     }
-    const encontrados=[...mapa.values()];
-    if(!encontrados.length)throw new Error("La IA no reconoció títulos/TDJ válidos con TDJ, fecha y valor.");
-    titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:p.fecha,valor:p.valor,observacion:p.observacion||"",_orden:Date.now()+i}));
+    if(!encontrados.length)throw new Error("La IA no reconoció registros TDJ válidos. El documento fuente debe tener entre 10 y 15 dígitos, además de fecha y valor.");
+    encontrados=encontrados.filter(p=>esDocumentoFuenteTDJ(p.tdj)&&p.fecha&&Number(p.valor)>0);
+    titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:String(p.tdj),fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
     resultado=null;
     $("resultadoTDJ").hidden=true;
     renderTitulos();
     $("importarTitulosTexto").value="";
-    $("resultadoImportacionTitulos").textContent="IA DIAN reconoció "+titulos.length+" título(s)/TDJ.";
-    setStatus("IA DIAN — TÍTULOS VALIDADOS "+Math.round(Number(ai?.confidence||0)*100)+"%","ok");
-  }catch(e){setStatus("LISTO","ok");alert(e.message||"No fue posible procesar los títulos con IA.");}
+    $("resultadoImportacionTitulos").textContent=`IA DIAN reconoció ${titulos.length} título(s)/TDJ.`;
+    setStatus(`IA DIAN — TÍTULOS VALIDADOS ${Math.round(Number(ai?.confidence||0)*100)}%`,"ok");
+  }catch(e){setStatus("LISTO","ok");console.error("IMPORTACIÓN IA TDJ",e);alert(e.message||"No fue posible procesar los títulos con IA.");}
 }
 
 function actualizarIndicadoresIA(){
