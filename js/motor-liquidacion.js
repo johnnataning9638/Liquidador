@@ -943,16 +943,29 @@ export class MotorLiquidacion{
       // Interés vigente para cada vencimiento antes de imputar el pago.
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
       const intCalc=calcularInteresesAntesPago(pago);
-      // REGLA DE IMPUTACIÓN DE SANCIÓN:
-      // - SIMPLE identificado por 4 a 6 cuotas/anticipos: la sanción participa
-      //   desde el primer anticipo, incluso si el pago es anterior a la fecha
-      //   de presentación/sanción.
-      // - RÉGIMEN ORDINARIO (y SIMPLE con 1-3 cuotas): se conserva la regla
-      //   histórica: un pago anterior a la fecha de sanción no imputa sanción;
-      //   un pago en la misma fecha o posterior sí puede imputarla.
+      // REGLA DE IMPUTACIÓN DE SANCIÓN — RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS):
+      // La sanción SOLO puede participar si el funcionario indicó TIENE SANCIÓN = SÍ.
+      // En régimen tradicional, el punto de corte para cada pago es la FECHA DE
+      // VENCIMIENTO PARA DECLARAR, que corresponde a la FECHA DE LA CUOTA 1.
+      // - Pago anterior a la cuota 1: NO participa en sanción, aunque la
+      //   declaración posteriormente haya sido presentada extemporáneamente.
+      // - Pago igual o posterior a la cuota 1: SÍ puede participar en sanción,
+      //   siempre que exista sanción y exista fecha de presentación/sanción.
+      //
+      // RÉGIMEN SIMPLE (4, 5 Y 6 CUOTAS): ESTA REGLA NUEVA NO SE APLICA.
+      // Se conserva intacta la lógica SIMPLE existente.
+      const fechaVencimientoDeclarar=fechaISO(
+        saldosVto.find(v=>Number(v.numero)===1)?.fecha || saldosVto[0]?.fecha || ""
+      );
       const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        || !fechaSancionReal
-        || pago.fecha>=fechaSancionReal;
+        ? true
+        : (
+            datos.tieneSancion==="SI"
+            && sancionBaseOriginal>0
+            && Boolean(fechaSancionReal)
+            && Boolean(fechaVencimientoDeclarar)
+            && pago.fecha>=fechaVencimientoDeclarar
+          );
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
       // La sanción base es definitiva: primero se actualiza únicamente el
