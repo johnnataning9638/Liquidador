@@ -22,3 +22,9 @@ assert.match(app,/function resumenExcedentesPagosPdf\(r\)/);
 assert.match(app,/TOTAL EXCEDENTES/);
 assert.match(app,/const resumenExcedentes=resumenExcedentesPagosPdf\(r\)/);
 console.log("REGRESIÓN EXCEDENTES FINALES DE PAGOS OK");
+
+const tdjSrc=tdj;
+assert.match(tdjSrc,/function bloqueExcedentesPorObligacionTDJPdf\(o,detalles\)/);
+assert.match(tdjSrc,/TOTAL EXCEDENTES DE LA OBLIGACIÓN/);
+assert.match(tdjSrc,/bloqueExcedentesPorObligacionTDJPdf\(o,detalles\)/);
+console.log("REGRESIÓN EXCEDENTES TDJ POR OBLIGACIÓN OK");
