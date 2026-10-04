@@ -24,7 +24,7 @@ jobs:
           set -e
           grep -q 'js/app.js?v=16.33.100' liquidacion.html
           grep -q 'js/tdj.js?v=16.33.100' titulos.html
-          if grep -R -nE '\./[^"]+\.js\?v=(16\.33\.(3[0-9]|[0-9]{1,2}))' js; then
+          if grep -R -nF '?v=' js | grep -v '16.33.100'; then
             echo "ERROR: quedan imports locales con versionado anterior."
             exit 1
           fi
