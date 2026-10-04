@@ -18,57 +18,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Rebuild TDJ importer
+      - name: Verify rebuilt importer is present
         shell: bash
         run: |
-          node <<'NODE'
-          const fs=require('fs');
-          const tdjPath='js/tdj.js';
-          const htmlPath='titulos.html';
-          let tdj=fs.readFileSync(tdjPath,'utf8');
-          const marker='function leerTitulosTDJRegistradosExcel(rows){';
-          const start=tdj.indexOf(marker);
-          const end=tdj.indexOf('async function importarExcelTDJ(){',start);
-          if(start<0||end<0)throw new Error('No se encontró el bloque antiguo del importador TDJ.');
-          tdj=tdj.slice(0,start)+`function leerTitulosTDJRegistradosExcel(rows){\n  return reconstruirTitulosTDJDesdeFilas(rows);\n}\n`+tdj.slice(end);
-          const needle='import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.107";';
-          if(!tdj.includes('import {reconstruirTitulosTDJDesdeFilas}')){
-            if(!tdj.includes(needle))throw new Error('No se encontró el importador Excel base.');
-            tdj=tdj.replace(needle,needle+'\nimport {reconstruirTitulosTDJDesdeFilas} from "./importador-tdj.js?v=16.33.109";');
-          }
-          const old=`        const tdjTxt=upper(tdjNum||"").trim();\n        const f=fechaCampoTDJImport(fecha)||"";\n        const v=truncarValorEntero(valor);\n        if(!f||v<=0)return false;`;
-          const neu=`        const tdjTxt=upper(tdjNum||"").trim();\n        const f=fechaCampoTDJImport(fecha)||"";\n        const v=truncarValorEntero(valor);\n        // Un título TDJ nunca puede existir parcialmente: requiere TDJ + fecha + valor.\n        if(!tdjTxt||!f||v<=0)return false;`;
-          if(!tdj.includes(old))throw new Error('No se encontró la validación de títulos parciales.');
-          tdj=tdj.replace(old,neu);
-          const b1='      // TÍTULOS / TDJ: leer TODAS las tablas explícitas de títulos del Excel.';
-          const b2='      // SI EXISTE LA TABLA CANÓNICA "TÍTULOS / TDJ — TÍTULOS REGISTRADOS",';
-          const s=tdj.indexOf(b1), e=tdj.indexOf(b2,s);
-          if(s<0||e<0)throw new Error('No se encontró el bloque duplicado de tablas TDJ.');
-          tdj=tdj.slice(0,s)+`      // IMPORTADOR TDJ RECONSTRUIDO: una sola fuente de verdad basada en las mismas\n      // columnas que ya funcionan en PAGOS (TDJ, FECHA, VALOR), con respaldo\n      // en las tablas TÍTULOS / TDJ y RECUPERACIÓN COMPLETA.\n      const titulosReconstruidos=reconstruirTitulosTDJDesdeFilas(rows);\n      if(titulosReconstruidos.length){\n        nuevosTitulos.length=0;\n        titulosReconstruidos.forEach((t,i)=>{\n          nuevosTitulos.push({id:uid("TDJ"),numero:i+1,tdj:t.tdj,fecha:t.fecha,valor:t.valor,observacion:t.observacion||""});\n        });\n      }\n\n`+tdj.slice(e);
-          const c1='      // SI EXISTE LA TABLA CANÓNICA "TÍTULOS / TDJ — TÍTULOS REGISTRADOS",';
-          const c2='      if(!nuevas.length&&!nuevosTitulos.length){';
-          const cs=tdj.indexOf(c1), ce=tdj.indexOf(c2,cs);
-          if(cs>=0&&ce>=0)tdj=tdj.slice(0,cs)+tdj.slice(ce);
-          fs.writeFileSync(tdjPath,tdj);
-          let html=fs.readFileSync(htmlPath,'utf8');
-          if(!html.includes('tdj.js?v=16.33.108')&&!html.includes('tdj.js?v=16.33.109'))throw new Error('No se encontró versión esperada de tdj.js.');
-          html=html.replaceAll('tdj.js?v=16.33.108','tdj.js?v=16.33.109');
-          fs.writeFileSync(htmlPath,html);
-          NODE
+          grep -q 'reconstruirTitulosTDJDesdeFilas' js/tdj.js
+          grep -q 'if(!tdjTxt||!f||v<=0)return false;' js/tdj.js
+          grep -q 'tdj.js?v=16.33.109' titulos.html
       - name: Syntax and regression checks
         shell: bash
         run: |
           node --check js/importador-tdj.js
           node --check js/tdj.js
           node --check js/importador-excel.js
-          grep -q 'reconstruirTitulosTDJDesdeFilas' js/tdj.js
-          grep -q 'if(!tdjTxt||!f||v<=0)return false;' js/tdj.js
-          grep -q 'tdj.js?v=16.33.109' titulos.html
-      - name: Commit rebuilt importer
+          node tests/importador-tdj.mjs
+      - name: Commit workflow cleanup
         shell: bash
         run: |
+          git status --short
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add js/tdj.js js/importador-tdj.js titulos.html
-          git commit -m "fix: reconstruir importador de títulos TDJ" || exit 0
+          git add .github/workflows/rebuild-tdj-importer.yml tests/importador-tdj.mjs
+          git diff --cached --quiet || git commit -m "test: validar importador TDJ reconstruido"
           git push origin HEAD:rebuild/importador-tdj-109
