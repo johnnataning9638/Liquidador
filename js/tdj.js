@@ -5,7 +5,7 @@ import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=1
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.107";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.107";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.107";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.107";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.107";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.107";
 import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.107";
 
@@ -2173,7 +2173,7 @@ function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.c
 
 function filasEntre(rows,a,b){return rows.slice(a+1,b<0?rows.length:b)}
 function idxFila(rows,fn,desde=0){for(let i=desde;i<rows.length;i++){if(fn(rows[i]))return i}return -1}
-function esTituloObligacionExcel(r){const s=normExcel(r?.filter(Boolean).join(" "));return /^OBLIGACION\s+\d+\s*-?\s*LIQUIDACION NORMAL/.test(s)}
+function esTituloObligacionExcel(r){const s=normImportacionTDJ(r?.filter(Boolean).join(" "));return /^OBLIGACION\s+\d+\s*-?\s*LIQUIDACION NORMAL/.test(s)}
 function fechaCampoTDJImport(v){return fechaExcel(v)||""}
 
 function obtenerMetaExcelRobusta(rows){
@@ -2188,7 +2188,7 @@ function obtenerMetaExcelRobusta(rows){
   for(const r of rows){
     const cells=Array.isArray(r)?r:[];
     for(let i=0;i<cells.length;i++){
-      const k=normExcel(cells[i]);
+      const k=normImportacionTDJ(cells[i]);
       if(!k||!claves.has(k))continue;
       let v="";
       for(let j=i+1;j<cells.length;j++){
@@ -2204,7 +2204,7 @@ function obtenerMetaExcelRobusta(rows){
 function buscarCabeceraVencimientos(rows,desde=0){
   for(let i=desde;i<rows.length;i++){
     const r=rows[i]||[];
-    const n=r.map(x=>normExcel(x));
+    const n=r.map(x=>normImportacionTDJ(x));
     const tieneNumero=n.includes("Nº")||n.includes("NO")||n.includes("N");
     const tienePeriodo=n.includes("PERIODO")||n.includes("PERIODO / CUOTA");
     const tieneFecha=n.includes("FECHA VENCIMIENTO");
@@ -2216,7 +2216,7 @@ function buscarCabeceraVencimientos(rows,desde=0){
 
 function leerVencimientosExcel(rows,headerIdx){
   if(headerIdx<0)return [];
-  const h=rows[headerIdx]||[], nh=h.map(x=>normExcel(x));
+  const h=rows[headerIdx]||[], nh=h.map(x=>normImportacionTDJ(x));
   const idxNum=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
   const idxPeriodo=nh.findIndex(x=>x==="PERIODO"||x==="PERIODO / CUOTA");
   const idxFecha=nh.findIndex(x=>x==="FECHA VENCIMIENTO");
@@ -2227,7 +2227,7 @@ function leerVencimientosExcel(rows,headerIdx){
   for(let i=headerIdx+1;i<rows.length;i++){
     const r=rows[i]||[];
     const nonEmpty=r.filter(x=>String(x??"").trim()!=="");
-    const s=normExcel(nonEmpty.join(" | "));
+    const s=normImportacionTDJ(nonEmpty.join(" | "));
     if(secciones.test(s))break;
     const f=fechaCampoTDJImport(idxFecha>=0?r[idxFecha]:"");
     const imp=truncarValorEntero(numExcel(idxImpuesto>=0?r[idxImpuesto]:""));
@@ -2245,7 +2245,7 @@ function leerTitulosTDJRegistradosExcel(rows){
   const encontrados=[];
   const vistos=new Set();
   const esCabecera=(r)=>{
-    const n=(r||[]).map(normExcel);
+    const n=(r||[]).map(normImportacionTDJ);
     return n[0]==="Nº" &&
       (n[1]==="TDJ"||n[1]==="TDJ Nº"||n[1]==="TITULO"||n[1]==="TITULO Nº") &&
       n[2]==="FECHA" &&
@@ -2253,7 +2253,7 @@ function leerTitulosTDJRegistradosExcel(rows){
   };
   for(let h=0;h<rows.length;h++){
     if(!esCabecera(rows[h]))continue;
-    const header=rows[h]||[], nh=header.map(normExcel);
+    const header=rows[h]||[], nh=header.map(normImportacionTDJ);
     const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
     const ixF=nh.findIndex(x=>x==="FECHA");
     const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO");
@@ -2261,7 +2261,7 @@ function leerTitulosTDJRegistradosExcel(rows){
     for(let i=h+1;i<rows.length;i++){
       const r=rows[i]||[];
       const nonEmpty=r.filter(v=>String(v??"").trim()!=="");
-      const s=normExcel(nonEmpty.join(" | "));
+      const s=normImportacionTDJ(nonEmpty.join(" | "));
       if(!s)break;
       if(/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|OBSERVACIONES|TOTAL ENDOSO|RESUMEN FINAL)/.test(s))break;
       const tdj=numeroTituloImportacion(r[ixT]);
@@ -2293,9 +2293,9 @@ async function importarExcelTDJ(){
     const file=input.files?.[0]; if(!file)return;
     try{
       const rows=await leerXlsxPrimeraHoja(file);
-      const esLiquidadorNormal = rows.some(r=>/^LIQUIDADOR DE OBLIGACIONES DIAN$/.test(normExcel(r?.filter(Boolean).join(" "))));
+      const esLiquidadorNormal = rows.some(r=>/^LIQUIDADOR DE OBLIGACIONES DIAN$/.test(normImportacionTDJ(r?.filter(Boolean).join(" "))));
       const meta=obtenerMetaExcelRobusta(rows);
-      const getMeta=k=>meta[normExcel(k)]??"";
+      const getMeta=k=>meta[normImportacionTDJ(k)]??"";
       if(!getMeta("NIT")&&!getMeta("RAZON SOCIAL")){
         throw new Error("El archivo no contiene NIT ni razón social reconocibles.");
       }
@@ -2328,7 +2328,7 @@ async function importarExcelTDJ(){
         const o=nuevaObligacion(nuevas.length+1);
 
         // Metadatos específicos de esta obligación.
-        const tipoIdx=idxFila(seg,r=>normExcel(r?.[0])==="TIPO DE LIQUIDACION");
+        const tipoIdx=idxFila(seg,r=>normImportacionTDJ(r?.[0])==="TIPO DE LIQUIDACION");
         if(tipoIdx>=0){
           const v=seg[tipoIdx]||[];
           // El módulo TDJ opera exclusivamente como liquidación privada.
@@ -2339,7 +2339,7 @@ async function importarExcelTDJ(){
           o.fechaProvidenciaDefinitiva=fechaCampoTDJImport(v[1]?.toString().toUpperCase()==="OFICIAL"?seg[tipoIdx+1]?.[2]:"");
         }
 
-        const info=idxFila(seg,r=>normExcel(r?.[0])==="CONCEPTO");
+        const info=idxFila(seg,r=>normImportacionTDJ(r?.[0])==="CONCEPTO");
         if(info>=0){
           const v=seg[info+1]||[];
           o.concepto=upper(v[0]||"");
@@ -2359,17 +2359,17 @@ async function importarExcelTDJ(){
           let tipoTasaImportada=upper(v[8]||"");
           if(!tipoTasaImportada){
             const numeroObligacion=nuevas.length+1;
-            // RECUPERACIÓN ROBUSTA: normExcel elimina tildes, por lo que
+            // RECUPERACIÓN ROBUSTA: normImportacionTDJ elimina tildes, por lo que
             // "OBLIGACIÓN" llega como "OBLIGACION". La búsqueda anterior
             // comparaba contra la versión acentuada y nunca encontraba el
             // bloque canónico "RECUPERACIÓN COMPLETA".
             for(let ri=0;ri<rows.length&&!tipoTasaImportada;ri++){
               const marca=rows[ri]||[];
-              const marcaNormalizada=normExcel(marca[0]);
+              const marcaNormalizada=normImportacionTDJ(marca[0]);
               if(marcaNormalizada!=="OBLIGACION" || Number(marca[1])!==numeroObligacion)continue;
               for(let rj=ri+1;rj<Math.min(rows.length,ri+12);rj++){
                 const encabezado=rows[rj]||[];
-                const nhRec=encabezado.map(normExcel);
+                const nhRec=encabezado.map(normImportacionTDJ);
                 const ixTipoRec=nhRec.findIndex(x=>x==="TIPO DE TASA");
                 if(ixTipoRec<0)continue;
                 const valorRecuperado=upper(rows[rj+1]?.[ixTipoRec]||"");
@@ -2383,7 +2383,7 @@ async function importarExcelTDJ(){
           if(!tipoTasaImportada){
             let numeroObligacion=nuevas.length+1;
             for(let ri=0;ri<rows.length&&!tipoTasaImportada;ri++){
-              const encabezado=(rows[ri]||[]).map(normExcel);
+              const encabezado=(rows[ri]||[]).map(normImportacionTDJ);
               if(encabezado[0]!=="DATOS OBLIGACION" || !encabezado.includes("TIPO DE TASA"))continue;
               const ixTipoRec=encabezado.findIndex(x=>x==="TIPO DE TASA");
               const valorRecuperado=upper(rows[ri+1]?.[ixTipoRec]||"");
@@ -2391,7 +2391,7 @@ async function importarExcelTDJ(){
                 // Si el archivo contiene varias obligaciones, el orden de
                 // los bloques canónicos coincide con el orden de importación.
                 // Contamos cuántos bloques "DATOS OBLIGACION" preceden a este.
-                const ordenBloque=rows.slice(0,ri).filter(row=>normExcel(row?.[0])==="DATOS OBLIGACION").length+1;
+                const ordenBloque=rows.slice(0,ri).filter(row=>normImportacionTDJ(row?.[0])==="DATOS OBLIGACION").length+1;
                 if(ordenBloque===numeroObligacion)tipoTasaImportada=valorRecuperado;
               }
             }
@@ -2402,21 +2402,21 @@ async function importarExcelTDJ(){
 
         // Vencimientos: se leen únicamente hasta la siguiente sección.
         const vh=idxFila(seg,r=>{
-          const n=(r||[]).map(normExcel);
+          const n=(r||[]).map(normImportacionTDJ);
           return (n.includes("Nº")||n.includes("NO")||n.includes("N")) &&
                  (n.includes("PERIODO")||n.includes("PERIODO / CUOTA")) &&
                  n.includes("FECHA VENCIMIENTO") &&
                  (n.includes("IMPUESTO DECLARADO")||n.includes("IMPORTE / IMPUESTO"));
         });
         if(vh>=0){
-          const h=seg[vh]||[], nh=h.map(normExcel);
+          const h=seg[vh]||[], nh=h.map(normImportacionTDJ);
           const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
           const ixP=nh.findIndex(x=>x==="PERIODO"||x==="PERIODO / CUOTA");
           const ixF=nh.findIndex(x=>x==="FECHA VENCIMIENTO");
           const ixI=nh.findIndex(x=>x==="IMPUESTO DECLARADO"||x==="IMPORTE / IMPUESTO");
           const arr=[];
           for(let i=vh+1;i<seg.length;i++){
-            const r=seg[i]||[], s=normExcel(r.filter(Boolean).join(" | "));
+            const r=seg[i]||[], s=normImportacionTDJ(r.filter(Boolean).join(" | "));
             if(!s)continue;
             if(/^(PAGOS REGISTRADOS|IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|OBLIGACION \d+ -)/.test(s))break;
             const f=fechaCampoTDJImport(r[ixF]), imp=truncarValorEntero(numExcel(r[ixI]));
@@ -2433,7 +2433,7 @@ async function importarExcelTDJ(){
         // separan inmediatamente y se convierten en títulos. Así no quedan
         // duplicados cuando además existe la sección TÍTULOS / TDJ.
         const ph=idxFila(seg,r=>{
-          const n=(r||[]).map(normExcel);
+          const n=(r||[]).map(normImportacionTDJ);
           const fecha=n.find(x=>x==="FECHA"||x==="FECHA PAGO"||x==="FECHA PAGO / CORTE"||x==="FECHA DE PAGO"||x==="FECHA DE PAGO / CORTE");
           const valor=n.find(x=>x==="VALOR"||x==="VALOR PAGO"||x==="VALOR DEL PAGO"||x==="VALOR PAGADO");
           const recibo=n[1]==="RECIBO"||n[1]==="RECIBO Nº"||n[1]==="RECIBO N";
@@ -2441,7 +2441,7 @@ async function importarExcelTDJ(){
         });
         o.pagos=[];
         if(ph>=0){
-          const h=seg[ph]||[], nh=h.map(normExcel);
+          const h=seg[ph]||[], nh=h.map(normImportacionTDJ);
           const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N");
           const ixT=nh.findIndex(x=>x==="TDJ Nº"||x==="TDJ"||x==="TITULO"||x==="TÍTULO");
           const ixR=nh.findIndex(x=>x==="RECIBO Nº"||x==="RECIBO"||x==="RECIBO NÚMERO");
@@ -2450,7 +2450,7 @@ async function importarExcelTDJ(){
           const ixTipo=nh.findIndex(x=>x==="TIPO"||x==="TIPO DE PAGO");
           const ixObs=nh.findIndex(x=>x==="OBSERVACIÓN"||x==="OBSERVACION");
           for(let i=ph+1;i<seg.length;i++){
-            const r=seg[i]||[], srow=normExcel(r.filter(Boolean).join(" | "));
+            const r=seg[i]||[], srow=normImportacionTDJ(r.filter(Boolean).join(" | "));
             if(!srow)continue;
             if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|TITULOS \/ TDJ|TITULOS TDJ|RECUPERACION COMPLETA|FIN RECUPERACION|OBLIGACION \d+ -)/.test(srow))break;
             if(ixN>=0&&!/^\d+$/.test(String(r[ixN]??"").trim()))continue;
@@ -2475,7 +2475,7 @@ async function importarExcelTDJ(){
       // TÍTULOS TDJ del bloque de RECUPERACIÓN COMPLETA. Todos se deduplican
       // por TDJ + fecha + valor para evitar duplicados del mismo título.
       const esCabeceraTitulos=(r)=>{
-        const n=(r||[]).map(normExcel);
+        const n=(r||[]).map(normImportacionTDJ);
         return n[0]==="Nº" &&
           (n[1]==="TDJ"||n[1]==="TDJ Nº"||n[1]==="TITULO"||n[1]==="TITULO Nº") &&
           n[2]==="FECHA" &&
@@ -2489,7 +2489,7 @@ async function importarExcelTDJ(){
         if(esCabeceraTitulos(rows[i]))cabecerasTitulos.push(i);
       }
       cabecerasTitulos.forEach(hh=>{
-        const h=rows[hh]||[], nh=h.map(normExcel);
+        const h=rows[hh]||[], nh=h.map(normImportacionTDJ);
         const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
         const ixF=nh.findIndex(x=>x==="FECHA");
         const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO");
@@ -2498,7 +2498,7 @@ async function importarExcelTDJ(){
         for(let i=hh+1;i<rows.length;i++){
           const r=rows[i]||[];
           const nonEmpty=r.filter(x=>String(x??"").trim()!=="");
-          const s=normExcel(nonEmpty.join(" | "));
+          const s=normImportacionTDJ(nonEmpty.join(" | "));
           if(!s)break;
           if(esFinTablaTitulos(s))break;
           if(ixT<0||ixF<0||ixV<0)continue;
