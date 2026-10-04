@@ -32,3 +32,9 @@ console.log("REGRESIÓN EXCEDENTES TDJ POR OBLIGACIÓN OK");
 assert.match(tdjSrc,/d\.pago\?\.esTDJ!==true/);
 assert.match(tdjSrc,/!String\(d\.pago\?\.tdj\|\|""\)\.trim\(\)/);
 console.log("REGRESIÓN EXCEDENTES TDJ EXCLUYE ENDOSO DE TÍTULOS OK");
+
+assert.match(tdjSrc,/function valorDisponiblePagoPDFTDJ\(d,o,resultado\)/);
+assert.match(tdjSrc,/Number\(a\.valorAntes\|\|0\)/);
+assert.match(tdjSrc,/const valorDisponible=valorDisponiblePagoPDFTDJ\(d,o,resultado\)/);
+assert.match(tdjSrc,/valor:valorDisponible/);
+console.log("REGRESIÓN VALOR DISPONIBLE TDJ POR OBLIGACIÓN OK");
