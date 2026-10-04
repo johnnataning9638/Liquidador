@@ -1,13 +1,13 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.106";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.106";
-import {importarDatosInteligente} from "./importador.js?v=16.33.106";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.106";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.106";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.106";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.106";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.106";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.106";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.106";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.107";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.107";
+import {importarDatosInteligente} from "./importador.js?v=16.33.107";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.107";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.107";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.107";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.107";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.107";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.107";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.107";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -2241,6 +2241,46 @@ function leerVencimientosExcel(rows,headerIdx){
   return out;
 }
 
+function leerTitulosTDJRegistradosExcel(rows){
+  const encontrados=[];
+  const vistos=new Set();
+  const esCabecera=(r)=>{
+    const n=(r||[]).map(normExcel);
+    return n[0]==="Nº" &&
+      (n[1]==="TDJ"||n[1]==="TDJ Nº"||n[1]==="TITULO"||n[1]==="TITULO Nº") &&
+      n[2]==="FECHA" &&
+      (n[3]==="VALOR"||n[3]==="VALOR ORIGINAL"||n[3]==="VALOR DEL TITULO");
+  };
+  for(let h=0;h<rows.length;h++){
+    if(!esCabecera(rows[h]))continue;
+    const header=rows[h]||[], nh=header.map(normExcel);
+    const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
+    const ixF=nh.findIndex(x=>x==="FECHA");
+    const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO");
+    const ixO=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
+    for(let i=h+1;i<rows.length;i++){
+      const r=rows[i]||[];
+      const nonEmpty=r.filter(v=>String(v??"").trim()!=="");
+      const s=normExcel(nonEmpty.join(" | "));
+      if(!s)break;
+      if(/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|OBSERVACIONES|TOTAL ENDOSO|RESUMEN FINAL)/.test(s))break;
+      const tdj=numeroTituloImportacion(r[ixT]);
+      const fecha=fechaTituloImportacion(r[ixF]);
+      const valor=valorTituloImportacion(r[ixV]);
+      if(!tdj||!fecha||!(valor>0))continue;
+      const key=`${tdj}|${fecha}|${valor}`;
+      if(vistos.has(key))continue;
+      vistos.add(key);
+      encontrados.push({
+        tdj,fecha,valor,
+        observacion:upper(ixO>=0?r[ixO]||"":"")
+      });
+    }
+    if(encontrados.length)return encontrados;
+  }
+  return encontrados;
+}
+
 async function importarExcelTDJ(){
   // IMPORTACIÓN DE RECUPERACIÓN COMPLETA:
   // Un Excel generado por este módulo es un respaldo de trabajo. La importación
@@ -2474,6 +2514,26 @@ async function importarExcelTDJ(){
           }
         }
       });
+
+      // SI EXISTE LA TABLA CANÓNICA "TÍTULOS / TDJ — TÍTULOS REGISTRADOS",
+      // ESTA ES LA FUENTE DE VERDAD. EVITA QUE SECCIONES HISTÓRICAS DE PAGOS,
+      // ENDOSOS O RECUPERACIÓN COMPLETA GENEREN UNA FILA PARCIAL PARA EL
+      // PRIMER TÍTULO. TODOS LOS TÍTULOS SE LEEN POR TDJ + FECHA + VALOR.
+      const titulosCanonicos=leerTitulosTDJRegistradosExcel(rows);
+      if(titulosCanonicos.length){
+        nuevosTitulos.length=0;
+        const vistosCanonicos=new Set();
+        titulosCanonicos.forEach((t,i)=>{
+          const key=`${t.tdj}|${t.fecha}|${t.valor}`;
+          if(vistosCanonicos.has(key))return;
+          vistosCanonicos.add(key);
+          nuevosTitulos.push({
+            id:uid("TDJ"),numero:nuevosTitulos.length+1,
+            tdj:t.tdj,fecha:t.fecha,valor:t.valor,
+            observacion:t.observacion||""
+          });
+        });
+      }
 
       if(!nuevas.length&&!nuevosTitulos.length){
         throw new Error("No se encontraron obligaciones ni títulos reconocibles.");
