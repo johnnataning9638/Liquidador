@@ -235,9 +235,29 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const especial=this.tasaEspecial(pago.tipo,pago.fecha);
       const actualizacionSancionPago={aplicada:false,fechaPago:pago.fecha,saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion),actualizacionTotal:0,tramos:[],eventos:[]};
       const intCalc=calcularInteresesAntesPago(pago);
-      // La sanción solo participa en la imputación cuando el pago/Título
-      // tiene fecha igual o posterior a la fecha de sanción.
-      const sancionHabilitadaPorFecha=!fechaSancionReal || pago.fecha>=fechaSancionReal;
+      // REGLA DE IMPUTACIÓN DE SANCIÓN — RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS):
+      // La sanción solo puede participar cuando el funcionario indicó
+      // TIENE SANCIÓN = SÍ. Para obligaciones tradicionales, el punto de
+      // corte del pago es la FECHA DE VENCIMIENTO PARA DECLARAR = CUOTA 1.
+      // Los pagos anteriores a cuota 1 no reciben componente de sanción,
+      // aunque la presentación posterior haya sido extemporánea.
+      //
+      // RÉGIMEN SIMPLE (4, 5 Y 6 CUOTAS): esta nueva regla no se aplica.
+      // Se conserva la lógica existente de SIMPLE.
+      const cantidadCuotas=saldosVto.length;
+      const esSimplePorAnticipos=cantidadCuotas>=4&&cantidadCuotas<=6;
+      const fechaVencimientoDeclarar=fechaISO(
+        saldosVto.find(v=>Number(v.numero)===1)?.fecha || saldosVto[0]?.fecha || ""
+      );
+      const sancionHabilitadaPorFecha=esSimplePorAnticipos
+        ? true
+        : (
+            datos.tieneSancion==="SI"
+            && sancionBaseOriginal>0
+            && Boolean(fechaSancionReal)
+            && Boolean(fechaVencimientoDeclarar)
+            && pago.fecha>=fechaVencimientoDeclarar
+          );
 
       if(!articulo10Seleccionado&&saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
         const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,pago.fecha,{aniosAplicados:[...aniosActualizacionSancionAplicados]});
