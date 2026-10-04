@@ -1,0 +1,81 @@
+name: Fix TDJ text import v3
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch TDJ importer precisely
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('js/tdj.js')
+          s=p.read_text(encoding='utf-8')
+          old='''    if(antes.length&&despues.length){
+      tdjCell=antes[antes.length-1]; valCell=despues[0];
+    }else{'''
+          new='''    if(antes.length&&despues.length){
+      // En las consultas DIAN existe "Repetición"=1 antes de la fecha.
+      // El TDJ real es el identificador numérico más largo de esa zona.
+      tdjCell=antes.slice().sort((a,b)=>String(b.n).length-String(a.n).length || b.n-a.n)[0];
+      valCell=despues.find(x=>x.tieneSeparadorMonetario)||despues[0];
+    }else{'''
+          if old not in s: raise SystemExit('No se encontró el bloque de selección TDJ esperado.')
+          s=s.replace(old,new,1)
+          old2='''      const key=tdj+"|"+fecha+"|"+valor;
+      if(!mapa.has(key))mapa.set(key,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});'''
+          new2='''      const key=tdj+"|"+fecha+"|"+valor;
+      if(mapa.has(key))continue;
+      // Si ya existe el mismo título por fecha/valor con un identificador corto
+      // (por ejemplo "1"), y llega el documento completo, se reemplaza el corto.
+      const similares=[...mapa.entries()].filter(([,v])=>v.fecha===fecha&&Number(v.valor)===valor);
+      if(tdj.length>=6){
+        for(const [k,v] of similares){if(v.tdj.length<=3)mapa.delete(k);}
+      }else if(tdj.length<=3 && similares.some(([,v])=>v.tdj.length>=6))continue;
+      mapa.set(key,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});'''
+          if old2 not in s: raise SystemExit('No se encontró el bloque de deduplicación IA esperado.')
+          s=s.replace(old2,new2,1)
+          p.write_text(s,encoding='utf-8')
+          h=Path('titulos.html')
+          hs=h.read_text(encoding='utf-8')
+          hs2=hs.replace('tdj.js?v=16.33.108','tdj.js?v=16.33.111')
+          if hs2==hs: raise SystemExit('No se encontró tdj.js?v=16.33.108 en titulos.html.')
+          h.write_text(hs2,encoding='utf-8')
+          PY
+
+      - name: Test exact DIAN text import
+        shell: bash
+        run: |
+          node --check js/tdj.js
+          grep -q 'tdj.js?v=16.33.111' titulos.html
+          node <<'NODE'
+          const fs=require('fs');const src=fs.readFileSync('js/tdj.js','utf8');
+          const start=src.indexOf('function separarFilaImportacionTDJ('),end=src.indexOf('function importarTitulos(){',start);if(start<0||end<0)throw new Error('No se pudo aislar importador');
+          const chunk=src.slice(start,end),norm=v=>String(v??'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),fechaISO=v=>{const m=String(v??'').trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/);if(!m)return '';let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`},numeroDesdeTexto=v=>Number(String(v??'').replace(/[^0-9-]/g,''))||0,truncarValorEntero=v=>Math.trunc(Number(v)||0),dinero=v=>String(v),upper=v=>String(v??'').trim().toUpperCase(),$=()=>({value:'',hidden:false,textContent:''});
+          const fn=eval(`(function(normImportacionTDJ,fechaISO,numeroDesdeTexto,truncarValorEntero,dinero,upper,$){${chunk};return importarTitulosTDJNuevo;})`)(norm,fechaISO,numeroDesdeTexto,truncarValorEntero,dinero,upper,$);
+          const input=['No.\tDocumento Fuente\tRepetición\tNombre Formato\tFecha Presentacion\tEstado\tClase Documento\tValor Pagado','4911089297230\t1\tRecibo\t5/03/2026\tINICIAL\t\t4.137.000','4911095388931\t1\tRecibo\t18/03/2026\tINICIAL\t\t3.579.000','4911096796139\t1\tRecibo\t21/03/2026\tINICIAL\t\t2.093.000','4911097894062\t1\tRecibo\t26/03/2026\tINICIAL\t\t1.482.000','4911098513361\t1\tRecibo\t30/03/2026\tINICIAL\t\t3.047.000','4911098761609\t1\tRecibo\t31/03/2026\tINICIAL\t\t10.924.000','3004724916099\t1\tIVA\t3/04/2026\tVALIDA/ACTIVA\t\t','4911099029075\t1\tRecibo\t4/04/2026\tINICIAL\t\t2.294.000'].join('\n');
+          const out=fn(input),exp=['4911089297230','4911095388931','4911096796139','4911097894062','4911098513361','4911098761609','4911099029075'];
+          if(JSON.stringify(out.map(x=>x.tdj))!==JSON.stringify(exp)||out.some(x=>x.tdj==='1'))throw new Error('Falló importación: '+JSON.stringify(out));
+          console.log('PASS: 7 TDJ completos; ningún TDJ=1.');
+          NODE
+
+      - name: Commit and clean temporary workflows
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/fix-tdj-import.yml .github/workflows/fix-tdj-import-v2.yml .github/workflows/fix-tdj-import-v3.yml fix-trigger.txt fix-trigger-v2.txt
+          git add js/tdj.js titulos.html .github/workflows/fix-tdj-import.yml .github/workflows/fix-tdj-import-v2.yml .github/workflows/fix-tdj-import-v3.yml fix-trigger.txt fix-trigger-v2.txt
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: corregir importación TDJ DIAN normal e IA"
+          git push
