@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.101";
-import {importarDatosInteligente} from "./importador.js?v=16.33.101";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.101";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.101";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.101";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.101";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.101";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.101";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.101";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.101";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.101";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.101";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.101";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.101";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.102";
+import {importarDatosInteligente} from "./importador.js?v=16.33.102";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.102";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.102";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.102";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.102";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.102";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.102";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.102";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.102";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.102";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.102";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.102";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.102";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -1433,7 +1433,7 @@ function bloquePdfSinPagos(d,r){
     const hasta=t.hasta||t.fechaPago||primer.hasta||r.fechaCorte||"";
     const dias=t.dias!=null?Number(t.dias):normales.reduce((a,z)=>a+Number(z.dias||0),0);
     const tasa=t.tasa!=null?Number(t.tasa):(primer.tasa==null?null:Number(primer.tasa));
-    const capital=t.base!=null?Number(t.base):(t.capitalBase!=null?Number(t.capitalBase):Number(vto?.saldo??vto?.impuesto??0));
+    const capital=(Number(t.base||0)>0?Number(t.base):(Number(t.capitalBase||0)>0?Number(t.capitalBase):(Number(vto?.saldo??vto?.impuesto??0)>0?Number(vto?.saldo??vto?.impuesto??0):Number(r.impuesto||0))));
     const interes=t.interes??t.valor??normales.reduce((a,z)=>a+Number(z.valor||0),0);
     const metodologia=t.metodologia||primer.metodologia||"INTERÉS CALCULADO";
     return `<tr><td>${escPdf(t.vto||t.cuota||vto?.numero||i+1)}</td><td>${dinero(capital)}</td><td>${escPdf(fechaVisible(desde))}</td><td>${escPdf(fechaVisible(hasta))}</td><td>${dias}</td><td>${tasa==null?"—":(tasa*100).toFixed(3)+"%"}</td><td>${dinero(interes)}</td><td>${escPdf(metodologia)}</td></tr>`;
