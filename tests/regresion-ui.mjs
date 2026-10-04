@@ -17,3 +17,8 @@ assert.match(tdj,/e\.preventDefault\(\);\s*if\(impuesto\)\{impuesto\.focus/);
 assert.match(html,/js\/app\.js\?v=16\.33\.101/);
 assert.match(titulos,/js\/tdj\.js\?v=16\.33\.101/);
 console.log("REGRESION UI PDF OFICIAL + TAB TDJ OK — 8 ASERCIONES");
+
+assert.match(app,/function resumenExcedentesPagosPdf\(r\)/);
+assert.match(app,/TOTAL EXCEDENTES/);
+assert.match(app,/const resumenExcedentes=resumenExcedentesPagosPdf\(r\)/);
+console.log("REGRESIÓN EXCEDENTES FINALES DE PAGOS OK");
