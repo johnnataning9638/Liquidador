@@ -1,13 +1,13 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.104";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.104";
-import {importarDatosInteligente} from "./importador.js?v=16.33.104";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.104";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.104";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.104";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.104";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.104";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.104";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.104";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.105";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.105";
+import {importarDatosInteligente} from "./importador.js?v=16.33.105";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.105";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.105";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.105";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.105";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.105";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.105";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.105";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1984,6 +1984,24 @@ function bloqueExcedentesPorObligacionTDJPdf(o,detalles){
   return `<section class="pdf-bloque pdf-excedentes-obligacion"><h2>EXCEDENTES DE PAGOS — OBLIGACIÓN ${escPdf(o?.numero||"")}</h2><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES DE LA OBLIGACIÓN</th><th>${dinero(total)}</th></tr></tfoot></table></section>`;
 }
 
+function valorDisponiblePagoPDFTDJ(d,o,resultado){
+  const p=d?.pago||{};
+  const esTDJ=p.esTDJ===true || String(p.tdj||"").trim()!=="";
+  if(!esTDJ)return null;
+  const titulo=String(p.tdj||"").trim();
+  const fecha=fechaISO(p.fecha)||"";
+  const obligacionId=o?.id||"";
+  const traz=(resultado?.resumenTitulos||[]).flatMap(rt=>Array.isArray(rt.trazabilidad)?rt.trazabilidad:[]);
+  const candidatos=traz.filter(a=>{
+    if(String(a.obligacionId||"")!==String(obligacionId))return false;
+    if(titulo && String(a.titulo||"").trim()!==titulo)return false;
+    if(fecha && fechaISO(a.fecha)!==fecha)return false;
+    return Number(a.valorAntes||0)>0;
+  });
+  const encontrado=candidatos[0];
+  return encontrado ? Number(encontrado.valorAntes||0) : null;
+}
+
 function claveAplicacionTDJPDF(a){
   return [a?.tituloId||a?.titulo||"",a?.obligacionId||"",a?.fecha||"",a?.valorAntes??"",a?.aplicado??""].join("|");
 }
@@ -2032,11 +2050,15 @@ async function exportarPdfTDJ(){
       const o=x.obligacion;
       const detalles=Array.isArray(x.detalleCronologicoFinal)?x.detalleCronologicoFinal:[];
       detalles.forEach((d,j)=>{
+        const valorDisponible=valorDisponiblePagoPDFTDJ(d,o,resultado);
+        const dPdf=valorDisponible!=null
+          ? {...d,pago:{...(d.pago||{}),valor:valorDisponible}}
+          : d;
         const rSoporte={
           detalle:detalles.slice(0,j+1),
           vencimientos:o.vencimientos||[]
         };
-        paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(d,j,datosPDFTDJ(o,d.pago||{}),rSoporte)}</section>`);
+        paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(dPdf,j,datosPDFTDJ(o,dPdf.pago||{}),rSoporte)}</section>`);
       });
       const bloqueExcedentes=bloqueExcedentesPorObligacionTDJPdf(o,detalles);
       if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja">${bloqueExcedentes}</section>`);
