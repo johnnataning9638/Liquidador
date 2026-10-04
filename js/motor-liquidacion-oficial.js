@@ -256,7 +256,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
             && sancionBaseOriginal>0
             && Boolean(fechaSancionReal)
             && Boolean(fechaVencimientoDeclarar)
-            && pago.fecha>=fechaVencimientoDeclarar
+            && pago.fecha>fechaVencimientoDeclarar
           );
 
       if(!articulo10Seleccionado&&saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
