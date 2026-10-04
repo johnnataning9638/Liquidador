@@ -1,0 +1,82 @@
+name: Apply TDJ document-source fix
+on:
+  push:
+    branches:
+      - fix/tdj-doc-source-10-15
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/tdj-doc-source-10-15
+      - name: Patch TDJ importer
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('js/tdj.js')
+          s=p.read_text(encoding='utf-8')
+          imp='import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.109";'
+          marker='import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.107";'
+          if imp not in s:
+              if marker not in s: raise SystemExit('No se encontró punto de inserción')
+              s=s.replace(marker,marker+'\n'+imp,1)
+          start=s.find('function importarTitulos(){')
+          end=s.find('\n\nfunction actualizarIndicadoresIA()',start)
+          if start<0 or end<0: raise SystemExit('No se encontró bloque de importación TDJ')
+          nuevo='''function importarTitulos(){
+            const text=$("importarTitulosTexto").value.trim();
+            if(!text)return alert("Pegue primero los datos de los títulos.");
+            try{
+              const encontrados=extraerRegistrosTDJTexto(text);
+              if(!encontrados.length)throw new Error("No se encontraron registros TDJ válidos. El documento fuente debe tener entre 10 y 15 dígitos, además de fecha y valor.");
+              titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
+              ordenarTitulosCronologicamente();
+              renderTitulos();
+              $("importarTitulosTexto").value="";
+              $("resultadoImportacionTitulos").textContent=`Se reconocieron ${titulos.length} título(s)/TDJ.`;
+            }catch(e){console.error("IMPORTACIÓN TDJ",e);alert(e.message||"No fue posible reconocer los títulos/TDJ.");}
+          }
+
+          async function importarTitulosIA(){
+            const text=$("importarTitulosTexto").value.trim();
+            if(!text)return alert("Pegue primero los datos de los títulos.");
+            try{
+              setStatus("IA DIAN — VALIDANDO TÍTULOS...","loading");
+              let encontrados=extraerRegistrosTDJTexto(text);
+              let ai=null;
+              if(!encontrados.length){
+                ai=await interpretarPagosConIA(text);
+                const candidatos=(ai?.pagos||[]).map(p=>({tdj:String(p?.tdj||p?.recibo||"").trim(),fecha:fechaISO(p?.fecha)||"",valor:truncarValorEntero(p?.valor||0)})).filter(p=>esDocumentoFuenteTDJ(p.tdj)&&p.fecha&&p.valor>0);
+                const mapa=new Map();
+                for(const p of candidatos){const key=`${p.tdj}|${p.fecha}|${p.valor}`;if(!mapa.has(key))mapa.set(key,p);}
+                encontrados=[...mapa.values()];
+              }
+              if(!encontrados.length)throw new Error("La IA no reconoció registros TDJ válidos. El documento fuente debe tener entre 10 y 15 dígitos, además de fecha y valor.");
+              encontrados=encontrados.filter(p=>esDocumentoFuenteTDJ(p.tdj)&&p.fecha&&Number(p.valor)>0);
+              titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:String(p.tdj),fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
+              ordenarTitulosCronologicamente();
+              renderTitulos();
+              $("importarTitulosTexto").value="";
+              $("resultadoImportacionTitulos").textContent=`IA DIAN reconoció ${titulos.length} título(s)/TDJ.`;
+              setStatus(`IA DIAN — TÍTULOS VALIDADOS ${Math.round(Number(ai?.confidence||1)*100)}%`,"ok");
+            }catch(e){setStatus("LISTO","ok");console.error("IMPORTACIÓN IA TDJ",e);alert(e.message||"No fue posible procesar los títulos con IA.");}
+          }'''
+          s=s[:start]+nuevo+s[end:]
+          p.write_text(s,encoding='utf-8')
+          h=Path('titulos.html'); hs=h.read_text(encoding='utf-8').replace('js/tdj.js?v=16.33.108','js/tdj.js?v=16.33.109'); h.write_text(hs,encoding='utf-8')
+          Path('tests/tdj-importador-documento-fuente.mjs').write_text('''import {extraerRegistrosTDJTexto,esDocumentoFuenteTDJ} from "../js/tdj-importador.js";\nconst datos=`No. Documento Fuente\\tRepetición\\tNombre Formato\\tFecha Presentacion\\tEstado\\tClase Documento\\tValor Pagado\\n4911089297230\\t1\\tRecibo Oficial\\t5/03/2026\\tINICIAL\\t\\t4.137.000\\n4911095388931\\t1\\tRecibo Oficial\\t18/03/2026\\tINICIAL\\t\\t3.579.000\\n4911096796139\\t1\\tRecibo Oficial\\t21/03/2026\\tINICIAL\\t\\t2.093.000\\n4911097894062\\t1\\tRecibo Oficial\\t26/03/2026\\tINICIAL\\t\\t1.482.000\\n4911098513361\\t1\\tRecibo Oficial\\t30/03/2026\\tINICIAL\\t\\t3.047.000\\n4911098761609\\t1\\tRecibo Oficial\\t31/03/2026\\tINICIAL\\t\\t10.924.000\\n3004724916099\\t1\\tIVA\\t3/04/2026\\tVALIDA/ACTIVA\\t\\t\\n4911099029075\\t1\\tRecibo Oficial\\t4/04/2026\\tINICIAL\\t\\t2.294.000`;\nconst r=extraerRegistrosTDJTexto(datos);\nif(r.length!==7)throw new Error(`Se esperaban 7 registros con valor, llegaron ${r.length}`);\nif(r.some(x=>x.tdj.length<10||x.tdj.length>15||x.tdj==='1'))throw new Error('Documento fuente inválido');\nif(r[0].tdj!=="4911089297230"||r[0].fecha!=="2026-03-05"||r[0].valor!==4137000)throw new Error('Primer registro incorrecto');\nif(esDocumentoFuenteTDJ('1')||esDocumentoFuenteTDJ('1234567890123456')||!esDocumentoFuenteTDJ('4911089297230'))throw new Error('Regla 10-15 incorrecta');\nconsole.log('PASS TDJ: documento fuente 10-15 dígitos; repetición=1 excluida; sin duplicados.');\n''',encoding='utf-8')
+      - name: Run regression test
+        run: node tests/tdj-importador-documento-fuente.mjs
+      - name: Check JavaScript syntax
+        run: node --check js/tdj.js
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tdj.js js/tdj-importador.js titulos.html tests/tdj-importador-documento-fuente.mjs
+          git commit -m "fix: validar documento fuente TDJ entre 10 y 15 digitos" || exit 0
+          git push origin HEAD:fix/tdj-doc-source-10-15
