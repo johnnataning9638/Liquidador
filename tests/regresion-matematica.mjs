@@ -86,7 +86,7 @@ for (const deuda of [
 // TDJ <= $1.000: prioridad absoluta a intereses, sin redondearlo artificialmente a $1.000.
 const tdj157 = motor().calcular(obligation({
   count: 1,
-  paymentDate: "2026-01-03",
+  paymentDate: "2026-01-06",
   paymentValue: 157,
   tdj: true,
   sanction: 30000
@@ -97,7 +97,7 @@ ok("TDJ $157: no se transforma en $1.000", tdj157.detalle[0].aplicado.total === 
 // TDJ $1.000: también conserva el valor exacto cuando hay interés suficiente.
 const tdj1000 = motor().calcular(obligation({
   count: 1,
-  paymentDate: "2026-01-03",
+  paymentDate: "2026-01-06",
   paymentValue: 1000,
   tdj: true,
   sanction: 30000
