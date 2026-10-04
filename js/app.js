@@ -1433,7 +1433,7 @@ function bloquePdfSinPagos(d,r){
     const hasta=t.hasta||t.fechaPago||primer.hasta||r.fechaCorte||"";
     const dias=t.dias!=null?Number(t.dias):normales.reduce((a,z)=>a+Number(z.dias||0),0);
     const tasa=t.tasa!=null?Number(t.tasa):(primer.tasa==null?null:Number(primer.tasa));
-    const capital=t.base!=null?Number(t.base):(t.capitalBase!=null?Number(t.capitalBase):Number(vto?.saldo??vto?.impuesto??0));
+    const capital=(Number(t.base||0)>0?Number(t.base):(Number(t.capitalBase||0)>0?Number(t.capitalBase):(Number(vto?.saldo??vto?.impuesto??0)>0?Number(vto?.saldo??vto?.impuesto??0):Number(r.impuesto||0))));
     const interes=t.interes??t.valor??normales.reduce((a,z)=>a+Number(z.valor||0),0);
     const metodologia=t.metodologia||primer.metodologia||"INTERÉS CALCULADO";
     return `<tr><td>${escPdf(t.vto||t.cuota||vto?.numero||i+1)}</td><td>${dinero(capital)}</td><td>${escPdf(fechaVisible(desde))}</td><td>${escPdf(fechaVisible(hasta))}</td><td>${dias}</td><td>${tasa==null?"—":(tasa*100).toFixed(3)+"%"}</td><td>${dinero(interes)}</td><td>${escPdf(metodologia)}</td></tr>`;
