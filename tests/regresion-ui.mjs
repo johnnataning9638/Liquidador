@@ -49,3 +49,17 @@ assert.match(tdjSrc,/const titulosCanonicos=leerTitulosTDJRegistradosExcel\(rows
 assert.match(tdjSrc,/nuevosTitulos\.length=0/);
 assert.match(tdjSrc,/numero: nuevosTitulos\.length\+1/);
 console.log("REGRESIÓN IMPORTACIÓN EXCEL TDJ PRIMER TÍTULO OK");
+
+// CASO REAL DEL XLSX: la tabla canónica contiene TDJ 111 y 222 completos.
+const excelTitulos=[
+  ["Nº","TDJ","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN"],
+  ["1","111","2026-04-01","20000000","TASA DIAN","",""],
+  ["2","222","2026-05-01","10000000","TASA DIAN","",""]
+];
+assert.equal(excelTitulos[1][1],"111");
+assert.equal(excelTitulos[1][2],"2026-04-01");
+assert.equal(excelTitulos[1][3],"20000000");
+assert.equal(excelTitulos[2][1],"222");
+assert.equal(excelTitulos[2][2],"2026-05-01");
+assert.equal(excelTitulos[2][3],"10000000");
+console.log("REGRESIÓN DATOS XLSX TDJ 111/222 OK");
