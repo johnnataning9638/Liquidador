@@ -1,13 +1,13 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.55";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
-import {importarDatosInteligente} from "./importador.js?v=16.33.99";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.45";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.45";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.45";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.45";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.45";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.55";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.100";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.100";
+import {importarDatosInteligente} from "./importador.js?v=16.33.100";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.100";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.100";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.100";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.100";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.100";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.100";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.100";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -200,7 +200,7 @@ function conTiempoLimite(promise,ms=6000){return Promise.race([promise,new Promi
 async function cargarSupabase(){
   if(!SUPABASE_URL||!SUPABASE_ANON_KEY||SUPABASE_URL.includes("PEGAR_AQUI"))return;
   try{
-    const mod=await conTiempoLimite(import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"),6000);
+    const mod=await conTiempoLimite(import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm"),6000);
     supabaseClient=mod.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     const [tr,ir]=await Promise.all([
       conTiempoLimite(supabaseClient.from("tasas_liquidador").select("fecha_inicio,fecha_fin,tasa,tipo_tasa,fuente_url,norma,estado").eq("tipo_tasa","TASA DIAN").order("fecha_inicio",{ascending:true}),6000).catch(()=>({data:null})),

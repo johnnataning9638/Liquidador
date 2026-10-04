@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.55";
-import {importarDatosInteligente} from "./importador.js?v=16.33.55";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.39";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.50";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.84";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.39";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.39";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.39";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.39";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.68";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.39";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.39";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.47";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.90";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.100";
+import {importarDatosInteligente} from "./importador.js?v=16.33.100";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.100";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.100";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.100";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.100";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.100";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.100";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.100";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.100";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.100";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.100";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.100";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.100";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -62,7 +62,7 @@ async function iniciarSupabase(){
   try{
     // Supabase se carga de forma diferida para que una caída o bloqueo del CDN
     // nunca impida iniciar el liquidador con sus parámetros locales.
-    const modulo=await conTiempoLimite(import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"),6000);
+    const modulo=await conTiempoLimite(import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm"),6000);
     return modulo.createClient(url,key);
   }catch(e){
     console.error("No se pudo cargar/inicializar Supabase. Se continuará con parámetros locales.",e);
