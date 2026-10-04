@@ -28,3 +28,7 @@ assert.match(tdjSrc,/function bloqueExcedentesPorObligacionTDJPdf\(o,detalles\)/
 assert.match(tdjSrc,/TOTAL EXCEDENTES DE LA OBLIGACIÓN/);
 assert.match(tdjSrc,/bloqueExcedentesPorObligacionTDJPdf\(o,detalles\)/);
 console.log("REGRESIÓN EXCEDENTES TDJ POR OBLIGACIÓN OK");
+
+assert.match(tdjSrc,/d\.pago\?\.esTDJ!==true/);
+assert.match(tdjSrc,/!String\(d\.pago\?\.tdj\|\|""\)\.trim\(\)/);
+console.log("REGRESIÓN EXCEDENTES TDJ EXCLUYE ENDOSO DE TÍTULOS OK");
