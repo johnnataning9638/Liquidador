@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {reconstruirTitulosTDJDesdeFilas} from "../js/importador-tdj.js";
 
+// Fixture equivalente a la estructura real del Excel compartido por el usuario.
 const filas=[
   ["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO / CORTE","VALOR PAGO","TIPO"],
   [1,"","4911089297230","2026-03-05",4137000,"TASA DIAN"],
