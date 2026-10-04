@@ -1,0 +1,50 @@
+name: TDJ importer correction v4
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch importer
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('js/tdj.js')
+          s=p.read_text(encoding='utf-8')
+          a='''    if(antes.length&&despues.length){
+      tdjCell=antes[antes.length-1]; valCell=despues[0];
+    }else{'''
+          b='''    if(antes.length&&despues.length){
+      tdjCell=antes.slice().sort((a,b)=>String(b.n).length-String(a.n).length || b.n-a.n)[0];
+      valCell=despues.find(x=>x.tieneSeparadorMonetario)||despues[0];
+    }else{'''
+          assert a in s
+          s=s.replace(a,b,1)
+          a='''      const key=tdj+"|"+fecha+"|"+valor;
+      if(!mapa.has(key))mapa.set(key,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});'''
+          b='''      const key=tdj+"|"+fecha+"|"+valor;
+      if(mapa.has(key))continue;
+      const similares=[...mapa.entries()].filter(([,v])=>v.fecha===fecha&&Number(v.valor)===valor);
+      if(tdj.length>=6){for(const [k,v] of similares){if(v.tdj.length<=3)mapa.delete(k);}}
+      else if(tdj.length<=3 && similares.some(([,v])=>v.tdj.length>=6))continue;
+      mapa.set(key,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});'''
+          assert a in s
+          s=s.replace(a,b,1)
+          p.write_text(s,encoding='utf-8')
+          h=Path('titulos.html'); x=h.read_text(encoding='utf-8'); y=x.replace('tdj.js?v=16.33.108','tdj.js?v=16.33.111'); assert x!=y; h.write_text(y,encoding='utf-8')
+          PY
+          node --check js/tdj.js
+          grep -q 'tdj.js?v=16.33.111' titulos.html
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/fix-tdj-import.yml .github/workflows/fix-tdj-import-v2.yml .github/workflows/fix-tdj-import-v3.yml .github/workflows/fix-tdj-import-v4.yml fix-trigger.txt fix-trigger-v2.txt fix-trigger-v3.txt fix-trigger-v3b.txt
+          git add -A
+          git diff --cached --quiet || (git commit -m "fix: corregir importación TDJ DIAN normal e IA" && git push)
