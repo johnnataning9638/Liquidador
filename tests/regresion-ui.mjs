@@ -38,3 +38,8 @@ assert.match(tdjSrc,/Number\(a\.valorAntes\|\|0\)/);
 assert.match(tdjSrc,/const valorDisponible=valorDisponiblePagoPDFTDJ\(d,o,resultado\)/);
 assert.match(tdjSrc,/valor:valorDisponible/);
 console.log("REGRESIÓN VALOR DISPONIBLE TDJ POR OBLIGACIÓN OK");
+
+assert.match(tdjSrc,/EXCEDENTE":"PAGO EN EXCESO/);
+assert.match(tdjSrc,/const excedenteTDJ=trazaMovimiento/);
+assert.match(tdjSrc,/saldoTitulo\|\|0/);
+console.log("REGRESIÓN EXCEDENTE EN DETALLE PDF TDJ OK");
