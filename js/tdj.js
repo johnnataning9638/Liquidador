@@ -2244,43 +2244,101 @@ function leerVencimientosExcel(rows,headerIdx){
 function leerTitulosTDJRegistradosExcel(rows){
   const encontrados=[];
   const vistos=new Set();
-  const esCabecera=(r)=>{
-    const n=(r||[]).map(normImportacionTDJ);
-    return n[0]==="Nº" &&
-      (n[1]==="TDJ"||n[1]==="TDJ Nº"||n[1]==="TITULO"||n[1]==="TITULO Nº") &&
-      n[2]==="FECHA" &&
-      (n[3]==="VALOR"||n[3]==="VALOR ORIGINAL"||n[3]==="VALOR DEL TITULO");
+
+  const esColumnaNumero=x=>{
+    const s=normImportacionTDJ(x);
+    return s==="Nº"||s==="N°"||s==="NO"||s==="N"||s==="#"||s==="NUMERO"||s==="NUM";
   };
+  const esColumnaTDJ=x=>{
+    const s=normImportacionTDJ(x);
+    return s==="TDJ"||s==="TDJ Nº"||s==="TDJ N°"||s==="NUMERO TDJ"||s==="Nº TDJ"||s==="TITULO"||s==="TITULO Nº"||s==="TITULO N°"||s==="NUMERO TITULO";
+  };
+  const esColumnaFecha=x=>{
+    const s=normImportacionTDJ(x);
+    return s==="FECHA"||s==="FECHA TDJ"||s==="FECHA TITULO"||s==="FECHA DEL TITULO";
+  };
+  const esColumnaValor=x=>{
+    const s=normImportacionTDJ(x);
+    return s==="VALOR"||s==="VALOR TDJ"||s==="VALOR TITULO"||s==="VALOR ORIGINAL"||s==="VALOR DEL TITULO"||s==="VALOR DEL TDJ";
+  };
+  const esColumnaObs=x=>{
+    const s=normImportacionTDJ(x);
+    return s==="OBSERVACION"||s==="OBSERVACIONES";
+  };
+  const esFinTablaTitulos=s=>{
+    const n=normImportacionTDJ(s);
+    return !n ||
+      /^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|OBSERVACIONES|TOTAL ENDOSO|RESUMEN FINAL|TITULOS \/ TDJ — CONTROL FINAL|TITULOS \/ TDJ - CONTROL FINAL)$/.test(n);
+  };
+  const agregar=(r,ixT,ixF,ixV,ixO=-1)=>{
+    const tdj=numeroTituloImportacion(r?.[ixT]);
+    const fecha=fechaTituloImportacion(r?.[ixF]);
+    const valor=valorTituloImportacion(r?.[ixV]);
+    if(!tdj||!fecha||!(valor>0))return false;
+    const key=`${tdj}|${fecha}|${valor}`;
+    if(vistos.has(key))return false;
+    vistos.add(key);
+    encontrados.push({
+      tdj,fecha,valor,
+      observacion:upper(ixO>=0?r?.[ixO]||"":"")
+    });
+    return true;
+  };
+
+  // 1) TABLA CANÓNICA "TÍTULOS / TDJ — TÍTULOS REGISTRADOS".
+  // No dependemos de que la columna Nº sea exactamente la primera ni de que
+  // el archivo use Nº, N°, NO, # o NÚMERO. Esto evita perder el primer registro.
   for(let h=0;h<rows.length;h++){
-    if(!esCabecera(rows[h]))continue;
-    const header=rows[h]||[], nh=header.map(normImportacionTDJ);
-    const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="TITULO"||x==="TITULO Nº");
-    const ixF=nh.findIndex(x=>x==="FECHA");
-    const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO");
-    const ixO=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIÓN");
+    const header=rows[h]||[];
+    const nh=header.map(normImportacionTDJ);
+    const ixT=nh.findIndex(esColumnaTDJ);
+    const ixF=nh.findIndex(esColumnaFecha);
+    const ixV=nh.findIndex(esColumnaValor);
+    const ixO=nh.findIndex(esColumnaObs);
+    const tieneNumero=nh.some(esColumnaNumero);
+    if(ixT<0||ixF<0||ixV<0||(!tieneNumero && ixT>0))continue;
+
+    let encontradosEnBloque=0;
     for(let i=h+1;i<rows.length;i++){
       const r=rows[i]||[];
       const nonEmpty=r.filter(v=>String(v??"").trim()!=="");
       const s=normImportacionTDJ(nonEmpty.join(" | "));
-      if(!s)break;
-      if(/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|OBSERVACIONES|TOTAL ENDOSO|RESUMEN FINAL)/.test(s))break;
-      const tdj=numeroTituloImportacion(r[ixT]);
-      const fecha=fechaTituloImportacion(r[ixF]);
-      const valor=valorTituloImportacion(r[ixV]);
-      if(!tdj||!fecha||!(valor>0))continue;
-      const key=`${tdj}|${fecha}|${valor}`;
-      if(vistos.has(key))continue;
-      vistos.add(key);
-      encontrados.push({
-        tdj,fecha,valor,
-        observacion:upper(ixO>=0?r[ixO]||"":"")
-      });
+      if(esFinTablaTitulos(s))break;
+
+      // Saltar filas que sean otro encabezado, pero NO saltar la primera fila
+      // de datos aunque alguna columna auxiliar esté vacía.
+      if(nonEmpty.length && !fechaTituloImportacion(r[ixF]) && !numeroTituloImportacion(r[ixT]) && !(valorTituloImportacion(r[ixV])>0)){
+        continue;
+      }
+      if(agregar(r,ixT,ixF,ixV,ixO))encontradosEnBloque++;
+    }
+    if(encontradosEnBloque>0)return encontrados;
+  }
+
+  // 2) BLOQUE CANÓNICO DE RECUPERACIÓN "TÍTULOS TDJ".
+  // Este bloque se genera al exportar el TDJ y contiene exactamente:
+  // TÍTULOS TDJ | Nº | TDJ | FECHA | VALOR | OBSERVACIÓN.
+  for(let h=0;h<rows.length;h++){
+    const header=rows[h]||[];
+    const nh=header.map(normImportacionTDJ);
+    const marca=nh[0]||"";
+    if(marca!=="TITULOS TDJ")continue;
+    const ixT=nh.findIndex(esColumnaTDJ);
+    const ixF=nh.findIndex(esColumnaFecha);
+    const ixV=nh.findIndex(esColumnaValor);
+    const ixO=nh.findIndex(esColumnaObs);
+    if(ixT<0||ixF<0||ixV<0)continue;
+    for(let i=h+1;i<rows.length;i++){
+      const r=rows[i]||[];
+      const s=normImportacionTDJ(r.filter(v=>String(v??"").trim()!=="").join(" | "));
+      if(esFinTablaTitulos(s))break;
+      agregar(r,ixT,ixF,ixV,ixO);
     }
     if(encontrados.length)return encontrados;
   }
+
   return encontrados;
 }
-
 async function importarExcelTDJ(){
   // IMPORTACIÓN DE RECUPERACIÓN COMPLETA:
   // Un Excel generado por este módulo es un respaldo de trabajo. La importación
