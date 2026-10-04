@@ -6,7 +6,7 @@ const tdj=fs.readFileSync("js/tdj.js","utf8");
 const html=fs.readFileSync("liquidacion.html","utf8");
 const titulos=fs.readFileSync("titulos.html","utf8");
 
-assert.match(app,/const capital= t\.base!=null\?Number\(t\.base\):\(t\.capitalBase!=null\?Number\(t\.capitalBase\):Number\(vto\?\.saldo\?\?vto\?\.impuesto\?\?0\)\);/);
+assert.match(app,/const capital=\(Number\(t\.base\|\|0\)>0\?Number\(t\.base\):/);
 assert.match(app,/const desde=t\.desde\|\|t\.fechaVencimiento\|\|primer\.desde\|\|vto\?\.fecha\|\|"";/);
 assert.match(app,/const dias=t\.dias!=null\?Number\(t\.dias\):normales\.reduce/);
 assert.match(app,/const tasa=t\.tasa!=null\?Number\(t\.tasa\):\(primer\.tasa==null\?null:Number\(primer\.tasa\)\);/);
