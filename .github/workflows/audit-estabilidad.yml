@@ -28,9 +28,9 @@ jobs:
       - name: Validar versionado de módulos
         run: |
           set -e
-          grep -q 'js/app.js?v=16.33.103' liquidacion.html
-          grep -q 'js/tdj.js?v=16.33.101' titulos.html
-          if grep -R -nF '?v=' js | grep -v '16.33.101'; then
+          grep -q 'js/app.js?v=16.33.104' liquidacion.html
+          grep -q 'js/tdj.js?v=16.33.104' titulos.html
+          if grep -R -nF '?v=' js | grep -v '16.33.104'; then
             echo "ERROR: quedan imports locales con versionado anterior."
             exit 1
           fi
