@@ -1,0 +1,44 @@
+name: Audit de estabilidad del liquidador
+
+on:
+  push:
+    branches: ["main", "audit/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  syntax-and-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validar sintaxis JavaScript
+        run: |
+          set -e
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Validar versionado de módulos
+        run: |
+          set -e
+          grep -q 'js/app.js?v=16.33.100' liquidacion.html
+          grep -q 'js/tdj.js?v=16.33.100' titulos.html
+          if grep -R -nE '\./[^"]+\.js\?v=(16\.33\.(3[0-9]|[0-9]{1,2}))' js; then
+            echo "ERROR: quedan imports locales con versionado anterior."
+            exit 1
+          fi
+
+      - name: Verificar que los motores no tengan cambios funcionales
+        if: github.event_name == 'pull_request'
+        run: |
+          set -e
+          git fetch origin main --quiet
+          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
+            diff="$(git diff --unified=0 origin/main...HEAD -- "$f" || true)"
+            echo "$diff"
+            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\?v='; then
+              echo "ERROR: se detectó un cambio funcional en $f."
+              exit 1
+            fi
+          done
