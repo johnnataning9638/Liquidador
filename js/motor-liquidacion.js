@@ -964,7 +964,7 @@ export class MotorLiquidacion{
             && sancionBaseOriginal>0
             && Boolean(fechaSancionReal)
             && Boolean(fechaVencimientoDeclarar)
-            && pago.fecha>=fechaVencimientoDeclarar
+            && pago.fecha>fechaVencimientoDeclarar
           );
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
