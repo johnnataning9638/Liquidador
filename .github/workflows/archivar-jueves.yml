@@ -1,0 +1,23 @@
+name: Archivar versión jueves 01-10-2026
+
+on:
+  push:
+    branches: ["audit/archive-jueves-2026-10-01"]
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exacto
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Crear ZIP completo
+        run: |
+          zip -r "Liquidador_Jueves_01-10-2026_1b9532b.zip" . -x ".git/*"
+      - name: Publicar ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Liquidador_Jueves_01-10-2026
+          path: Liquidador_Jueves_01-10-2026_1b9532b.zip
+          retention-days: 7
