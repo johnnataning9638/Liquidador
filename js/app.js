@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.102";
-import {importarDatosInteligente} from "./importador.js?v=16.33.102";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.102";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.102";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.102";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.102";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.102";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.102";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.102";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.102";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.102";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.102";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.102";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.102";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.103";
+import {importarDatosInteligente} from "./importador.js?v=16.33.103";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.103";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.103";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.103";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.103";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.103";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.103";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.103";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.103";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.103";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.103";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.103";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.103";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -1030,6 +1030,21 @@ function bloqueSancionDeclaracion1419Pdf(x,d){
   return `<div class="pdf-actualizacion-descripcion"><b>SANCIÓN — ARTÍCULO 10:</b> valor registrado para la declaración presentada: ${dinero(declarada)}. Valor de sanción reconocido antes de aplicar este pago: ${dinero(reconocida)}. El pago conserva la sanción declarada; no se vuelve a reducir al 15 % en esta etapa.</div>`;
 }
 
+function resumenExcedentesPagosPdf(r){
+  const detalles=Array.isArray(r?.detalle)?r.detalle:[];
+  if(!detalles.length)return "";
+  const pagos=detalles.map((x,i)=>({
+    pago:i+1,
+    recibo:String(x?.pago?.recibo||"").trim(),
+    fecha:x?.pago?.fecha||"",
+    valor:Number(x?.pago?.valor||0),
+    excedente:Math.max(0,Number(x?.excedente??x?.aplicado?.excedente??0))
+  }));
+  const total=pagos.reduce((a,x)=>a+x.excedente,0);
+  const filas=pagos.map(x=>`<tr><td>PAGO ${x.pago}</td><td>${escPdf(x.recibo||"—")}</td><td>${escPdf(fechaVisible(x.fecha))}</td><td>${dinero(x.valor)}</td><td>${dinero(x.excedente)}</td></tr>`).join("");
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">CONSOLIDACIÓN FINAL DE EXCEDENTES DE PAGOS</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-excedentes-finales"><h3>EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${filas}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES</th><th>${dinero(total)}</th></tr></tfoot></table></div><div class="pdf-excedente-final"><b>TOTAL EXCEDENTES:</b> <span>${dinero(total)}</span></div><div class="pdf-nota">Nota: el excedente corresponde al valor de cada pago que no fue aplicado a la obligación liquidada.</div></article></div></section>`;
+}
+
 function resumenFinalPdf(r){
   const tramos=[];
   (r.detalle||[]).forEach((x,i)=>{
@@ -1048,7 +1063,7 @@ function resumenFinalPdf(r){
   const totalReduccion1419=reducciones1419.reduce((a,e)=>a+Math.max(0,Number(e.saldoAntesReduccion??e.saldoAntes??0)-Number(e.saldoDespuesReduccion??e.saldoDespues??0)),0);
   const filasReduccion1419=reducciones1419.length?reducciones1419.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.saldoAntesReduccion??e.saldoAntes??0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??0)}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(e.saldoDespuesReduccion??e.saldoDespues??0)}</td></tr>`).join(""):`<tr><td colspan="7">No se registró reducción de sanción del artículo 9 en los pagos liquidados.</td></tr>`;
   const observacionesBeneficio=(r.observacionesBeneficio1419||[]).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
-  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div><div><b>INTERESES GENERADOS EN LOS PAGOS</b><strong>${dinero(totalIntereses)}</strong></div><div><b>ACTUALIZACIÓN TOTAL DE SANCIÓN</b><strong>${dinero(totalActualizacionSancion)}</strong></div><div><b>REDUCCIÓN EFECTIVA SANCIÓN ART. 9</b><strong>${dinero(totalReduccion1419)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table><h3>DETALLE DE REDUCCIÓN DE SANCIÓN — ARTÍCULO 9</h3><table><thead><tr><th>PAGO</th><th>FECHA</th><th>ANTES DE REDUCIR</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>VALOR APLICADO</th></tr></thead><tbody>${filasReduccion1419}</tbody></table></div><div class="pdf-excedentes-finales"><h3>CONSOLIDACIÓN DE EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>FECHA DE PAGO</th><th>EXCEDENTE DEL PAGO</th></tr></thead><tbody>${filasExcedentes}</tbody><tfoot><tr><th colspan="2">EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS</th><th>${dinero(excedenteTotal)}</th></tr></tfoot></table></div>${observacionesBeneficio}<div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div><div><b>INTERESES GENERADOS EN LOS PAGOS</b><strong>${dinero(totalIntereses)}</strong></div><div><b>ACTUALIZACIÓN TOTAL DE SANCIÓN</b><strong>${dinero(totalActualizacionSancion)}</strong></div><div><b>REDUCCIÓN EFECTIVA SANCIÓN ART. 9</b><strong>${dinero(totalReduccion1419)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table><h3>DETALLE DE REDUCCIÓN DE SANCIÓN — ARTÍCULO 9</h3><table><thead><tr><th>PAGO</th><th>FECHA</th><th>ANTES DE REDUCIR</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>VALOR APLICADO</th></tr></thead><tbody>${filasReduccion1419}</tbody></table></div>${observacionesBeneficio}<div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
 }
 
 function resumenEndosoTDJNormalPdf(d,r){
@@ -1482,10 +1497,11 @@ function exportarPdf(){
       }
     }
     const resumenFinal=resumenFinalPdf(r);
+    const resumenExcedentes=resumenExcedentesPagosPdf(r);
     const resumenEndoso=resumenEndosoTDJNormalPdf(d,r);
     const advertencias=(r.advertencias||[]).length?`<section class="pdf-hoja pdf-hoja-advertencias"><div class="pdf-pagina"><div class='pdf-alerta'><b>Advertencias:</b> ${escPdf([...new Set(r.advertencias)].join(" | "))}</div></div></section>`:"";
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenEndoso}${advertencias}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main></body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
