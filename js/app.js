@@ -1030,6 +1030,21 @@ function bloqueSancionDeclaracion1419Pdf(x,d){
   return `<div class="pdf-actualizacion-descripcion"><b>SANCIÓN — ARTÍCULO 10:</b> valor registrado para la declaración presentada: ${dinero(declarada)}. Valor de sanción reconocido antes de aplicar este pago: ${dinero(reconocida)}. El pago conserva la sanción declarada; no se vuelve a reducir al 15 % en esta etapa.</div>`;
 }
 
+function resumenExcedentesPagosPdf(r){
+  const detalles=Array.isArray(r?.detalle)?r.detalle:[];
+  if(!detalles.length)return "";
+  const pagos=detalles.map((x,i)=>({
+    pago:i+1,
+    recibo:String(x?.pago?.recibo||"").trim(),
+    fecha:x?.pago?.fecha||"",
+    valor:Number(x?.pago?.valor||0),
+    excedente:Math.max(0,Number(x?.excedente??x?.aplicado?.excedente??0))
+  }));
+  const total=pagos.reduce((a,x)=>a+x.excedente,0);
+  const filas=pagos.map(x=>`<tr><td>PAGO ${x.pago}</td><td>${escPdf(x.recibo||"—")}</td><td>${escPdf(fechaVisible(x.fecha))}</td><td>${dinero(x.valor)}</td><td>${dinero(x.excedente)}</td></tr>`).join("");
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">CONSOLIDACIÓN FINAL DE EXCEDENTES DE PAGOS</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-excedentes-finales"><h3>EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${filas}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES</th><th>${dinero(total)}</th></tr></tfoot></table></div><div class="pdf-excedente-final"><b>TOTAL EXCEDENTES:</b> <span>${dinero(total)}</span></div><div class="pdf-nota">Nota: el excedente corresponde al valor de cada pago que no fue aplicado a la obligación liquidada.</div></article></div></section>`;
+}
+
 function resumenFinalPdf(r){
   const tramos=[];
   (r.detalle||[]).forEach((x,i)=>{
@@ -1482,10 +1497,11 @@ function exportarPdf(){
       }
     }
     const resumenFinal=resumenFinalPdf(r);
+    const resumenExcedentes=resumenExcedentesPagosPdf(r);
     const resumenEndoso=resumenEndosoTDJNormalPdf(d,r);
     const advertencias=(r.advertencias||[]).length?`<section class="pdf-hoja pdf-hoja-advertencias"><div class="pdf-pagina"><div class='pdf-alerta'><b>Advertencias:</b> ${escPdf([...new Set(r.advertencias)].join(" | "))}</div></div></section>`:"";
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenEndoso}${advertencias}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main></body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
