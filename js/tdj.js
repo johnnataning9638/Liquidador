@@ -2802,6 +2802,8 @@ function importarTitulos(){
     if(!encontrados.length)throw new Error("No se encontraron registros TDJ válidos. El documento fuente debe tener entre 10 y 15 dígitos, además de fecha y valor.");
     titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
+    resultado=null;
+    $("resultadoTDJ").hidden=true;
     renderTitulos();
     $("importarTitulosTexto").value="";
     $("resultadoImportacionTitulos").textContent=`Se reconocieron ${titulos.length} título(s)/TDJ.`;
@@ -2826,10 +2828,12 @@ async function importarTitulosIA(){
     encontrados=encontrados.filter(p=>esDocumentoFuenteTDJ(p.tdj)&&p.fecha&&Number(p.valor)>0);
     titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:String(p.tdj),fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
+    resultado=null;
+    $("resultadoTDJ").hidden=true;
     renderTitulos();
     $("importarTitulosTexto").value="";
     $("resultadoImportacionTitulos").textContent=`IA DIAN reconoció ${titulos.length} título(s)/TDJ.`;
-    setStatus(`IA DIAN — TÍTULOS VALIDADOS ${Math.round(Number(ai?.confidence||1)*100)}%`,"ok");
+    setStatus(`IA DIAN — TÍTULOS VALIDADOS ${Math.round(Number(ai?.confidence||0)*100)}%`,"ok");
   }catch(e){setStatus("LISTO","ok");console.error("IMPORTACIÓN IA TDJ",e);alert(e.message||"No fue posible procesar los títulos con IA.");}
 }
 

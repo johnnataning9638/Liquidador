@@ -6,3 +6,12 @@ if(r.some(x=>x.tdj.length<10||x.tdj.length>15||x.tdj==='1'))throw new Error('Doc
 if(r[0].tdj!=="4911089297230"||r[0].fecha!=="2026-03-05"||r[0].valor!==4137000)throw new Error('Primer registro incorrecto');
 if(esDocumentoFuenteTDJ('1')||esDocumentoFuenteTDJ('1234567890123456')||!esDocumentoFuenteTDJ('4911089297230'))throw new Error('Regla 10-15 incorrecta');
 console.log('PASS TDJ: documento fuente 10-15 dígitos; repetición=1 excluida; sin duplicados.');
+
+const sinEncabezado=`4911089297230\t1\tRecibo Oficial\t5/03/2026\tINICIAL\t\t4.137.000`;
+const raw=extraerRegistrosTDJTexto(sinEncabezado);
+if(raw.length!==1||raw[0].tdj!=="4911089297230"||raw[0].valor!==4137000)throw new Error("Formato sin encabezado incorrecto");
+const tdjPequeno=`4911089297230\t1\tTDJ\t5/03/2026\t\t\t157`;
+const small=extraerRegistrosTDJTexto(tdjPequeno);
+if(small.length!==1||small[0].valor!==157)throw new Error("No se preservó valor TDJ pequeño");
+if(esDocumentoFuenteTDJ("123456789")||!esDocumentoFuenteTDJ("1234567890")||!esDocumentoFuenteTDJ("123456789012345")||esDocumentoFuenteTDJ("1234567890123456"))throw new Error("Límites 10-15 incorrectos");
+console.log("PASS TDJ extended: con/sin encabezado, repetición excluida y valor pequeño preservado.");
