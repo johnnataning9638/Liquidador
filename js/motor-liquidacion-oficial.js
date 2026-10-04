@@ -250,7 +250,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         saldosVto.find(v=>Number(v.numero)===1)?.fecha || saldosVto[0]?.fecha || ""
       );
       const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? true
+        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
         : (
             datos.tieneSancion==="SI"
             && sancionBaseOriginal>0
