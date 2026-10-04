@@ -55,3 +55,7 @@ assert.deepEqual(excelTitulos[1].slice(1),["111","2026-04-01","20000000"]);
 assert.deepEqual(excelTitulos[2].slice(1),["222","2026-05-01","10000000"]);
 assert.match(tdjSrc,/normImportacionTDJ\(r\[h\]\)/);
 console.log("REGRESIÓN XLSX TDJ PRIMER REGISTRO OK");
+
+assert.equal((tdjSrc.match(/function normImportacionTDJ\(/g)||[]).length,0);
+assert.match(tdjSrc,/norm as normImportacionTDJ/);
+console.log("REGRESIÓN SIN COLISIÓN DE NOMBRE TDJ OK");
