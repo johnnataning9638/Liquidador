@@ -59,3 +59,11 @@ console.log("REGRESIÓN XLSX TDJ PRIMER REGISTRO OK");
 assert.equal((tdjSrc.match(/function normImportacionTDJ\(/g)||[]).length,0);
 assert.match(tdjSrc,/norm as normImportacionTDJ/);
 console.log("REGRESIÓN SIN COLISIÓN DE NOMBRE TDJ OK");
+assert.match(tdjSrc,/const esColumnaNumero=x=>/);
+assert.match(tdjSrc,/s==="Nº"\|\|s==="N°"\|\|s==="NO"\|\|s==="N"/);
+assert.match(tdjSrc,/s==="NUMERO TDJ"/);
+assert.match(tdjSrc,/s==="VALOR DEL TDJ"/);
+assert.match(tdjSrc,/if\(marca!==\"TITULOS TDJ\"\)continue/);
+assert.match(tdjSrc,/const ixT=nh\.findIndex\(esColumnaTDJ\)/);
+console.log("REGRESIÓN IMPORTACIÓN TDJ: ENCABEZADOS Y BLOQUE DE RECUPERACIÓN ROBUSTOS OK");
+
