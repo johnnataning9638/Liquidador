@@ -1,13 +1,13 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.105";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.105";
-import {importarDatosInteligente} from "./importador.js?v=16.33.105";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.105";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.105";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.105";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.105";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.105";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.105";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.105";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.106";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.106";
+import {importarDatosInteligente} from "./importador.js?v=16.33.106";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.106";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.106";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.106";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.106";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.106";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.106";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.106";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1894,7 +1894,7 @@ function bloqueDetallePagoDIANTDJ(x,i,d,r){
   ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdfTDJ(x,d,i):""}
   ${bloqueActualizacionSancionPdfTDJ(x,i)}
   ${bloqueSancionDeclaracion1419PdfTDJ(x,d)}
-  <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>EXCEDENTE:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
+  <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE":"PAGO EN EXCESO"}:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article>`;
 }
@@ -2051,9 +2051,24 @@ async function exportarPdfTDJ(){
       const detalles=Array.isArray(x.detalleCronologicoFinal)?x.detalleCronologicoFinal:[];
       detalles.forEach((d,j)=>{
         const valorDisponible=valorDisponiblePagoPDFTDJ(d,o,resultado);
-        const dPdf=valorDisponible!=null
-          ? {...d,pago:{...(d.pago||{}),valor:valorDisponible}}
-          : d;
+        const pagoId=d?.pago?.id||"";
+        const tituloD=String(d?.pago?.tdj||"").trim();
+        const trazaObligacion=(resultado?.resumenTitulos||[])
+          .flatMap(rt=>Array.isArray(rt.trazabilidad)?rt.trazabilidad:[])
+          .filter(a=>String(a.obligacionId||"")===String(o?.id||""));
+        const trazaMovimiento=trazaObligacion.find(a=>
+          (pagoId && String(a.pagoId||"")===String(pagoId)) ||
+          (tituloD && String(a.titulo||"").trim()===tituloD && fechaISO(a.fecha)===fechaISO(d?.pago?.fecha))
+        );
+        const excedenteTDJ=trazaMovimiento?Math.max(0,Number(trazaMovimiento.saldoTitulo||0)):0;
+        const esTDJ=d?.pago?.esTDJ===true || tituloD!=="";
+        const dPdf={
+          ...d,
+          pago:valorDisponible!=null
+            ? {...(d.pago||{}),valor:valorDisponible}
+            : {...(d.pago||{})},
+          ...(esTDJ && excedenteTDJ>0 ? {excedente:excedenteTDJ,aplicado:{...(d.aplicado||{}),excedente:excedenteTDJ}} : {})
+        };
         const rSoporte={
           detalle:detalles.slice(0,j+1),
           vencimientos:o.vencimientos||[]
