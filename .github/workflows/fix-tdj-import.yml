@@ -1,0 +1,266 @@
+name: Fix TDJ text import
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply TDJ importer correction
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('js/tdj.js')
+          text = path.read_text(encoding='utf-8')
+
+          new_parser = r'''function importarTitulosTDJNuevo(texto){
+            const lines=String(texto??"").replace(/\r/g,"").split("\n").filter(x=>x.trim());
+            if(!lines.length)throw new Error("No hay información para importar títulos / TDJ.");
+            const encontrados=[];
+            const vistos=new Set();
+            const agregar=(tdj,fecha,valor,observacion="")=>{
+              const t=numeroTituloImportacion(tdj), f=fechaTituloImportacion(fecha), v=valorTituloImportacion(valor);
+              if(!t||!f||!(v>0))return;
+              const key=t+"|"+f+"|"+v;
+              if(vistos.has(key))return;
+              vistos.add(key);
+              encontrados.push({tdj:t,fecha:f,valor:v,observacion:upper(observacion||"")});
+            };
+            const esFinImportacion=s=>/^(TOTAL|ENDOSO|OBSERVACION|OBSERVACIONES|FIN|RECUPERACION COMPLETA|RESUMEN FINAL)/.test(normImportacionTDJ(s));
+
+            // 1. FORMATO DIAN: No. | Documento Fuente | Repetición | ... | Fecha Presentacion | ... | Valor Pagado.
+            // "Documento Fuente" es el identificador real del TDJ; "Repetición" NO es el número del título.
+            for(let h=0;h<Math.min(lines.length,25);h++){
+              const c=separarFilaImportacionTDJ(lines[h]);
+              if(c.length<3)continue;
+              const n=c.map(normImportacionTDJ);
+              const ixFuente=n.findIndex(x=>x==="DOCUMENTO FUENTE"||x.includes("DOCUMENTO FUENTE"));
+              const ixFechaPresentacion=n.findIndex(x=>x==="FECHA PRESENTACION"||x.includes("FECHA PRESENTACION"));
+              const ixValorPagado=n.findIndex(x=>x==="VALOR PAGADO"||x.includes("VALOR PAGADO"));
+              if(ixFuente<0||ixFechaPresentacion<0||ixValorPagado<0)continue;
+              for(let r=h+1;r<lines.length;r++){
+                const row=separarFilaImportacionTDJ(lines[r]);
+                if(!row.length)continue;
+                const textoFila=normImportacionTDJ(row.join(" | "));
+                if(esFinImportacion(textoFila))break;
+                const f=fechaTituloImportacion(row[ixFechaPresentacion]??"");
+                const v=valorTituloImportacion(row[ixValorPagado]??"");
+                const t=numeroTituloImportacion(row[ixFuente]??"");
+                if(t&&f&&v>0)agregar(t,f,v);
+              }
+              if(encontrados.length)return encontrados;
+            }
+
+            // 2. TABLA CON ENCABEZADOS: TDJ + FECHA + VALOR, en cualquier orden.
+            for(let h=0;h<Math.min(lines.length,25);h++){
+              const c=separarFilaImportacionTDJ(lines[h]);
+              if(c.length<3)continue;
+              const n=c.map(normImportacionTDJ);
+              const ixT=n.findIndex(x=>x==="TDJ"||x.includes("TDJ N")||x.includes("NUMERO TDJ")||x==="TITULO"||x.includes("TITULO N")||x.includes("TITULO DEPOSITO"));
+              const ixF=n.findIndex(x=>x==="FECHA"||x.includes("FECHA TDJ")||x.includes("FECHA TITULO")||x.includes("FECHA DEPOSITO")||x.includes("FECHA PAGO"));
+              const ixV=n.findIndex(x=>x==="VALOR"||x.includes("VALOR TDJ")||x.includes("VALOR TITULO")||x.includes("VALOR ORIGINAL")||x.includes("VALOR DEPOSITO"));
+              if(ixT<0||ixF<0||ixV<0)continue;
+              for(let r=h+1;r<lines.length;r++){
+                const row=separarFilaImportacionTDJ(lines[r]);
+                if(!row.length)continue;
+                const textoFila=normImportacionTDJ(row.join(" | "));
+                if(esFinImportacion(textoFila))break;
+                const f=fechaTituloImportacion(row[ixF]??""), t=numeroTituloImportacion(row[ixT]??""), v=valorTituloImportacion(row[ixV]??"");
+                if(t&&f&&v>0){
+                  const ixO=n.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIONES");
+                  agregar(t,f,v,ixO>=0?row[ixO]:"");
+                }
+              }
+              if(encontrados.length)return encontrados;
+            }
+
+            // 3. SIN ENCABEZADO: buscamos la fecha y elegimos como TDJ el candidato numérico
+            // más largo que la acompaña, nunca la columna "Repetición" (1, 2, 3...).
+            for(const line of lines){
+              const c=separarFilaImportacionTDJ(line);
+              if(c.length<3)continue;
+              let ixF=-1;
+              for(let i=0;i<c.length;i++){if(fechaTituloImportacion(c[i])){ixF=i;break;}}
+              if(ixF<0)continue;
+              const candidatos=[];
+              for(let i=0;i<c.length;i++){
+                if(i===ixF)continue;
+                const raw=String(c[i]??"").trim();
+                if(!raw)continue;
+                const n=valorTituloImportacion(raw);
+                if(!(n>0))continue;
+                candidatos.push({i,raw,n,tieneSeparadorMonetario:/[\$\.]/.test(raw)});
+              }
+              if(candidatos.length<2)continue;
+              const antes=candidatos.filter(x=>x.i<ixF), despues=candidatos.filter(x=>x.i>ixF);
+              let tdjCell=null,valCell=null;
+              if(antes.length&&despues.length){
+                // En fuentes DIAN suele existir una columna "Repetición" con 1.
+                // El documento fuente/TDJ es el identificador numérico más largo.
+                tdjCell=antes.slice().sort((a,b)=>String(b.n).length-String(a.n).length || b.n-a.n)[0];
+                valCell=despues.find(x=>x.tieneSeparadorMonetario)||despues[despues.length-1];
+              }else{
+                valCell=candidatos.find(x=>x.tieneSeparadorMonetario)||candidatos[candidatos.length-1];
+                const posibles=candidatos.filter(x=>x!==valCell);
+                tdjCell=posibles.slice().sort((a,b)=>String(b.n).length-String(a.n).length || b.n-a.n)[0]||candidatos[0];
+              }
+              if(tdjCell&&valCell)agregar(tdjCell.raw,c[ixF],valCell.n);
+            }
+
+            // 4. FORMATO VERTICAL: TDJ, FECHA y VALOR en líneas etiquetadas.
+            if(!encontrados.length){
+              let tdj="",fecha="",valor=0;
+              for(const line of lines){
+                const n=normImportacionTDJ(line), raw=String(line).trim();
+                if(n.startsWith("TDJ")||n.startsWith("TITULO DE DEPOSITO")){
+                  tdj=numeroTituloImportacion(raw);
+                }else if(n.startsWith("FECHA")){
+                  const m=raw.split(/[:\t|;]/).slice(1).join(" ").trim();
+                  fecha=fechaTituloImportacion(m)||fechaTituloImportacion(raw.replace(/^.*?FECHA[^:]*[:\-]?/i,""));
+                }else if(n.startsWith("VALOR")){
+                  const m=raw.split(/[:\t|;]/).slice(1).join(" ").trim();
+                  valor=valorTituloImportacion(m)||valorTituloImportacion(raw.replace(/^.*?VALOR[^:]*[:\-]?/i,""));
+                }
+                if(tdj&&fecha&&valor>0){agregar(tdj,fecha,valor);tdj="";fecha="";valor=0;}
+              }
+            }
+            if(!encontrados.length)throw new Error("No se encontraron títulos / TDJ. El formato mínimo es: TDJ | FECHA | VALOR.");
+            return encontrados;
+          }'''
+
+          pattern = r'function importarTitulosTDJNuevo\(texto\)\{.*?\n\}\n\nfunction importarTitulos\(\)\{'
+          text2, count = re.subn(pattern, new_parser + '\n\nfunction importarTitulos(){', text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('No se encontró la función importarTitulosTDJNuevo para reemplazo seguro.')
+          text = text2
+
+          new_ia = r'''async function importarTitulosIA(){
+            const text=$("importarTitulosTexto").value.trim();
+            if(!text)return alert("Pegue primero los datos de los títulos.");
+            try{
+              setStatus("IA DIAN — VALIDANDO TÍTULOS...","loading");
+              const base=importarTitulosTDJNuevo(text);
+              const ai=await interpretarPagosConIA(text);
+              const mapa=new Map();
+
+              // La lectura determinística es la fuente de verdad para el número del TDJ.
+              // La IA valida/complementa, pero no puede duplicar un título ni reemplazar
+              // un documento completo por la columna "Repetición" (1, 2, 3...).
+              for(const p of (base||[])){
+                const tdj=numeroTituloImportacion(p?.tdj||"");
+                const fecha=fechaISO(p?.fecha)||"";
+                const valor=truncarValorEntero(p?.valor);
+                if(!tdj||!fecha||!(valor>0))continue;
+                mapa.set(`${tdj}|${fecha}|${valor}`,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});
+              }
+
+              for(const p of (ai?.pagos||[])){
+                const tdj=numeroTituloImportacion(p?.tdj||p?.recibo||"");
+                const fecha=fechaISO(p?.fecha)||"";
+                const valor=truncarValorEntero(p?.valor);
+                if(!tdj||!fecha||!(valor>0))continue;
+                const exact=`${tdj}|${fecha}|${valor}`;
+                if(mapa.has(exact))continue;
+
+                // Si la IA devuelve "1" y el importador determinístico ya encontró
+                // el documento completo para la misma fecha/valor, se conserva solo
+                // el documento completo. Si son dos TDJ reales distintos, ambos se
+                // mantienen.
+                const similares=[...mapa.entries()].filter(([k,v])=>v.fecha===fecha&&Number(v.valor)===valor);
+                const corto=tdj.length<=3;
+                const largo=similares.find(([,v])=>v.tdj.length>tdj.length && v.tdj.length>=6);
+                if(corto&&largo)continue;
+
+                mapa.set(exact,{tdj,fecha,valor,observacion:upper(p?.observacion||"")});
+              }
+
+              const encontrados=[...mapa.values()];
+              if(!encontrados.length)throw new Error("La IA no reconoció títulos/TDJ válidos con TDJ, fecha y valor.");
+              titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:p.fecha,valor:p.valor,observacion:p.observacion||"",_orden:Date.now()+i}));
+              ordenarTitulosCronologicamente();
+              resultado=null;
+              $("resultadoTDJ").hidden=true;
+              renderTitulos();
+              $("importarTitulosTexto").value="";
+              $("resultadoImportacionTitulos").textContent="IA DIAN reconoció "+titulos.length+" título(s)/TDJ.";
+              setStatus("IA DIAN — TÍTULOS VALIDADOS "+Math.round(Number(ai?.confidence||0)*100)+"%","ok");
+            }catch(e){setStatus("LISTO","ok");alert(e.message||"No fue posible procesar los títulos con IA.");}
+          }'''
+          pattern_ia = r'async function importarTitulosIA\(\)\{.*?\n\}\n\nfunction actualizarIndicadoresIA\(\)\{'
+          text2, count = re.subn(pattern_ia, new_ia + '\n\nfunction actualizarIndicadoresIA(){', text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('No se encontró la función importarTitulosIA para reemplazo seguro.')
+          text = text2
+          path.write_text(text, encoding='utf-8')
+
+          html = Path('titulos.html')
+          h = html.read_text(encoding='utf-8')
+          h2 = h.replace('tdj.js?v=16.33.107', 'tdj.js?v=16.33.111')
+          if h2 == h:
+              raise SystemExit('No se encontró la referencia esperada tdj.js?v=16.33.107 en titulos.html.')
+          html.write_text(h2, encoding='utf-8')
+          PY
+
+      - name: Regression test exact DIAN table
+        shell: bash
+        run: |
+          node --check js/tdj.js
+          node <<'NODE'
+          const fs = require('fs');
+          const src = fs.readFileSync('js/tdj.js','utf8');
+          const start = src.indexOf('function separarFilaImportacionTDJ(');
+          const end = src.indexOf('function importarTitulos(){', start);
+          if(start < 0 || end < 0) throw new Error('No se pudo aislar el importador TDJ.');
+          const chunk = src.slice(start, end);
+          const norm = v => String(v ?? '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+          const fechaISO = v => { const s=String(v??'').trim(); const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/); if(!m)return ''; let y=Number(m[3]); if(y<100)y+=2000; return `${y}-${String(Number(m[2])).padStart(2,'0')}-${String(Number(m[1])).padStart(2,'0')}`; };
+          const numeroDesdeTexto = v => Number(String(v??'').replace(/[^0-9-]/g,'')) || 0;
+          const truncarValorEntero = v => Math.trunc(Number(v)||0);
+          const dinero = v => String(v);
+          const upper = v => String(v??'').trim().toUpperCase();
+          const $ = id => ({value:'',hidden:false,textContent:''});
+          const uid = p => p+'-x';
+          const ordenarTitulosCronologicamente = ()=>{};
+          const renderTitulos=()=>{};
+          const setStatus=()=>{};
+          const interpretarPagosConIA=async()=>({pagos:[]});
+          const fn = eval(`(function(normImportacionTDJ,fechaISO,numeroDesdeTexto,truncarValorEntero,dinero,upper,$,uid,ordenarTitulosCronologicamente,renderTitulos,setStatus,interpretarPagosConIA){${chunk}; return importarTitulosTDJNuevo;})`)(norm,fechaISO,numeroDesdeTexto,truncarValorEntero,dinero,upper,$,uid,ordenarTitulosCronologicamente,renderTitulos,setStatus,interpretarPagosConIA);
+          const input = [
+            'No.\tDocumento Fuente\tRepetición\tNombre Formato\tFecha Presentacion\tEstado\tClase Documento\tValor Pagado',
+            '4911089297230\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t5/03/2026\tINICIAL\t\t4.137.000',
+            '4911095388931\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t18/03/2026\tINICIAL\t\t3.579.000',
+            '4911096796139\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t21/03/2026\tINICIAL\t\t2.093.000',
+            '4911097894062\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t26/03/2026\tINICIAL\t\t1.482.000',
+            '4911098513361\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t30/03/2026\tINICIAL\t\t3.047.000',
+            '4911098761609\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t31/03/2026\tINICIAL\t\t10.924.000',
+            '3004724916099\t1\tImpuesto sobre las Ventas -IVA AG 2019 y siguientes\t3/04/2026\tVALIDA/ACTIVA\t\t',
+            '4911099029075\t1\tRecibo Oficial de Pago Impuestos Nacionales AG 2006 y siguientes\t4/04/2026\tINICIAL\t\t2.294.000'
+          ].join('\n');
+          const out = fn(input);
+          const expected = ['4911089297230','4911095388931','4911096796139','4911097894062','4911098513361','4911098761609','4911099029075'];
+          if(out.length !== expected.length) throw new Error(`Esperados ${expected.length} títulos, obtenidos ${out.length}`);
+          if(JSON.stringify(out.map(x=>x.tdj)) !== JSON.stringify(expected)) throw new Error('Los TDJ importados no coinciden con los documentos fuente completos.');
+          if(out.some(x=>x.tdj === '1')) throw new Error('ERROR: quedó una repetición "1" como TDJ.');
+          console.log('PASS TDJ DIAN TEXT: 7 títulos válidos, sin duplicados y sin columna Repetición.');
+          NODE
+
+      - name: Commit correction and remove one-time workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/fix-tdj-import.yml
+          git add js/tdj.js titulos.html .github/workflows/fix-tdj-import.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: corregir importación TDJ DIAN normal e IA"
+          git push
