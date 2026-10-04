@@ -1,98 +1,34 @@
 import {numExcel,fechaExcel,norm} from "./importador-excel.js?v=16.33.107";
 
-function fechaISOImportacion(v){
-  const s=fechaExcel(v);
-  return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:"";
-}
-function truncarValorImportacion(v){
-  const n=Number(v);
-  return Number.isFinite(n)?Math.trunc(n):0;
-}
-function numeroTituloImportacionTDJ(v){
-  let s=String(v??"").trim().replace(/^TDJ\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?/i,"").trim();
-  if(!s)return "";
-  const sci=s.match(/^[+-]?\d+(?:[\.,]\d+)?[eE][+-]?\d+$/);
-  if(sci){const n=Number(s.replace(",","."));if(Number.isFinite(n))s=String(Math.trunc(n));}
-  return s.replace(/\D/g,"");
-}
+function fechaISOImportacion(v){const s=fechaExcel(v);return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:"";}
+function truncarValorImportacion(v){const n=Number(v);return Number.isFinite(n)?Math.trunc(n):0;}
+function numeroTituloImportacionTDJ(v){let s=String(v??"").trim().replace(/^TDJ\s*(?:N[°º]?|NO\.?|NUM(?:ERO)?\.?)?\s*[:#-]?/i,"").trim();if(!s)return "";const sci=s.match(/^[+-]?\d+(?:[\.,]\d+)?[eE][+-]?\d+$/);if(sci){const n=Number(s.replace(",","."));if(Number.isFinite(n))s=String(Math.trunc(n));}return s.replace(/\D/g,"");}
 function valorTituloImportacionTDJ(v){return truncarValorImportacion(numExcel(v));}
-const ALIAS={
-  tdj:["TDJ","TDJ Nº","TDJ N°","NUMERO TDJ","Nº TDJ","N° TDJ","TITULO","TITULO Nº","TITULO N°","NUMERO TITULO"],
-  fecha:["FECHA","FECHA TDJ","FECHA TITULO","FECHA DEL TITULO","FECHA PAGO","FECHA PAGO / CORTE","FECHA DE PAGO","FECHA DE PAGO / CORTE"],
-  valor:["VALOR","VALOR TDJ","VALOR TITULO","VALOR ORIGINAL","VALOR DEL TITULO","VALOR PAGO","VALOR PAGADO","VALOR DEL PAGO"],
-  observacion:["OBSERVACION","OBSERVACIONES"]
-};
+const ALIAS={tdj:["TDJ","TDJ Nº","TDJ N°","NUMERO TDJ","Nº TDJ","N° TDJ","TITULO","TITULO Nº","TITULO N°","NUMERO TITULO"],fecha:["FECHA","FECHA TDJ","FECHA TITULO","FECHA DEL TITULO","FECHA PAGO","FECHA PAGO / CORTE","FECHA DE PAGO","FECHA DE PAGO / CORTE"],valor:["VALOR","VALOR TDJ","VALOR TITULO","VALOR ORIGINAL","VALOR DEL TITULO","VALOR PAGO","VALOR PAGADO","VALOR DEL PAGO"],observacion:["OBSERVACION","OBSERVACIONES"]};
 function indiceAlias(headers,aliases){return headers.findIndex(h=>aliases.includes(h));}
-function registroCompleto(r,ixT,ixF,ixV,ixO=-1){
-  const tdj=numeroTituloImportacionTDJ(r[ixT]);
-  const fecha=fechaISOImportacion(r[ixF]);
-  const valor=valorTituloImportacionTDJ(r[ixV]);
-  if(!tdj||!fecha||valor<=0)return null;
-  return {tdj,fecha,valor,observacion:ixO>=0?String(r[ixO]??"").trim().toUpperCase():""};
-}
-function esCabeceraSeccion(r){
-  const s=norm((r||[]).filter(v=>String(v??"").trim()!=="").join(" | "));
-  return /^(TITULOS \/ TDJ|TITULOS TDJ|PAGOS|OBLIGACIONES|RECUPERACION COMPLETA|FIN RECUPERACION|TOTAL ENDOSO|RESUMEN FINAL)/.test(s);
-}
-function leerDesdeCabecera(rows,h,ixT,ixF,ixV,ixO=-1){
-  const out=[];
-  for(let i=h+1;i<rows.length;i++){
-    const r=rows[i]||[];
-    if(esCabeceraSeccion(r))break;
-    const t=registroCompleto(r,ixT,ixF,ixV,ixO);
-    if(t)out.push(t);
-  }
-  return out;
-}
+function registroCompleto(r,ixT,ixF,ixV,ixO=-1){const tdj=numeroTituloImportacionTDJ(r[ixT]),fecha=fechaISOImportacion(r[ixF]),valor=valorTituloImportacionTDJ(r[ixV]);if(!tdj||!fecha||valor<=0)return null;return {tdj,fecha,valor,observacion:ixO>=0?String(r[ixO]??"").trim().toUpperCase():""};}
+function esCabeceraSeccion(r){const s=norm((r||[]).filter(v=>String(v??"").trim()!=="").join(" | "));return /^(TITULOS \/ TDJ|TITULOS TDJ|PAGOS|OBLIGACIONES|RECUPERACION COMPLETA|FIN RECUPERACION|TOTAL ENDOSO|RESUMEN FINAL)/.test(s);}
+function leerDesdeCabecera(rows,h,ixT,ixF,ixV,ixO=-1){const out=[];for(let i=h+1;i<rows.length;i++){const r=rows[i]||[];if(esCabeceraSeccion(r))break;const t=registroCompleto(r,ixT,ixF,ixV,ixO);if(t)out.push(t);}return out;}
+function deduplicar(items){const mapa=new Map();for(const t of items){const key=`${t.tdj}|${t.fecha}|${t.valor}`;if(!mapa.has(key))mapa.set(key,t);}return [...mapa.values()];}
+export function reconstruirTitulosTDJDesdeFilas(rows){const fuentes=[];for(let h=0;h<rows.length;h++){const nh=(rows[h]||[]).map(norm),ixT=indiceAlias(nh,ALIAS.tdj),ixF=indiceAlias(nh,ALIAS.fecha),ixV=indiceAlias(nh,ALIAS.valor);const esTitulo=ixT>=0&&ixF>=0&&ixV>=0&&(nh.includes("Nº")||nh.includes("NO")||nh.includes("N")||nh[0]==="TITULOS TDJ");if(!esTitulo)continue;fuentes.push(...leerDesdeCabecera(rows,h,ixT,ixF,ixV,indiceAlias(nh,ALIAS.observacion)));}for(let h=0;h<rows.length;h++){const nh=(rows[h]||[]).map(norm);if(nh[0]!=="TITULOS TDJ")continue;const ixT=indiceAlias(nh,ALIAS.tdj),ixF=indiceAlias(nh,ALIAS.fecha),ixV=indiceAlias(nh,ALIAS.valor);if(ixT>=0&&ixF>=0&&ixV>=0)fuentes.push(...leerDesdeCabecera(rows,h,ixT,ixF,ixV,indiceAlias(nh,ALIAS.observacion)));}for(let h=0;h<rows.length;h++){const nh=(rows[h]||[]).map(norm),esPagos=nh.includes("RECIBO Nº")||nh.includes("RECIBO")||nh.includes("RECIBO NÚMERO");if(!esPagos)continue;const ixT=indiceAlias(nh,ALIAS.tdj),ixF=indiceAlias(nh,ALIAS.fecha),ixV=indiceAlias(nh,ALIAS.valor);if(ixT>=0&&ixF>=0&&ixV>=0)fuentes.push(...leerDesdeCabecera(rows,h,ixT,ixF,ixV,indiceAlias(nh,ALIAS.observacion)));}return deduplicar(fuentes);}
 
-/**
- * Reconstruye TODOS los títulos TDJ del Excel.
- * La fuente preferente es la tabla explícita TÍTULOS / TDJ; luego se usan
- * bloques de recuperación y, finalmente, PAGOS como respaldo. Los registros
- * solo se aceptan si contienen simultáneamente TDJ + FECHA + VALOR.
- */
-export function reconstruirTitulosTDJDesdeFilas(rows){
-  const fuentes=[];
-
-  // 1. TABLA EXPLÍCITA TÍTULOS / TDJ.
-  for(let h=0;h<rows.length;h++){
-    const nh=(rows[h]||[]).map(norm);
-    const ixT=indiceAlias(nh,ALIAS.tdj);
-    const ixF=indiceAlias(nh,ALIAS.fecha);
-    const ixV=indiceAlias(nh,ALIAS.valor);
-    const esTitulo=ixT>=0&&ixF>=0&&ixV>=0&&(
-      nh.includes("Nº")||nh.includes("NO")||nh.includes("N")||
-      nh[0]==="TITULOS TDJ"
-    );
-    if(!esTitulo)continue;
-    fuentes.push(...leerDesdeCabecera(rows,h,ixT,ixF,ixV,indiceAlias(nh,ALIAS.observacion)));
-  }
-
-  // 2. BLOQUE TÍTULOS TDJ DE RECUPERACIÓN.
-  for(let h=0;h<rows.length;h++){
-    const nh=(rows[h]||[]).map(norm);
-    if(nh[0]!=="TITULOS TDJ")continue;
-    const ixT=indiceAlias(nh,ALIAS.tdj),ixF=indiceAlias(nh,ALIAS.fecha),ixV=indiceAlias(nh,ALIAS.valor);
-    if(ixT>=0&&ixF>=0&&ixV>=0)fuentes.push(...leerDesdeCabecera(rows,h,ixT,ixF,ixV,indiceAlias(nh,ALIAS.observacion)));
-  }
-
-  // 3. PAGOS CON TDJ COMO RESPALDO.
-  for(let h=0;h<rows.length;h++){
-    const nh=(rows[h]||[]).map(norm);
-    const esPagos=nh.includes("RECIBO Nº")||nh.includes("RECIBO")||nh.includes("RECIBO NÚMERO");
-    if(!esPagos)continue;
-    const ixT=indiceAlias(nh,ALIAS.tdj),ixF=indiceAlias(nh,ALIAS.fecha),ixV=indiceAlias(nh,ALIAS.valor);
-    if(ixT>=0&&ixF>=0&&ixV>=0)fuentes.push(...leerDesdeCabecera(rows,h,ixT,ixF,ixV,indiceAlias(nh,ALIAS.observacion)));
-  }
-
-  return deduplicar(fuentes);
-}
-
-function deduplicar(items){
-  const mapa=new Map();
-  for(const t of items){
-    const key=`${t.tdj}|${t.fecha}|${t.valor}`;
-    if(!mapa.has(key))mapa.set(key,t);
-  }
-  return [...mapa.values()];
-}
+// IMPORTADOR TDJ DE TEXTO: usa la misma lógica conceptual del importador de pagos,
+// pero queda estrictamente aislado a la pestaña TÍTULOS / TDJ.
+const nrm=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[º°]/g,"").replace(/\s+/g," ").trim().toLowerCase();
+const clean=v=>String(v??"").replace(/&nbsp;|&#160;|&#xA0;/gi," ").replace(/\s+/g," ").trim();
+const digits=v=>clean(v).replace(/\D/g,"");
+const docCompleto=v=>{const d=digits(v);return /^\d{10,}$/.test(d)?d:"";};
+function fechaTexto(v){const s=clean(v);let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);if(!m)m=s.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);if(!m)return "";if(m[1].length===4)return `${m[1]}-${String(+m[2]).padStart(2,"0")}-${String(+m[3]).padStart(2,"0")}`;const y=+m[3]<100?2000+(+m[3]):+m[3];return `${y}-${String(+m[2]).padStart(2,"0")}-${String(+m[1]).padStart(2,"0")}`;}
+function valorTexto(v){const s=clean(v).replace(/\$/g,"");if(!s||/[A-Za-z]/.test(s))return 0;if(/^\d{1,3}(?:[.,]\d{3})+$/.test(s))return Number(s.replace(/[.,]/g,""))||0;if(/^\d+$/.test(s))return Number(s)||0;if(/^\d{1,3}(?:\.\d{3})*,\d{1,2}$/.test(s))return Number(s.replace(/\./g,"").replace(",","."))||0;return Number(s.replace(/,/g,""))||0;}
+function dividirFila(linea){const s=String(linea??"").trim();if(!s)return [];if(s.includes("\t"))return s.split("\t").map(clean);if(s.includes("|"))return s.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split("|").map(clean);if(s.includes(";")&&s.split(";").length>=4)return s.split(";").map(clean);return s.split(/\s{2,}/).map(clean);}
+function indiceCabeceraTexto(headers,nombres){const hs=headers.map(nrm);for(const x of nombres){const y=nrm(x),i=hs.findIndex(h=>h===y);if(i>=0)return i;}return -1;}
+function dedupeTexto(items){const m=new Map();for(const x of items){const k=`${x.tdj}|${x.fecha}|${x.valor}`;if(!m.has(k))m.set(k,x);}return [...m.values()].sort((a,b)=>a.fecha.localeCompare(b.fecha));}
+function leerTitulosTexto(text){const lines=String(text??"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean).filter(x=>!/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/.test(x));if(!lines.length)return [];const rows=lines.map(dividirFila);let h=-1;for(let i=0;i<Math.min(rows.length,8);i++){const j=rows[i].map(nrm).join(" | ");if(j.includes("documento fuente")||(j.includes("fecha presentacion")&&j.includes("valor pagado"))){h=i;break;}}const out=[];if(h>=0){const headers=rows[h],iDoc=indiceCabeceraTexto(headers,["Documento Fuente","No. Documento Fuente","Numero Documento Fuente","Documento"]),iFecha=indiceCabeceraTexto(headers,["Fecha Presentacion","Fecha Presentación","Fecha Pago","Fecha"]),iValor=indiceCabeceraTexto(headers,["Valor Pagado","Valor Pago","Valor"]);for(let i=h+1;i<rows.length;i++){const r=rows[i];const tdj=iDoc>=0?docCompleto(r[iDoc]):"",fecha=iFecha>=0?fechaTexto(r[iFecha]):"",valor=iValor>=0?valorTexto(r[iValor]):0;if(tdj&&fecha&&valor>0)out.push({tdj,fecha,valor,observacion:"IMPORTADO DIAN"});}}if(out.length)return dedupeTexto(out);for(const r of rows){const docs=r.map(docCompleto).filter(Boolean).sort((a,b)=>b.length-a.length),dates=r.map(fechaTexto).filter(Boolean),vals=r.map(valorTexto).filter(v=>v>0).sort((a,b)=>b-a);if(docs[0]&&dates[0]&&vals[0])out.push({tdj:docs[0],fecha:dates[0],valor:vals[0],observacion:"IMPORTADO DIAN"});}return dedupeTexto(out);}
+function aiTitles(data){const rows=Array.isArray(data?.pagos)?data.pagos:Array.isArray(data?.records)?data.records:[],out=[];for(const r of rows){const candidates=[r.tdj,r.tdj_no,r.recibo,r.recibo_no,r.documento_fuente,r.documentoFuente,r.documento,r.numero].map(docCompleto).filter(Boolean).sort((a,b)=>b.length-a.length),tdj=candidates[0]||"",fecha=fechaTexto(r.fecha||r.fecha_pago||r.fecha_presentacion||r.fechaPago||""),valor=valorTexto(r.valor||r.valor_pago||r.valor_pagado||r.valorPago||0);if(tdj&&fecha&&valor>0)out.push({tdj,fecha,valor,observacion:"IMPORTADO IA DIAN"});}return dedupeTexto(out);}
+async function interpretarIA(text){let endpoint="https://ai-liquidador.onrender.com";try{endpoint=(localStorage.getItem("dianAiEndpoint")||endpoint).replace(/\/$/,"");}catch{}const r=await fetch(`${endpoint}/interpret/payments`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text}),cache:"no-store"});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data?.detail||`Motor IA HTTP ${r.status}`);return data;}
+function asignar(el,value){if(!el)return;el.value=value;el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));}
+function agregarTitulo(){const b=[...document.querySelectorAll("button")].find(x=>/AGREGAR T[IÍ]TULO/i.test(x.textContent||""));if(b)b.click();}
+function sincronizarTabla(titulos){const tbody=document.querySelector("#tablaTitulos tbody");if(!tbody)return false;let rows=[...tbody.querySelectorAll("tr")];while(rows.length<titulos.length){agregarTitulo();rows=[...tbody.querySelectorAll("tr")];if(rows.length>=titulos.length)break;}if(rows.length>titulos.length){for(let i=rows.length-1;i>=titulos.length;i--){const b=[...rows[i].querySelectorAll("button")].find(x=>/ELIMINAR/i.test(x.textContent||""));if(b)b.click();}rows=[...tbody.querySelectorAll("tr")];}rows.forEach((tr,i)=>{const t=titulos[i];if(!t)return;asignar(tr.querySelector('[data-t="tdj"]'),t.tdj);asignar(tr.querySelector('.fecha-campo'),`${t.fecha.slice(8,10)}/${t.fecha.slice(5,7)}/${t.fecha.slice(0,4)}`);asignar(tr.querySelector('.fecha-native'),t.fecha);asignar(tr.querySelector('[data-t="valor"]'),new Intl.NumberFormat("es-CO").format(t.valor));const obs=tr.querySelector('[data-t="observacion"]');if(obs)asignar(obs,t.observacion||"");});document.dispatchEvent(new Event("change",{bubbles:true}));return true;}
+function esBotonImportacionTDJ(btn){const txt=String(btn?.textContent||"").trim().toUpperCase();if(!/^IMPORTAR(?: IA)?$/.test(txt))return false;const box=btn.closest(".tdj-title-import,.tdj-global-import,.tdj-import");return !!box?.querySelector("textarea");}
+function instalarUI(){if(location.pathname.toLowerCase().indexOf("titulos.html")<0)return;document.addEventListener("click",async e=>{const btn=e.target?.closest?.("button");if(!esBotonImportacionTDJ(btn))return;const box=btn.closest(".tdj-title-import,.tdj-global-import,.tdj-import"),ta=box?.querySelector("textarea"),text=ta?.value||"";if(!text.trim())return;e.preventDefault();e.stopImmediatePropagation();const salida=box.querySelector("#resultadoImportacionTitulos");if(salida)salida.textContent="PROCESANDO IMPORTACIÓN...";try{let titulos=leerTitulosTexto(text);if(btn.textContent.toUpperCase().includes("IA")){try{const ai=aiTitles(await interpretarIA(text));if(ai.length)titulos=ai;}catch{}}if(!titulos.length)throw new Error("NO SE ENCONTRARON REGISTROS COMPLETOS: DOCUMENTO, FECHA Y VALOR.");if(!sincronizarTabla(titulos))throw new Error("NO SE PUDO ACTUALIZAR LA TABLA DE TÍTULOS.");if(salida)salida.textContent=`SE RECONOCIERON ${titulos.length} TÍTULO(S)/TDJ CORRECTAMENTE.`;}catch(err){if(salida)salida.textContent=`ERROR: ${err.message||err}`;}},true);}
+if(typeof window!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",instalarUI,{once:true});else instalarUI();}
