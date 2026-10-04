@@ -10,21 +10,15 @@ function separarCeldasTDJ(linea) {
   return s.split(/\s{2,}/).map(x => x.trim()).filter(Boolean);
 }
 
-function digitosTDJ(v) {
-  return String(v ?? "").replace(/\D/g, "");
-}
+function digitosTDJ(v) { return String(v ?? "").replace(/\D/g, ""); }
 
 export function esDocumentoFuenteTDJ(v) {
   const raw = String(v ?? "").trim();
   if (!raw || /[A-Za-z]/.test(raw)) return false;
-  const d = digitosTDJ(raw);
-  return /^\d{10,15}$/.test(d);
+  return /^\d{10,15}$/.test(digitosTDJ(raw));
 }
 
-function normalizarDocumentoTDJ(v) {
-  if (!esDocumentoFuenteTDJ(v)) return "";
-  return digitosTDJ(v);
-}
+function normalizarDocumentoTDJ(v) { return esDocumentoFuenteTDJ(v) ? digitosTDJ(v) : ""; }
 
 function normalizarFechaTDJ(v) {
   const s = String(v ?? "").trim();
@@ -56,83 +50,59 @@ function indiceCabeceraTDJ(headers, aliases) {
   }
   return -1;
 }
+function encontrarDocTDJ(celdas) { for (const c of celdas) { const d=normalizarDocumentoTDJ(c); if(d)return d; } return ""; }
+function encontrarFechaTDJ(celdas) { for (const c of celdas) { const f=normalizarFechaTDJ(c); if(f)return f; } return ""; }
 
-function encontrarDocTDJ(celdas) {
-  for (const c of celdas) {
-    const doc = normalizarDocumentoTDJ(c);
-    if (doc) return doc;
-  }
-  return "";
-}
-
-function encontrarFechaTDJ(celdas) {
-  for (const c of celdas) {
-    const f = normalizarFechaTDJ(c);
-    if (f) return f;
-  }
-  return "";
-}
-
-function encontrarValorTDJ(celdas, indiceDoc = -1, indiceFecha = -1) {
-  // Sin encabezados confiables, tomar el ÚLTIMO valor numérico válido de la fila.
-  // Así una columna REPETICIÓN=1 nunca se convierte en el VALOR del TDJ.
-  for (let i = celdas.length - 1; i >= 0; i--) {
-    if (i === indiceDoc || i === indiceFecha) continue;
-    const c = String(celdas[i] ?? "").trim();
-    if (!c || esDocumentoFuenteTDJ(c) || normalizarFechaTDJ(c)) continue;
-    const n = normalizarValorTDJ(c);
-    if (n > 0) return n;
+function encontrarValorTDJ(celdas, indiceDoc=-1, indiceFecha=-1) {
+  // Sin encabezado confiable, solo consideramos números que estén DESPUÉS de la fecha.
+  // Esto elimina REPETICIÓN=1 sin prohibir valores TDJ pequeños como 157 o 1000.
+  const fechaIndex = indiceFecha >= 0 ? indiceFecha : celdas.findIndex(c => Boolean(normalizarFechaTDJ(c)));
+  for(let i=celdas.length-1;i>=0;i--){
+    if(i===indiceDoc || i===indiceFecha || (fechaIndex>=0 && i<=fechaIndex))continue;
+    const c=String(celdas[i]??"").trim();
+    if(!c || esDocumentoFuenteTDJ(c) || normalizarFechaTDJ(c))continue;
+    const n=normalizarValorTDJ(c);
+    if(n>0)return n;
   }
   return 0;
 }
 
-function filaTDJ(celdas, idxDoc = -1, idxFecha = -1, idxValor = -1) {
-  if (!celdas.length) return null;
-  const docPreferido = idxDoc >= 0 ? normalizarDocumentoTDJ(celdas[idxDoc]) : "";
-  const doc = docPreferido || encontrarDocTDJ(celdas);
-  if (!doc) return null;
-  const fechaPreferida = idxFecha >= 0 ? normalizarFechaTDJ(celdas[idxFecha]) : "";
-  const fecha = fechaPreferida || encontrarFechaTDJ(celdas);
-  if (!fecha) return null;
-  const valorPreferido = idxValor >= 0 && idxValor < celdas.length ? normalizarValorTDJ(celdas[idxValor]) : 0;
-  const valor = valorPreferido > 0 ? valorPreferido : encontrarValorTDJ(celdas, idxDoc, idxFecha);
-  if (!(valor > 0)) return null;
-  return { tdj: doc, fecha, valor };
+function filaTDJ(celdas, idxDoc=-1, idxFecha=-1, idxValor=-1){
+  if(!celdas.length)return null;
+  const docPreferido=idxDoc>=0?normalizarDocumentoTDJ(celdas[idxDoc]):"";
+  const doc=docPreferido||encontrarDocTDJ(celdas);
+  if(!doc)return null;
+  const fechaPreferida=idxFecha>=0?normalizarFechaTDJ(celdas[idxFecha]):"";
+  const fecha=fechaPreferida||encontrarFechaTDJ(celdas);
+  if(!fecha)return null;
+  const fechaIndex=idxFecha>=0&&normalizarFechaTDJ(celdas[idxFecha])?idxFecha:celdas.findIndex(c=>normalizarFechaTDJ(c)===fecha);
+  const valorPreferido=idxValor>=0&&idxValor<celdas.length?normalizarValorTDJ(celdas[idxValor]):0;
+  const valor=valorPreferido>0?valorPreferido:encontrarValorTDJ(celdas,idxDoc,fechaIndex);
+  if(!(valor>0))return null;
+  return {tdj:doc,fecha,valor};
 }
 
-export function extraerRegistrosTDJTexto(texto) {
-  const lineas = String(texto ?? "").replace(/\r/g, "").split("\n").filter(x => x.trim());
-  if (!lineas.length) return [];
-  const filas = lineas.map(separarCeldasTDJ).filter(Boolean);
-  if (!filas.length) return [];
-
-  const headerIndex = filas.findIndex(cells => {
-    const h = cells.map(normTextoTDJ);
-    return h.some(x => /DOCUMENTO FUENTE/.test(x)) && h.some(x => /FECHA PRESENTACION|FECHA DE PRESENTACION|FECHA/.test(x));
-  });
-
-  let idxDoc = -1, idxFecha = -1, idxValor = -1, inicio = 0;
-  if (headerIndex >= 0) {
-    const headers = filas[headerIndex];
-    idxDoc = indiceCabeceraTDJ(headers, [
-      "NO. DOCUMENTO FUENTE", "N° DOCUMENTO FUENTE", "NUMERO DOCUMENTO FUENTE", "NÚMERO DOCUMENTO FUENTE", "DOCUMENTO FUENTE"
-    ]);
-    idxFecha = indiceCabeceraTDJ(headers, [
-      "FECHA PRESENTACION", "FECHA DE PRESENTACION", "FECHA PRESENTACIÓN", "FECHA DE PRESENTACIÓN", "FECHA"
-    ]);
-    idxValor = indiceCabeceraTDJ(headers, ["VALOR PAGADO", "VALOR PAGO", "VALOR"]);
-    inicio = headerIndex + 1;
+export function extraerRegistrosTDJTexto(texto){
+  const lineas=String(texto??"").replace(/\r/g,"").split("\n").filter(x=>x.trim());
+  if(!lineas.length)return [];
+  const filas=lineas.map(separarCeldasTDJ).filter(Boolean);
+  if(!filas.length)return [];
+  const headerIndex=filas.findIndex(cells=>{const h=cells.map(normTextoTDJ);return h.some(x=>/DOCUMENTO FUENTE/.test(x))&&h.some(x=>/FECHA PRESENTACION|FECHA DE PRESENTACION|FECHA/.test(x));});
+  let idxDoc=-1,idxFecha=-1,idxValor=-1,inicio=0;
+  if(headerIndex>=0){
+    const headers=filas[headerIndex];
+    idxDoc=indiceCabeceraTDJ(headers,["NO. DOCUMENTO FUENTE","N° DOCUMENTO FUENTE","NUMERO DOCUMENTO FUENTE","NÚMERO DOCUMENTO FUENTE","DOCUMENTO FUENTE"]);
+    idxFecha=indiceCabeceraTDJ(headers,["FECHA PRESENTACION","FECHA DE PRESENTACION","FECHA PRESENTACIÓN","FECHA DE PRESENTACIÓN","FECHA"]);
+    idxValor=indiceCabeceraTDJ(headers,["VALOR PAGADO","VALOR PAGO","VALOR"]);
+    inicio=headerIndex+1;
   }
-
-  const out = [];
-  const vistos = new Set();
-  for (let r = inicio; r < filas.length; r++) {
-    const item = filaTDJ(filas[r], idxDoc, idxFecha, idxValor);
-    if (!item) continue;
-    const key = `${item.tdj}|${item.fecha}|${item.valor}`;
-    if (vistos.has(key)) continue;
-    vistos.add(key);
-    out.push(item);
+  const out=[],vistos=new Set();
+  for(let r=inicio;r<filas.length;r++){
+    const item=filaTDJ(filas[r],idxDoc,idxFecha,idxValor);
+    if(!item)continue;
+    const key=`${item.tdj}|${item.fecha}|${item.valor}`;
+    if(vistos.has(key))continue;
+    vistos.add(key);out.push(item);
   }
   return out;
 }
