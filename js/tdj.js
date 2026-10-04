@@ -1970,7 +1970,7 @@ function detallePDFDesdeAplicacionTDJ(a,o){
 function bloqueExcedentesPorObligacionTDJPdf(o,detalles){
   const movimientos=Array.isArray(detalles)?detalles:[];
   const pagos=movimientos
-    .filter(d=>d?.pago)
+    .filter(d=>d?.pago && d.pago?.esTDJ!==true && !String(d.pago?.tdj||"").trim())
     .map((d,i)=>({
       pago:i+1,
       recibo:String(d.pago?.recibo||"").trim(),
