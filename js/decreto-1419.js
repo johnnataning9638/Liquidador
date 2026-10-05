@@ -1,3 +1,4 @@
+// Regla de imputación de sanción actualizada: el corte temporal del pago es exclusivamente la fecha de sanción.
 export const DECRETO_1419 = Object.freeze({
   inicioVigencia: "2026-09-17",
   finVigencia: "2026-11-19",
