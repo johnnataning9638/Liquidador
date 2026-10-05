@@ -1,0 +1,53 @@
+name: _fix_pdf_labels_once
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Actualizar etiqueta de presentación/sanción en todos los PDF
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+          files=[Path('js/app.js'),Path('js/tdj.js')]
+          old='<b>FECHA DE PRESENTACIÓN</b>'
+          new='<b>FECHA DE PRESENTACIÓN/SANCIÓN</b>'
+          for p in files:
+              s=p.read_text(encoding='utf-8')
+              before=s.count(old)
+              if before < 1:
+                  raise SystemExit(f'No se encontró etiqueta PDF en {p}')
+              s=s.replace(old,new)
+              after=s.count(new)
+              if after < before:
+                  raise SystemExit(f'Validación fallida en {p}')
+              p.write_text(s,encoding='utf-8')
+              print(f'{p}: {before} etiqueta(s) actualizada(s)')
+          PY
+          node --check js/app.js
+          node --check js/tdj.js
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['js/app.js','js/tdj.js']:
+              s=Path(name).read_text(encoding='utf-8')
+              assert '<b>FECHA DE PRESENTACIÓN/SANCIÓN</b>' in s, name
+              assert '<b>FECHA DE PRESENTACIÓN</b>' not in s, name
+          print('VALIDACIÓN PDF: etiqueta nueva presente y etiqueta anterior eliminada en DIAN y TDJ')
+          PY
+          node tests/regresion-ui.mjs
+          node --experimental-default-type=module tests/regresion-matematica.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js js/tdj.js
+          git rm .github/workflows/_fix_pdf_labels_once.yml
+          git commit -m 'fix: unificar etiqueta fecha de presentacion y sancion en PDF'
+          git push origin main
