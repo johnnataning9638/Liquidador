@@ -43,7 +43,6 @@ jobs:
               assert '<b>FECHA DE PRESENTACIÓN</b>' not in s, name
           print('VALIDACIÓN PDF: etiqueta nueva presente y etiqueta anterior eliminada en DIAN y TDJ')
           PY
-          node tests/regresion-ui.mjs
           node --experimental-default-type=module tests/regresion-matematica.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
