@@ -943,29 +943,16 @@ export class MotorLiquidacion{
       // Interés vigente para cada vencimiento antes de imputar el pago.
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
       const intCalc=calcularInteresesAntesPago(pago);
-      // REGLA DE IMPUTACIÓN DE SANCIÓN — RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS):
-      // La sanción SOLO puede participar si el funcionario indicó TIENE SANCIÓN = SÍ.
-      // En régimen tradicional, el punto de corte para cada pago es la FECHA DE
-      // VENCIMIENTO PARA DECLARAR, que corresponde a la FECHA DE LA CUOTA 1.
-      // - Pago anterior a la cuota 1: NO participa en sanción, aunque la
-      //   declaración posteriormente haya sido presentada extemporáneamente.
-      // - Pago igual o posterior a la cuota 1: SÍ puede participar en sanción,
-      //   siempre que exista sanción y exista fecha de presentación/sanción.
-      //
-      // RÉGIMEN SIMPLE (4, 5 Y 6 CUOTAS): ESTA REGLA NUEVA NO SE APLICA.
-      // Se conserva intacta la lógica SIMPLE existente.
-      const fechaVencimientoDeclarar=fechaISO(
-        saldosVto.find(v=>Number(v.numero)===1)?.fecha || saldosVto[0]?.fecha || ""
-      );
-      const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? true
-        : (
-            datos.tieneSancion==="SI"
-            && sancionBaseOriginal>0
-            && Boolean(fechaSancionReal)
-            && Boolean(fechaVencimientoDeclarar)
-            && pago.fecha>fechaVencimientoDeclarar
-          );
+      // REGLA DE IMPUTACIÓN DE SANCIÓN — FECHA DE SANCIÓN COMO ÚNICO CORTE.
+      // La fecha de vencimiento NO participa en la decisión de imputar sanción.
+      // - Pago anterior a fechaSancion: NO recibe sanción.
+      // - Pago igual o posterior a fechaSancion: puede recibir sanción.
+      // Esta misma regla aplica al régimen ordinario y a SIMPLE (4-6 cuotas).
+      const sancionHabilitadaPorFecha=
+        datos.tieneSancion==="SI"
+        && sancionBaseOriginal>0
+        && Boolean(fechaSancionReal)
+        && pago.fecha>=fechaSancionReal;
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
       // La sanción base es definitiva: primero se actualiza únicamente el

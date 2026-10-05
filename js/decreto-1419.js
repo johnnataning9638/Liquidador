@@ -1,8 +1,3 @@
-import {MotorLiquidacion as MotorLiquidacionV103} from "./motor-liquidacion.js?v=16.33.103";
-import {MotorLiquidacion as MotorLiquidacionV107} from "./motor-liquidacion.js?v=16.33.107";
-import {MotorLiquidacionOficial as MotorLiquidacionOficialV103} from "./motor-liquidacion-oficial.js?v=16.33.103";
-import {MotorLiquidacionOficial as MotorLiquidacionOficialV107} from "./motor-liquidacion-oficial.js?v=16.33.107";
-
 export const DECRETO_1419 = Object.freeze({
   inicioVigencia: "2026-09-17",
   finVigencia: "2026-11-19",
@@ -94,60 +89,3 @@ export function validarSeleccion1419({
   }
   return errores;
 }
-
-/**
- * REGLA EMPRESARIAL DE IMPUTACIÓN DE SANCIÓN — OCTUBRE 2026
- *
- * La fecha de vencimiento NO determina si un pago puede recibir sanción.
- * El único corte para esa decisión es fechaSancion:
- *   pago < fechaSancion  -> sanción = 0 para ese pago.
- *   pago >= fechaSancion -> se conserva la lógica vigente.
- *
- * El parche se instala sobre las cuatro variantes de motor que conviven por
- * control de caché de versión en app.js y tdj.js. No modifica el cálculo de
- * impuesto, intereses, vencimientos, tasas, beneficios tributarios ni diseño.
- */
-function instalarPoliticaFechaSancion(MotorClass){
-  if(!MotorClass || MotorClass.prototype.__politicaFechaSancion20261005)return;
-  const originalTasaEspecial=MotorClass.prototype.tasaEspecial;
-  const originalAplicarProporcionalidad=MotorClass.prototype.aplicarProporcionalidad;
-  const originalCalcular=MotorClass.prototype.calcular;
-
-  MotorClass.prototype.tasaEspecial=function(tipo,fechaPago){
-    const resultado=originalTasaEspecial.call(this,tipo,fechaPago);
-    this.__fechaPagoPoliticaSancion=String(fechaPago||"").slice(0,10);
-    const fechaSancion=String(this.__fechaSancionPolitica||"").slice(0,10);
-    const pago=String(fechaPago||"").slice(0,10);
-    if(fechaSancion && pago && pago<fechaSancion){
-      return {...resultado,reduceSancion:false,factorSancion:1,actualizaSancion:false};
-    }
-    return resultado;
-  };
-
-  MotorClass.prototype.aplicarProporcionalidad=function(pago,deuda){
-    const fechaSancion=String(this.__fechaSancionPolitica||"").slice(0,10);
-    const fechaPago=String(this.__fechaPagoPoliticaSancion||"").slice(0,10);
-    if(fechaSancion && fechaPago && fechaPago<fechaSancion && deuda){
-      return originalAplicarProporcionalidad.call(this,pago,{...deuda,sancion:0});
-    }
-    return originalAplicarProporcionalidad.call(this,pago,deuda);
-  };
-
-  MotorClass.prototype.calcular=function(datos){
-    this.__fechaSancionPolitica=String(datos?.fechaSancion||"").slice(0,10);
-    this.__fechaPagoPoliticaSancion="";
-    try{
-      return originalCalcular.call(this,datos);
-    }finally{
-      this.__fechaSancionPolitica="";
-      this.__fechaPagoPoliticaSancion="";
-    }
-  };
-
-  Object.defineProperty(MotorClass.prototype,"__politicaFechaSancion20261005",{value:true,enumerable:false,configurable:false});
-}
-
-instalarPoliticaFechaSancion(MotorLiquidacionV103);
-instalarPoliticaFechaSancion(MotorLiquidacionV107);
-instalarPoliticaFechaSancion(MotorLiquidacionOficialV103);
-instalarPoliticaFechaSancion(MotorLiquidacionOficialV107);

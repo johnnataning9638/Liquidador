@@ -237,27 +237,16 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const intCalc=calcularInteresesAntesPago(pago);
       // REGLA DE IMPUTACIÓN DE SANCIÓN — RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS):
       // La sanción solo puede participar cuando el funcionario indicó
-      // TIENE SANCIÓN = SÍ. Para obligaciones tradicionales, el punto de
-      // corte del pago es la FECHA DE VENCIMIENTO PARA DECLARAR = CUOTA 1.
-      // Los pagos anteriores a cuota 1 no reciben componente de sanción,
-      // aunque la presentación posterior haya sido extemporánea.
-      //
-      // RÉGIMEN SIMPLE (4, 5 Y 6 CUOTAS): esta nueva regla no se aplica.
-      // Se conserva la lógica existente de SIMPLE.
-      const cantidadCuotas=saldosVto.length;
-      const esSimplePorAnticipos=cantidadCuotas>=4&&cantidadCuotas<=6;
-      const fechaVencimientoDeclarar=fechaISO(
-        saldosVto.find(v=>Number(v.numero)===1)?.fecha || saldosVto[0]?.fecha || ""
-      );
-      const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
-        : (
-            datos.tieneSancion==="SI"
-            && sancionBaseOriginal>0
-            && Boolean(fechaSancionReal)
-            && Boolean(fechaVencimientoDeclarar)
-            && pago.fecha>fechaVencimientoDeclarar
-          );
+      // REGLA DE IMPUTACIÓN DE SANCIÓN — FECHA DE SANCIÓN COMO ÚNICO CORTE.
+      // La fecha de vencimiento NO participa en la decisión de imputar sanción.
+      // - Pago anterior a fechaSancion: NO recibe sanción.
+      // - Pago igual o posterior a fechaSancion: puede recibir sanción.
+      // La regla aplica tanto al régimen ordinario como a SIMPLE (4-6 cuotas).
+      const sancionHabilitadaPorFecha=
+        datos.tieneSancion==="SI"
+        && sancionBaseOriginal>0
+        && Boolean(fechaSancionReal)
+        && pago.fecha>=fechaSancionReal;
 
       if(!articulo10Seleccionado&&saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
         const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,pago.fecha,{aniosAplicados:[...aniosActualizacionSancionAplicados]});
