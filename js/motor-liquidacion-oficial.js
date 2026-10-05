@@ -237,16 +237,22 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const intCalc=calcularInteresesAntesPago(pago);
       // REGLA DE IMPUTACIÓN DE SANCIÓN — RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS):
       // La sanción solo puede participar cuando el funcionario indicó
-      // REGLA DE IMPUTACIÓN DE SANCIÓN — FECHA DE SANCIÓN COMO ÚNICO CORTE.
-      // La fecha de vencimiento NO participa en la decisión de imputar sanción.
-      // - Pago anterior a fechaSancion: NO recibe sanción.
-      // - Pago igual o posterior a fechaSancion: puede recibir sanción.
-      // La regla aplica tanto al régimen ordinario como a SIMPLE (4-6 cuotas).
-      const sancionHabilitadaPorFecha=
-        datos.tieneSancion==="SI"
-        && sancionBaseOriginal>0
-        && Boolean(fechaSancionReal)
-        && pago.fecha>=fechaSancionReal;
+      // REGLA DE IMPUTACIÓN DE SANCIÓN — SEPARACIÓN TRADICIONAL / SIMPLE.
+      // RÉGIMEN SIMPLE (4, 5 Y 6 CUOTAS): esta actualización NO modifica su
+      // lógica existente. Se conserva el comportamiento SIMPLE anterior.
+      // RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS): el único corte para decidir si
+      // el pago puede recibir sanción es la FECHA DE SANCIÓN/PRESENTACIÓN.
+      // La fecha de vencimiento NO participa en esta decisión.
+      const cantidadCuotas=saldosVto.length;
+      const esSimplePorAnticipos=cantidadCuotas>=4&&cantidadCuotas<=6;
+      const sancionHabilitadaPorFecha=esSimplePorAnticipos
+        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
+        : (
+            datos.tieneSancion==="SI"
+            && sancionBaseOriginal>0
+            && Boolean(fechaSancionReal)
+            && pago.fecha>=fechaSancionReal
+          );
 
       if(!articulo10Seleccionado&&saldoSancion>0&&fechaFirmezaSancion&&pago.fecha>fechaFirmezaSancion){
         const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,pago.fecha,{aniosAplicados:[...aniosActualizacionSancionAplicados]});

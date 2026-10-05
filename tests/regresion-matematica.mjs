@@ -54,22 +54,36 @@ function ok(name, condition) {
   console.log("PASS:", name);
 }
 
-// 1–3 cuotas: pago exactamente en vencimiento no puede imputar sanción.
+// TRADICIONAL 1–3 cuotas: el único corte de sanción es fecha de sanción.
+// Un pago anterior a la fecha de sanción NO recibe sanción, aunque ya haya vencido.
 for (const count of [1, 2, 3]) {
-  const r = motor().calcular(obligation({ count, paymentDate: "2026-01-01", paymentValue: 100000 }));
-  ok(`${count} cuota(s): pago en fecha de vencimiento sin sanción`, r.detalle[0].aplicado.sancion === 0);
+  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
+  ok(`${count} cuota(s): pago anterior a fecha de sanción sin sanción`, r.detalle[0].aplicado.sancion === 0);
 }
 
-// 1–3 cuotas: pago posterior al vencimiento sí puede imputar sanción.
+// TRADICIONAL 1–3 cuotas: pago posterior a la fecha de sanción sí puede imputar sanción.
 for (const count of [1, 2, 3]) {
   const r = motor().calcular(obligation({ count, paymentDate: "2026-01-02", paymentValue: 100000 }));
-  ok(`${count} cuota(s): pago posterior puede imputar sanción`, r.detalle[0].aplicado.sancion > 0);
+  ok(`${count} cuota(s): pago posterior a fecha de sanción puede imputar sanción`, r.detalle[0].aplicado.sancion > 0);
+}
+
+// TRADICIONAL: el vencimiento NO puede habilitar sanción por sí solo.
+for (const count of [1, 2, 3]) {
+  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
+  ok(`${count} cuota(s): pago posterior al vencimiento pero anterior a sanción sigue sin sanción`, r.detalle[0].aplicado.sancion === 0);
 }
 
 // SIMPLE 4–6 cuotas: se conserva la participación de sanción aun en el primer anticipo.
 for (const count of [4, 5, 6]) {
   const r = motor().calcular(obligation({ count, paymentDate: "2026-01-02", paymentValue: 100000 }));
   ok(`SIMPLE ${count} cuotas: sanción permanece habilitada después del vencimiento`, r.detalle[0].aplicado.sancion > 0);
+}
+
+// SIMPLE 4–6 cuotas: NO se modifica con la nueva regla de TRADICIONAL.
+// Se conserva la lógica SIMPLE existente para un pago anterior a fecha de sanción.
+for (const count of [4, 5, 6]) {
+  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
+  ok(`SIMPLE ${count} cuotas: conserva lógica existente antes de fecha de sanción`, r.detalle[0].aplicado.sancion === 0);
 }
 
 // Proporcionalidad: el pago de $1.001 nunca puede convertirse en $2.000 por redondeo.
