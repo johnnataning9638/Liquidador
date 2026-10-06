@@ -85,20 +85,19 @@ jobs:
           from pathlib import Path
           R=Path('.'); A=R/'js/app.js'; T=R/'js/tdj.js'; U=R/'tests/regresion-ui.mjs'
           a=A.read_text(); t=T.read_text(); u=U.read_text()
-          # La función ya fue incorporada; esta operación es idempotente y completa el enlace del PDF.
           a=a.replace('${dinero(x.pago.valor)}','${dinero(valorNominalPagoPdf(x,d))}',1)
           t=t.replace('?"EXCEDENTE":"PAGO EN EXCESO"','?"EXCEDENTE DE TÍTULO":"PAGO EN EXCESO"',1)
           u=u.replace('const VERSION="16.33.113";','const VERSION="16.33.114";')
           u=u.replace('assert.match(tdjSrc,/EXCEDENTE":"PAGO EN EXCESO/);','assert.match(tdjSrc,/EXCEDENTE DE TÍTULO":"PAGO EN EXCESO/);')
           if 'assert.match(app,/function valorNominalPagoPdf\\(x,d\\)/);' not in u:
             u += '\nassert.match(app,/function valorNominalPagoPdf\\(x,d\\)/);\nassert.match(app,/valorNominalPagoPdf\\(x,d\\)/);\nassert.match(app,/EXCEDENTE DE TÍTULO/);\nassert.match(tdjSrc,/const original=\\(Array.isArray\\(o\\?\\.pagos\\)\\?o\\.pagos:\\[\\]\\)\\.find/);\nconsole.log("REGRESIÓN VALOR NOMINAL TÍTULO + EXCEDENTE OK");\n'
+          A.write_text(a);T.write_text(t);U.write_text(u)
           skip={R/'.github/workflows/audit-estabilidad.yml',R/'supabase/migrations/20261006_security_hardening_16_33_113.sql'}
           for p in R.rglob('*'):
             if p.is_file() and '.git' not in p.parts and p not in skip and p.suffix.lower() in {'.js','.html','.css','.json','.yml','.yaml','.mjs','.txt'} and '.github/workflows' not in p.as_posix() and 'supabase/migrations' not in p.as_posix():
               try:s=p.read_text()
               except UnicodeDecodeError:continue
               if '16.33.113' in s:p.write_text(s.replace('16.33.113','16.33.114'))
-          A.write_text(a);T.write_text(t);U.write_text(u)
           PY2
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
           node --experimental-default-type=module tests/regresion-matematica.mjs
