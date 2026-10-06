@@ -79,11 +79,14 @@ for (const count of [4, 5, 6]) {
   ok(`SIMPLE ${count} cuotas: sanción permanece habilitada después del vencimiento`, r.detalle[0].aplicado.sancion > 0);
 }
 
-// SIMPLE 4–6 cuotas: NO se modifica con la nueva regla de TRADICIONAL.
-// Se conserva la lógica SIMPLE existente para un pago anterior a fecha de sanción.
+// SIMPLE 4–6 cuotas: los anticipos conservan la metodología SIMPLE y no
+// quedan bloqueados por la fecha de sanción/presentación usada para TRADICIONAL.
 for (const count of [4, 5, 6]) {
-  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
-  ok(`SIMPLE ${count} cuotas: conserva lógica existente antes de fecha de sanción`, r.detalle[0].aplicado.sancion === 0);
+  const r = motor().calcular({
+    ...obligation({ count, paymentDate: "2026-01-02", paymentValue: 100000 }),
+    fechaSancion: "2026-01-03"
+  });
+  ok(`SIMPLE ${count} cuotas: conserva sanción antes de fecha de sanción`, r.detalle[0].aplicado.sancion > 0);
 }
 
 // Proporcionalidad: el pago de $1.001 nunca puede convertirse en $2.000 por redondeo.
