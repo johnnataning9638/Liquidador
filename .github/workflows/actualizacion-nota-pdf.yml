@@ -1,0 +1,106 @@
+name: Actualizacion controlada nota PDF
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar actualización exclusiva
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          OLD = 'Nota: Liquidación sujeta a revisión por las partes interesadas.'
+          NEW = 'La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.'
+          VERSION_OLD = '16.33.115'
+          VERSION_NEW = '16.33.116'
+
+          targets = [Path('js/app.js'), Path('js/tdj.js')]
+          total = 0
+          for path in targets:
+              text = path.read_text(encoding='utf-8')
+              count = text.count(OLD)
+              if count == 0:
+                  raise SystemExit(f'No se encontró la nota anterior en {path}')
+              text = text.replace(OLD, NEW)
+              path.write_text(text, encoding='utf-8')
+              total += count
+              print(f'{path}: {count} nota(s) reemplazada(s)')
+
+          for path in Path('.').rglob('*'):
+              if not path.is_file() or '.git' in path.parts:
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except (UnicodeDecodeError, OSError):
+                  continue
+              if VERSION_OLD in text:
+                  path.write_text(text.replace(VERSION_OLD, VERSION_NEW), encoding='utf-8')
+                  print(f'Versión actualizada en {path}')
+
+          print(f'Total de notas reemplazadas: {total}')
+          PY
+
+      - name: Pruebas de integridad
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          OLD = 'Nota: Liquidación sujeta a revisión por las partes interesadas.'
+          NEW = 'La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.'
+          for path in (Path('js/app.js'), Path('js/tdj.js')):
+              text = path.read_text(encoding='utf-8')
+              assert OLD not in text, f'Nota anterior aún presente en {path}'
+              assert text.count(NEW) >= 1, f'Nota nueva no encontrada en {path}'
+          all_text = ''
+          for path in Path('.').rglob('*'):
+              if path.is_file() and '.git' not in path.parts:
+                  try:
+                      all_text += path.read_text(encoding='utf-8') + '\n'
+                  except (UnicodeDecodeError, OSError):
+                      pass
+          assert '16.33.115' not in all_text, 'Quedó una referencia a la versión anterior'
+          assert '16.33.116' in all_text, 'No se encontró la nueva versión'
+          print('Pruebas textuales OK')
+          PY
+          node --check js/app.js
+          node --check js/tdj.js
+          echo 'Sintaxis JavaScript OK'
+
+      - name: Verificar y publicar
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js js/tdj.js
+          git add -u
+          git commit -m 'Actualiza nota legal en PDFs y versión 16.33.116'
+          git push
+
+      - name: Eliminar workflow temporal
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/actualizacion-nota-pdf.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u .github/workflows/actualizacion-nota-pdf.yml
+          git commit -m 'Limpia workflow temporal de actualización'
+          git push
