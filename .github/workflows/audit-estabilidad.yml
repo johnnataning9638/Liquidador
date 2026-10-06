@@ -35,18 +35,18 @@ jobs:
       - name: Validar versión del núcleo corregido
         run: |
           set -e
-          grep -q 'motor-liquidacion-base.js?v=16.33.114' js/motor-liquidacion.js
+          grep -q 'motor-liquidacion-base.js?v=16.33.115' js/motor-liquidacion.js
           grep -q 'actions/checkout@v6' .github/workflows/audit-estabilidad.yml
-          echo 'NUCLEO VERSION 16.33.114 OK'
+          echo 'NUCLEO VERSION 16.33.115 OK'
 
       - name: Verificar alineación global de versión
         run: |
           set -e
-          if grep -R -n --exclude-dir=.git --exclude='*.md' --exclude='20261006_security_hardening_16_33_113.sql' -E '16\.33\.(110|111|112|113)' .; then
-            echo 'ERROR: se detectó una referencia activa a una versión anterior a 16.33.114.'
+          if grep -R -n --exclude-dir=.git --exclude='*.md' --exclude='20261006_security_hardening_16_33_113.sql' -E '16\.33\.(110|111|112|113|114)' js tests index.html liquidacion.html titulos.html estilos.css; then
+            echo 'ERROR: se detectó una referencia activa a una versión anterior a 16.33.115.'
             exit 1
           fi
-          echo 'VERSIONES ACTIVAS ALINEADAS O SUPERIORES A 16.33.114'
+          echo 'VERSIONES ACTIVAS ALINEADAS O SUPERIORES A 16.33.115'
 
       - name: Verificar protección del régimen tradicional
         run: |
