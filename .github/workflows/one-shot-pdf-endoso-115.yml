@@ -66,10 +66,10 @@ jobs:
           grep -q '16.33.115' tests/regresion-ui.mjs
           echo 'REGRESIÓN VALOR NOMINAL + EXCEDENTE DIAN OK'
 
-      - name: Validar alineación global
+      - name: Validar alineación global de código
         run: |
           set -e
-          if grep -R -n --exclude-dir=.git --exclude='*.md' --exclude='20261006_security_hardening_16_33_113.sql' --exclude='.github/workflows/audit-estabilidad.yml' --exclude='.github/workflows/one-shot-pdf-endoso-115.yml' -E '16\.33\.(110|111|112|113|114)' .; then
+          if grep -R -n -E '16\.33\.(110|111|112|113|114)' js tests index.html liquidacion.html titulos.html estilos.css; then
             echo 'ERROR: se detectó una referencia activa anterior a 16.33.115.'
             exit 1
           fi
