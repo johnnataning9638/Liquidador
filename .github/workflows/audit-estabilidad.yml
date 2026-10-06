@@ -35,9 +35,18 @@ jobs:
       - name: Validar versión del núcleo corregido
         run: |
           set -e
-          grep -q 'motor-liquidacion-base.js?v=16.33.112' js/motor-liquidacion.js
+          grep -q 'motor-liquidacion-base.js?v=16.33.113' js/motor-liquidacion.js
           grep -q 'actions/checkout@v6' .github/workflows/audit-estabilidad.yml
-          echo 'NUCLEO VERSION 16.33.112 OK'
+          echo 'NUCLEO VERSION 16.33.113 OK'
+
+      - name: Verificar alineación global de versión
+        run: |
+          set -e
+          if grep -R -n --exclude-dir=.git --exclude='*.md' -E '16\.33\.(110|111|112)' .; then
+            echo 'ERROR: se detectó una referencia activa a una versión anterior a 16.33.113.'
+            exit 1
+          fi
+          echo 'VERSIONES ACTIVAS ALINEADAS O SUPERIORES A 16.33.113'
 
       - name: Verificar protección del régimen tradicional
         run: |
@@ -46,6 +55,15 @@ jobs:
           grep -q 'const esSimplePorAnticipos=cantidadCuotas>=4 && cantidadCuotas<=6;' js/motor-liquidacion-base.js
           grep -q 'pago.fecha>=fechaSancionReal' js/motor-liquidacion-base.js
           echo 'SEPARACION SIMPLE 4-6 / TRADICIONAL 1-3 VERIFICADA'
+
+      - name: Verificar endurecimiento de seguridad Supabase
+        run: |
+          set -euo pipefail
+          test -f supabase/migrations/20261006_security_hardening_16_33_113.sql
+          grep -q 'SECURITY INVOKER' supabase/migrations/20261006_security_hardening_16_33_113.sql
+          grep -q "select lower(auth.jwt()->>'email')" supabase/migrations/20261006_security_hardening_16_33_113.sql
+          grep -q 'REVOKE EXECUTE.*FROM PUBLIC, anon' supabase/migrations/20261006_security_hardening_16_33_113.sql
+          echo 'MIGRACION DE SEGURIDAD PRESENTE Y VALIDADA'
 
       - name: Verificar que no existan cambios funcionales ocultos en el motor base
         if: github.event_name == 'pull_request'

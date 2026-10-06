@@ -14,9 +14,9 @@ assert.match(tdj,/function configurarTabCuota\(tr,tbody\)/);
 assert.match(tdj,/const siguiente=filas\[actual\+1\]\?\.querySelector\('\.fecha-campo'\);/);
 assert.match(tdj,/tr\.querySelector\('\[data-v="periodo"\]'\).*tabindex="-1"/s);
 assert.match(tdj,/e\.preventDefault\(\);\s*if\(impuesto\)\{impuesto\.focus/);
-assert.match(html,/js\/app\.js\?v=16\.33\.110/);
-assert.match(titulos,/js\/tdj\.js\?v=16\.33\.110/);
-console.log("REGRESION UI PDF OFICIAL + TAB TDJ OK — 8 ASERCIONES — VERSION 16.33.110");
+assert.match(html,/js\/app\.js\?v=16\.33\.113/);
+assert.match(titulos,/js\/tdj\.js\?v=16\.33\.113/);
+console.log("REGRESION UI PDF OFICIAL + TAB TDJ OK — 8 ASERCIONES — VERSION 16.33.113");
 
 // REGRESIÓN: si el tramo no trae capital base, el PDF oficial debe usar el impuesto total.
 assert.match(app,/Number\(r\.impuesto\|\|0\)/);
