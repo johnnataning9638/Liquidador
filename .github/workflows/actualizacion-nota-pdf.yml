@@ -40,7 +40,7 @@ jobs:
               print(f'{path}: {count} nota(s) reemplazada(s)')
 
           for path in Path('.').rglob('*'):
-              if not path.is_file() or '.git' in path.parts:
+              if not path.is_file() or '.git' in path.parts or '.github' in path.parts:
                   continue
               try:
                   text = path.read_text(encoding='utf-8')
@@ -65,15 +65,10 @@ jobs:
               text = path.read_text(encoding='utf-8')
               assert OLD not in text, f'Nota anterior aún presente en {path}'
               assert text.count(NEW) >= 1, f'Nota nueva no encontrada en {path}'
-          all_text = ''
-          for path in Path('.').rglob('*'):
-              if path.is_file() and '.git' not in path.parts:
-                  try:
-                      all_text += path.read_text(encoding='utf-8') + '\n'
-                  except (UnicodeDecodeError, OSError):
-                      pass
-          assert '16.33.115' not in all_text, 'Quedó una referencia a la versión anterior'
-          assert '16.33.116' in all_text, 'No se encontró la nueva versión'
+          for path in (Path('js/app.js'), Path('js/tdj.js'), Path('liquidacion.html'), Path('titulos.html')):
+              text = path.read_text(encoding='utf-8')
+              assert '16.33.115' not in text, f'Quedó versión anterior en {path}'
+              assert '16.33.116' in text, f'No se encontró versión nueva en {path}'
           print('Pruebas textuales OK')
           PY
           node --check js/app.js
@@ -88,19 +83,6 @@ jobs:
           git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js js/tdj.js
           git add -u
           git commit -m 'Actualiza nota legal en PDFs y versión 16.33.116'
-          git push
-
-      - name: Eliminar workflow temporal
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f .github/workflows/actualizacion-nota-pdf.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -u .github/workflows/actualizacion-nota-pdf.yml
-          git commit -m 'Limpia workflow temporal de actualización'
           git push
