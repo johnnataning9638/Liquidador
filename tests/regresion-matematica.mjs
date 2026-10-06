@@ -79,6 +79,17 @@ for (const count of [4, 5, 6]) {
   ok(`SIMPLE ${count} cuotas: sanción permanece habilitada después del vencimiento`, r.detalle[0].aplicado.sancion > 0);
 }
 
+// SIMPLE 4–6 cuotas: pago ANTES DEL PRIMER VENCIMIENTO y antes de la fecha de sanción.
+// Esta es la regresión que reproduce el caso que estaba fallando: el vencimiento
+// no puede ser un requisito para imputar la sanción en anticipos SIMPLE.
+for (const count of [4, 5, 6]) {
+  const r = motor().calcular({
+    ...obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }),
+    fechaSancion: "2026-01-03"
+  });
+  ok(`SIMPLE ${count} cuotas: sanción también se aplica antes del primer vencimiento`, r.detalle[0].aplicado.sancion > 0);
+}
+
 // SIMPLE 4–6 cuotas: los anticipos conservan la metodología SIMPLE y no
 // quedan bloqueados por la fecha de sanción/presentación usada para TRADICIONAL.
 for (const count of [4, 5, 6]) {
