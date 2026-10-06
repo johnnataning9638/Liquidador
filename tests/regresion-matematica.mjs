@@ -82,7 +82,10 @@ for (const count of [4, 5, 6]) {
 // SIMPLE 4–6 cuotas: los anticipos conservan la metodología SIMPLE y no
 // quedan bloqueados por la fecha de sanción/presentación usada para TRADICIONAL.
 for (const count of [4, 5, 6]) {
-  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
+  const r = motor().calcular({
+    ...obligation({ count, paymentDate: "2026-01-02", paymentValue: 100000 }),
+    fechaSancion: "2026-01-03"
+  });
   ok(`SIMPLE ${count} cuotas: conserva sanción antes de fecha de sanción`, r.detalle[0].aplicado.sancion > 0);
 }
 
