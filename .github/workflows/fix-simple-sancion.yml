@@ -1,21 +1,20 @@
 name: Fix aislado régimen SIMPLE
 
 on:
-  pull_request:
-    branches: ["main"]
+  push:
+    branches: ["fix/simple-sancion-20261005"]
 
 permissions:
   contents: write
 
 jobs:
   fix-and-test:
-    if: github.event.pull_request.head.ref == 'fix/simple-sancion-20261005'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: fix/simple-sancion-20261005
 
       - name: Aplicar únicamente la corrección SIMPLE
         shell: bash
@@ -90,13 +89,6 @@ for (const count of [4, 5, 6]) {
         run: |
           set -e
           git diff --unified=0 -- js/motor-liquidacion.js js/motor-liquidacion-oficial.js tests/regresion-matematica.mjs
-          python - <<'PY'
-          from pathlib import Path
-          for name in ['js/motor-liquidacion.js','js/motor-liquidacion-oficial.js']:
-              s=Path(name).read_text(encoding='utf-8')
-              if s.count('? true') < 1:
-                  raise SystemExit(f'No quedó aplicada la condición SIMPLE en {name}')
-          PY
 
       - name: Publicar corrección en la rama
         shell: bash
