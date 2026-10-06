@@ -1,0 +1,78 @@
+name: One shot PDF valor nominal 16.33.114b
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with: {fetch-depth: 0}
+      - name: Aplicar correccion
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          R=Path('.'); A=R/'js/app.js'; T=R/'js/tdj.js'; W=R/'.github/workflows/audit-estabilidad.yml'
+          a=A.read_text(); t=T.read_text(); w=W.read_text()
+          h='''function valorNominalPagoPdf(x,d){
+            const p=x?.pago||{}; const esTDJ=p.esTDJ===true||String(p.tdj||"").trim()!=="";
+            if(!esTDJ)return Number(p.valor||0);
+            const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
+            const q=(d?.pagos||[]).find(z=>{const zid=String(z?.id||"").trim(),zn=String(z?.tdj||"").trim(),zf=fechaISO(z?.fecha)||"";return (id&&zid===id)||(n&&zn===n&&(!f||zf===f));});
+            return Number(q?.valor??p.valor??0);
+          }
+          function excedenteTituloPdf(x,i,d,r){
+            const p=x?.pago||{}; if(!(p.esTDJ===true||String(p.tdj||"").trim()!==""))return 0;
+            const nominal=valorNominalPagoPdf(x,d); if(nominal<=0)return 0;
+            const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
+            const m=(r?.detalle||[]).slice(0,i+1).filter(y=>{const q=y?.pago||{},zid=String(q.id||"").trim(),zn=String(q.tdj||"").trim(),zf=fechaISO(q.fecha)||"";return (id&&zid===id)||(n&&zn===n&&(!f||zf===f));});
+            const ap=m.reduce((s,y)=>{const v=y?.aplicado;const z=typeof v==='object'&&v!==null?Number(v.total??((Number(v.impuesto)||0)+(Number(v.intereses)||0)+(Number(v.sancion)||0))):Number(v||0);return s+Math.max(0,Number.isFinite(z)?z:0);},0);
+            return Math.max(0,nominal-ap);
+          }
+          if 'function valorNominalPagoPdf(x,d)' not in a:a=a.replace('function bloquePdfPago(x,i,d,r){',h+'function bloquePdfPago(x,i,d,r){',1)
+          a=a.replace('${dinero(x.pago.valor)}','${dinero(valorNominalPagoPdf(x,d))}',1)
+          a=a.replace('<b>EXCEDENTE:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}', '<b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}',1)
+          needle='const fecha=fechaISO(p.fecha)||"";'
+          repl='''const fecha=fechaISO(p.fecha)||"";
+            const original=(Array.isArray(o?.pagos)?o.pagos:[]).find(q=>{const qid=String(q?.id||"").trim(),qtdj=String(q?.tdj||"").trim(),qfecha=fechaISO(q?.fecha)||"",pid=String(p?.id||"").trim();return (pid&&qid===pid)||(titulo&&qtdj===titulo&&(!fecha||qfecha===fecha));});
+            if(original&&Number(original.valor||0)>0)return Number(original.valor||0);'''
+          pos=t.find('function valorDisponiblePagoPDFTDJ(d,o,resultado){')
+          if pos>=0:
+            end=t.find(needle,pos)
+            if end>=0 and 'const original=(Array.isArray(o?.pagos)?o.pagos:[])' not in t[pos:end+len(needle)+1]:t=t[:end]+t[end:].replace(needle,repl,1)
+          t=t.replace('?"EXCEDENTE":"PAGO EN EXCESO"', '?"EXCEDENTE DE TÍTULO":"PAGO EN EXCESO"',1)
+          skip={W,R/'supabase/migrations/20261006_security_hardening_16_33_113.sql'}
+          for p in R.rglob('*'):
+            if p.is_file() and '.git' not in p.parts and p not in skip and p.suffix.lower() in {'.js','.html','.css','.json','.yml','.yaml','.mjs','.txt'}:
+              try:s=p.read_text()
+              except UnicodeDecodeError:continue
+              if '16.33.113' in s:p.write_text(s.replace('16.33.113','16.33.114'))
+          w=w.replace('motor-liquidacion-base.js?v=16.33.113','motor-liquidacion-base.js?v=16.33.114').replace('NUCLEO VERSION 16.33.113 OK','NUCLEO VERSION 16.33.114 OK').replace("-E '16\\.33\\.(110|111|112)' .; then","-E '16\\.33\\.(110|111|112|113)' --exclude='20261006_security_hardening_16_33_113.sql' .; then").replace('A SUPERIORES A 16.33.113','A SUPERIORES A 16.33.114')
+          A.write_text(a);T.write_text(t);W.write_text(w)
+          print('app helper', 'function valorNominalPagoPdf(x,d)' in a, 'nominal template', 'valorNominalPagoPdf(x,d)' in a, 'tdj helper original', 'const original=(Array.isArray(o?.pagos)?o.pagos:[])' in t)
+          PY
+      - name: Pruebas
+        run: |
+          set -euo pipefail
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --experimental-default-type=module tests/regresion-matematica.mjs
+          node tests/regresion-ui.mjs
+          grep -q 'motor-liquidacion-base.js?v=16.33.114' js/motor-liquidacion.js
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix: valor nominal de titulos en ambos PDF v16.33.114' || exit 0
+          git push origin main
+      - name: Cleanup
+        if: always()
+        run: |
+          git rm -f .github/workflows/one-shot-pdf-114b.yml TRIGGER_PDF_114B.txt 2>/dev/null || true
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          if ! git diff --cached --quiet; then git commit -m 'chore: retirar workflow temporal PDF 114b' && git push origin main; fi
