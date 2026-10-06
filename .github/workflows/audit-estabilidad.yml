@@ -42,7 +42,7 @@ jobs:
       - name: Verificar alineación global de versión
         run: |
           set -e
-          if grep -R -n --exclude-dir=.git --exclude='*.md' -E '16\.33\.(11[0-2])(["'"' ]|$)' .; then
+          if grep -R -n --exclude-dir=.git --exclude='*.md' -E '16\.33\.(110|111|112)' .; then
             echo 'ERROR: se detectó una referencia activa a una versión anterior a 16.33.113.'
             exit 1
           fi
