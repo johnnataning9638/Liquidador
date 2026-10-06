@@ -950,7 +950,7 @@ export class MotorLiquidacion{
       // el pago puede recibir sanción es la FECHA DE SANCIÓN/PRESENTACIÓN.
       // La fecha de vencimiento NO participa en esta decisión.
       const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
+        ? true
         : (
             datos.tieneSancion==="SI"
             && sancionBaseOriginal>0

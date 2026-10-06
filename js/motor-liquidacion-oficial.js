@@ -246,7 +246,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const cantidadCuotas=saldosVto.length;
       const esSimplePorAnticipos=cantidadCuotas>=4&&cantidadCuotas<=6;
       const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
+        ? true
         : (
             datos.tieneSancion==="SI"
             && sancionBaseOriginal>0
