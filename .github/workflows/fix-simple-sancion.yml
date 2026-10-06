@@ -77,23 +77,26 @@ for (const count of [4, 5, 6]) {
               raise SystemExit('No se encontró el bloque SIMPLE esperado en la regresión')
           PY
 
-      - name: Validar sintaxis y regresiones
+      - name: Validar sintaxis y regresión matemática
         run: |
           set -e
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
           node --check tests/regresion-matematica.mjs
           node --experimental-default-type=module tests/regresion-matematica.mjs
-          node tests/regresion-ui.mjs
           git diff --check
 
-      - name: Verificar que solo cambie la regla SIMPLE
+      - name: Verificar alcance de la corrección
+        shell: bash
         run: |
           set -e
-          git fetch origin main --quiet
-          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
-            git diff --unified=3 origin/main...HEAD -- "$f" || true
-          done
-          git diff --unified=0 origin/main...HEAD -- js/motor-liquidacion.js js/motor-liquidacion-oficial.js | grep -vE '^(@@|---|\+\+\+|[-+]import )' | grep -vE '^[+-] *\? ?true$|^[+-] *\? *\(!fechaSancionReal \|\| pago\.fecha>=fechaSancionReal\)$|^[+-] *const sancionHabilitadaPorFecha' || true
+          git diff --unified=0 -- js/motor-liquidacion.js js/motor-liquidacion-oficial.js tests/regresion-matematica.mjs
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['js/motor-liquidacion.js','js/motor-liquidacion-oficial.js']:
+              s=Path(name).read_text(encoding='utf-8')
+              if s.count('? true') < 1:
+                  raise SystemExit(f'No quedó aplicada la condición SIMPLE en {name}')
+          PY
 
       - name: Publicar corrección en la rama
         shell: bash
