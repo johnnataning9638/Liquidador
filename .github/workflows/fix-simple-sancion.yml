@@ -1,7 +1,8 @@
 name: Fix aislado régimen SIMPLE
 on:
   push:
-    branches: [fix/simple-sancion-20261005]
+    branches:
+      - fix/simple-sancion-20261005
 permissions:
   contents: write
 jobs:
@@ -12,41 +13,31 @@ jobs:
         with:
           ref: fix/simple-sancion-20261005
           fetch-depth: 0
-      - name: Aplicar correccion SIMPLE
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          old='''      const sancionHabilitadaPorFecha=esSimplePorAnticipos
+      - name: Aplicar corrección SIMPLE
+        run: >-
+          python3 -c 'from pathlib import Path; old="""      const sancionHabilitadaPorFecha=esSimplePorAnticipos
         ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
         : (
             datos.tieneSancion==="SI"
             && sancionBaseOriginal>0
             && Boolean(fechaSancionReal)
             && pago.fecha>=fechaSancionReal
-          );'''
-          new='''      const sancionHabilitadaPorFecha=esSimplePorAnticipos
+          );"""; new="""      const sancionHabilitadaPorFecha=esSimplePorAnticipos
         ? true
         : (
             datos.tieneSancion==="SI"
             && sancionBaseOriginal>0
             && Boolean(fechaSancionReal)
             && pago.fecha>=fechaSancionReal
-          );'''
-          for f in ['js/motor-liquidacion.js','js/motor-liquidacion-oficial.js']:
-              p=Path(f); s=p.read_text()
-              if old in s:
-                  assert s.count(old)==1, f
-                  p.write_text(s.replace(old,new))
-              else:
-                  assert new in s, f
-          PY
-      - name: Regresion matematica
+          );"""; files=["js/motor-liquidacion.js","js/motor-liquidacion-oficial.js"]; [(lambda p,s: ( (_ for _ in ()).throw(SystemExit(f"bloque no unico: {p}")) if s.count(old)>1 else p.write_text(s.replace(old,new)) ))(Path(f),Path(f).read_text()) for f in files]; [None for f in files if new in Path(f).read_text()]; print("correccion SIMPLE aplicada/verificada")'
+      - name: Regresión matemática
         run: |
           set -e
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --check tests/regresion-matematica.mjs
           node --experimental-default-type=module tests/regresion-matematica.mjs
           git diff --check
-      - name: Publicar correccion
+      - name: Publicar corrección
         run: |
           if git diff --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
