@@ -90,6 +90,33 @@ for (const count of [4, 5, 6]) {
   ok(`SIMPLE ${count} cuotas: sanción también se aplica antes del primer vencimiento`, r.detalle[0].aplicado.sancion > 0);
 }
 
+// Caso integral: 6 anticipos pagados antes de la fecha de sanción.
+// La sanción declarada ($2.294.000) debe quedar distribuida en los anticipos
+// y nunca trasladarse artificialmente a un pago posterior.
+const simple6Pagos = motor().calcular({
+  concepto: "PRUEBA REGRESION",
+  anio: 2026,
+  tipoLiquidacion: "PRIVADA",
+  tieneSancion: "SI",
+  valorSancion: 2294000,
+  fechaSancion: "2026-04-03",
+  vencimientos: Array.from({ length: 6 }, (_, i) => ({
+    id: `S-${i + 1}`,
+    numero: i + 1,
+    fecha: `2026-0${i < 3 ? 1 : 2}-${String((i % 3) + 1).padStart(2, "0")}`,
+    impuesto: 600000
+  })),
+  pagos: Array.from({ length: 6 }, (_, i) => ({
+    id: `P-${i + 1}`,
+    fecha: `2026-0${i < 3 ? 1 : 2}-${String((i % 3) + 1).padStart(2, "0")}`,
+    valor: 500000,
+    tipo: "TASA DIAN"
+  }))
+});
+const sancionSimple6Aplicada=simple6Pagos.detalle.reduce((a,d)=>a+Number(d?.aplicado?.sancion||0),0);
+ok("SIMPLE 6 anticipos: la sanción total de $2.294.000 se imputa en los pagos anteriores", sancionSimple6Aplicada === 2294000);
+ok("SIMPLE 6 anticipos: todos los pagos participan en la distribución de sanción", simple6Pagos.detalle.every(d=>Number(d?.aplicado?.sancion||0)>0));
+
 // SIMPLE 4–6 cuotas: los anticipos conservan la metodología SIMPLE y no
 // quedan bloqueados por la fecha de sanción/presentación usada para TRADICIONAL.
 for (const count of [4, 5, 6]) {
