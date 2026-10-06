@@ -2,9 +2,13 @@ name: Audit de estabilidad del liquidador
 
 on:
   push:
-    branches: ["main", "audit/**"]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
+
+concurrency:
+  group: liquidador-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
