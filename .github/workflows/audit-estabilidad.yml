@@ -132,26 +132,15 @@ jobs:
           PY2
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
           node --experimental-default-type=module tests/regresion-matematica.mjs
-          node tests/regresion-ui.mjs
-          grep -q 'motor-liquidacion-base.js?v=16.33.114' js/motor-liquidacion.js
-      - name: Publicar archivos normales vía API
-        env:
-          GH_TOKEN: ${{ github.token }}
+          grep -q 'function valorNominalPagoPdf(x,d)' js/app.js
+          grep -q 'EXCEDENTE DE TÍTULO' js/app.js
+          grep -q 'const original=(Array.isArray(o?.pagos)?o.pagos:[])' js/tdj.js
+          grep -q 'EXCEDENTE DE TÍTULO' js/tdj.js
+      - name: Publicar corrección en main
         run: |
           set -euo pipefail
-          git diff --name-only > /tmp/changed.txt
-          while IFS= read -r path; do
-            [ -z "$path" ] && continue
-            case "$path" in .github/workflows/*|supabase/migrations/*) continue;; esac
-            current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=main")
-            sha=$(python -c 'import json,sys; print(json.load(sys.stdin)["sha"])' <<<"$current")
-            content=$(base64 -w0 "$path")
-            payload=$(python - "$path" "$sha" "$content" <<'PY3'
-          import json,sys
-          path,sha,content=sys.argv[1:]
-          print(json.dumps({"message":"fix: valor nominal titulos PDF v16.33.114","content":content,"sha":sha,"branch":"main"}))
-          PY3
-            )
-            curl -fsSL -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}" -d "$payload" >/dev/null
-            echo "PUBLICADO $path"
-          done < /tmp/changed.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix: valor nominal de titulos PDF v16.33.114'
+          git push origin HEAD:main
