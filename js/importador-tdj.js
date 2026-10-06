@@ -1,4 +1,4 @@
-import {numExcel,fechaExcel,norm} from "./importador-excel.js?v=16.33.115";
+import {numExcel,fechaExcel,norm} from "./importador-excel.js?v=16.33.116";
 
 function fechaISOImportacion(v){const s=fechaExcel(v);return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:"";}
 function truncarValorImportacion(v){const n=Number(v);return Number.isFinite(n)?Math.trunc(n):0;}

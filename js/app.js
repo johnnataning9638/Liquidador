@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.115";
-import {importarDatosInteligente} from "./importador.js?v=16.33.115";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.115";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.115";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.115";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.115";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.115";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.115";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.115";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.115";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.115";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.115";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.115";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.115";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.116";
+import {importarDatosInteligente} from "./importador.js?v=16.33.116";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.116";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.116";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.116";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.116";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.116";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.116";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.116";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.116";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.116";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.116";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.116";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.116";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -305,7 +305,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.115"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.116"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1063,7 +1063,7 @@ function resumenFinalPdf(r){
   const totalReduccion1419=reducciones1419.reduce((a,e)=>a+Math.max(0,Number(e.saldoAntesReduccion??e.saldoAntes??0)-Number(e.saldoDespuesReduccion??e.saldoDespues??0)),0);
   const filasReduccion1419=reducciones1419.length?reducciones1419.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.saldoAntesReduccion??e.saldoAntes??0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??0)}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(e.saldoDespuesReduccion??e.saldoDespues??0)}</td></tr>`).join(""):`<tr><td colspan="7">No se registró reducción de sanción del artículo 9 en los pagos liquidados.</td></tr>`;
   const observacionesBeneficio=(r.observacionesBeneficio1419||[]).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
-  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div><div><b>INTERESES GENERADOS EN LOS PAGOS</b><strong>${dinero(totalIntereses)}</strong></div><div><b>ACTUALIZACIÓN TOTAL DE SANCIÓN</b><strong>${dinero(totalActualizacionSancion)}</strong></div><div><b>REDUCCIÓN EFECTIVA SANCIÓN ART. 9</b><strong>${dinero(totalReduccion1419)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table><h3>DETALLE DE REDUCCIÓN DE SANCIÓN — ARTÍCULO 9</h3><table><thead><tr><th>PAGO</th><th>FECHA</th><th>ANTES DE REDUCIR</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>VALOR APLICADO</th></tr></thead><tbody>${filasReduccion1419}</tbody></table></div>${observacionesBeneficio}<div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></div></section>`;
+  return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL DE LA LIQUIDACIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>SALDO TOTAL FINAL</b><strong>${dinero(r.total||0)}</strong></div><div><b>EXCEDENTE TOTAL</b><strong>${dinero(excedenteTotal)}</strong></div><div><b>SANCIÓN FINAL</b><strong>${dinero(r.sancion||0)}</strong></div><div><b>INTERESES GENERADOS EN LOS PAGOS</b><strong>${dinero(totalIntereses)}</strong></div><div><b>ACTUALIZACIÓN TOTAL DE SANCIÓN</b><strong>${dinero(totalActualizacionSancion)}</strong></div><div><b>REDUCCIÓN EFECTIVA SANCIÓN ART. 9</b><strong>${dinero(totalReduccion1419)}</strong></div></div><div class="pdf-actualizacion-sancion"><h3>RESUMEN DE ACTUALIZACIONES DE SANCIÓN</h3><table><thead><tr><th>PAGO</th><th>FECHA PAGO</th><th>AÑO ACTUALIZACIÓN</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>ANTES</th><th>ACTUALIZACIÓN</th><th>DESPUÉS</th></tr></thead><tbody>${filas}</tbody></table><h3>DETALLE DE REDUCCIÓN DE SANCIÓN — ARTÍCULO 9</h3><table><thead><tr><th>PAGO</th><th>FECHA</th><th>ANTES DE REDUCIR</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>VALOR APLICADO</th></tr></thead><tbody>${filasReduccion1419}</tbody></table></div>${observacionesBeneficio}<div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article></div></section>`;
 }
 
 function resumenEndosoTDJNormalPdf(d,r){
@@ -1118,7 +1118,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.115"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.116"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la
@@ -1349,7 +1349,7 @@ function excedenteTituloPdf(x,i,d,r){
   ${bloqueSancionDeclaracion1419Pdf(x,d)}
   <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(valorNominalPagoPdf(x,d))}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Math.max(Number(x.excedente||x.aplicado?.excedente||0),excedenteTituloPdf(x,i,d,r))>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article>`;
+  <div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article>`;
 }
 function estilosPdf(){
   return `

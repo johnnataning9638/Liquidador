@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.115";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.115";
-import {importarDatosInteligente} from "./importador.js?v=16.33.115";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.115";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.115";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.115";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.115";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.115";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.115";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.115";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.115";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.116";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.116";
+import {importarDatosInteligente} from "./importador.js?v=16.33.116";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.116";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.116";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.116";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.116";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.116";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.116";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.116";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.116";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1897,7 +1897,7 @@ function bloqueDetallePagoDIANTDJ(x,i,d,r){
   ${bloqueSancionDeclaracion1419PdfTDJ(x,d)}
   <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"PAGO EN EXCESO"}:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article>`;
+  <div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article>`;
 }
 
 function datosPDFTDJ(o,p){
@@ -2084,7 +2084,7 @@ async function exportarPdfTDJ(){
 
     const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
     const endRows=resultado.resumenTitulos.filter(x=>Number(x.excedente||0)>0).map(x=>`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td></tr>`).join("")||`<tr><td colspan="5">NO HAY TÍTULOS SOBRANTES.</td></tr>`;
-    if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(saldoPendientePDF)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${endRows}</tbody><tfoot><tr><th colspan="3">TOTAL ENDOSO</th><th>${dinero(resultado.endoso)}</th><th>ENDOSO</th></tr></tfoot></table></section>${observacionesBeneficio1419}<div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article></section>`);
+    if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(saldoPendientePDF)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${endRows}</tbody><tfoot><tr><th colspan="3">TOTAL ENDOSO</th><th>${dinero(resultado.endoso)}</th><th>ENDOSO</th></tr></tfoot></table></section>${observacionesBeneficio1419}<div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article></section>`);
 
     const css=`  @page{size:A4 portrait;margin:22mm}
   *{box-sizing:border-box}
@@ -2170,7 +2170,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.115-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.116-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -2671,7 +2671,7 @@ function limpiarTodo(){
 
 
 // ================================================================
-// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.115
+// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.116
 // Regla: un título tiene únicamente TDJ + FECHA + VALOR.
 // ================================================================
 function separarFilaImportacionTDJ(linea){
