@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.114";
-import {importarDatosInteligente} from "./importador.js?v=16.33.114";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.114";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.114";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.114";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.114";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.114";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.114";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.114";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.114";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.114";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.114";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.114";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.114";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.115";
+import {importarDatosInteligente} from "./importador.js?v=16.33.115";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.115";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.115";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.115";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.115";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.115";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.115";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.115";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.115";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.115";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.115";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.115";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.115";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -305,7 +305,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.114"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.115"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1118,7 +1118,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.114"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.115"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la
@@ -1347,7 +1347,7 @@ function excedenteTituloPdf(x,i,d,r){
   ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdf(x,d,i):""}
   ${bloqueActualizacionSancionPdf(x,i)}
   ${bloqueSancionDeclaracion1419Pdf(x,d)}
-  <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(valorNominalPagoPdf(x,d))}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}</div>
+  <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(valorNominalPagoPdf(x,d))}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Math.max(Number(x.excedente||x.aplicado?.excedente||0),excedenteTituloPdf(x,i,d,r))>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article>`;
 }
@@ -1421,6 +1421,13 @@ function estilosPdf(){
   .pdf-actualizacion-sancion thead th{background:#eef4f8;font-size:7.2pt}
   .pdf-actualizacion-sancion tfoot th{background:#e8f1f6;font-weight:700}
   .pdf-actualizacion-descripcion{padding:1mm 1.5mm;font-size:7.5pt;line-height:1.05;background:#f8fbfc;border-bottom:1px solid #b7c4cc}
+  .pdf-bloque{margin:2mm;border:1px solid #c58a1a;background:#fffdf7;break-inside:avoid;page-break-inside:avoid}
+  .pdf-bloque h2{margin:0;padding:1.5mm 2mm;background:#fff6d8;color:#7a5200;font-size:11pt;border-bottom:1px solid #c58a1a}
+  .pdf-bloque table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .pdf-bloque th,.pdf-bloque td{border:1px solid #c9a45a;padding:1.25mm;font-size:8.5pt;line-height:1.05;text-align:right;white-space:nowrap}
+  .pdf-bloque th:first-child,.pdf-bloque td:first-child{text-align:center}
+  .pdf-bloque thead th{background:#fff9e8;font-size:8pt}
+  .pdf-bloque tfoot th{background:#fff0c2;font-weight:700}
   .pdf-excedentes-finales{margin:2mm;border:1px solid #c58a1a;break-inside:avoid;page-break-inside:avoid}
   .pdf-excedentes-finales h3{font-size:9.5pt;margin:0;padding:1.25mm;background:#fff6d8;color:#7a5200}
   .pdf-excedentes-finales table{width:100%;border-collapse:collapse;table-layout:fixed}
