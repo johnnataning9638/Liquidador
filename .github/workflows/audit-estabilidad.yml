@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: ["main"]
 
-permissions:
-  contents: write
-
 jobs:
   syntax-and-integrity:
     runs-on: ubuntu-latest
@@ -16,68 +13,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
-
-      - name: Aplicar corrección aislada SIMPLE (solo PR18)
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/simple-sancion-20261005'
-        shell: bash
-        run: |
-          set -e
-          python - <<'PY'
-          from pathlib import Path
-
-          old='''      const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
-        : (
-            datos.tieneSancion==="SI"
-            && sancionBaseOriginal>0
-            && Boolean(fechaSancionReal)
-            && pago.fecha>=fechaSancionReal
-          );'''
-          new='''      const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? true
-        : (
-            datos.tieneSancion==="SI"
-            && sancionBaseOriginal>0
-            && Boolean(fechaSancionReal)
-            && pago.fecha>=fechaSancionReal
-          );'''
-
-          for name in ['js/motor-liquidacion.js','js/motor-liquidacion-oficial.js']:
-              p=Path(name)
-              s=p.read_text(encoding='utf-8')
-              if old in s:
-                  if s.count(old)!=1:
-                      raise SystemExit(f'La condición objetivo no es única en {name}')
-                  p.write_text(s.replace(old,new),encoding='utf-8')
-              elif new not in s:
-                  raise SystemExit(f'No se encontró la condición objetivo en {name}')
-
-          p=Path('tests/regresion-matematica.mjs')
-          s=p.read_text(encoding='utf-8')
-          old_test='''// SIMPLE 4–6 cuotas: NO se modifica con la nueva regla de TRADICIONAL.
-// Se conserva la lógica SIMPLE existente para un pago anterior a fecha de sanción.
-for (const count of [4, 5, 6]) {
-  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
-  ok(`SIMPLE ${count} cuotas: conserva lógica existente antes de fecha de sanción`, r.detalle[0].aplicado.sancion === 0);
-}
-
-'''
-          new_test='''// SIMPLE 4–6 cuotas: los anticipos conservan la metodología SIMPLE y no
-// quedan bloqueados por la fecha de sanción/presentación usada para TRADICIONAL.
-for (const count of [4, 5, 6]) {
-  const r = motor().calcular(obligation({ count, paymentDate: "2025-12-31", paymentValue: 100000 }));
-  ok(`SIMPLE ${count} cuotas: conserva sanción antes de fecha de sanción`, r.detalle[0].aplicado.sancion > 0);
-}
-
-'''
-          if old_test in s:
-              if s.count(old_test)!=1:
-                  raise SystemExit('El bloque SIMPLE de regresión no es único')
-              p.write_text(s.replace(old_test,new_test),encoding='utf-8')
-          elif new_test not in s:
-              raise SystemExit('No se encontró el bloque SIMPLE esperado en la regresión')
-          PY
 
       - name: Validar sintaxis JavaScript
         run: |
@@ -87,20 +22,10 @@ for (const count of [4, 5, 6]) {
       - name: Ejecutar regresión matemática
         run: node --experimental-default-type=module tests/regresion-matematica.mjs
 
-      - name: Verificar corrección SIMPLE
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/simple-sancion-20261005'
-        run: |
-          set -e
-          grep -n -A7 -B1 'const sancionHabilitadaPorFecha=esSimplePorAnticipos' js/motor-liquidacion.js
-          grep -n -A7 -B1 'const sancionHabilitadaPorFecha=esSimplePorAnticipos' js/motor-liquidacion-oficial.js
-          git diff --check
-
       - name: Ejecutar regresión de PDF oficial y tabulado TDJ
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'fix/simple-sancion-20261005'
         run: node tests/regresion-ui.mjs
 
       - name: Validar versionado de módulos
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'fix/simple-sancion-20261005'
         run: |
           set -e
           grep -q 'js/app.js?v=16.33.103' liquidacion.html
@@ -111,7 +36,7 @@ for (const count of [4, 5, 6]) {
           fi
 
       - name: Verificar que los motores no tengan cambios funcionales
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref != 'fix/simple-sancion-20261005'
+        if: github.event_name == 'pull_request'
         run: |
           set -e
           git fetch origin main --quiet
@@ -123,18 +48,3 @@ for (const count of [4, 5, 6]) {
               exit 1
             fi
           done
-
-      - name: Publicar corrección SIMPLE en PR18
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/simple-sancion-20261005'
-        shell: bash
-        run: |
-          set -e
-          if git diff --quiet; then
-            echo "La corrección SIMPLE ya estaba aplicada."
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/motor-liquidacion.js js/motor-liquidacion-oficial.js tests/regresion-matematica.mjs
-          git commit -m 'fix: restaurar sancion en anticipos del regimen SIMPLE'
-          git push origin HEAD:fix/simple-sancion-20261005
