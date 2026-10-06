@@ -54,7 +54,7 @@ console.log("REGRESIÓN EXCEDENTE EN DETALLE PDF TDJ OK");
 assert.match(tdjSrc,/function leerTitulosTDJRegistradosExcel\(rows\)/);
 assert.match(tdjSrc,/const titulosCanonicos=leerTitulosTDJRegistradosExcel\(rows\)/);
 assert.match(tdjSrc,/nuevosTitulos\.length=0/);
-assert.match(tdjSrc,/numero: nuevosTitulos\.length\+1/);
+assert.match(tdjSrc,/numero:nuevosTitulos\.length\+1/);
 console.log("REGRESIÓN IMPORTACIÓN EXCEL TDJ PRIMER TÍTULO OK");
 
 const excelTitulos=[["Nº","TDJ","FECHA","VALOR"],["1","111","2026-04-01","20000000"],["2","222","2026-05-01","10000000"]];
