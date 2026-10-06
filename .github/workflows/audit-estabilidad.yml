@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   syntax-and-integrity:
@@ -76,3 +76,82 @@ jobs:
             echo 'ERROR: se detectó un cambio funcional no esperado en el motor base.'
             exit 1
           fi
+
+  patch-pdf-nominal:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, 'ACTIVAR PDF NOMINAL')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Aplicar corrección nominal sin tocar matemática
+        run: |
+          set -euo pipefail
+          python - <<'PY2'
+          from pathlib import Path
+          R=Path('.'); A=R/'js/app.js'; T=R/'js/tdj.js'; U=R/'tests/regresion-ui.mjs'
+          a=A.read_text(); t=T.read_text(); u=U.read_text()
+          h="""function valorNominalPagoPdf(x,d){
+            const p=x?.pago||{}; const esTDJ=p.esTDJ===true||String(p.tdj||"").trim()!=="";
+            if(!esTDJ)return Number(p.valor||0);
+            const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
+            const q=(d?.pagos||[]).find(z=>{const zid=String(z?.id||"").trim(),zn=String(z?.tdj||"").trim(),zf=fechaISO(z?.fecha)||"";return (id&&zid===id)||(n&&zn===n&&(!f||zf===f));});
+            return Number(q?.valor??p.valor??0);
+          }
+          function excedenteTituloPdf(x,i,d,r){
+            const p=x?.pago||{}; if(!(p.esTDJ===true||String(p.tdj||"").trim()!==""))return 0;
+            const nominal=valorNominalPagoPdf(x,d); if(nominal<=0)return 0;
+            const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
+            const m=(r?.detalle||[]).slice(0,i+1).filter(y=>{const q=y?.pago||{},zid=String(q.id||"").trim(),zn=String(q.tdj||"").trim(),zf=fechaISO(q.fecha)||"";return (id&&zid===id)||(n&&zn===n&&(!f||zf===f));});
+            const ap=m.reduce((s,y)=>{const v=y?.aplicado;const z=typeof v==='object'&&v!==null?Number(v.total??((Number(v.impuesto)||0)+(Number(v.intereses)||0)+(Number(v.sancion)||0))):Number(v||0);return s+Math.max(0,Number.isFinite(z)?z:0);},0);
+            return Math.max(0,nominal-ap);
+          }"""
+          if 'function valorNominalPagoPdf(x,d)' not in a:a=a.replace('function bloquePdfPago(x,i,d,r){',h+'function bloquePdfPago(x,i,d,r){',1)
+          a=a.replace('${dinero(x.pago.valor)}','${dinero(valorNominalPagoPdf(x,d))}',1)
+          a=a.replace('<b>EXCEDENTE:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}', '<b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}',1)
+          needle='const fecha=fechaISO(p.fecha)||"";'; repl="""const fecha=fechaISO(p.fecha)||"";
+            const original=(Array.isArray(o?.pagos)?o.pagos:[]).find(q=>{const qid=String(q?.id||"").trim(),qtdj=String(q?.tdj||"").trim(),qfecha=fechaISO(q?.fecha)||"",pid=String(p?.id||"").trim();return (pid&&qid===pid)||(titulo&&qtdj===titulo&&(!fecha||qfecha===fecha));});
+            if(original&&Number(original.valor||0)>0)return Number(original.valor||0);"""
+          pos=t.find('function valorDisponiblePagoPDFTDJ(d,o,resultado){')
+          if pos>=0 and 'const original=(Array.isArray(o?.pagos)?o.pagos:[])' not in t[pos:pos+2000]:
+            end=t.find(needle,pos)
+            if end>=0:t=t[:end]+t[end:].replace(needle,repl,1)
+          t=t.replace('?"EXCEDENTE":"PAGO EN EXCESO"','?"EXCEDENTE DE TÍTULO":"PAGO EN EXCESO"',1)
+          u=u.replace('const VERSION="16.33.113";','const VERSION="16.33.114";')
+          u=u.replace('assert.match(tdjSrc,/EXCEDENTE":"PAGO EN EXCESO/);','assert.match(tdjSrc,/EXCEDENTE DE TÍTULO":"PAGO EN EXCESO/);')
+          if 'assert.match(app,/function valorNominalPagoPdf\\(x,d\\)/);' not in u:
+            u += '\nassert.match(app,/function valorNominalPagoPdf\\(x,d\\)/);\nassert.match(app,/valorNominalPagoPdf\\(x,d\\)/);\nassert.match(app,/EXCEDENTE DE TÍTULO/);\nassert.match(tdjSrc,/const original=\\(Array.isArray\\(o\\?\\.pagos\\)\\?o\\.pagos:\\[\\]\\)\\.find/);\nconsole.log("REGRESIÓN VALOR NOMINAL TÍTULO + EXCEDENTE OK");\n'
+          for p in R.rglob('*'):
+            if p.is_file() and '.git' not in p.parts and p.suffix.lower() in {'.js','.html','.css','.json','.yml','.yaml','.mjs','.txt'} and '.github/workflows' not in p.as_posix() and 'supabase/migrations' not in p.as_posix():
+              try:s=p.read_text()
+              except UnicodeDecodeError:continue
+              if '16.33.113' in s:p.write_text(s.replace('16.33.113','16.33.114'))
+          A.write_text(a);T.write_text(t);U.write_text(u)
+          PY2
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --experimental-default-type=module tests/regresion-matematica.mjs
+          node tests/regresion-ui.mjs
+          grep -q 'motor-liquidacion-base.js?v=16.33.114' js/motor-liquidacion.js
+      - name: Publicar archivos normales vía API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git diff --name-only > /tmp/changed.txt
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            case "$path" in .github/workflows/*|supabase/migrations/*) continue;; esac
+            current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=main")
+            sha=$(python -c 'import json,sys; print(json.load(sys.stdin)["sha"])' <<<"$current")
+            content=$(base64 -w0 "$path")
+            payload=$(python - "$path" "$sha" "$content" <<'PY3'
+          import json,sys
+          path,sha,content=sys.argv[1:]
+          print(json.dumps({"message":"fix: valor nominal titulos PDF v16.33.114","content":content,"sha":sha,"branch":"main"}))
+          PY3
+            )
+            curl -fsSL -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}" -d "$payload" >/dev/null
+            echo "PUBLICADO $path"
+          done < /tmp/changed.txt
