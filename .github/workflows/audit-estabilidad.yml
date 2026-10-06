@@ -6,13 +6,35 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 jobs:
   syntax-and-integrity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Sincronizar version global
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          VERSION="16.33.110"
+          find . -type f \( -name '*.html' -o -name '*.js' -o -name '*.mjs' -o -name '*.css' -o -name '*.yml' -o -name '*.yaml' \) -not -path './.git/*' -print0 | while IFS= read -r -d '' f; do
+            sed -E -i "s/16\\.33\\.[0-9]+/${VERSION}/g" "$f"
+          done
+          sed -E -i "s/tdj-mobile\\.css\\?v=[^\"' ]+/tdj-mobile.css?v=${VERSION}/g" titulos.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "VERSION_GLOBAL_OK=${VERSION}"
+          else
+            git commit -m "chore: sincronizar version global ${VERSION}"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
 
       - name: Validar sintaxis JavaScript
         run: |
@@ -25,15 +47,20 @@ jobs:
       - name: Ejecutar regresión de PDF oficial y tabulado TDJ
         run: node tests/regresion-ui.mjs
 
-      - name: Validar versionado de módulos
+      - name: Validar versionado global
         run: |
           set -e
-          grep -q 'js/app.js?v=16.33.103' liquidacion.html
-          grep -q 'js/tdj.js?v=16.33.107' titulos.html
-          if grep -R -nF '?v=' js | grep -Ev '16\.33\.(103|104)'; then
-            echo "ERROR: quedan imports locales con versionado anterior."
+          VERSION="16.33.110"
+          grep -q "js/app.js?v=${VERSION}" liquidacion.html
+          grep -q "js/tdj.js?v=${VERSION}" titulos.html
+          grep -q "estilos.css?v=${VERSION}" liquidacion.html
+          grep -q "estilos.css?v=${VERSION}" titulos.html
+          grep -q "tdj-mobile.css?v=${VERSION}" titulos.html
+          if grep -R -nE '\?v=[0-9]+(\.[0-9]+){0,2}' js liquidacion.html titulos.html index.html estilos.css tdj-mobile.css tests .github/workflows | grep -v "v=${VERSION}"; then
+            echo "ERROR: quedan referencias con versionado diferente de ${VERSION}."
             exit 1
           fi
+          echo "VERSIONADO GLOBAL OK — ${VERSION}"
 
       - name: Verificar que los motores no tengan cambios funcionales
         if: github.event_name == 'pull_request'
