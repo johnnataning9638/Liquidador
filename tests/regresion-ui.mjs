@@ -60,7 +60,7 @@ console.log("REGRESIÓN IMPORTACIÓN EXCEL TDJ PRIMER TÍTULO OK");
 const excelTitulos=[["Nº","TDJ","FECHA","VALOR"],["1","111","2026-04-01","20000000"],["2","222","2026-05-01","10000000"]];
 assert.deepEqual(excelTitulos[1].slice(1),["111","2026-04-01","20000000"]);
 assert.deepEqual(excelTitulos[2].slice(1),["222","2026-05-01","10000000"]);
-assert.match(tdjSrc,/normImportacionTDJ\(r\[h\]\)/);
+assert.match(tdjSrc,/normImportacionTDJ\(r\?\.\[0\]\)/);
 console.log("REGRESIÓN XLSX TDJ PRIMER REGISTRO OK");
 
 assert.equal((tdjSrc.match(/function normImportacionTDJ\(/g)||[]).length,0);
