@@ -22,41 +22,26 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-
           app = Path('js/app.js')
           s = app.read_text(encoding='utf-8')
-
           old_cond = 'Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}'
           new_cond = 'Math.max(Number(x.excedente||x.aplicado?.excedente||0),excedenteTituloPdf(x,i,d,r))>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}'
-          if old_cond not in s:
-              raise SystemExit('ERROR: condición de excedente PDF no encontrada')
+          if old_cond not in s: raise SystemExit('ERROR: condición de excedente PDF no encontrada')
           s = s.replace(old_cond, new_cond, 1)
-
           css_anchor = '  .pdf-excedentes-finales{margin:2mm;border:1px solid #c58a1a;'
-          if css_anchor not in s:
-              raise SystemExit('ERROR: ancla CSS de excedentes no encontrada')
+          if css_anchor not in s: raise SystemExit('ERROR: ancla CSS de excedentes no encontrada')
           css_block = '''  .pdf-bloque{margin:2mm;border:1px solid #c58a1a;background:#fffdf7;break-inside:avoid;page-break-inside:avoid}\n  .pdf-bloque h2{margin:0;padding:1.5mm 2mm;background:#fff6d8;color:#7a5200;font-size:11pt;border-bottom:1px solid #c58a1a}\n  .pdf-bloque table{width:100%;border-collapse:collapse;table-layout:fixed}\n  .pdf-bloque th,.pdf-bloque td{border:1px solid #c9a45a;padding:1.25mm;font-size:8.5pt;line-height:1.05;text-align:right;white-space:nowrap}\n  .pdf-bloque th:first-child,.pdf-bloque td:first-child{text-align:center}\n  .pdf-bloque thead th{background:#fff9e8;font-size:8pt}\n  .pdf-bloque tfoot th{background:#fff0c2;font-weight:700}\n'''
           s = s.replace(css_anchor, css_block + css_anchor, 1)
           app.write_text(s, encoding='utf-8')
-
-          # Alinear referencias activas de versión sin tocar la lógica matemática.
-          old='16.33.114'
-          new='16.33.115'
-          exts={'.js','.html','.css','.json','.yml','.yaml'}
+          old='16.33.114'; new='16.33.115'
+          exts={'.js','.mjs','.html','.css','.json','.yml','.yaml'}
           for p in Path('.').rglob('*'):
-              if not p.is_file() or '.git' in p.parts or p.suffix.lower() not in exts:
-                  continue
-              if p.as_posix()=='supabase/migrations/20261006_security_hardening_16_33_113.sql':
-                  continue
+              if not p.is_file() or '.git' in p.parts or p.suffix.lower() not in exts: continue
+              if p.as_posix()=='supabase/migrations/20261006_security_hardening_16_33_113.sql': continue
               text=p.read_text(encoding='utf-8')
-              if old in text:
-                  p.write_text(text.replace(old,new),encoding='utf-8')
-
-          # El motor base solo puede cambiar aquí por cache-buster/referencia de versión.
+              if old in text: p.write_text(text.replace(old,new),encoding='utf-8')
           base=Path('js/motor-liquidacion-base.js')
-          if '16.33.114' in base.read_text(encoding='utf-8'):
-              raise SystemExit('ERROR: quedó versión 16.33.114 en motor base')
-
+          if '16.33.114' in base.read_text(encoding='utf-8'): raise SystemExit('ERROR: quedó versión 16.33.114 en motor base')
           print('PATCH PDF DIAN + VERSION 16.33.115 OK')
           PY
 
