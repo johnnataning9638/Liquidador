@@ -14,22 +14,13 @@ jobs:
           ref: fix/simple-sancion-20261005
           fetch-depth: 0
       - name: Aplicar corrección SIMPLE
-        run: >-
-          python3 -c 'from pathlib import Path; old="""      const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? (!fechaSancionReal || pago.fecha>=fechaSancionReal)
-        : (
-            datos.tieneSancion==="SI"
-            && sancionBaseOriginal>0
-            && Boolean(fechaSancionReal)
-            && pago.fecha>=fechaSancionReal
-          );"""; new="""      const sancionHabilitadaPorFecha=esSimplePorAnticipos
-        ? true
-        : (
-            datos.tieneSancion==="SI"
-            && sancionBaseOriginal>0
-            && Boolean(fechaSancionReal)
-            && pago.fecha>=fechaSancionReal
-          );"""; files=["js/motor-liquidacion.js","js/motor-liquidacion-oficial.js"]; [(lambda p,s: ( (_ for _ in ()).throw(SystemExit(f"bloque no unico: {p}")) if s.count(old)>1 else p.write_text(s.replace(old,new)) ))(Path(f),Path(f).read_text()) for f in files]; [None for f in files if new in Path(f).read_text()]; print("correccion SIMPLE aplicada/verificada")'
+        run: |
+          set -e
+          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
+            count=$(grep -oF '? (!fechaSancionReal || pago.fecha>=fechaSancionReal)' "$f" | wc -l)
+            test "$count" -eq 1
+            sed -i 's/? (!fechaSancionReal || pago.fecha>=fechaSancionReal)/? true/' "$f"
+          done
       - name: Regresión matemática
         run: |
           set -e
@@ -39,6 +30,7 @@ jobs:
           git diff --check
       - name: Publicar corrección
         run: |
+          set -e
           if git diff --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
