@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const VERSION="16.33.113";
+const VERSION="16.33.114";
 const app=fs.readFileSync("js/app.js","utf8");
 const tdj=fs.readFileSync("js/tdj.js","utf8");
 const html=fs.readFileSync("liquidacion.html","utf8");
@@ -46,7 +46,7 @@ assert.match(tdjSrc,/const valorDisponible=valorDisponiblePagoPDFTDJ\(d,o,result
 assert.match(tdjSrc,/valor:valorDisponible/);
 console.log("REGRESIÓN VALOR DISPONIBLE TDJ POR OBLIGACIÓN OK");
 
-assert.match(tdjSrc,/EXCEDENTE":"PAGO EN EXCESO/);
+assert.match(tdjSrc,/EXCEDENTE DE TÍTULO":"PAGO EN EXCESO/);
 assert.match(tdjSrc,/const excedenteTDJ=trazaMovimiento/);
 assert.match(tdjSrc,/saldoTitulo\|\|0/);
 console.log("REGRESIÓN EXCEDENTE EN DETALLE PDF TDJ OK");
@@ -73,3 +73,9 @@ assert.match(tdjSrc,/s==="VALOR DEL TDJ"/);
 assert.match(tdjSrc,/if\(marca!==\"TITULOS TDJ\"\)continue/);
 assert.match(tdjSrc,/const ixT=nh\.findIndex\(esColumnaTDJ\)/);
 console.log("REGRESIÓN IMPORTACIÓN TDJ: ENCABEZADOS Y BLOQUE DE RECUPERACIÓN ROBUSTOS OK");
+
+assert.match(app,/function valorNominalPagoPdf\(x,d\)/);
+assert.match(app,/valorNominalPagoPdf\(x,d\)/);
+assert.match(app,/EXCEDENTE DE TÍTULO/);
+assert.match(tdjSrc,/const original=\(Array.isArray\(o\?\.pagos\)\?o\.pagos:\[\]\)\.find/);
+console.log("REGRESIÓN VALOR NOMINAL TÍTULO + EXCEDENTE OK");
