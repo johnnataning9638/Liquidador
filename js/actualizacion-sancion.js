@@ -1,4 +1,4 @@
-import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.113";
+import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.114";
 
 /**
  * Actualización independiente de sanciones (Art. 867-1 E.T.)
