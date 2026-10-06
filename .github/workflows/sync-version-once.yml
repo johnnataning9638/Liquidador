@@ -1,0 +1,38 @@
+name: Sincronizar versiones activas
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Alinear cache-busters activos
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) -not -path './.git/*' -print0 | xargs -0 sed -i 's/16\.33\.110/16.33.112/g'
+          rm -f .github/workflows/sync-version-once.yml
+
+      - name: Guardar únicamente sincronización de versiones
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'NO HAY VERSIONES ACTIVAS DESALINEADAS.'
+            exit 0
+          fi
+          git diff --cached --name-only
+          git commit -m 'chore: alinear versiones activas 16.33.112'
+          git push
