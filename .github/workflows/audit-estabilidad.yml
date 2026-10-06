@@ -31,9 +31,9 @@ jobs:
       - name: Validar versión del núcleo corregido
         run: |
           set -e
-          grep -q 'motor-liquidacion-base.js?v=16.33.111' js/motor-liquidacion.js
+          grep -q 'motor-liquidacion-base.js?v=16.33.112' js/motor-liquidacion.js
           grep -q 'actions/checkout@v6' .github/workflows/audit-estabilidad.yml
-          echo 'NUCLEO VERSION 16.33.111 OK'
+          echo 'NUCLEO VERSION 16.33.112 OK'
 
       - name: Verificar protección del régimen tradicional
         run: |
