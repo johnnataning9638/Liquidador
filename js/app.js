@@ -691,7 +691,7 @@ function pintarInforme(r){
   const excedente=Number(r.excedente||0);
   const excedenteBox=$("rExcedenteBox");
   if(excedenteBox){excedenteBox.hidden=excedente<=0;if($("rExcedente"))$("rExcedente").textContent=dinero(excedente);}
-  const detalle=(r.detalle||[]).map((x,i)=>`<div class="detalle-item"><strong>Pago ${i+1} — ${fechaVisible(x.pago.fecha)}</strong> · ${dinero(x.pago.valor)} · <strong>${esc(x.tipoAplicado||"TASA DIAN")}</strong> · ${esc(x.notaBeneficio||"")} · interés liquidado ${dinero(x.interesLiquidado??x.interesGenerado)} · impuesto aplicado ${dinero(x.aplicado.impuesto)} · intereses aplicados ${dinero(x.aplicado.intereses)} · sanción aplicada ${dinero(x.aplicado.sancion)}${Number(x.excedente||x.aplicado?.excedente||0)>0?` · <strong class="texto-excedente">EXCEDENTE ${dinero(x.excedente??x.aplicado.excedente)}</strong>`:""}</div>`).join("");
+  const detalle=(r.detalle||[]).map((x,i)=>`<div class="detalle-item"><strong>Pago ${i+1} — ${fechaVisible(x.pago.fecha)}</strong> · ${dinero(valorNominalPagoPdf(x,d))} · <strong>${esc(x.tipoAplicado||"TASA DIAN")}</strong> · ${esc(x.notaBeneficio||"")} · interés liquidado ${dinero(x.interesLiquidado??x.interesGenerado)} · impuesto aplicado ${dinero(x.aplicado.impuesto)} · intereses aplicados ${dinero(x.aplicado.intereses)} · sanción aplicada ${dinero(x.aplicado.sancion)}${Number(x.excedente||x.aplicado?.excedente||0)>0?` · <strong class="texto-excedente">EXCEDENTE ${dinero(x.excedente??x.aplicado.excedente)}</strong>`:""}</div>`).join("");
   const act=r.sancionActualizacion||null;
   const resumenSancion=act&&Number(act.actualizacionAcumulada||0)>0
     ?`<div class="detalle-item"><strong>Actualización de sanción (Art. 867-1):</strong> base ${dinero(act.saldoOriginal||0)} · actualización acumulada ${dinero(act.actualizacionAcumulada||0)} · saldo final ${dinero(act.saldoFinal||0)}</div>`
@@ -1291,7 +1291,21 @@ function tablaInteresesPdf(x,r){
   return `<div class="pdf-intereses"><h3>CÁLCULO DE INTERESES POR CUOTA</h3><table><thead><tr><th>CUOTA</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA PAGO</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES DEL PAGO</th><th>${dinero(total)}</th></tr></tfoot></table></div>`;
 }
 
-function bloquePdfPago(x,i,d,r){
+function valorNominalPagoPdf(x,d){
+  const p=x?.pago||{}; const esTDJ=p.esTDJ===true||String(p.tdj||"").trim()!=="";
+  if(!esTDJ)return Number(p.valor||0);
+  const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
+  const q=(d?.pagos||[]).find(z=>{const zid=String(z?.id||"").trim(),zn=String(z?.tdj||"").trim(),zf=fechaISO(z?.fecha)||"";return (id&&zid===id)||(n&&zn===n&&(!f||zf===f));});
+  return Number(q?.valor??p.valor??0);
+}
+function excedenteTituloPdf(x,i,d,r){
+  const p=x?.pago||{}; if(!(p.esTDJ===true||String(p.tdj||"").trim()!==""))return 0;
+  const nominal=valorNominalPagoPdf(x,d); if(nominal<=0)return 0;
+  const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
+  const m=(r?.detalle||[]).slice(0,i+1).filter(y=>{const q=y?.pago||{},zid=String(q.id||"").trim(),zn=String(q.tdj||"").trim(),zf=fechaISO(q.fecha)||"";return (id&&zid===id)||(n&&zn===n&&(!f||zf===f));});
+  const ap=m.reduce((s,y)=>{const v=y?.aplicado;const z=typeof v==='object'&&v!==null?Number(v.total??((Number(v.impuesto)||0)+(Number(v.intereses)||0)+(Number(v.sancion)||0))):Number(v||0);return s+Math.max(0,Number.isFinite(z)?z:0);},0);
+  return Math.max(0,nominal-ap);
+}function bloquePdfPago(x,i,d,r){
   /*
    * REAJUSTE 16.32.5 — PDF / aplicación por vencimiento.
    * Un vencimiento que ya quedó totalmente cancelado en un pago anterior
@@ -1333,7 +1347,7 @@ function bloquePdfPago(x,i,d,r){
   ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdf(x,d,i):""}
   ${bloqueActualizacionSancionPdf(x,i)}
   ${bloqueSancionDeclaracion1419Pdf(x,d)}
-  <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>EXCEDENTE:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
+  <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"EXCEDENTE"}:</b> ${dinero((x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?excedenteTituloPdf(x,i,d,r):(x.excedente??x.aplicado.excedente))}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="pdf-nota">Nota: Liquidación sujeta a revisión por las partes interesadas.</div></article>`;
 }
