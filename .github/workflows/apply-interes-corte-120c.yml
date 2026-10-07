@@ -1,0 +1,31 @@
+name: Apply cutoff interest patch 120c
+on:
+  push:
+    branches: ["main"]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Guard
+        run: |
+          if git log -1 --pretty=%s | grep -q 'fix: mostrar interés de corte'; then
+            echo 'Patch commit already applied'; exit 0
+          fi
+      - name: Patch
+        run: python3 scripts/fix_interes_corte_120.py
+      - name: Test
+        run: |
+          set -e
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tests/regresion-matematica.mjs
+          node tests/regresion-ui.mjs
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js js/tdj.js .github/workflows/audit-estabilidad.yml RELEASES/16.33.120.md tests/regresion-interes-corte-pdf.mjs
+          git commit -m 'fix: mostrar interés de corte en PDF v16.33.120'
+          git push
