@@ -1,6 +1,8 @@
 name: Aplicar corrección fecha de corte TDJ v16.33.121
 
 on:
+  push:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +23,9 @@ jobs:
           root=Path('.')
           tdj=root/'js/tdj.js'
           s=tdj.read_text(encoding='utf-8')
+          if '16.33.120' not in s:
+              print('TDJ ya está en la versión objetivo; no se reaplica la corrección.')
+              raise SystemExit(0)
           old='o.pagos=o.pagos.filter(p=>p.fecha&&Number(p.valor)>0).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)}));'
           new='o.pagos=o.pagos.filter(p=>p.fecha&&(Number(p.valor)>0||esFechaCorteTDJ(p))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));'
           if old not in s:
@@ -52,10 +57,12 @@ jobs:
           a=audit.read_text(encoding='utf-8')
           a=a.replace('16.33.120','16.33.121')
           a=a.replace('16\\.33\\.(110|111|112|113|114|115|116|117|118|119)','16\\.33\\.(110|111|112|113|114|115|116|117|118|119|120)')
-          a=a.replace('tests/regresion-detalle-intereses-corte.mjs','tests/regresion-detalle-intereses-corte.mjs\n\n      - name: Ejecutar regresión específica TDJ fecha de corte en pagos\n        run: node tests/regresion-fecha-corte-pagos-tdj.mjs')
+          marker='      - name: Ejecutar regresión específica TDJ fecha de corte en pagos\n        run: node tests/regresion-fecha-corte-pagos-tdj.mjs'
+          if marker not in a:
+              a=a.replace('      - name: Validar versión del núcleo corregido',marker+'\n\n      - name: Validar versión del núcleo corregido')
           audit.write_text(a,encoding='utf-8')
 
-          Path('RELEASES/16.33.121.md').write_text('''# 16.33.121\n\n- Corrige exclusivamente el soporte de fecha de corte informativa en PAGOS del módulo TDJ.\n- Conserva los registros de pago que contienen únicamente fecha, sin recibo ni valor, para cerrar la obligación a esa fecha.\n- En el PDF TDJ, muestra el interés ya calculado por el motor en INTERÉS y TOTAL INTERESES DEL PAGO, usando el valor de `interesLiquidado` como respaldo cuando el detalle por cuota no lo expone directamente.\n- No modifica fórmulas de intereses, sanciones, Régimen Simple, vencimientos, distribución TDJ, endoso, importación/manual ni diseño.\n''',encoding='utf-8')
+          Path('RELEASES/16.33.121.md').write_text('''# 16.33.121\n\n- Corrige exclusivamente el soporte de fecha de corte informativa en PAGOS del módulo TDJ.\n- Conserva los registros de pago que contienen únicamente fecha, sin recibo ni valor, para cerrar la obligación a esa fecha.\n- En el PDF TDJ, muestra el interés ya calculado por el motor en INTERÉS y TOTAL INTERESES DEL PAGO, usando `interesLiquidado` como respaldo cuando el detalle por cuota no lo expone directamente.\n- No modifica fórmulas de intereses, sanciones, Régimen Simple, vencimientos, distribución TDJ, endoso, importación/manual ni diseño.\n''',encoding='utf-8')
 
           Path('tests/regresion-fecha-corte-pagos-tdj.mjs').write_text('''import fs from 'node:fs';\nimport assert from 'node:assert/strict';\nconst s=fs.readFileSync('js/tdj.js','utf8');\nassert.match(s,/o\\.pagos=o\\.pagos\\.filter\\(p=>p\\.fecha&&\\(Number\\(p\\.valor\\)>0\\|\\|esFechaCorteTDJ\\(p\\)\\)\\)/);\nassert.match(s,/r\\?\\.intereses\\|\\|x\\?\\.interesLiquidado\\|\\|x\\?\\.interesGenerado/);\nassert.match(s,/esCorteInformativo\\?Number\\(r\\?\\.intereses\\|\\|x\\?\\.interesLiquidado\\|\\|x\\?\\.interesGenerado\\|\\|0\\)/);\nconst corte={fecha:'2026-10-06',valor:0,recibo:'',tdj:''};\nconst esCorte=Boolean(corte.fecha)&&Number(corte.valor)<=0&&!corte.recibo&&!corte.tdj;\nassert.equal(esCorte,true);\nconst x={interesLiquidado:2326000,interesGenerado:2326000};\nconst r={intereses:0};\nconst total=Math.max(0,Number(r.intereses||x.interesLiquidado||x.interesGenerado||0));\nassert.equal(total,2326000);\nconsole.log('REGRESION_FECHA_CORTE_PAGOS_TDJ_OK');\n''',encoding='utf-8')
           PY
