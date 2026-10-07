@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message != 'fix: aplicar captura manual v16.33.118'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -22,41 +21,17 @@ jobs:
       - name: Aplicar corrección y sincronizar versiones
         run: node scripts/aplicar-fix-importacion-opcional.mjs
 
-      - name: Validar sintaxis
-        run: |
-          set -e
-          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Validar sintaxis JavaScript
+        run: find js -name '*.js' -print0 | xargs -0 -n1 node --check
 
-      - name: Crear prueba de regresión
-        run: |
-          cat > tests/regresion-importacion-opcional.mjs <<'EOF'
-          import fs from 'node:fs';
-          import assert from 'node:assert/strict';
+      - name: Ejecutar regresión de captura manual
+        run: node tests/regresion-importacion-opcional.mjs
 
-          const tdj = fs.readFileSync('js/tdj.js', 'utf8');
-          const app = fs.readFileSync('js/app.js', 'utf8');
-
-          assert.match(tdj, /function nuevaObligacion\(numero\)[\s\S]*tipoTasa:"TASA DIAN"/);
-          assert.match(tdj, /function opcionTipoObligacionTDJ\(tipo="TASA DIAN"\)/);
-          assert.doesNotMatch(tdj, /validarDatos[\s\S]{0,12000}(?:importado|importacion|importación).*throw new Error/i);
-          assert.doesNotMatch(app, /(?:validar|calcular)[\s\S]{0,12000}(?:importado|importacion|importación).*throw new Error/i);
-
-          const oldRefs = [...(tdj + app).matchAll(/16\.33\.(11[0-7])/g)];
-          assert.equal(oldRefs.length, 0, 'No deben quedar versiones activas 16.33.110–16.33.117 en app.js/tdj.js');
-
-          console.log('REGRESIÓN IMPORTACIÓN OPCIONAL: OK');
-          console.log('CAPTURA MANUAL: OK');
-          console.log('IMPORTACIÓN: OPCIONAL');
-          EOF
-          node tests/regresion-importacion-opcional.mjs
-
-      - name: Commit de corrección
+      - name: Publicar corrección
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add js tests index.html liquidacion.html titulos.html estilos.css tdj-mobile.css .github/workflows/audit-estabilidad.yml RELEASES/16.33.118.md
-          git rm -f .github/workflows/apply-importacion-opcional.yml scripts/aplicar-fix-importacion-opcional.mjs
-          git add -A
           git commit -m "fix: aplicar captura manual v16.33.118"
           git push
