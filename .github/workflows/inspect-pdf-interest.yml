@@ -112,7 +112,7 @@ jobs:
           script: |
             const fs=require('fs');
             const [owner,repo]=process.env.REPO.split('/');
-            const changed=fs.readFileSync('/tmp/changed-files.txt','utf8').split('\n').map(x=>x.trim()).filter(Boolean).filter(x=>x!=='.github/workflows/inspect-pdf-interest.yml');
+            const changed=fs.readFileSync('/tmp/changed-files.txt','utf8').split('\n').map(x=>x.trim()).filter(Boolean).filter(x=>x!=='.github/workflows/inspect-pdf-interest.yml' && x!=='.github/corte-119.trigger');
             for(const file of changed){
               const content=fs.readFileSync(file);
               let sha;
