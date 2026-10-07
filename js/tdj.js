@@ -785,6 +785,7 @@ function validarDatos(){
   if(!obligaciones.length){const e=new Error("Debe existir al menos una obligación.");e.focusTarget="#listaObligaciones";throw e;}
   const activas=[];
   sincronizarCapturaManualTDJ();
+  sincronizarCapturaManualTDJ();
   for(const o of obligaciones){
     o.vencimientos=o.vencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0);
     // CONCEPTO / IMPUESTO, AÑO GRAVABLE Y PERÍODO SON DATOS NO BLOQUEANTES.
