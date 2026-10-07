@@ -16,7 +16,7 @@ assert.match(tdj,/tr\.querySelector\('\[data-v="periodo"\]'\).*tabindex="-1"/s);
 assert.match(tdj,/e\.preventDefault\(\);\s*if\(impuesto\)\{impuesto\.focus/);
 assert.match(html,/js\/app\.js\?v=16\.33\.113/);
 assert.match(titulos,/js\/tdj\.js\?v=16\.33\.113/);
-console.log("REGRESION UI PDF OFICIAL + TAB TDJ OK — 8 ASERCIONES — VERSION 16.33.116");
+console.log("REGRESION UI PDF OFICIAL + TAB TDJ OK — 8 ASERCIONES — VERSION 16.33.117");
 
 // REGRESIÓN: si el tramo no trae capital base, el PDF oficial debe usar el impuesto total.
 assert.match(app,/Number\(r\.impuesto\|\|0\)/);

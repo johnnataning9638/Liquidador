@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.116";
-import {importarDatosInteligente} from "./importador.js?v=16.33.116";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.116";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.116";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.116";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.116";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.116";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.116";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.116";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.116";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.116";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.116";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.116";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.116";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.117";
+import {importarDatosInteligente} from "./importador.js?v=16.33.117";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.117";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.117";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.117";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.117";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.117";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.117";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.117";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.117";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.117";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.117";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.117";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.117";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -305,7 +305,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.116"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.117"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -390,10 +390,8 @@ function leerFormulario(){
   // Si no hay pagos reales, la primera fila puede aportar solo la fecha de corte.
   const pagosReales=pagos.filter(p=>Number(p?.valor||0)>0);
   const fechaUltimoPago=pagosReales.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";
-  const filaFechaCorte=pagos.find(p=>
-    fechaISO(p?.fecha) && Number(p?.valor||0)<=0 && !String(p?.tdj||"").trim() && !String(p?.recibo||"").trim()
-  );
-  const fechaCorte=pagosReales.length?fechaUltimoPago:(fechaISO(filaFechaCorte?.fecha)||"");
+  const fechasCorte=pagos.filter(p=>fechaISO(p?.fecha)&&Number(p?.valor||0)<=0&&!String(p?.tdj||"").trim()&&!String(p?.recibo||"").trim()).map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort();
+  const fechaCorte=fechasCorte.at(-1)||fechaUltimoPago;
   return {
     nit:$("nit").value.replace(/\D/g,""),
     anio:Number($("anio").value||0),
@@ -683,7 +681,7 @@ function pintarInforme(r){
   };
   const p=u?.aplicado||{impuesto:0,intereses:0,sancion:0,total:0};
   const s=u?.saldo||{impuesto:r.impuesto||0,intereses:r.intereses||0,sancion:r.sancion||0};
-  $("rFechaPago").textContent=u?.pago?.fecha?fechaVisible(u.pago.fecha):"—";
+  $("rFechaPago").textContent=r?.fechaCorte?fechaVisible(r.fechaCorte):(u?.pago?.fecha?fechaVisible(u.pago.fecha):"—");
   $("rTasa").textContent=u?.tasaVisible==null?"—":Number(u.tasaVisible).toFixed(3)+"%";
   ["Impuesto","Intereses","Sancion"].forEach((x,j)=>{const k=["impuesto","intereses","sancion"][j];$("rDeuda"+x).textContent=dinero(d[k]);$("rProp"+x).textContent=dinero(p[k]);$("rSaldo"+x).textContent=dinero(s[k]);});
   const totalDeuda=d.impuesto+d.intereses+d.sancion,totalAplicado=p.total,totalSaldo=s.impuesto+s.intereses+s.sancion;
@@ -1118,7 +1116,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.116"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.117"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la
@@ -1714,7 +1712,8 @@ function calcular(){
     // respeta las fechas reales y, por tanto, procesa PAGO -> TDJ -> PAGO.
     // Si no existen TDJ con pagos posteriores, la función devuelve los datos
     // sin alterarlos. No se modifica la interfaz ni el valor nominal digitado.
-    const datosCalculo=ajustarTDJParaPagosPosteriores(motor,d);
+    const datosBase={...d,pagos:(d.pagos||[]).filter(p=>Number(p?.valor||0)>0)};
+    const datosCalculo=ajustarTDJParaPagosPosteriores(motor,datosBase);
     datosCalculo.pagos=ordenarMovimientosCronologicos(
       (datosCalculo.pagos||[]).map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)}))
     ).map(p=>{

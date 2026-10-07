@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.116";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.116";
-import {importarDatosInteligente} from "./importador.js?v=16.33.116";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.116";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.116";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.116";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.116";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.116";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.116";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.116";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.116";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.117";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.117";
+import {importarDatosInteligente} from "./importador.js?v=16.33.117";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.117";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.117";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.117";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.117";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.117";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.117";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.117";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.117";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -718,6 +718,9 @@ function renumerarTitulos(){titulos.forEach((t,i)=>{t.numero=i+1;});}
 
 function agregarObligacion(){invalidarResultadoTDJ();obligaciones.push(nuevaObligacion(obligaciones.length+1));renderObligaciones();renderPagos();}
 function agregarTitulo(){invalidarResultadoTDJ();titulos.push(nuevoTitulo(titulos.length+1));renderTitulos();actualizarVisibilidadTasasObligacionesTDJ();}
+function esFechaCorteTDJ(x){return Boolean(fechaISO(x?.fecha))&&Number(x?.valor||0)<=0&&!String(x?.tdj||"").trim()&&!String(x?.recibo||"").trim();}
+function fechaCorteTDJ(o){return [...(o?.pagos||[]).filter(esFechaCorteTDJ).map(x=>fechaISO(x.fecha)||""),...(titulos||[]).filter(esFechaCorteTDJ).map(x=>fechaISO(x.fecha)||"")].filter(Boolean).sort().at(-1)||"";}
+function pagosRealesHastaCorteTDJ(o,corte=""){return (o?.pagos||[]).filter(p=>p.fecha&&Number(p.valor)>0&&(!corte||String(p.fecha)<=String(corte))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)})).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a._orden||0)-Number(b._orden||0));}
 function sincronizarPagosVisiblesTDJ(){
   // La interfaz puede conservar temporalmente un valor escrito en pantalla
   // mientras el evento change aún no se dispara. Antes de CADA cálculo leemos
@@ -744,7 +747,7 @@ function sincronizarPagosVisiblesTDJ(){
       if(f){p.fecha=f;if(fechaPicker)fechaPicker.value=f;if(fechaText)fechaText.value=fechaVisible(f);}
       p._orden=Number(p._orden||i+1);
     });
-    o.pagos=o.pagos.filter(p=>p.fecha&&Number(p.valor)>0).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)}));
+    o.pagos=o.pagos.filter(p=>p.fecha&&(Number(p.valor)>0||esFechaCorteTDJ(p))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));
     ordenarPagosCronologicamente(o);
   });
 }
@@ -754,6 +757,7 @@ function validarConfiguracionAntesCalcularTDJ(){
   if(!hayTitulos)return;
   const titulosValidos=[...titulos].filter(t=>String(t?.tdj||"").trim()||fechaISO(t?.fecha)||Number(t?.valor||0)>0);
   for(const t of titulosValidos){
+    if(esFechaCorteTDJ(t))continue;
     if(!String(t?.tdj||"").trim()){
       const e=new Error(`TÍTULO / TDJ ${t.numero||""}: falta el número o identificador del título.`);
       e.tabTarget="titulos";e.focusTarget=`#tablaTitulos tbody tr[data-titulo-id="${CSS.escape(t.id)}"] [data-t="tdj"]`;throw e;
@@ -855,11 +859,7 @@ function datosMotor(o,pagos,fechaCorte,opciones={}){
 function motorParaObligacion(o){
   return upper(o?.tipoLiquidacion||"PRIVADA")==="OFICIAL" && motorOficial ? motorOficial : motor;
 }
-function calcularLiquidacionBaseTDJ(o){
-  const pagos=[...(o.pagos||[])].filter(p=>p.fecha&&Number(p.valor)>0).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
-  const fechaCorte=pagos.at(-1)?.fecha||hoyISO();
-  return motorParaObligacion(o).calcular(datosMotor(o,pagos,fechaCorte));
-}
+function calcularLiquidacionBaseTDJ(o){const corte=fechaCorteTDJ(o);const pagos=pagosRealesHastaCorteTDJ(o,corte);const fechaLiquidacion=corte||pagos.at(-1)?.fecha||hoyISO();return motorParaObligacion(o).calcular(datosMotor(o,pagos,fechaLiquidacion));}
 
 function sincronizarTitulosVisiblesTDJ(actualizarUI=true){
   const filas=[...document.querySelectorAll("#tablaTitulos tbody tr")];
@@ -952,8 +952,10 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       for(const o of obligacionesOrden){
         if(disponible<=0)break;
 
-        const pagosBase=[...o.pagos]
-          .filter(p=>p.fecha&&p.fecha<=t.fecha)
+        const corteObligacion=fechaCorteTDJ(o);
+        if(corteObligacion&&t.fecha>corteObligacion)continue;
+        const pagosBase=pagosRealesHastaCorteTDJ(o,corteObligacion)
+          .filter(p=>p.fecha<=t.fecha)
           .sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.numero||0)-Number(b.numero||0))
           .map(p=>({...p,ordenInterno:0}));
 
@@ -1174,8 +1176,9 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     const resumenObligaciones=obligaciones.map(o=>{
       const apps=aplicaciones.find(x=>x.obligacionId===o.id)?.items||[];
       const base=liquidacionesBase.get(o.id);
+      const corteObligacion=fechaCorteTDJ(o);
       const movimientosFinales=[
-        ...(o.pagos||[]).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i)})),
+        ...pagosRealesHastaCorteTDJ(o,corteObligacion).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i)})),
         ...apps.map((x,i)=>({
           id:x.pagoId||uid("APTDJFINAL"),
           numero:999999,
@@ -1189,10 +1192,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           tipoTasaObligacion:x.tipoTasaObligacion||upper(o.tipoTasa||"TASA DIAN")
         })).filter(p=>p.fecha&&Number(p.valor)>0)
       ];
-      const fechaCorteFinal=movimientosFinales
-        .map(p=>fechaISO(p.fecha)||"")
-        .filter(Boolean)
-        .sort().at(-1)||hoyISO();
+      const fechaCorteFinal=corteObligacion||movimientosFinales.map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort().at(-1)||hoyISO();
       let estadoFinal=null;
       try{
         const motorFinal=motorParaObligacion(o)||motor;
@@ -2170,7 +2170,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.116-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.117-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -2671,7 +2671,7 @@ function limpiarTodo(){
 
 
 // ================================================================
-// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.116
+// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.117
 // Regla: un título tiene únicamente TDJ + FECHA + VALOR.
 // ================================================================
 function separarFilaImportacionTDJ(linea){

@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.116";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.116";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.117";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.117";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
@@ -1431,8 +1431,34 @@ export class MotorLiquidacion{
       });
     }
 
+    const fechaUltimoPagoReal=pagos.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";
+    const hayCierreFechaCorte=Boolean(fechaCorte&&(!fechaUltimoPagoReal||fechaCorte>fechaUltimoPagoReal));
+    let detalleFechaCorte=null;
+    if(hayCierreFechaCorte){
+      let interesesCorte=0; const interesesPorCuotaCorte=[];
+      for(const v of saldosVto){
+        if(Number(v.saldo||0)<=0||fechaCorte<=v.fecha)continue;
+        const ih=this.interesParaPago(v.saldo,v.fecha,fechaCorte,{tipo:"TASA DIAN",factor:1,tasaFija:null});
+        if(ih.valor==null){advertenciasSancion.push("No hay tasa histórica suficiente para cerrar intereses a la fecha de corte.");continue;}
+        interesesCorte+=Number(ih.valor||0);
+        interesesPorCuotaCorte.push(...((ih.tramos&&ih.tramos.length)?ih.tramos:[{vto:v.id,base:Number(v.saldo||0),valor:Number(ih.valor||0),interes:Number(ih.valor||0),metodologia:ih.metodologia,dias:Number(ih.dias||0),desde:v.fecha,hasta:fechaCorte,tasa:ih.tasa}]).map(t=>({...t,vto:t.vto||v.id,base:Number(t.base??v.saldo??0)})));
+      }
+      saldoIntereses=roundMil(interesesCorte);
+      const esPrivada=String(datos.tipoLiquidacion||"").toUpperCase()==="PRIVADA";
+      const primeraAct=fechaSancion?`${Number(this.actualizadorSancion.sumarUnAnio(fechaSancion).slice(0,4))+1}-01-01`:"";
+      const puedeAct=!articulo10Seleccionado&&(!esPrivada||(primeraAct&&fechaCorte>=primeraAct));
+      const actCorte={aplicada:false,fechaCorte,actualizacionTotal:0,tramos:[],saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion)};
+      if(saldoSancion>0&&fechaSancion&&fechaCorte>fechaSancion&&puedeAct){
+        const act=this.actualizadorSancion.calcular(saldoSancion,fechaSancion,fechaCorte,{aniosExcluir:[...aniosActualizacionSancionAplicados]});
+        if(act.valor>saldoSancion)saldoSancion=act.valor;
+        if(act.tramos?.length){act.tramos.forEach(t=>aniosActualizacionSancionAplicados.add(Number(t.anio)));detalleActualizacionSancion.push({fechaCorte,...act});actCorte.aplicada=true;actCorte.tramos=act.tramos.map(t=>({anio:Number(t.anio),desde:t.desde,hasta:t.hasta,dias:Number(t.dias||0),saldoAntes:roundMil(t.saldoInicial||0),actualizacion:roundMil(t.actualizacion||0),saldoDespues:roundMil(t.saldoFinal||0),ipc:Number(t.ipc||0),ipcPorcentaje:Number(t.ipcPorcentaje||0)}));actCorte.actualizacionTotal=roundMil(actCorte.tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0));}
+        advertenciasSancion.push(...(act.advertencias||[]));
+      }
+      detalleFechaCorte={pago:{id:`CORTE-${fechaCorte}`,fecha:fechaCorte,valor:0,recibo:"",tipo:"FECHA DE CORTE",esFechaCorte:true},tasa:this.tasaPorFecha(fechaCorte,"TASA DIAN"),tasaVisible:Number(this.tasaPorFecha(fechaCorte,"TASA DIAN")||0)*100,tipoAplicado:"FECHA DE CORTE",notaBeneficio:"CIERRE INFORMATIVO SIN PAGO",interesGenerado:saldoIntereses,interesLiquidado:saldoIntereses,tramosInteres:interesesPorCuotaCorte,interesesPorCuota:interesesPorCuotaCorte,deudaAntes:{impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0),intereses:saldoIntereses,sancion:roundMil(saldoSancion)},aplicado:{impuesto:0,intereses:0,sancion:0,total:0,excedente:0,porcentaje:0,tipoProporcion:"FECHA DE CORTE — SIN PAGO"},excedente:0,aplicacionesVto:[],esFechaCorte:true,actualizacionSancion:actCorte,saldo:{impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0),intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0)+saldoIntereses+Math.max(0,saldoSancion)}};
+      detalle.push(detalleFechaCorte);
+    }
     const impuesto=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);
-    const ultimo=detalle.at(-1)||null;
+    const ultimo=detalleFechaCorte||detalle.at(-1)||null;
 
     // La actualización acumulada de sanción debe sumar las actualizaciones
     // efectivamente aplicadas antes de cada pago. No puede calcularse como
