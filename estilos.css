@@ -176,7 +176,7 @@
 @media(max-width:850px){.tabs-nav{position:static;grid-template-columns:repeat(2,1fr)}.tab-btn:nth-child(2){border-right:0}.tab-btn{border-bottom:1px solid #c1ced7}.botonera{position:static;flex-direction:column}.botonera button{width:100%}}
 @media(max-width:600px){.tabs-nav{grid-template-columns:1fr}.tab-btn{border-right:0}.tab-pane-inner{gap:6px}.contenedor{padding:0 7px}.grid{padding:7px}}
 
-/* REAJUSTE 16.33.121 — Reordenamiento visual de obligación y sanción.
+/* REAJUSTE 16.33.122 — Reordenamiento visual de obligación y sanción.
    Solo presentación: mueve campos sin modificar IDs ni lógica de cálculo. */
 .datos-unificados-panel{border:1px solid #b9c9d5}
 .datos-unificados{padding:7px 9px 0;display:grid;grid-template-columns:42% 58%;gap:8px}

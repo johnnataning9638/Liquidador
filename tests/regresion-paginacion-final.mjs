@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const app=fs.readFileSync('js/app.js','utf8');
+const tdj=fs.readFileSync('js/tdj.js','utf8');
+assert.equal((app.match(/pdf-hoja-final-resumen/g)||[]).length>=4,true);
+assert.match(app,/pdf-hoja-final-resumen \+ \.pdf-hoja-final-resumen/);
+assert.match(tdj,/pdf-hoja-final-resumen/);
+assert.match(app,/height:auto!important;min-height:0!important;overflow:visible!important/);
+assert.match(tdj,/break-inside:avoid;page-break-inside:avoid/);
+assert.match(app,/\.pdf-bloque\{margin:2mm[^}]*break-inside:avoid/);
+console.log('REGRESION_PAGINACION_FINAL_OK');
