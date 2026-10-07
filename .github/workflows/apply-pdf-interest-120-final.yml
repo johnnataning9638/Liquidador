@@ -3,6 +3,8 @@ name: Aplicar ajuste de paginación final v16.33.122
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -10,6 +12,7 @@ permissions:
 
 jobs:
   patch:
+    if: ${{ !contains(github.event.head_commit.message, 'v16.33.122') || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -41,10 +44,9 @@ jobs:
           s=css.read_text(encoding='utf-8').replace(oldv,newv)
           marker='/* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */'
           if marker not in s:
-              s += '''\n\n@media print {\n  /* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */\n  .pdf-resumen-final-agrupado {\n    display:block !important;\n    break-inside:auto;\n    page-break-inside:auto;\n    width:100%;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja {\n    break-before:auto !important;\n    break-after:auto !important;\n    page-break-before:auto !important;\n    page-break-after:auto !important;\n    break-inside:avoid-page;\n    page-break-inside:avoid;\n    height:auto !important;\n    min-height:0 !important;\n    margin:0 !important;\n    padding:0 !important;\n    overflow:visible !important;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja > .pdf-pagina {\n    height:auto !important;\n    min-height:0 !important;\n    margin:0 !important;\n  }\n  .pdf-resumen-final-agrupado .pdf-liquidacion {\n    height:auto !important;\n    min-height:0 !important;\n    overflow:visible !important;\n  }\n}\n'''
+              s += '''\n\n@media print {\n  /* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */\n  .pdf-resumen-final-agrupado { display:block !important; break-inside:auto; page-break-inside:auto; width:100%; }\n  .pdf-resumen-final-agrupado > .pdf-hoja { break-before:auto !important; break-after:auto !important; page-break-before:auto !important; page-break-after:auto !important; break-inside:avoid-page; page-break-inside:avoid; height:auto !important; min-height:0 !important; margin:0 !important; padding:0 !important; overflow:visible !important; }\n  .pdf-resumen-final-agrupado > .pdf-hoja > .pdf-pagina { height:auto !important; min-height:0 !important; margin:0 !important; }\n  .pdf-resumen-final-agrupado .pdf-liquidacion { height:auto !important; min-height:0 !important; overflow:visible !important; }\n}\n'''
           css.write_text(s,encoding='utf-8')
 
-          # Mantener versión activa alineada en código, páginas y pruebas.
           for root in (Path('js'),Path('tests')):
               for p in root.rglob('*'):
                   if not p.is_file() or p.suffix.lower() not in {'.js','.mjs','.css','.html','.json'}: continue
@@ -53,7 +55,6 @@ jobs:
                   nt=t.replace(oldv,newv)
                   if nt!=t:p.write_text(nt,encoding='utf-8')
 
-          # Regresión específica del ajuste.
           for name in ('js/app.js','js/tdj.js'):
               s=Path(name).read_text(encoding='utf-8')
               assert 'pdf-resumen-final-agrupado' in s, name
@@ -72,27 +73,10 @@ jobs:
           node tests/regresion-detalle-intereses-corte.mjs
           node tests/regresion-fecha-corte-pagos-tdj.mjs
           node tests/regresion-interes-corte-pdf.mjs
-          node tests/regresion-paginacion-final.mjs 2>/dev/null || true
-
-      - name: Crear regresión de paginación si no existe
-        run: |
-          set -e
-          if [ ! -f tests/regresion-paginacion-final.mjs ]; then
-            cat > tests/regresion-paginacion-final.mjs <<'JS'
-          import fs from 'node:fs';
-          for(const f of ['js/app.js','js/tdj.js']){
-            const s=fs.readFileSync(f,'utf8');
-            if(!s.includes('pdf-resumen-final-agrupado')) throw new Error(`Agrupador ausente: ${f}`);
-          }
-          const c=fs.existsSync('estilos.css')?fs.readFileSync('estilos.css','utf8'):fs.readFileSync('js/estilos.css','utf8');
-          if(!c.includes('.pdf-resumen-final-agrupado > .pdf-hoja')) throw new Error('CSS de agrupación ausente');
-          if(!c.includes('break-inside:avoid-page')) throw new Error('Protección de bloque ausente');
-          console.log('REGRESION_PAGINACION_FINAL_OK');
-          JS
-          fi
           node tests/regresion-paginacion-final.mjs
 
       - name: Commit corrección
+        if: ${{ github.event_name != 'pull_request' }}
         run: |
           set -e
           git config user.name 'github-actions[bot]'
@@ -101,3 +85,17 @@ jobs:
           git diff --cached --quiet && { echo 'No hay cambios pendientes.'; exit 0; }
           git commit -m 'fix: agrupar resumenes finales en una pagina v16.33.122'
           git push origin main
+
+      - name: Commit corrección en rama del PR
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js tests estilos.css index.html liquidacion.html titulos.html RELEASES/16.33.122.md
+          if git diff --cached --quiet; then
+            echo 'Rama ya contiene la corrección; no hay cambios pendientes.'
+            exit 0
+          fi
+          git commit -m 'fix: agrupar resumenes finales en una pagina v16.33.122'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
