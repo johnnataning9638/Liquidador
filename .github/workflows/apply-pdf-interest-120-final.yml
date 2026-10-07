@@ -1,6 +1,8 @@
 name: Aplicar corrección interés PDF v16.33.120
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -76,8 +78,14 @@ jobs:
           node tests/regresion-interes-corte-pdf.mjs
       - name: Commit corrección
         run: |
+          set -e
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add js/app.js js/tdj.js .github/workflows/audit-estabilidad.yml RELEASES/16.33.120.md tests/regresion-interes-corte-pdf.mjs
-          git commit -m 'fix: mostrar interés de corte en PDF v16.33.120'
+          git add -- $(git diff --name-only -- '*.js' '*.html' '*.css' '*.mjs' '*.json' '*.yml' '*.yaml') || true
+          if git diff --cached --quiet; then
+            echo 'No hay cambios pendientes de sincronización.'
+            exit 0
+          fi
+          git commit -m 'fix: sincronizar referencias activas v16.33.120'
           git push origin main
