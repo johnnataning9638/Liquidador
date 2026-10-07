@@ -1,0 +1,171 @@
+name: Actualizar fecha de corte 16.33.117
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'fecha de corte 16.33.117') && !contains(github.event.head_commit.message, 'fecha de corte 16.33.117 aplicado') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar corrección puntual de fecha de corte
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          ROOT = Path('.')
+
+          def replace_once(path, old, new, label):
+              p = ROOT / path
+              s = p.read_text(encoding='utf-8')
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: se esperaba 1 coincidencia en {path}, se encontraron {n}')
+              p.write_text(s.replace(old, new), encoding='utf-8')
+
+          # ------------------------------------------------------------
+          # LIQUIDADOR DIAN NORMAL
+          # ------------------------------------------------------------
+          replace_once(
+              'js/app.js',
+              '''  const pagosReales=pagos.filter(p=>Number(p?.valor||0)>0);\n  const fechaUltimoPago=pagosReales.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";\n  const filaFechaCorte=pagos.find(p=>\n    fechaISO(p?.fecha) && Number(p?.valor||0)<=0 && !String(p?.tdj||"").trim() && !String(p?.recibo||"").trim()\n  );\n  const fechaCorte=pagosReales.length?fechaUltimoPago:(fechaISO(filaFechaCorte?.fecha)||"");''',
+              '''  const pagosReales=pagos.filter(p=>Number(p?.valor||0)>0);\n  const fechaUltimoPago=pagosReales.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";\n  // Una fila que contiene ÚNICAMENTE fecha es una FECHA DE CORTE, no un pago.\n  // Tiene prioridad sobre la fecha del último pago real porque representa la\n  // fecha exacta hasta la cual el funcionario quiere conocer el saldo.\n  const fechasCorte=pagos\n    .filter(p=>fechaISO(p?.fecha) && Number(p?.valor||0)<=0 && !String(p?.tdj||"").trim() && !String(p?.recibo||"").trim())\n    .map(p=>fechaISO(p.fecha)||"")\n    .filter(Boolean)\n    .sort();\n  const fechaCorte=fechasCorte.at(-1)||fechaUltimoPago;''',
+              'DIAN: fecha de corte en leerFormulario'
+          )
+
+          replace_once(
+              'js/app.js',
+              '    const datosCalculo=ajustarTDJParaPagosPosteriores(motor,d);',
+              '''    // Las filas que solo contienen fecha son marcadores de FECHA DE CORTE.\n    // Nunca se envían al motor como pagos ficticios: los pagos reales se\n    // procesan primero y el motor cierra después el saldo a d.fechaCorte.\n    const datosBase={\n      ...d,\n      pagos:(d.pagos||[]).filter(p=>Number(p?.valor||0)>0)\n    };\n    const datosCalculo=ajustarTDJParaPagosPosteriores(motor,datosBase);''',
+              'DIAN: separar fila de corte de pagos reales'
+          )
+
+          replace_once(
+              'js/app.js',
+              '  $("rFechaPago").textContent=u?.pago?.fecha?fechaVisible(u.pago.fecha):"—";',
+              '  $("rFechaPago").textContent=r?.fechaCorte?fechaVisible(r.fechaCorte):(u?.pago?.fecha?fechaVisible(u.pago.fecha):"—");',
+              'DIAN: mostrar fecha de corte en resultado'
+          )
+
+          # ------------------------------------------------------------
+          # MOTOR BASE: CIERRE FINAL A FECHA DE CORTE DESPUÉS DE PAGOS REALES
+          # ------------------------------------------------------------
+          anchor = '''    const impuesto=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);\n    const ultimo=detalle.at(-1)||null;'''
+          patch = '''    // CIERRE A FECHA DE CORTE DESPUÉS DE PAGOS REALES.\n    // La fecha de corte NO es un pago: no descuenta dinero ni genera una fila\n    // ficticia de aplicación. Solo recalcula intereses y actualización de\n    // sanción sobre el saldo que quedó después de todos los pagos reales.\n    // Esta capa es deliberadamente posterior al bucle de pagos para conservar\n    // intacta la metodología de imputación, Régimen Simple y Régimen Tradicional.\n    const fechaUltimoPagoReal=pagos.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";\n    const hayCierreFechaCorte=Boolean(fechaCorte && (!fechaUltimoPagoReal || fechaCorte>fechaUltimoPagoReal));\n    let detalleFechaCorte=null;\n    if(hayCierreFechaCorte){\n      let interesesCorte=0;\n      const interesesPorCuotaCorte=[];\n      for(const v of saldosVto){\n        if(Number(v.saldo||0)<=0 || fechaCorte<=v.fecha)continue;\n        const ih=this.interesParaPago(v.saldo,v.fecha,fechaCorte,{tipo:"TASA DIAN",factor:1,tasaFija:null});\n        if(ih.valor==null){\n          advertenciasSancion.push("No hay tasa histórica suficiente para cerrar el tramo de intereses a la fecha de corte.");\n          continue;\n        }\n        interesesCorte+=Number(ih.valor||0);\n        interesesPorCuotaCorte.push(...((ih.tramos&&ih.tramos.length)?ih.tramos:[{\n          vto:v.id,base:Number(v.saldo||0),valor:Number(ih.valor||0),interes:Number(ih.valor||0),\n          metodologia:ih.metodologia,dias:Number(ih.dias||0),desde:v.fecha,hasta:fechaCorte,tasa:ih.tasa\n        }]).map(t=>({...t,vto:t.vto||v.id,base:Number(t.base??v.saldo??0)})));\n      }\n      saldoIntereses=roundMil(interesesCorte);\n\n      // Actualización de sanción a la fecha de corte: misma regla normativa\n      // ya usada por los pagos, pero sin inventar un pago. Se excluyen las\n      // vigencias que ya fueron aplicadas por pagos anteriores.\n      const esLiquidacionPrivadaCorte=String(datos.tipoLiquidacion||"").toUpperCase()==="PRIVADA";\n      const fechaPrimeraActualizacionPrivadaCorte=fechaSancion\n        ?`${Number(this.actualizadorSancion.sumarUnAnio(fechaSancion).slice(0,4))+1}-01-01`\n        :"";\n      const puedeActualizarSancionCorte=!articulo10Seleccionado && (!esLiquidacionPrivadaCorte\n        ||(fechaPrimeraActualizacionPrivadaCorte && fechaCorte>=fechaPrimeraActualizacionPrivadaCorte));\n      let actualizacionCorte={aplicada:false,fechaCorte,actualizacionTotal:0,tramos:[],eventos:[],saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion)};\n      if(saldoSancion>0 && fechaSancion && fechaCorte>fechaSancion && puedeActualizarSancionCorte){\n        const act=this.actualizadorSancion.calcular(\n          saldoSancion,fechaSancion,fechaCorte,\n          {aniosExcluir:[...aniosActualizacionSancionAplicados]}\n        );\n        if(act.valor>saldoSancion)saldoSancion=act.valor;\n        if(act.tramos?.length){\n          act.tramos.forEach(t=>aniosActualizacionSancionAplicados.add(Number(t.anio)));\n          detalleActualizacionSancion.push({fechaCorte,...act});\n          actualizacionCorte.aplicada=true;\n          actualizacionCorte.tramos=act.tramos.map(t=>({\n            anio:Number(t.anio),desde:t.desde,hasta:t.hasta,dias:Number(t.dias||0),\n            saldoAntes:roundMil(t.saldoInicial||0),actualizacion:roundMil(t.actualizacion||0),\n            saldoDespues:roundMil(t.saldoFinal||0),ipc:Number(t.ipc||0),\n            ipcPorcentaje:Number(t.ipcPorcentaje||0),disponible:t.disponible!==false\n          }));\n          actualizacionCorte.actualizacionTotal=roundMil(\n            actualizacionCorte.tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0)\n          );\n        }\n        advertenciasSancion.push(...(act.advertencias||[]));\n      }\n      detalleFechaCorte={\n        pago:{id:`CORTE-${fechaCorte}`,numero:999998,fecha:fechaCorte,valor:0,\n          recibo:"",tdj:"",tipo:"FECHA DE CORTE",observacion:"CIERRE DE LIQUIDACIÓN A FECHA DE CORTE",esFechaCorte:true},\n        tasa:this.tasaPorFecha(fechaCorte,"TASA DIAN"),\n        tasaVisible:Number(this.tasaPorFecha(fechaCorte,"TASA DIAN")||0)*100,\n        tipoAplicado:"FECHA DE CORTE",\n        notaBeneficio:"CIERRE INFORMATIVO SIN PAGO",\n        interesGenerado:saldoIntereses,interesLiquidado:saldoIntereses,\n        tramosInteres:interesesPorCuotaCorte,interesesPorCuota:interesesPorCuotaCorte,\n        deudaAntes:{\n          impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0),\n          intereses:saldoIntereses,sancion:roundMil(saldoSancion)\n        },\n        aplicado:{impuesto:0,intereses:0,sancion:0,total:0,excedente:0,porcentaje:0,tipoProporcion:"FECHA DE CORTE — SIN PAGO"},\n        excedente:0,aplicacionesVto:[],\n        esFechaCorte:true,actualizacionSancion:actualizacionCorte,\n        saldo:{\n          impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0),\n          intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),\n          total:saldosVto.reduce((a,v)=>a+Math.max(0,Number(v.saldo||0)),0)+saldoIntereses+Math.max(0,saldoSancion)\n        }\n      };\n      detalle.push(detalleFechaCorte);\n    }\n\n    const impuesto=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);\n    const ultimo=detalleFechaCorte||detalle.at(-1)||null;'''
+          replace_once('js/motor-liquidacion-base.js', anchor, patch, 'Motor: cierre fecha de corte')
+
+          # ------------------------------------------------------------
+          # MÓDULO TDJ: FECHA DE CORTE EN PAGOS O TÍTULOS
+          # ------------------------------------------------------------
+          insert_after = '''function agregarTitulo(){invalidarResultadoTDJ();titulos.push(nuevoTitulo(titulos.length+1));renderTitulos();actualizarVisibilidadTasasObligacionesTDJ();}\n'''
+          helper = '''function esFechaCorteTDJ(x){\n  return Boolean(fechaISO(x?.fecha))\n    && Number(x?.valor||0)<=0\n    && !String(x?.tdj||"").trim()\n    && !String(x?.recibo||"").trim();\n}\nfunction fechaCorteTDJ(o){\n  const fechas=[\n    ...(o?.pagos||[]).filter(esFechaCorteTDJ).map(x=>fechaISO(x.fecha)||""),\n    ...(titulos||[]).filter(esFechaCorteTDJ).map(x=>fechaISO(x.fecha)||"")\n  ].filter(Boolean).sort();\n  return fechas.at(-1)||"";\n}\nfunction pagosRealesHastaCorteTDJ(o,corte=""){\n  return (o?.pagos||[])\n    .filter(p=>p.fecha&&Number(p.valor)>0 && (!corte || String(p.fecha)<=String(corte)))\n    .map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor) }))\n    .sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a._orden||0)-Number(b._orden||0));\n}\n'''
+          replace_once('js/tdj.js', insert_after, insert_after+helper, 'TDJ: helper fecha de corte')
+
+          replace_once(
+              'js/tdj.js',
+              '    o.pagos=o.pagos.filter(p=>p.fecha&&Number(p.valor)>0).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)}));\n    ordenarPagosCronologicamente(o);',
+              '''    o.pagos=o.pagos.filter(p=>p.fecha && (Number(p.valor)>0 || esFechaCorteTDJ(p)))\n      .map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));\n    ordenarPagosCronologicamente(o);''',
+              'TDJ: conservar fila fecha de corte en pagos'
+          )
+
+          replace_once(
+              'js/tdj.js',
+              '''  for(const t of titulosValidos){\n    if(!String(t?.tdj||"").trim()){''',
+              '''  for(const t of titulosValidos){\n    // Título con SOLO fecha = fecha de corte. No es un TDJ real y no debe\n    // exigir identificador ni valor. Los TDJ reales siguen con validación completa.\n    if(esFechaCorteTDJ(t))continue;\n    if(!String(t?.tdj||"").trim()){''',
+              'TDJ: validar titulo solo fecha como corte'
+          )
+
+          replace_once(
+              'js/tdj.js',
+              '    o.pagos=o.pagos.filter(p=>p.fecha&&Number(p.valor)>0).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)}));\n    ordenarPagosCronologicamente(o);',
+              '''    o.pagos=o.pagos.filter(p=>p.fecha && (Number(p.valor)>0 || esFechaCorteTDJ(p)))\n      .map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));\n    ordenarPagosCronologicamente(o);''',
+              'TDJ: conservar fecha de corte en validacion'
+          )
+
+          replace_once(
+              'js/tdj.js',
+              '''function calcularLiquidacionBaseTDJ(o){\n  const pagos=[...(o.pagos||[])].filter(p=>p.fecha&&Number(p.valor)>0).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));\n  const fechaCorte=pagos.at(-1)?.fecha||hoyISO();\n  return motorParaObligacion(o).calcular(datosMotor(o,pagos,fechaCorte));\n}''',
+              '''function calcularLiquidacionBaseTDJ(o){\n  const corte=fechaCorteTDJ(o);\n  const pagos=pagosRealesHastaCorteTDJ(o,corte);\n  const fechaLiquidacion=corte||pagos.at(-1)?.fecha||hoyISO();\n  return motorParaObligacion(o).calcular(datosMotor(o,pagos,fechaLiquidacion));\n}''',
+              'TDJ: base con fecha de corte'
+          )
+
+          replace_once(
+              'js/tdj.js',
+              '''        const pagosBase=[...o.pagos]\n          .filter(p=>p.fecha&&p.fecha<=t.fecha)''',
+              '''        const corteObligacion=fechaCorteTDJ(o);\n        if(corteObligacion && t.fecha>corteObligacion)continue;\n        const pagosBase=pagosRealesHastaCorteTDJ(o,corteObligacion)\n          .filter(p=>p.fecha<=t.fecha)''',
+              'TDJ: no aplicar titulos posteriores a fecha de corte'
+          )
+
+          replace_once(
+              'js/tdj.js',
+              '''      const movimientosFinales=[\n        ...(o.pagos||[]).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i)})),''',
+              '''      const corteObligacion=fechaCorteTDJ(o);\n      const movimientosFinales=[\n        ...pagosRealesHastaCorteTDJ(o,corteObligacion).map((p,i)=>({...p,ordenInterno:Number(p.ordenInterno??i)})),''',
+              'TDJ: movimientos finales sin fila ficticia'
+          )
+
+          replace_once(
+              'js/tdj.js',
+              '''      const fechaCorteFinal=movimientosFinales\n        .map(p=>fechaISO(p.fecha)||"")\n        .filter(Boolean)\n        .sort().at(-1)||hoyISO();''',
+              '''      const fechaCorteFinal=corteObligacion||movimientosFinales\n        .map(p=>fechaISO(p.fecha)||"")\n        .filter(Boolean)\n        .sort().at(-1)||hoyISO();''',
+              'TDJ: fecha final de corte'
+          )
+
+          # ------------------------------------------------------------
+          # PRUEBA REGRESIVA ESPECÍFICA
+          # ------------------------------------------------------------
+          test = ROOT / 'tests/regresion-fecha-corte.mjs'
+          test.write_text('''import assert from "node:assert/strict";\nimport { MotorLiquidacion } from "../js/motor-liquidacion.js";\n\nconst rates=[{desde:"2026-01-01",hasta:"2026-12-31",metodologia:"INTERES_SIMPLE_DIARIO",tasas:{"TASA DIAN":0.365}}];\nconst base={concepto:"PRUEBA FECHA CORTE",anio:2026,tipoLiquidacion:"PRIVADA",tieneSancion:"SI",valorSancion:30000,fechaSancion:"2026-01-01",vencimientos:[{id:"V1",numero:1,fecha:"2026-01-01",impuesto:100000}],};\nconst motor=()=>new MotorLiquidacion({tasasMoratorias:rates,intereses:rates,reglasObligaciones:[{concepto:"PRUEBA FECHA CORTE",familia:"TEST",vencimientos:"MANUAL",periodicidad:"ANUAL"}],uvt:[]});\n\nconst sinPago=motor().calcular({...base,pagos:[],fechaCorte:"2026-02-01"});\nassert.equal(sinPago.fechaCorte,"2026-02-01");\nassert.ok(Number(sinPago.intereses)>0,"La fecha de corte debe generar intereses sin pago ficticio");\nassert.ok(Number(sinPago.total)>Number(base.vencimientos[0].impuesto),"El total a fecha de corte debe incluir intereses/sanción cuando corresponda");\n\nconst conPagoYcorte=motor().calcular({...base,pagos:[{id:"P1",fecha:"2026-01-15",valor:20000,tipo:"TASA DIAN"}],fechaCorte:"2026-02-01"});\nassert.equal(conPagoYcorte.fechaCorte,"2026-02-01");\nassert.equal(conPagoYcorte.detalle.filter(x=>x.esFechaCorte).length,1,"El cierre a fecha de corte debe quedar separado de los pagos reales");\nassert.equal(Number(conPagoYcorte.detalle.at(-1).pago.valor),0);\nassert.ok(Number(conPagoYcorte.total)>=0);\n\nconsole.log("PASS: regresión fecha de corte sin pago y después de pagos reales");\n''', encoding='utf-8')
+
+          # ------------------------------------------------------------
+          # VERSIONADO CONSISTENTE
+          # ------------------------------------------------------------
+          for p in ROOT.rglob('*'):
+              if not p.is_file() or '.git' in p.parts:
+                  continue
+              if p.suffix.lower() not in {'.js','.mjs','.html','.css','.yml','.yaml','.json','.md'}:
+                  continue
+              try:
+                  s=p.read_text(encoding='utf-8')
+              except Exception:
+                  continue
+              if '16.33.116' in s:
+                  p.write_text(s.replace('16.33.116','16.33.117'),encoding='utf-8')
+
+          # El workflow de auditoría existente fija la versión esperada del núcleo.
+          audit=ROOT/'.github/workflows/audit-estabilidad.yml'
+          s=audit.read_text(encoding='utf-8').replace('16.33.116','16.33.117')
+          audit.write_text(s,encoding='utf-8')
+
+          # Esta automatización es de una sola ejecución; se elimina en el mismo commit.
+          Path('.github/workflows/actualizar-fecha-corte.yml').unlink()
+          PY
+
+      - name: Validar sintaxis y regresiones antes de publicar
+        run: |
+          set -euo pipefail
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tests/regresion-fecha-corte.mjs
+          node --experimental-default-type=module tests/regresion-matematica.mjs
+          node tests/regresion-ui.mjs
+          grep -q '16.33.117' js/motor-liquidacion.js
+          grep -q '16.33.117' js/motor-liquidacion-base.js
+          grep -q '16.33.117' js/tdj.js
+          grep -q '16.33.117' js/app.js
+
+      - name: Commit de la actualización funcional
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js tests .github/workflows/audit-estabilidad.yml
+          git commit -m "feat: fecha de corte sin pago ficticio 16.33.117 aplicado"
+          git push origin HEAD:main
