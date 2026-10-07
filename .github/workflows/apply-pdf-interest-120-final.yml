@@ -1,8 +1,6 @@
 name: Aplicar corrección interés PDF v16.33.120
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -81,11 +79,8 @@ jobs:
           set -e
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js js/tdj.js .github/workflows/audit-estabilidad.yml RELEASES/16.33.120.md tests/regresion-interes-corte-pdf.mjs
-          git add -- $(git diff --name-only -- '*.js' '*.html' '*.css' '*.mjs' '*.json' '*.yml' '*.yaml') || true
-          if git diff --cached --quiet; then
-            echo 'No hay cambios pendientes de sincronización.'
-            exit 0
-          fi
+          git add js/app.js js/tdj.js index.html liquidacion.html titulos.html estilos.css .github/workflows/audit-estabilidad.yml RELEASES/16.33.120.md tests/regresion-interes-corte-pdf.mjs
+          git add js/*.js tests/*.mjs || true
+          git diff --cached --quiet && { echo 'No hay cambios pendientes de sincronización.'; exit 0; }
           git commit -m 'fix: sincronizar referencias activas v16.33.120'
           git push origin main
