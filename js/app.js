@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.118";
-import {importarDatosInteligente} from "./importador.js?v=16.33.118";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.118";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.118";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.118";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.118";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.118";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.118";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.118";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.118";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.118";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.118";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.118";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.118";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.119";
+import {importarDatosInteligente} from "./importador.js?v=16.33.119";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.119";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.119";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.119";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.119";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.119";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.119";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.119";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.119";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.119";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.119";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.119";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.119";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -305,7 +305,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.118"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.119"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1116,7 +1116,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.118"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.119"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la
@@ -1275,21 +1275,32 @@ function exportarExcel(){
 
 function escPdf(v){return esc(v);}
 function tablaInteresesPdf(x,r){
-  const detalle=Array.isArray(x.interesesPorCuota)?x.interesesPorCuota:[];
-  const filas=detalle.length?detalle:[];
+  const detallePago=Array.isArray(x?.interesesPorCuota)?x.interesesPorCuota:[];
+  const detalleCorte=Array.isArray(r?.interesesPorCuota)?r.interesesPorCuota:[];
+  const p=x?.pago||{};
+  const esCorteInformativo=Number(p.valor||0)===0 && Boolean(fechaISO(p.fecha)) && !String(p.recibo||"").trim() && !String(p.tdj||"").trim();
+  const filas=detallePago.length?detallePago:(esCorteInformativo?detalleCorte:[]);
   let rows="";
   if(filas.length){
-    rows=filas.map(t=>`<tr><td>${escPdf(t.cuota??"")}</td><td>${dinero(t.capitalBase||0)}</td><td>${escPdf(fechaVisible(t.fechaVencimiento||""))}</td><td>${escPdf(fechaVisible(t.fechaPago||x.pago.fecha||""))}</td><td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes||0)}</td></tr>`).join("");
+    rows=filas.map((t,i)=>{
+      const vtoRef=(r?.vencimientos||[]).find(v=>v?.id===t?.vto)||null;
+      const cuota=t?.cuota??t?.vto??vtoRef?.numero??(i+1);
+      const capital=Number(t?.capitalBase||t?.base||vtoRef?.saldo||vtoRef?.impuesto||0);
+      const fechaVto=t?.fechaVencimiento||vtoRef?.fecha||"";
+      const fechaPago=t?.fechaPago||p.fecha||(esCorteInformativo?r?.fechaCorte||"":"");
+      const dias=Number(t?.dias||0);
+      const tasa=t?.tasa!=null?((Number(t.tasa)*100).toFixed(3)+"%"):(x?.tasaVisible!=null?Number(x.tasaVisible).toFixed(3)+"%":"—");
+      const interes=Number(t?.interes??t?.valor??0);
+      return `<tr><td>${escPdf(cuota)}</td><td>${dinero(capital)}</td><td>${escPdf(fechaVisible(fechaVto))}</td><td>${escPdf(fechaVisible(fechaPago))}</td><td>${dias}</td><td>${tasa}</td><td>${dinero(interes)}</td></tr>`;
+    }).join("");
   }else{
-    rows=r.vencimientos.map(v=>`<tr><td>${escPdf(v.numero||"")}</td><td>${dinero(0)}</td><td>${escPdf(fechaVisible(v.fecha||""))}</td><td>${escPdf(fechaVisible(x.pago.fecha||""))}</td><td>0</td><td>${Number(x.tasaVisible||0).toFixed(3)}%</td><td>${dinero(0)}</td></tr>`).join("");
+    rows=(r?.vencimientos||[]).map(v=>`<tr><td>${escPdf(v?.numero||"")}</td><td>${dinero(0)}</td><td>${escPdf(fechaVisible(v?.fecha||""))}</td><td>${escPdf(fechaVisible(p.fecha||""))}</td><td>0</td><td>${x?.tasaVisible==null?"—":Number(x.tasaVisible).toFixed(3)+"%"}</td><td>${dinero(0)}</td></tr>`).join("");
   }
-  const total=filas.length
-    ?filas.reduce((a,t)=>a+Number(t.interes||0),0)
-    :Number(x.interesGenerado||0);
+  const total=filas.length?filas.reduce((s,t)=>s+Number(t?.interes??t?.valor??0),0):(esCorteInformativo?Number(r?.intereses||0):Number(x?.interesGenerado||0));
   return `<div class="pdf-intereses"><h3>CÁLCULO DE INTERESES POR CUOTA</h3><table><thead><tr><th>CUOTA</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA PAGO</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES DEL PAGO</th><th>${dinero(total)}</th></tr></tfoot></table></div>`;
 }
 
-function valorNominalPagoPdf(x,d){
+function valorNominalPagoPdffunction valorNominalPagoPdf(x,d){
   const p=x?.pago||{}; const esTDJ=p.esTDJ===true||String(p.tdj||"").trim()!=="";
   if(!esTDJ)return Number(p.valor||0);
   const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
