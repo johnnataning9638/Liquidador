@@ -1851,7 +1851,7 @@ function tablaInteresesPdfTDJ(x,r){
   return `<div class="pdf-intereses"><h3>CÁLCULO DE INTERESES POR CUOTA</h3><table><thead><tr><th>CUOTA</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA PAGO / TDJ</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES DEL PAGO</th><th>${dinero(total)}</th></tr></tfoot></table></div>`;
 }
 
-function bloqueSuspensionInteresesPdfTDJfunction bloqueSuspensionInteresesPdfTDJ(x,d,i){
+function bloqueSuspensionInteresesPdfTDJ(x,d,i){
   const detalles=detalleSuspensionInteresesOficialTDJ(x,d);
   if(!detalles.length)return "";
   const t0=detalles[0];
