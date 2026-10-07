@@ -6,10 +6,18 @@ permissions:
   contents: write
 jobs:
   inspect:
-    if: startsWith(github.event.head_commit.message, 'ci: aplicar corrección de detalle de intereses')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Guardar ejecución temporal
+        shell: bash
+        run: |
+          set -e
+          if [ ! -f .github/corte-119.trigger ]; then
+            echo 'SIN MARCADOR DE CORRECCIÓN. FIN.'
+            exit 0
+          fi
+          rm -f .github/corte-119.trigger
       - name: Apply correction in working tree
         shell: bash
         run: |
