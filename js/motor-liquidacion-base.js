@@ -1,5 +1,5 @@
-import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.119";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.119";
+import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.120";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.120";
 
 /**
  * Motor histórico y liquidación compatible con Excel V9.5.2.
