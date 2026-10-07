@@ -1,4 +1,4 @@
-name: Aplicar corrección fecha de corte TDJ v16.33.121
+name: Aplicar agrupacion de resúmenes finales v16.33.122
 
 on:
   push:
@@ -15,56 +15,98 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Aplicar corrección TDJ
+
+      - name: Aplicar corrección de paginación final
         run: |
-          set -e
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           root=Path('.')
-          tdj=root/'js/tdj.js'
-          s=tdj.read_text(encoding='utf-8')
-          if '16.33.120' not in s:
-              print('TDJ ya está en la versión objetivo; no se reaplica la corrección.')
-              raise SystemExit(0)
-          old='o.pagos=o.pagos.filter(p=>p.fecha&&Number(p.valor)>0).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)}));'
-          new='o.pagos=o.pagos.filter(p=>p.fecha&&(Number(p.valor)>0||esFechaCorteTDJ(p))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));'
-          if old not in s: raise SystemExit('No se encontró el filtro de pagos TDJ que elimina la fecha de corte.')
-          s=s.replace(old,new,1)
-          old='const totalCorte=Math.max(0,Number(r?.intereses||0));'
-          new='const totalCorte=Math.max(0,Number(r?.intereses||x?.interesLiquidado||x?.interesGenerado||0));'
-          if old not in s: raise SystemExit('No se encontró el fallback de interés de corte TDJ.')
-          s=s.replace(old,new,1)
-          old='(esCorteInformativo?Number(r?.intereses||0):Number(x?.interesGenerado||0))'
-          new='(esCorteInformativo?Number(r?.intereses||x?.interesLiquidado||x?.interesGenerado||0):Number(x?.interesGenerado||0))'
-          if old not in s: raise SystemExit('No se encontró el total de intereses de corte TDJ.')
-          s=s.replace(old,new,1)
-          tdj.write_text(s,encoding='utf-8')
 
+          # 1. Alinear versión activa 16.33.121 -> 16.33.122 sin tocar workflows.
           for p in root.rglob('*'):
-              if not p.is_file() or any(x in p.parts for x in {'.git','RELEASES','node_modules','.github'}): continue
-              if p.suffix.lower() not in {'.js','.html','.css','.yml','.yaml','.json','.mjs'}: continue
-              try: text=p.read_text(encoding='utf-8')
+              if not p.is_file() or any(x in p.parts for x in {'.git','RELEASES','node_modules','.github','supabase'}):
+                  continue
+              if p.suffix.lower() not in {'.js','.html','.css','.yml','.yaml','.json','.mjs'}:
+                  continue
+              try: s=p.read_text(encoding='utf-8')
               except UnicodeDecodeError: continue
-              if '16.33.120' in text: p.write_text(text.replace('16.33.120','16.33.121'),encoding='utf-8')
+              if '16.33.121' in s:
+                  p.write_text(s.replace('16.33.121','16.33.122'),encoding='utf-8')
 
-          Path('RELEASES/16.33.121.md').write_text('''# 16.33.121\n\n- Corrige exclusivamente el soporte de fecha de corte informativa en PAGOS del módulo TDJ.\n- Conserva los registros de pago que contienen únicamente fecha, sin recibo ni valor, para cerrar la obligación a esa fecha.\n- En el PDF TDJ, muestra el interés ya calculado por el motor en INTERÉS y TOTAL INTERESES DEL PAGO, usando `interesLiquidado` como respaldo cuando el detalle por cuota no lo expone directamente.\n- No modifica fórmulas de intereses, sanciones, Régimen Simple, vencimientos, distribución TDJ, endoso, importación/manual ni diseño.\n''',encoding='utf-8')
+          # 2. DIAN/RIAN: marcar los tres bloques finales como un grupo paginable.
+          app=root/'js/app.js'
+          s=app.read_text(encoding='utf-8')
+          marca='return `<section class="pdf-hoja"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final">'
+          marca_nueva='return `<section class="pdf-hoja pdf-hoja-final-resumen"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final">'
+          if marca in s:
+              s=s.replace(marca,marca_nueva)
+          elif 'pdf-hoja-final-resumen' not in s:
+              raise SystemExit('No se encontró el patrón de resúmenes finales DIAN/RIAN.')
 
-          Path('tests/regresion-fecha-corte-pagos-tdj.mjs').write_text('''import fs from 'node:fs';\nimport assert from 'node:assert/strict';\nconst s=fs.readFileSync('js/tdj.js','utf8');\nassert.match(s,/o\\.pagos=o\\.pagos\\.filter\\(p=>p\\.fecha&&\\(Number\\(p\\.valor\\)>0\\|\\|esFechaCorteTDJ\\(p\\)\\)\\)/);\nassert.match(s,/r\\?\\.intereses\\|\\|x\\?\\.interesLiquidado\\|\\|x\\?\\.interesGenerado/);\nassert.match(s,/esCorteInformativo\\?Number\\(r\\?\\.intereses\\|\\|x\\?\\.interesLiquidado\\|\\|x\\?\\.interesGenerado\\|\\|0\\)/);\nconst corte={fecha:'2026-10-06',valor:0,recibo:'',tdj:''};\nassert.equal(Boolean(corte.fecha)&&Number(corte.valor)<=0&&!corte.recibo&&!corte.tdj,true);\nconst x={interesLiquidado:2326000,interesGenerado:2326000},r={intereses:0};\nassert.equal(Math.max(0,Number(r.intereses||x.interesLiquidado||x.interesGenerado||0)),2326000);\nconsole.log('REGRESION_FECHA_CORTE_PAGOS_TDJ_OK');\n''',encoding='utf-8')
+          # 3. TDJ: marcar el bloque final de títulos/endoso para que pueda
+          # compartir hoja con bloques finales precedentes cuando existan.
+          marca_tdj='if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div>'
+          marca_tdj_nueva='if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div>'
+          if marca_tdj in s:
+              raise SystemExit('Patrón TDJ inesperado dentro de app.js.')
+          tdj=root/'js/tdj.js'
+          t=tdj.read_text(encoding='utf-8')
+          if marca_tdj in t:
+              t=t.replace(marca_tdj,marca_tdj_nueva,1)
+          elif 'pdf-hoja-final-resumen' not in t:
+              raise SystemExit('No se encontró el bloque final TDJ.')
+
+          # 4. CSS: los bloques finales dejan de tener una altura fija y pueden
+          # fluir verticalmente en la misma hoja. Cada bloque conserva avoid-page,
+          # por lo que si no cabe completo pasa íntegro a la siguiente hoja.
+          css_reglas='''  .pdf-hoja-final-resumen{width:100%;height:auto!important;min-height:0!important;overflow:visible!important;break-before:page;page-break-before:always;break-after:auto;page-break-after:auto;break-inside:auto;page-break-inside:auto}\n  .pdf-hoja-final-resumen + .pdf-hoja-final-resumen{break-before:auto;page-break-before:auto}\n  .pdf-hoja-final-resumen .pdf-pagina{height:auto!important;min-height:0!important}\n  .pdf-hoja-final-resumen .pdf-liquidacion{height:auto!important;min-height:0!important;overflow:visible!important}\n'''
+          marker_css='  @media print{'
+          if css_reglas not in s:
+              if marker_css not in s: raise SystemExit('No se encontró @media print en app.js.')
+              s=s.replace(marker_css,css_reglas+marker_css,1)
+          marker_css_tdj='  @media print{'
+          if css_reglas not in t:
+              if marker_css_tdj not in t: raise SystemExit('No se encontró @media print en tdj.js.')
+              t=t.replace(marker_css_tdj,css_reglas+marker_css_tdj,1)
+
+          app.write_text(s,encoding='utf-8')
+          tdj.write_text(t,encoding='utf-8')
+
+          Path('RELEASES/16.33.122.md').write_text('''# 16.33.122\n\n- Ajuste exclusivo de paginación del PDF final para DIAN/RIAN y TDJ.\n- Los bloques finales de resumen, excedentes y títulos/endoso se mantienen consecutivos en la misma página cuando caben.\n- Si el contenido crece y no cabe completo, cada bloque conserva `break-inside: avoid` y pasa íntegro a la página siguiente.\n- No modifica fórmulas, intereses, sanciones, Régimen Simple, vencimientos, distribución TDJ, endoso, importación/manual ni datos de Supabase.\n''',encoding='utf-8')
+
+          Path('tests/regresion-paginacion-final.mjs').write_text('''import fs from 'node:fs';\nimport assert from 'node:assert/strict';\nconst app=fs.readFileSync('js/app.js','utf8');\nconst tdj=fs.readFileSync('js/tdj.js','utf8');\nassert.equal((app.match(/pdf-hoja-final-resumen/g)||[]).length>=4,true);\nassert.match(app,/pdf-hoja-final-resumen \+ \\.pdf-hoja-final-resumen/);\nassert.match(tdj,/pdf-hoja-final-resumen/);\nassert.match(app,/height:auto!important;min-height:0!important;overflow:visible!important/);\nassert.match(tdj,/break-inside:avoid;page-break-inside:avoid/);\nassert.match(app,/\.pdf-bloque\\{margin:2mm[^}]*break-inside:avoid/);\nconsole.log('REGRESION_PAGINACION_FINAL_OK');\n''',encoding='utf-8')
           PY
-      - name: Pruebas
+
+      - name: Pruebas y auditoría de estabilidad
         run: |
-          set -e
+          set -euo pipefail
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
           node tests/regresion-matematica.mjs
           node tests/regresion-ui.mjs
-          node tests/regresion-interes-corte-pdf.mjs
+          node tests/regresion-detalle-intereses-corte.mjs
           node tests/regresion-fecha-corte-pagos-tdj.mjs
+          node tests/regresion-interes-corte-pdf.mjs
+          node tests/regresion-paginacion-final.mjs
+          grep -q 'motor-liquidacion-base.js?v=16.33.122' js/motor-liquidacion.js
+          if grep -R -n --exclude-dir=.git --exclude='*.md' --exclude='20261006_security_hardening_16_33_113.sql' -E '16\.33\.(110|111|112|113|114|115|116|117|118|119|120|121)' js tests index.html liquidacion.html titulos.html estilos.css; then
+            echo 'ERROR: referencia activa a versión anterior.'
+            exit 1
+          fi
+          grep -q 'const esSimplePorAnticipos=cantidadCuotas>=4 && cantidadCuotas<=6;' js/motor-liquidacion-base.js
+          grep -q 'pago.fecha>=fechaSancionReal' js/motor-liquidacion-base.js
+          test -f supabase/migrations/20261006_security_hardening_16_33_113.sql
+          grep -q 'SECURITY INVOKER' supabase/migrations/20261006_security_hardening_16_33_113.sql
+          grep -q "select lower(auth.jwt()->>'email')" supabase/migrations/20261006_security_hardening_16_33_113.sql
+          grep -q 'REVOKE EXECUTE.*FROM PUBLIC, anon' supabase/migrations/20261006_security_hardening_16_33_113.sql
+          echo 'AUDITORIA_16.33.122_OK'
+
       - name: Commit corrección
         run: |
-          set -e
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/*.js tests/*.mjs index.html liquidacion.html titulos.html estilos.css RELEASES/16.33.121.md
+          git add js/*.js tests/*.mjs index.html liquidacion.html titulos.html estilos.css RELEASES/16.33.122.md
           git diff --cached --quiet && { echo 'No hay cambios pendientes.'; exit 0; }
-          git commit -m 'fix: fecha de corte en pagos TDJ v16.33.121'
+          git commit -m 'fix: agrupar resúmenes finales en una página v16.33.122'
           git push origin main
