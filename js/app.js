@@ -1300,7 +1300,7 @@ function tablaInteresesPdf(x,r){
   return `<div class="pdf-intereses"><h3>CÁLCULO DE INTERESES POR CUOTA</h3><table><thead><tr><th>CUOTA</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA PAGO</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES DEL PAGO</th><th>${dinero(total)}</th></tr></tfoot></table></div>`;
 }
 
-function valorNominalPagoPdffunction valorNominalPagoPdf(x,d){
+function valorNominalPagoPdffunction valorNominalPagoPdffunction valorNominalPagoPdf(x,d){
   const p=x?.pago||{}; const esTDJ=p.esTDJ===true||String(p.tdj||"").trim()!=="";
   if(!esTDJ)return Number(p.valor||0);
   const id=String(p.id||"").trim(),n=String(p.tdj||"").trim(),f=fechaISO(p.fecha)||"";
