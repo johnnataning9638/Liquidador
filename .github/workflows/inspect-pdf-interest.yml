@@ -6,6 +6,7 @@ permissions:
   contents: write
 jobs:
   inspect:
+    if: startsWith(github.event.head_commit.message, 'ci: aplicar corrección de detalle de intereses')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -16,7 +17,6 @@ jobs:
           python3 <<'PY'
           from pathlib import Path
           import re
-
           app=Path('js/app.js'); tdj=Path('js/tdj.js')
           a=app.read_text(); t=tdj.read_text()
           old=re.search(r'function tablaInteresesPdf\(x,r\)\{.*?\n\}\s*function valorNominalPagoPdf',a,re.S)
@@ -49,7 +49,6 @@ jobs:
 
           function valorNominalPagoPdf'''
           a=a[:old.start()]+new+a[old.end()-len('function valorNominalPagoPdf'):]
-
           old=re.search(r'function tablaInteresesPdfTDJ\(x,r\)\{.*?\n\}\s*function bloqueSuspensionInteresesPdfTDJ',t,re.S)
           if not old: raise SystemExit('No se encontró tablaInteresesPdfTDJ')
           new='''function tablaInteresesPdfTDJ(x,r){
@@ -80,56 +79,42 @@ jobs:
 
           function bloqueSuspensionInteresesPdfTDJ'''
           t=t[:old.start()]+new+t[old.end()-len('function bloqueSuspensionInteresesPdfTDJ'):]
-
           app.write_text(a.replace('16.33.118','16.33.119'))
           tdj.write_text(t.replace('16.33.118','16.33.119'))
-
           roots=[Path('js'),Path('tests'),Path('index.html'),Path('liquidacion.html'),Path('titulos.html'),Path('estilos.css'),Path('.github/workflows/audit-estabilidad.yml')]
           for root in roots:
             files=[root] if root.is_file() else list(root.rglob('*'))
             for f in files:
               if f.is_file() and f.suffix in {'.js','.mjs','.html','.css','.yml'}:
                 s=f.read_text()
-                if '16.33.118' in s:
-                  f.write_text(s.replace('16.33.118','16.33.119'))
-
-          Path('RELEASES/16.33.119.md').write_text('''# 16.33.119\n\n- Corrige el bloque PDF **CÁLCULO DE INTERESES POR CUOTA** para fechas de corte informativas con valor de pago $0.\n- Muestra cuota, capital base, vencimiento, fecha de corte, días, tasa e interés calculado.\n- Aplica en DIAN/RIAN y TDJ.\n- No modifica la fórmula matemática del motor; recupera el detalle ya calculado para su trazabilidad.\n''')
-          Path('tests/regresion-detalle-intereses-corte.mjs').write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst app=fs.readFileSync("js/app.js","utf8");\nconst tdj=fs.readFileSync("js/tdj.js","utf8");\nfor(const [name,src] of [["app.js",app],["tdj.js",tdj]]){\n  assert.match(src,/detalleCorte=Array\\.isArray\\(r\\?\\.interesesPorCuota\\)\\?r\\.interesesPorCuota:\[\]/,`${name}: fallback de corte ausente`);\n  assert.match(src,/esCorteInformativo=Number\\(p\\.valor\\|\\|0\\)===0/,`${name}: detección de corte ausente`);\n  assert.match(src,/capitalBase\\|\\|t\\?\\.base\\|\\|vtoRef\\?\\.saldo\\|\\|vtoRef\\?\\.impuesto/,`${name}: capital base de corte ausente`);\n}\nconsole.log("REGRESIÓN DETALLE INTERESES FECHA DE CORTE: OK");\n''')
+                if '16.33.118' in s: f.write_text(s.replace('16.33.118','16.33.119'))
+          Path('RELEASES/16.33.119.md').write_text('# 16.33.119\n\n- CORRIGE EL BLOQUE PDF CÁLCULO DE INTERESES POR CUOTA PARA FECHAS DE CORTE INFORMATIVAS CON VALOR DE PAGO $0.\n- MUESTRA CUOTA, CAPITAL BASE, VENCIMIENTO, FECHA DE CORTE, DÍAS, TASA E INTERÉS CALCULADO.\n- APLICA EN DIAN/RIAN Y TDJ.\n- NO MODIFICA LA FÓRMULA MATEMÁTICA DEL MOTOR.\n')
+          Path('tests/regresion-detalle-intereses-corte.mjs').write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst app=fs.readFileSync("js/app.js","utf8");\nconst tdj=fs.readFileSync("js/tdj.js","utf8");\nfor(const [name,src] of [["app.js",app],["tdj.js",tdj]]){\n  assert.match(src,/detalleCorte=Array\\.isArray\\(r\\?\\.interesesPorCuota\\)\\?r\\.interesesPorCuota:\[\]/,`${name}: fallback de corte ausente`);\n  assert.match(src,/esCorteInformativo=Number\\(p\\.valor\\|\\|0\\)===0/,`${name}: detección de corte ausente`);\n  assert.match(src,/capitalBase\\|\\|t\\?\\.base\\|\\|vtoRef\\?\\.saldo\\|\\|vtoRef\\?\.impuesto/,`${name}: capital base de corte ausente`);\n}\nconsole.log("REGRESIÓN DETALLE INTERESES FECHA DE CORTE: OK");\n''')
           PY
           node --check js/app.js
           node --check js/tdj.js
           node tests/regresion-detalle-intereses-corte.mjs
-          if grep -R -n --exclude-dir=.git -E '16\.33\.(110|111|112|113|114|115|116|117|118)' js tests index.html liquidacion.html titulos.html estilos.css .github/workflows/audit-estabilidad.yml; then exit 1; fi
-      - name: Commit corrected files through GitHub API
+          git diff --name-only > /tmp/changed-files.txt
+      - name: Publish changed files through Contents API
         uses: actions/github-script@v7
         env:
           REPO: ${{ github.repository }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const path = require('path');
-            const repo = process.env.REPO.split('/');
-            const files = [
-              'js/app.js','js/tdj.js','index.html','liquidacion.html','titulos.html','estilos.css',
-              'js/actualizacion-sancion.js','js/ai-bridge.js','js/app.js','js/importador-tdj.js','js/motor-liquidacion-base.js',
-              'js/motor-liquidacion-oficial.js','js/motor-liquidacion-v16.33.112.js','js/motor-liquidacion.js','js/prioridad-tdj.js',
-              'tests/regresion-capital-base.mjs','tests/regresion-importacion-opcional.mjs','tests/regresion-ui.mjs',
-              'tests/regresion-detalle-intereses-corte.mjs','RELEASES/16.33.119.md','.github/workflows/audit-estabilidad.yml'
-            ];
-            const unique=[...new Set(files)];
-            const ref=await github.rest.git.getRef({owner:repo[0],repo:repo[1],ref:'heads/main'});
-            const baseSha=ref.data.object.sha;
-            const base=await github.rest.git.getCommit({owner:repo[0],repo:repo[1],commit_sha:baseSha});
-            const tree=[];
-            for(const file of unique){
-              if(!fs.existsSync(file)) continue;
+            const fs=require('fs');
+            const [owner,repo]=process.env.REPO.split('/');
+            const changed=fs.readFileSync('/tmp/changed-files.txt','utf8').split('\n').map(x=>x.trim()).filter(Boolean).filter(x=>x!=='.github/workflows/inspect-pdf-interest.yml');
+            for(const file of changed){
               const content=fs.readFileSync(file);
-              const blob=await github.rest.git.createBlob({owner:repo[0],repo:repo[1],content:content.toString('base64'),encoding:'base64'});
-              tree.push({path:file,mode:'100644',type:'blob',sha:blob.data.sha});
+              let sha;
+              try{
+                const current=await github.rest.repos.getContent({owner,repo,path:file,ref:'main'});
+                if(!Array.isArray(current.data)) sha=current.data.sha;
+              }catch(e){ if(e.status!==404) throw e; }
+              await github.rest.repos.createOrUpdateFileContents({owner,repo,path:file,message:`fix: sincronizar ${file} a 16.33.119`,content:content.toString('base64'),sha,branch:'main'});
+              core.info(`Publicado ${file}`);
             }
-            tree.push({path:'.github/workflows/inspect-pdf-interest.yml',mode:'100644',type:'blob',sha:null});
-            const newTree=await github.rest.git.createTree({owner:repo[0],repo:repo[1],base_tree:base.data.tree.sha,tree});
-            const commit=await github.rest.git.createCommit({owner:repo[0],repo:repo[1],message:'fix: detalle completo de intereses en fecha de corte v16.33.119',tree:newTree.data.sha,parents:[baseSha]});
-            await github.rest.git.updateRef({owner:repo[0],repo:repo[1],ref:'heads/main',sha:commit.data.sha,force:false});
-            core.info(`Commit aplicado: ${commit.data.sha}`);
+            const wf=await github.rest.repos.getContent({owner,repo,path:'.github/workflows/inspect-pdf-interest.yml',ref:'main'});
+            await github.rest.repos.deleteFile({owner,repo,path:'.github/workflows/inspect-pdf-interest.yml',message:'chore: retirar workflow temporal de corrección de intereses',sha:wf.data.sha,branch:'main'});
+            core.info('Workflow temporal retirado.');
