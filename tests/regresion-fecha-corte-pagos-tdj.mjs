@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const s=fs.readFileSync('js/tdj.js','utf8');
+assert.match(s,/o\.pagos=o\.pagos\.filter\(p=>p\.fecha&&\(Number\(p\.valor\)>0\|\|esFechaCorteTDJ\(p\)\)\)/);
+assert.match(s,/r\?\.intereses\|\|x\?\.interesLiquidado\|\|x\?\.interesGenerado/);
+assert.match(s,/esCorteInformativo\?Number\(r\?\.intereses\|\|x\?\.interesLiquidado\|\|x\?\.interesGenerado\|\|0\)/);
+const corte={fecha:'2026-10-06',valor:0,recibo:'',tdj:''};
+assert.equal(Boolean(corte.fecha)&&Number(corte.valor)<=0&&!corte.recibo&&!corte.tdj,true);
+const x={interesLiquidado:2326000,interesGenerado:2326000},r={intereses:0};
+assert.equal(Math.max(0,Number(r.intereses||x.interesLiquidado||x.interesGenerado||0)),2326000);
+console.log('REGRESION_FECHA_CORTE_PAGOS_TDJ_OK');
