@@ -27,9 +27,10 @@ jobs:
       - name: Commit patch branch
         run: |
           set -e
-          git switch -c fix/16.33.120-interest
+          git fetch origin fix/16.33.120-interest:fix/16.33.120-interest
+          git switch fix/16.33.120-interest
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add js/app.js js/tdj.js .github/workflows/audit-estabilidad.yml RELEASES/16.33.120.md tests/regresion-interes-corte-pdf.mjs
           git commit -m 'fix: mostrar interés de corte en PDF v16.33.120'
-          git push --set-upstream origin fix/16.33.120-interest
+          git push origin fix/16.33.120-interest
