@@ -3,6 +3,8 @@ name: Audit de estabilidad del liquidador
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - 'tests/.trigger-pdf-layout-122'
   pull_request:
     branches: ["main"]
 
