@@ -1,0 +1,17 @@
+name: Inspect PDF interest blocks
+on:
+  push:
+    branches: [main]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Locate PDF interest rendering
+        shell: bash
+        run: |
+          set -e
+          for f in js/app.js js/tdj.js; do
+            echo "===== $f ====="
+            grep -n -E 'INTERESES|intereses|interes|CAPITAL BASE|FECHA VENCIMIENTO|VALOR PAGO' "$f" | tail -n 120 || true
+          done
