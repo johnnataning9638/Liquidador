@@ -7,15 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Locate PDF interest rendering
-        shell: bash
+      - name: Prepare source artifact
         run: |
-          set -e
-          echo '===== APP 1268-1300 ====='
-          sed -n '1268,1300p' js/app.js
-          echo '===== APP CUTOFF 1448-1500 ====='
-          sed -n '1448,1500p' js/app.js
-          echo '===== TDJ 1818-1845 ====='
-          sed -n '1818,1845p' js/tdj.js
-          echo '===== TDJ CUTOFF 1690-1712 ====='
-          sed -n '1690,1712p' js/tdj.js
+          mkdir -p inspect-source
+          cp js/app.js js/tdj.js inspect-source/
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspect-source
+          path: inspect-source/
