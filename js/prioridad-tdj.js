@@ -1,4 +1,4 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.118
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.119
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Solo ajusta el valor imputable de un TDJ anterior a pagos normales posteriores.
 
