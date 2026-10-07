@@ -1,4 +1,4 @@
-name: Aplicar corrección fecha de corte TDJ v16.33.121
+name: Aplicar ajuste de paginación final v16.33.122
 
 on:
   push:
@@ -15,56 +15,89 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Aplicar corrección TDJ
+
+      - name: Aplicar agrupación final DIAN y TDJ
         run: |
-          set -e
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          root=Path('.')
-          tdj=root/'js/tdj.js'
-          s=tdj.read_text(encoding='utf-8')
-          if '16.33.120' not in s:
-              print('TDJ ya está en la versión objetivo; no se reaplica la corrección.')
-              raise SystemExit(0)
-          old='o.pagos=o.pagos.filter(p=>p.fecha&&Number(p.valor)>0).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)}));'
-          new='o.pagos=o.pagos.filter(p=>p.fecha&&(Number(p.valor)>0||esFechaCorteTDJ(p))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));'
-          if old not in s: raise SystemExit('No se encontró el filtro de pagos TDJ que elimina la fecha de corte.')
-          s=s.replace(old,new,1)
-          old='const totalCorte=Math.max(0,Number(r?.intereses||0));'
-          new='const totalCorte=Math.max(0,Number(r?.intereses||x?.interesLiquidado||x?.interesGenerado||0));'
-          if old not in s: raise SystemExit('No se encontró el fallback de interés de corte TDJ.')
-          s=s.replace(old,new,1)
-          old='(esCorteInformativo?Number(r?.intereses||0):Number(x?.interesGenerado||0))'
-          new='(esCorteInformativo?Number(r?.intereses||x?.interesLiquidado||x?.interesGenerado||0):Number(x?.interesGenerado||0))'
-          if old not in s: raise SystemExit('No se encontró el total de intereses de corte TDJ.')
-          s=s.replace(old,new,1)
-          tdj.write_text(s,encoding='utf-8')
 
-          for p in root.rglob('*'):
-              if not p.is_file() or any(x in p.parts for x in {'.git','RELEASES','node_modules','.github'}): continue
-              if p.suffix.lower() not in {'.js','.html','.css','.yml','.yaml','.json','.mjs'}: continue
-              try: text=p.read_text(encoding='utf-8')
-              except UnicodeDecodeError: continue
-              if '16.33.120' in text: p.write_text(text.replace('16.33.120','16.33.121'),encoding='utf-8')
+          oldv='16.33.121'
+          newv='16.33.122'
+          target='${paginas.join("")}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}'
+          replacement='${paginas.join("")}<div class="pdf-resumen-final-agrupado">${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</div>'
 
-          Path('RELEASES/16.33.121.md').write_text('''# 16.33.121\n\n- Corrige exclusivamente el soporte de fecha de corte informativa en PAGOS del módulo TDJ.\n- Conserva los registros de pago que contienen únicamente fecha, sin recibo ni valor, para cerrar la obligación a esa fecha.\n- En el PDF TDJ, muestra el interés ya calculado por el motor en INTERÉS y TOTAL INTERESES DEL PAGO, usando `interesLiquidado` como respaldo cuando el detalle por cuota no lo expone directamente.\n- No modifica fórmulas de intereses, sanciones, Régimen Simple, vencimientos, distribución TDJ, endoso, importación/manual ni diseño.\n''',encoding='utf-8')
+          for name in ('js/app.js','js/tdj.js'):
+              p=Path(name)
+              s=p.read_text(encoding='utf-8')
+              if 'pdf-resumen-final-agrupado' not in s:
+                  if target not in s:
+                      raise SystemExit(f'No se encontró el bloque final PDF esperado en {name}')
+                  s=s.replace(target,replacement,1)
+              s=s.replace(oldv,newv)
+              p.write_text(s,encoding='utf-8')
 
-          Path('tests/regresion-fecha-corte-pagos-tdj.mjs').write_text('''import fs from 'node:fs';\nimport assert from 'node:assert/strict';\nconst s=fs.readFileSync('js/tdj.js','utf8');\nassert.match(s,/o\\.pagos=o\\.pagos\\.filter\\(p=>p\\.fecha&&\\(Number\\(p\\.valor\\)>0\\|\\|esFechaCorteTDJ\\(p\\)\\)\\)/);\nassert.match(s,/r\\?\\.intereses\\|\\|x\\?\\.interesLiquidado\\|\\|x\\?\\.interesGenerado/);\nassert.match(s,/esCorteInformativo\\?Number\\(r\\?\\.intereses\\|\\|x\\?\\.interesLiquidado\\|\\|x\\?\\.interesGenerado\\|\\|0\\)/);\nconst corte={fecha:'2026-10-06',valor:0,recibo:'',tdj:''};\nassert.equal(Boolean(corte.fecha)&&Number(corte.valor)<=0&&!corte.recibo&&!corte.tdj,true);\nconst x={interesLiquidado:2326000,interesGenerado:2326000},r={intereses:0};\nassert.equal(Math.max(0,Number(r.intereses||x.interesLiquidado||x.interesGenerado||0)),2326000);\nconsole.log('REGRESION_FECHA_CORTE_PAGOS_TDJ_OK');\n''',encoding='utf-8')
+          css=Path('estilos.css') if Path('estilos.css').exists() else Path('js/estilos.css')
+          s=css.read_text(encoding='utf-8').replace(oldv,newv)
+          marker='/* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */'
+          if marker not in s:
+              s += '''\n\n@media print {\n  /* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */\n  .pdf-resumen-final-agrupado {\n    display:block !important;\n    break-inside:auto;\n    page-break-inside:auto;\n    width:100%;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja {\n    break-before:auto !important;\n    break-after:auto !important;\n    page-break-before:auto !important;\n    page-break-after:auto !important;\n    break-inside:avoid-page;\n    page-break-inside:avoid;\n    height:auto !important;\n    min-height:0 !important;\n    margin:0 !important;\n    padding:0 !important;\n    overflow:visible !important;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja > .pdf-pagina {\n    height:auto !important;\n    min-height:0 !important;\n    margin:0 !important;\n  }\n  .pdf-resumen-final-agrupado .pdf-liquidacion {\n    height:auto !important;\n    min-height:0 !important;\n    overflow:visible !important;\n  }\n}\n'''
+          css.write_text(s,encoding='utf-8')
+
+          # Mantener versión activa alineada en código, páginas y pruebas.
+          for root in (Path('js'),Path('tests')):
+              for p in root.rglob('*'):
+                  if not p.is_file() or p.suffix.lower() not in {'.js','.mjs','.css','.html','.json'}: continue
+                  try: t=p.read_text(encoding='utf-8')
+                  except UnicodeDecodeError: continue
+                  nt=t.replace(oldv,newv)
+                  if nt!=t:p.write_text(nt,encoding='utf-8')
+
+          # Regresión específica del ajuste.
+          for name in ('js/app.js','js/tdj.js'):
+              s=Path(name).read_text(encoding='utf-8')
+              assert 'pdf-resumen-final-agrupado' in s, name
+          cs=css.read_text(encoding='utf-8')
+          assert '.pdf-resumen-final-agrupado > .pdf-hoja' in cs
+          assert 'break-inside:avoid-page' in cs
+          print('PAGINACION FINAL AGRUPADA OK')
           PY
-      - name: Pruebas
+
+      - name: Validar sintaxis y regresiones
         run: |
           set -e
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
           node tests/regresion-matematica.mjs
           node tests/regresion-ui.mjs
-          node tests/regresion-interes-corte-pdf.mjs
+          node tests/regresion-detalle-intereses-corte.mjs
           node tests/regresion-fecha-corte-pagos-tdj.mjs
+          node tests/regresion-interes-corte-pdf.mjs
+          node tests/regresion-paginacion-final.mjs 2>/dev/null || true
+
+      - name: Crear regresión de paginación si no existe
+        run: |
+          set -e
+          if [ ! -f tests/regresion-paginacion-final.mjs ]; then
+            cat > tests/regresion-paginacion-final.mjs <<'JS'
+          import fs from 'node:fs';
+          for(const f of ['js/app.js','js/tdj.js']){
+            const s=fs.readFileSync(f,'utf8');
+            if(!s.includes('pdf-resumen-final-agrupado')) throw new Error(`Agrupador ausente: ${f}`);
+          }
+          const c=fs.existsSync('estilos.css')?fs.readFileSync('estilos.css','utf8'):fs.readFileSync('js/estilos.css','utf8');
+          if(!c.includes('.pdf-resumen-final-agrupado > .pdf-hoja')) throw new Error('CSS de agrupación ausente');
+          if(!c.includes('break-inside:avoid-page')) throw new Error('Protección de bloque ausente');
+          console.log('REGRESION_PAGINACION_FINAL_OK');
+          JS
+          fi
+          node tests/regresion-paginacion-final.mjs
+
       - name: Commit corrección
         run: |
           set -e
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/*.js tests/*.mjs index.html liquidacion.html titulos.html estilos.css RELEASES/16.33.121.md
+          git add js tests estilos.css index.html liquidacion.html titulos.html RELEASES/16.33.122.md
           git diff --cached --quiet && { echo 'No hay cambios pendientes.'; exit 0; }
-          git commit -m 'fix: fecha de corte en pagos TDJ v16.33.121'
+          git commit -m 'fix: agrupar resumenes finales en una pagina v16.33.122'
           git push origin main
