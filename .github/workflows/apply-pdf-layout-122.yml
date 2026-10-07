@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: !contains(github.event.head_commit.message, 'v16.33.122')
+    if: ${{ !contains(github.event.head_commit.message, 'v16.33.122') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -22,7 +22,6 @@ jobs:
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
-          import re
 
           VERSION_OLD='16.33.121'
           VERSION_NEW='16.33.122'
@@ -46,7 +45,6 @@ jobs:
               s += '''\n\n@media print {\n  /* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */\n  .pdf-resumen-final-agrupado {\n    display: block !important;\n    break-inside: auto;\n    page-break-inside: auto;\n    width: 100%;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja {\n    break-before: auto !important;\n    break-after: auto !important;\n    page-break-before: auto !important;\n    page-break-after: auto !important;\n    break-inside: avoid-page;\n    page-break-inside: avoid;\n    margin: 0 !important;\n    padding: 0 !important;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja > .pdf-pagina {\n    min-height: 0 !important;\n    height: auto !important;\n    margin: 0 !important;\n  }\n}\n'''
               css.write_text(s,encoding='utf-8')
 
-          # Alinear referencias activas de la versión en archivos de aplicación y pruebas.
           for root in [Path('js'),Path('tests')]:
               for p in root.rglob('*'):
                   if p.is_file() and p.suffix in {'.js','.mjs','.css','.html','.json'}:
@@ -55,13 +53,12 @@ jobs:
                       nt=t.replace(VERSION_OLD,VERSION_NEW)
                       if nt!=t:p.write_text(nt,encoding='utf-8')
 
-          # Regresión estructural específica del cambio.
           for p in files:
               s=p.read_text(encoding='utf-8')
               assert 'pdf-resumen-final-agrupado' in s, f'Falta agrupador en {p}'
-              assert s.count(target)==0, f'Quedó un agrupamiento antiguo en {p}'
+              assert target not in s, f'Quedó un agrupamiento antiguo en {p}'
           csss=css.read_text(encoding='utf-8')
-          assert 'pdf-resumen-final-agrupado > .pdf-hoja' in csss
+          assert '.pdf-resumen-final-agrupado > .pdf-hoja' in csss
           assert 'break-inside: avoid-page' in csss
           print('AGRUPACION PDF DIAN/TDJ APLICADA')
           print('VERSION 16.33.122 APLICADA A FUENTES Y PRUEBAS')
