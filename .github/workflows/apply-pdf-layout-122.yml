@@ -1,0 +1,106 @@
+name: Aplicar agrupación de resúmenes finales v16.33.122
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: !contains(github.event.head_commit.message, 'v16.33.122')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Ajustar paginación final DIAN y TDJ
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          VERSION_OLD='16.33.121'
+          VERSION_NEW='16.33.122'
+          files=[Path('js/app.js'),Path('js/tdj.js')]
+          target='${paginas.join("")}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}'
+          replacement='${paginas.join("")}<div class="pdf-resumen-final-agrupado">${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</div>'
+
+          for p in files:
+              s=p.read_text(encoding='utf-8')
+              if target not in s:
+                  raise SystemExit(f'No se encontró el punto de agrupación PDF esperado en {p}')
+              s=s.replace(target,replacement,1)
+              p.write_text(s.replace(VERSION_OLD,VERSION_NEW),encoding='utf-8')
+
+          css=Path('estilos.css')
+          if not css.exists():
+              css=Path('js/estilos.css')
+          s=css.read_text(encoding='utf-8')
+          marker='/* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */'
+          if marker not in s:
+              s += '''\n\n@media print {\n  /* V16.33.122: AGRUPACION DE RESUMENES FINALES PARA IMPRESION */\n  .pdf-resumen-final-agrupado {\n    display: block !important;\n    break-inside: auto;\n    page-break-inside: auto;\n    width: 100%;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja {\n    break-before: auto !important;\n    break-after: auto !important;\n    page-break-before: auto !important;\n    page-break-after: auto !important;\n    break-inside: avoid-page;\n    page-break-inside: avoid;\n    margin: 0 !important;\n    padding: 0 !important;\n  }\n  .pdf-resumen-final-agrupado > .pdf-hoja > .pdf-pagina {\n    min-height: 0 !important;\n    height: auto !important;\n    margin: 0 !important;\n  }\n}\n'''
+              css.write_text(s,encoding='utf-8')
+
+          # Alinear referencias activas de la versión en archivos de aplicación y pruebas.
+          for root in [Path('js'),Path('tests')]:
+              for p in root.rglob('*'):
+                  if p.is_file() and p.suffix in {'.js','.mjs','.css','.html','.json'}:
+                      try: t=p.read_text(encoding='utf-8')
+                      except UnicodeDecodeError: continue
+                      nt=t.replace(VERSION_OLD,VERSION_NEW)
+                      if nt!=t:p.write_text(nt,encoding='utf-8')
+
+          # Regresión estructural específica del cambio.
+          for p in files:
+              s=p.read_text(encoding='utf-8')
+              assert 'pdf-resumen-final-agrupado' in s, f'Falta agrupador en {p}'
+              assert s.count(target)==0, f'Quedó un agrupamiento antiguo en {p}'
+          csss=css.read_text(encoding='utf-8')
+          assert 'pdf-resumen-final-agrupado > .pdf-hoja' in csss
+          assert 'break-inside: avoid-page' in csss
+          print('AGRUPACION PDF DIAN/TDJ APLICADA')
+          print('VERSION 16.33.122 APLICADA A FUENTES Y PRUEBAS')
+          PY
+
+      - name: Validar sintaxis JavaScript
+        run: |
+          set -e
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Ejecutar regresiones existentes
+        run: |
+          node --experimental-default-type=module tests/regresion-matematica.mjs
+          node tests/regresion-ui.mjs
+          node tests/regresion-detalle-intereses-corte.mjs
+          node tests/regresion-fecha-corte-pagos-tdj.mjs
+
+      - name: Crear regresión de paginación final
+        run: |
+          cat > tests/regresion-paginacion-final.mjs <<'JS'
+          import fs from 'node:fs';
+          for (const f of ['js/app.js','js/tdj.js']) {
+            const s=fs.readFileSync(f,'utf8');
+            if(!s.includes('pdf-resumen-final-agrupado')) throw new Error(`Sin agrupador en ${f}`);
+            if(!s.includes('${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}')) throw new Error(`Sin bloque final esperado en ${f}`);
+          }
+          const css=fs.existsSync('estilos.css')?fs.readFileSync('estilos.css','utf8'):fs.readFileSync('js/estilos.css','utf8');
+          if(!css.includes('.pdf-resumen-final-agrupado > .pdf-hoja')) throw new Error('CSS de agrupación ausente');
+          if(!css.includes('break-inside: avoid-page')) throw new Error('Protección de bloque ausente');
+          console.log('OK: paginación final agrupada y bloques protegidos');
+          JS
+          node tests/regresion-paginacion-final.mjs
+
+      - name: Commit corrección
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js tests estilos.css index.html liquidacion.html titulos.html 2>/dev/null || true
+          git status --short
+          git commit -m 'fix: agrupar resumenes finales en una pagina v16.33.122' || echo 'SIN CAMBIOS QUE COMITEAR'
+          git push
