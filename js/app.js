@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.117";
-import {importarDatosInteligente} from "./importador.js?v=16.33.117";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.117";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.117";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.117";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.117";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.117";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.117";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.117";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.117";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.117";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.117";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.117";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.117";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.118";
+import {importarDatosInteligente} from "./importador.js?v=16.33.118";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.118";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.118";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.118";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.118";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.118";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.118";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.118";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.118";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.118";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.118";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.118";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.118";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -305,7 +305,7 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.117"});
+  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.118"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1116,7 +1116,7 @@ function exportarExcel(){
       if(header)headerRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
-    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.117"],{title:true});
+    push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.118"],{title:true});
     push([]);
     // ENCABEZADO CANÓNICO: misma estructura del Excel TDJ.
     // NIT y razón social quedan en la misma fila; los datos propios de la

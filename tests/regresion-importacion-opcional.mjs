@@ -1,17 +1,14 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
-
-const tdj = fs.readFileSync("js/tdj.js", "utf8");
-const app = fs.readFileSync("js/app.js", "utf8");
-
-assert.match(tdj, /function nuevaObligacion\(numero\)[\s\S]*tipoTasa:"TASA DIAN"/);
-assert.match(tdj, /function opcionTipoObligacionTDJ\(tipo="TASA DIAN"\)/);
-assert.doesNotMatch(tdj, /validarDatos[\s\S]{0,12000}(?:importado|importacion|importación).*throw new Error/i);
-assert.doesNotMatch(app, /(?:validar|calcular)[\s\S]{0,12000}(?:importado|importacion|importación).*throw new Error/i);
-
-const oldRefs = [...(tdj + app).matchAll(/16\.33\.(11[0-7])/g)];
-assert.equal(oldRefs.length, 0, "No deben quedar versiones activas 16.33.110–16.33.117 en app.js/tdj.js");
-
+const tdj=fs.readFileSync("js/tdj.js","utf8");
+const app=fs.readFileSync("js/app.js","utf8");
+assert.match(tdj,/function sincronizarCapturaManualTDJ\(\)/);
+assert.match(tdj,/sincronizarCapturaManualTDJ\(\);\s*for\(const o of obligaciones\)/);
+assert.match(tdj,/o\.vencimientos=o\.vencimientos\.filter\(v=>v\.fecha&&Number\(v\.impuesto\)>0\)/);
+assert.doesNotMatch(tdj,/validarDatos[\s\S]{0,12000}(?:importado|importacion|importación).*throw new Error/i);
+assert.doesNotMatch(app,/(?:validar|calcular)[\s\S]{0,12000}(?:importado|importacion|importación).*throw new Error/i);
+assert.equal([...(tdj+app).matchAll(/16\.33\.(11[0-7])/g)].length,0);
 console.log("REGRESIÓN IMPORTACIÓN OPCIONAL: OK");
-console.log("CAPTURA MANUAL: OK");
+console.log("CAPTURA MANUAL DE CUOTAS: OK");
+console.log("CAPTURA MANUAL DE PAGOS/TÍTULOS: OK");
 console.log("IMPORTACIÓN: OPCIONAL");

@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.117";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.117";
-import {importarDatosInteligente} from "./importador.js?v=16.33.117";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.117";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.117";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.117";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.117";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.117";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.117";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.117";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.117";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.118";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.118";
+import {importarDatosInteligente} from "./importador.js?v=16.33.118";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.118";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.118";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.118";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.118";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.118";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.118";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.118";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.118";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -784,6 +784,7 @@ function validarConfiguracionAntesCalcularTDJ(){
 function validarDatos(){
   if(!obligaciones.length){const e=new Error("Debe existir al menos una obligación.");e.focusTarget="#listaObligaciones";throw e;}
   const activas=[];
+  sincronizarCapturaManualTDJ();
   for(const o of obligaciones){
     o.vencimientos=o.vencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0);
     // CONCEPTO / IMPUESTO, AÑO GRAVABLE Y PERÍODO SON DATOS NO BLOQUEANTES.
@@ -860,6 +861,39 @@ function motorParaObligacion(o){
   return upper(o?.tipoLiquidacion||"PRIVADA")==="OFICIAL" && motorOficial ? motorOficial : motor;
 }
 function calcularLiquidacionBaseTDJ(o){const corte=fechaCorteTDJ(o);const pagos=pagosRealesHastaCorteTDJ(o,corte);const fechaLiquidacion=corte||pagos.at(-1)?.fecha||hoyISO();return motorParaObligacion(o).calcular(datosMotor(o,pagos,fechaLiquidacion));}
+
+function sincronizarCapturaManualTDJ(){
+  document.querySelectorAll("#listaObligaciones .obligacion-card").forEach(sec=>{
+    const o=obligaciones.find(x=>x.id===sec.dataset.id); if(!o)return;
+    sec.querySelectorAll(".cuotas-mini tbody tr").forEach(tr=>{
+      const v=o.vencimientos.find(x=>x.id===tr.dataset.vtoId); if(!v)return;
+      const fecha=fechaISO(tr.querySelector(".fecha-campo")?.value||tr.querySelector(".fecha-native")?.value||"");
+      const impuesto=numeroDesdeTexto(tr.querySelector('[data-v="impuesto"]')?.value||"");
+      const periodo=tr.querySelector('[data-v="periodo"]')?.value;
+      if(fecha)v.fecha=fecha;
+      v.impuesto=Number.isFinite(impuesto)?impuesto:0;
+      if(periodo!=null&&String(periodo).trim())v.periodo=upper(periodo);
+    });
+    sec.querySelectorAll("[data-pago-id]").forEach(tr=>{
+      const p=o.pagos.find(x=>x.id===tr.dataset.pagoId); if(!p)return;
+      const fecha=fechaISO(tr.querySelector(".fecha-campo")?.value||tr.querySelector(".fecha-native")?.value||"");
+      const valor=numeroDesdeTexto(tr.querySelector('[data-p="valor"]')?.value||"");
+      const recibo=tr.querySelector('[data-p="recibo"]')?.value;
+      if(fecha)p.fecha=fecha;
+      p.valor=Number.isFinite(valor)?truncarValorEntero(valor):0;
+      if(recibo!=null)p.recibo=String(recibo).trim();
+    });
+  });
+  document.querySelectorAll("#tablaTitulos tbody tr").forEach(tr=>{
+    const t=titulos.find(x=>x.id===tr.dataset.tituloId); if(!t)return;
+    const fecha=fechaISO(tr.querySelector(".fecha-campo")?.value||tr.querySelector(".fecha-native")?.value||"");
+    const valor=numeroDesdeTexto(tr.querySelector('[data-t="valor"]')?.value||"");
+    const numero=tr.querySelector('[data-t="tdj"]')?.value;
+    if(fecha)t.fecha=fecha;
+    t.valor=Number.isFinite(valor)?truncarValorEntero(valor):0;
+    if(numero!=null)t.tdj=String(numero).trim();
+  });
+}
 
 function sincronizarTitulosVisiblesTDJ(actualizarUI=true){
   const filas=[...document.querySelectorAll("#tablaTitulos tbody tr")];
@@ -2170,7 +2204,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.117-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.118-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -2671,7 +2705,7 @@ function limpiarTodo(){
 
 
 // ================================================================
-// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.117
+// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.118
 // Regla: un título tiene únicamente TDJ + FECHA + VALOR.
 // ================================================================
 function separarFilaImportacionTDJ(linea){

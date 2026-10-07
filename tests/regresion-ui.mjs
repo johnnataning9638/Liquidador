@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const VERSION="16.33.117";
+const VERSION="16.33.118";
 const app=fs.readFileSync("js/app.js","utf8");
 const tdj=fs.readFileSync("js/tdj.js","utf8");
 const html=fs.readFileSync("liquidacion.html","utf8");
