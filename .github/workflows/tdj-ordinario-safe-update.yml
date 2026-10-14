@@ -18,7 +18,7 @@ jobs:
 
           p=Path('js/motor-liquidacion-base.js')
           s=p.read_text(encoding='utf-8')
-          pat=r'const sancionHabilitadaPorFecha\\s*=\\s*esSimplePorAnticipos\\s*\\?\\s*true\\s*:\\s*\\([\\s\\S]*?\\n\\s*\\);'
+          pat=r'const sancionHabilitadaPorFecha\s*=\s*esSimplePorAnticipos\s*\?\s*true\s*:\s*\([\s\S]*?\n\s*\);'
           matches=re.findall(pat,s)
           if len(matches)!=1:
               raise SystemExit(f'Expected exactly one sanction block, found {len(matches)}')
