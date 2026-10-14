@@ -1,1 +1,1 @@
-Trigger CI for the approved TDJ rule update.
+Trigger final approved TDJ rule update.
