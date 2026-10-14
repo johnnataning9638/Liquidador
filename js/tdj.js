@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.122";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.122";
-import {importarDatosInteligente} from "./importador.js?v=16.33.122";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.122";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.122";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.122";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.122";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.122";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.122";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.122";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.122";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.123";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.123";
+import {importarDatosInteligente} from "./importador.js?v=16.33.123";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.123";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.123";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.123";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.123";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.123";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.123";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.123";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.123";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1240,8 +1240,15 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       const totalPagos=(o.pagos||[]).reduce((a,p)=>a+Number(p.valor||0),0);
       const totalTDJ=apps.reduce((a,x)=>a+Number(x.aplicado||0),0);
       const saldo=Number(estadoFinal?.total ?? base?.total ?? 0);
+      const estadoSaldoFinal=estadoFinal||base||{};
+      // SALDO FINAL OBLIGACIONES TDJ: únicamente IMPUESTO + SANCIÓN.
+      // Los INTERESES no forman parte de este indicador porque se determinan
+      // en la fecha efectiva del pago/aplicación del título.
+      const saldoFinalObligaciones=
+        Math.max(0,Number(estadoSaldoFinal.impuesto||0)) +
+        Math.max(0,Number(estadoSaldoFinal.sancion||0));
       return {
-        obligacion:o,totalPagos,totalTDJ,saldo,
+        obligacion:o,totalPagos,totalTDJ,saldo,saldoFinalObligaciones,
         ultima:apps.at(-1)||null,aplicaciones:apps,
         liquidacionBase:base,
         estadoFinal,
@@ -1258,7 +1265,8 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // directamente su saldo final de obligación para el soporte; en TDJ el
     // cierre controlado puede llevar internamente x.saldo a cero, pero ese
     // ajuste no debe ocultar en el PDF la deuda que seguía pendiente.
-    const saldoObligacionesPDF=saldoPendienteObligaciones;
+    const saldoObligacionesPDF=resumenObligaciones.reduce((a,x)=>
+      a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
 
     // CIERRE CONTROLADO POR REDONDEO: si queda un saldo positivo de hasta
@@ -1357,13 +1365,11 @@ function pintarResultado(r){
   const box=$("resultadoTDJ");if(!box)return;box.hidden=false;box.style.display="";
   const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Number(t.valor||0),0);
   const totalAplicado=Number(r.totalAplicadoFinal ?? r.resumenTitulos.reduce((a,t)=>a+t.trazabilidad.reduce((x,y)=>x+Number(y.aplicado||0),0),0));
-  const saldoInterno=r.resumenObligaciones.reduce((a,o)=>a+Math.max(0,Number(o.saldo||0)),0);
   const saldoCierre=Number(r.saldoObligacionesPDF||0);
-  const saldoAjuste=(r.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);
-  // PRESENTACIÓN: conservar en pantalla el saldo pendiente real previo al
-  // cierre técnico del remanente, exactamente como ya se hace en el PDF.
-  // No modifica cálculo, imputación ni endoso.
-  const totalSaldo=Math.max(0,saldoInterno,saldoCierre,saldoAjuste);
+  // PRESENTACIÓN TDJ: el saldo final reportado excluye INTERESES y suma
+  // únicamente IMPUESTO + SANCIÓN pendientes. Los intereses se determinan
+  // en la fecha efectiva del pago/aplicación y no se arrastran como saldo final.
+  const totalSaldo=Math.max(0,saldoCierre);
   if($("resTotalTitulos"))$("resTotalTitulos").textContent=dinero(totalTitulos);if($("resAplicado"))$("resAplicado").textContent=dinero(totalAplicado);if($("resEndoso"))$("resEndoso").textContent=dinero(r.endoso);if($("resSaldo"))$("resSaldo").textContent=dinero(totalSaldo);
   const otbody=$("tablaResultadoObligaciones")?.querySelector("tbody");
   if(otbody){
@@ -2104,17 +2110,13 @@ async function exportarPdfTDJ(){
     // técnico del remanente TDJ. Esto replica el criterio del liquidador RIAN:
     // el soporte debe informar la deuda pendiente aunque el remanente se haya
     // utilizado en el cierre técnico interno. No modifica cálculo ni endoso.
-    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
-    const ajusteRemanentePDF=(resultado.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);
-    // Fuente de verdad del PDF: conservar el saldo pendiente previo al cierre.
-    // Si se abre una liquidación generada por una versión anterior, el soporte
-    // usa como respaldo el saldo actual o el valor efectivamente cerrado por
-    // remanente, sin tocar el cálculo ni el endoso.
+    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);
+    // Fuente de verdad del PDF: IMPUESTO + SANCIÓN pendientes. Los INTERESES
+    // se calculan en la fecha efectiva del pago y no integran este indicador.
     const saldoPendientePDF=Math.max(
       0,
       Number(resultado.saldoObligacionesPDF||0),
-      saldoActualPDF,
-      ajusteRemanentePDF
+      saldoActualPDF
     );
     const paginas=[];
 
@@ -2262,7 +2264,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.122-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.123-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -2763,7 +2765,7 @@ function limpiarTodo(){
 
 
 // ================================================================
-// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.122
+// IMPORTACIÓN TDJ RECONSTRUIDA DESDE CERO — v16.33.123
 // Regla: un título tiene únicamente TDJ + FECHA + VALOR.
 // ================================================================
 function separarFilaImportacionTDJ(linea){
