@@ -1,4 +1,4 @@
-import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.126";
+import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.127";
 
 const iso=v=>String(v||"").slice(0,10);
 const n=v=>Math.max(0,Number(v||0));
@@ -29,9 +29,6 @@ function redistribuirSancionSimple(r,datos){
   const totalPagos=detalles.reduce((a,d)=>a+n(d?.pago?.valor),0);
   if(!totalPagos)return r;
 
-  // En SIMPLE 4-6 cuotas la sanción de la declaración anual participa en los
-  // anticipos, aun cuando el pago sea anterior a la fecha de sanción.
-  // Primero respetamos cualquier sanción que el motor base ya haya aplicado.
   const sancionActual=detalles.reduce((a,d)=>a+n(d?.aplicado?.sancion),0);
   const objetivoTotal=Math.min(sancionBase,totalPagos);
   let faltante=Math.max(0,objetivoTotal-sancionActual);
@@ -40,9 +37,6 @@ function redistribuirSancionSimple(r,datos){
     return r;
   }
 
-  // Reparto proporcional por valor pagado, con el último pago absorbiendo
-  // cualquier diferencia de redondeo. Solo se agrega la parte que todavía
-  // falta; nunca se aumenta la sanción por encima de la sanción declarada.
   const pesos=detalles.map(d=>n(d?.pago?.valor));
   const pesoTotal=pesos.reduce((a,b)=>a+b,0);
   const asignaciones=detalles.map((d,i)=>{
@@ -52,7 +46,6 @@ function redistribuirSancionSimple(r,datos){
   const parcial=asignaciones.reduce((a,b)=>a+b,0);
   asignaciones[asignaciones.length-1]=Math.max(0,faltante-parcial);
 
-  let agregado=0;
   for(let i=0;i<detalles.length&&faltante>0;i++){
     const d=detalles[i];
     const a=d.aplicado||{};
@@ -72,12 +65,9 @@ function redistribuirSancionSimple(r,datos){
     a.sancion=Math.round(n(a.sancion)+movido);
     a.total=Math.round(n(a.impuesto)+n(a.intereses)+n(a.sancion));
     d.aplicado=a;
-    agregado+=movido;
     faltante=Math.max(0,faltante-movido);
   }
 
-  // Segundo pase: por seguridad, si el redondeo dejó faltante, utiliza la
-  // capacidad disponible de cualquier anticipo sin superar su pago nominal.
   if(faltante>0){
     for(const d of detalles){
       if(faltante<=0)break;
@@ -94,22 +84,12 @@ function redistribuirSancionSimple(r,datos){
       a.sancion=Math.round(n(a.sancion)+movido);
       a.total=Math.round(n(a.impuesto)+n(a.intereses)+n(a.sancion));
       d.aplicado=a;
-      agregado+=movido;
       faltante=Math.max(0,faltante-movido);
     }
   }
 
   const totalSancionAplicada=detalles.reduce((a,d)=>a+n(d?.aplicado?.sancion),0);
-  let saldo= Math.max(0,sancionBase-totalSancionAplicada);
-  for(const d of detalles){
-    if(d.saldo){
-      d.saldo.sancion=saldo;
-      d.saldo.total=n(d.saldo.impuesto)+n(d.saldo.intereses)+saldo;
-    }
-    saldo=Math.max(0,saldo-n(d?.aplicado?.sancion));
-  }
-  // Recalcular saldos en orden correcto después de la distribución.
-  saldo=sancionBase;
+  let saldo=Math.max(0,sancionBase-totalSancionAplicada);
   for(const d of detalles){
     saldo=Math.max(0,saldo-n(d?.aplicado?.sancion));
     if(d.saldo){
@@ -125,8 +105,36 @@ function redistribuirSancionSimple(r,datos){
   return r;
 }
 
+const esArt9=t=>String(t||"").toUpperCase().includes("ART. 9 DECRETO 1419");
+
 export class MotorLiquidacion extends MotorLiquidacionBase{
   calcular(datos){
+    // Prepasada exclusiva para Art. 9: reproduce exactamente impuesto,
+    // intereses, pagos y actualización tradicional, pero desactiva SOLO la
+    // reducción del Art. 9. Así obtenemos el saldo real de sanción pendiente
+    // inmediatamente antes de cada pago, incluyendo abonos anteriores.
+    // Esta pasada nunca se expone al usuario ni modifica el resultado final.
+    const tieneArt9=(datos?.pagos||[]).some(p=>esArt9(p?.tipo));
+    this._art9PendingByKey=null;
+    this._art9Minima=0;
+    if(tieneArt9&&String(datos?.tieneSancion||"").trim().toUpperCase()==="SI"){
+      const anioMinima=this.anioSancionParaMinima(datos,true);
+      this._art9Minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
+      this._art9Prepass=true;
+      try{
+        const pre=super.calcular(datos);
+        const mapa=new Map();
+        for(const d of (pre?.detalle||[])){
+          if(!esArt9(d?.pago?.tipo))continue;
+          const key=`${iso(d?.pago?.fecha)}|${String(d?.pago?.tipo||"").trim().toUpperCase()}`;
+          if(!mapa.has(key))mapa.set(key,Math.max(0,n(d?.deudaAntes?.sancion)));
+        }
+        this._art9PendingByKey=mapa;
+      }finally{
+        this._art9Prepass=false;
+      }
+    }
+
     const pagosProporcionalizables=[...(datos?.pagos||[])]
       .map((p,i)=>({...p,fecha:iso(p?.fecha),valor:Number(p?.valor||0),ordenOriginal:i}))
       .filter(p=>p.fecha&&p.valor>0&&!(iso(datos?.fechaCorte)&&p.fecha>iso(datos?.fechaCorte))&&!esTDJMinimo(p))
@@ -144,7 +152,27 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
       return redistribuirSancionSimple(r,datos);
     }finally{
       this._tdjSancionContext=null;
+      this._art9PendingByKey=null;
+      this._art9Minima=0;
+      this._art9Prepass=false;
     }
+  }
+
+  tasaEspecial(tipo,fechaPago){
+    const especial=super.tasaEspecial(tipo,fechaPago);
+    if(!esArt9(tipo)||this._art9Prepass)return especial;
+    const key=`${iso(fechaPago)}|${String(tipo||"").trim().toUpperCase()}`;
+    const pendiente=this._art9PendingByKey?.get(key);
+    if(pendiente==null)return especial;
+
+    // Si el saldo real actualizado ya está en o por debajo de la mínima,
+    // Art. 9 NO reduce y NO reconstruye la sanción mínima. La actualización
+    // tradicional ya ocurrió antes de este punto en el motor base.
+    if(pendiente<=this._art9Minima){
+      return {...especial,reduceSancion:false,factorSancion:1,
+        nota:"ART. 9 D1419: saldo de sanción actualizado en o por debajo de la mínima; se conserva el saldo real pendiente sin aplicar 15%."};
+    }
+    return especial;
   }
 
   aplicarProporcionalidad(pago,deuda){
@@ -158,13 +186,6 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     const sancionDeclarada=n(datos?.valorSancion)>0;
     const esOrdinario=!esSimple4a6(datos);
 
-    // REGLA EXCLUSIVA PARA TDJ ORDINARIO > $1.000:
-    // si la obligación tiene sanción, el título participa en la misma
-    // proporcionalidad del motor base, sin consultar la fecha de constitución
-    // del título ni la fecha de sanción. La fecha del título NO interviene.
-    // El pago actual se obtiene del mismo orden cronológico que utiliza el
-    // motor base. Los TDJ <= $1.000 se excluyen del índice porque no pasan por
-    // esta función y conservan su regla especial histórica.
     if(esOrdinario && esTDJMayor1000(pagoActual) && tieneSancion && sancionDeclarada){
       const sancionBaseMotor=n(deuda?.sancion);
       const sancionFallback=n(ctx?.sancionSaldoInicial);
