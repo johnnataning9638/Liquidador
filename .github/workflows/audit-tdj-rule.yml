@@ -1,0 +1,44 @@
+name: audit-tdj-rule
+on:
+  push:
+    branches: [main]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect TDJ sanction logic
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('js/motor-liquidacion-base.js')
+          s=p.read_text(encoding='utf-8')
+          keys=['sancionHabilitadaPorFecha','esTDJMinimo','deudaProporcional','pago.esTDJ','pago.tdj','fechaSancionReal']
+          for k in keys:
+              print('\n===',k,'===')
+              pos=0
+              found=False
+              while True:
+                  i=s.find(k,pos)
+                  if i<0: break
+                  found=True
+                  print(s[max(0,i-500):min(len(s),i+900)])
+                  pos=i+len(k)
+              if not found: print('NOT FOUND')
+          q=Path('js/tdj.js').read_text(encoding='utf-8')
+          for k in ['ajustarTDJParaPagosPosteriores','MotorLiquidacion','esTDJ']:
+              print('\n=== tdj.js',k,'===')
+              i=q.find(k)
+              print(q[max(0,i-500):min(len(q),i+1200)] if i>=0 else 'NOT FOUND')
+          PY
+      - name: Remove audit workflow
+        if: always()
+        run: |
+          rm -f .github/workflows/audit-tdj-rule.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet || git commit -m 'chore: remove temporary TDJ audit workflow'
+          git push
