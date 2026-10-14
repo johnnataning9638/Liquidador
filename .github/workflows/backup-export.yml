@@ -1,0 +1,21 @@
+name: Exportar backup completo
+
+on:
+  push:
+    branches:
+      - backup/export-v16-33-126
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Crear ZIP
+        run: git archive --format=zip --output=Liquidador-v16.33.126-backup.zip HEAD
+      - name: Publicar ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Liquidador-v16.33.126-backup
+          path: Liquidador-v16.33.126-backup.zip
+          retention-days: 90
