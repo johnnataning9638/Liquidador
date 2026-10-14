@@ -56,8 +56,8 @@ function redistribuirTDJOrdinarioMayor1000(r,datos,motor){
     const saldo=d.saldo||{};
 
     // El detalle conserva deuda antes = saldo posterior + aplicado. Esto
-    // permite reconstruir exactamente la deuda vigente en ese movimiento
-    // sin tocar el cálculo de intereses ni la secuencia cronológica.
+    // permite reconstruir la deuda vigente en ese movimiento sin tocar el
+    // cálculo de intereses ni la secuencia cronológica.
     const deudaAntes={
       impuesto:n(saldo.impuesto)+n(aplicado.impuesto),
       intereses:n(saldo.intereses)+n(aplicado.intereses),
@@ -65,17 +65,17 @@ function redistribuirTDJOrdinarioMayor1000(r,datos,motor){
     };
     if(deudaAntes.impuesto+deudaAntes.intereses+deudaAntes.sancion<=0)continue;
 
-    // Reutilizamos la misma función proporcional del motor base para no crear
-    // una segunda fórmula de distribución. El único cambio es que, para este
-    // TDJ ordinario > $1.000, la sanción entra expresamente en la deuda.
+    // Reutilizamos la misma función proporcional del motor base. No se crea
+    // una segunda fórmula ni se redondean nuevamente los componentes: el
+    // método nativo conserva la regla DIAN y su tratamiento del remanente.
     const esperado=motor.aplicarProporcionalidad(valor,deudaAntes);
     if(!esperado)continue;
 
     const nuevo={
-      impuesto:Math.round(n(esperado.impuesto)),
-      intereses:Math.round(n(esperado.intereses)),
-      sancion:Math.round(n(esperado.sancion)),
-      excedente:Math.max(0,Math.round(valor-n(esperado.impuesto)-n(esperado.intereses)-n(esperado.sancion)))
+      impuesto:n(esperado.impuesto),
+      intereses:n(esperado.intereses),
+      sancion:n(esperado.sancion),
+      excedente:n(esperado.excedente)
     };
 
     // Si el motor base ya produjo la distribución correcta, no se toca nada.
