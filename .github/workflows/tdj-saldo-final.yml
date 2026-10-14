@@ -1,0 +1,76 @@
+name: TDJ saldo final obligaciones
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tdj-saldo-final.yml'
+      - 'js/tdj.js'
+      - 'titulos.html'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-tdj:
+    if: ${{ !contains(github.event.head_commit.message, '[tdj-saldo-final]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply TDJ final balance rule
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          tdj = Path('js/tdj.js')
+          s = tdj.read_text(encoding='utf-8')
+          s = s.replace('16.33.122', '16.33.123')
+
+          old = '''      const saldo=Number(estadoFinal?.total ?? base?.total ?? 0);\n      return {\n        obligacion:o,totalPagos,totalTDJ,saldo,'''
+          new = '''      const saldo=Number(estadoFinal?.total ?? base?.total ?? 0);\n      const estadoSaldoFinal=estadoFinal||base||{};\n      // SALDO FINAL OBLIGACIONES TDJ: únicamente IMPUESTO + SANCIÓN.\n      // Los INTERESES no forman parte de este indicador porque se determinan\n      // en la fecha efectiva del pago/aplicación del título.\n      const saldoFinalObligaciones=\n        Math.max(0,Number(estadoSaldoFinal.impuesto||0)) +\n        Math.max(0,Number(estadoSaldoFinal.sancion||0));\n      return {\n        obligacion:o,totalPagos,totalTDJ,saldo,saldoFinalObligaciones,'''
+          if old not in s:
+              raise SystemExit('No se encontró el bloque esperado de resumenObligaciones.')
+          s = s.replace(old, new, 1)
+
+          old = '''    const saldoObligacionesPDF=saldoPendienteObligaciones;'''
+          new = '''    const saldoObligacionesPDF=resumenObligaciones.reduce((a,x)=>\n      a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);'''
+          if old not in s:
+              raise SystemExit('No se encontró el cálculo esperado de saldoObligacionesPDF.')
+          s = s.replace(old, new, 1)
+
+          old = '''  const saldoInterno=r.resumenObligaciones.reduce((a,o)=>a+Math.max(0,Number(o.saldo||0)),0);\n  const saldoCierre=Number(r.saldoObligacionesPDF||0);\n  const saldoAjuste=(r.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);\n  // PRESENTACIÓN: conservar en pantalla el saldo pendiente real previo al\n  // cierre técnico del remanente, exactamente como ya se hace en el PDF.\n  // No modifica cálculo, imputación ni endoso.\n  const totalSaldo=Math.max(0,saldoInterno,saldoCierre,saldoAjuste);'''
+          new = '''  const saldoCierre=Number(r.saldoObligacionesPDF||0);\n  // PRESENTACIÓN TDJ: el saldo final reportado excluye INTERESES y suma\n  // únicamente IMPUESTO + SANCIÓN pendientes. Los intereses se determinan\n  // en la fecha efectiva del pago/aplicación y no se arrastran como saldo final.\n  const totalSaldo=Math.max(0,saldoCierre);'''
+          if old not in s:
+              raise SystemExit('No se encontró el bloque esperado de pintarResultado.')
+          s = s.replace(old, new, 1)
+
+          old = '''    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);\n    const ajusteRemanentePDF=(resultado.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);\n    // Fuente de verdad del PDF: conservar el saldo pendiente previo al cierre.\n    // Si se abre una liquidación generada por una versión anterior, el soporte\n    // usa como respaldo el saldo actual o el valor efectivamente cerrado por\    // remanente, sin tocar el cálculo ni el endoso.\n    const saldoPendientePDF=Math.max(\n      0,\n      Number(resultado.saldoObligacionesPDF||0),\n      saldoActualPDF,\n      ajusteRemanentePDF\n    );'''
+          new = '''    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);\n    // Fuente de verdad del PDF: IMPUESTO + SANCIÓN pendientes. Los INTERESES\n    // se calculan en la fecha efectiva del pago y no integran este indicador.\n    const saldoPendientePDF=Math.max(\n      0,\n      Number(resultado.saldoObligacionesPDF||0),\n      saldoActualPDF\n    );'''
+          if old not in s:
+              raise SystemExit('No se encontró el bloque esperado del saldo PDF.')
+          s = s.replace(old, new, 1)
+
+          tdj.write_text(s, encoding='utf-8')
+
+          html = Path('titulos.html')
+          h = html.read_text(encoding='utf-8').replace('16.33.122', '16.33.123')
+          html.write_text(h, encoding='utf-8')
+          PY
+
+          node --check js/tdj.js
+          grep -q 'saldoFinalObligaciones' js/tdj.js
+          grep -q '16.33.123' js/tdj.js
+          grep -q '16.33.123' titulos.html
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/tdj-saldo-final.yml
+          git add js/tdj.js titulos.html .github/workflows/tdj-saldo-final.yml
+          git commit -m 'fix(tdj): excluir intereses del saldo final de obligaciones [tdj-saldo-final]'
+          git push
