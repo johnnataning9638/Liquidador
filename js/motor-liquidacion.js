@@ -121,7 +121,11 @@ function redistribuirSancionSimple(r,datos){
 
 export class MotorLiquidacion extends MotorLiquidacionBase{
   calcular(datos){
-    this._tdjSancionContext={datos,pagoActual:null};
+    this._tdjSancionContext={
+      datos,
+      pagoActual:null,
+      sancionSaldoInicial:n(datos?.valorSancion)
+    };
     try{
       const r=super.calcular(datos);
       return redistribuirSancionSimple(r,datos);
@@ -147,20 +151,26 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     // si la obligación tiene sanción, el título participa en la misma
     // proporcionalidad del motor base, sin consultar la fecha de constitución
     // del título ni la fecha de sanción. La fecha del título NO interviene.
-    // Si el motor base ya trae un saldo de sanción (por ejemplo, cuando el
-    // pago es posterior a la sanción), se conserva ese saldo. Si el pago es
-    // anterior a la fecha de sanción, el motor base lo deja en cero; en ese
-    // único caso se incorpora la sanción declarada para que el mismo algoritmo
-    // proporcional la distribuya. El motor base sigue limitando la aplicación
-    // efectiva al saldo real de sanción disponible.
+    // Para un TDJ anterior a la fecha de sanción, el motor base entrega sanción
+    // cero en `deuda`; en ese caso usamos el saldo de sanción que llevamos de
+    // la secuencia. Para pagos posteriores a la sanción se respeta el saldo que
+    // el motor base ya calculó (incluyendo sus actualizaciones/beneficios).
     if(esOrdinario && esTDJMayor1000(pagoActual) && tieneSancion && sancionDeclarada){
-      const deudaTDJ={
-        ...deuda,
-        sancion:Math.max(n(deuda?.sancion),n(datos?.valorSancion))
-      };
-      return super.aplicarProporcionalidad(pago,deudaTDJ);
+      const sancionBaseMotor=n(deuda?.sancion);
+      const sancionFallback=n(ctx?.sancionSaldoInicial);
+      const sancionParaProporcion=sancionBaseMotor>0?sancionBaseMotor:sancionFallback;
+      const deudaTDJ={...deuda,sancion:sancionParaProporcion};
+      const resultado=super.aplicarProporcionalidad(pago,deudaTDJ);
+      if(ctx){
+        ctx.sancionSaldoInicial=Math.max(0,ctx.sancionSaldoInicial-n(resultado?.sancion));
+      }
+      return resultado;
     }
 
-    return super.aplicarProporcionalidad(pago,deuda);
+    const resultado=super.aplicarProporcionalidad(pago,deuda);
+    if(ctx && tieneSancion && n(resultado?.sancion)>0){
+      ctx.sancionSaldoInicial=Math.max(0,ctx.sancionSaldoInicial-n(resultado.sancion));
+    }
+    return resultado;
   }
 }
