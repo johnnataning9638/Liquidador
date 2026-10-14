@@ -116,6 +116,31 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     const tieneSancion=String(datos?.tieneSancion||"").trim().toUpperCase()==="SI";
     const sancionDeclarada=n(datos?.valorSancion)>0;
     const esOrdinario=!esSimple4a6(datos);
+    const esPrivada=String(datos?.tipoLiquidacion||"").trim().toUpperCase()==="PRIVADA";
+
+    // NUEVA REGLA DE IMPUTACIÓN — RÉGIMEN ORDINARIO / LIQUIDACIÓN PRIVADA:
+    // La sanción participa en la proporcionalidad de TODOS los pagos, incluso
+    // cuando el pago sea anterior a la fecha de presentación/sanción.
+    //
+    // SIMPLE (4-6 cuotas) queda expresamente fuera de esta modificación y
+    // conserva su lógica propia de anticipos/extemporaneidad.
+    //
+    // Para pagos anteriores a la presentación, el motor base históricamente
+    // entregaba deuda.sancion=0. En ese caso usamos el saldo pendiente real
+    // mantenido por este contexto (sanción inicial menos lo ya imputado), sin
+    // reconstruir ni volver a crear una sanción mínima.
+    if(esOrdinario&&esPrivada&&tieneSancion&&sancionDeclarada){
+      const sancionBaseMotor=n(deuda?.sancion);
+      const sancionPendienteContexto=n(ctx?.sancionSaldoInicial);
+      const sancionParaProporcion=sancionBaseMotor>0?sancionBaseMotor:sancionPendienteContexto;
+      const resultado=super.aplicarProporcionalidad(pago,{...deuda,sancion:sancionParaProporcion});
+      if(ctx)ctx.sancionSaldoInicial=Math.max(0,ctx.sancionSaldoInicial-n(resultado?.sancion));
+      return resultado;
+    }
+
+    // Régimen Simple y liquidaciones oficiales conservan la lógica anterior.
+    // Para TDJ > $1.000 en escenarios que ya tenían la ruta especial, se
+    // mantiene además la participación de la sanción sin alterar SIMPLE.
     if(esOrdinario&&esTDJMayor1000(pagoActual)&&tieneSancion&&sancionDeclarada){
       const sancionBaseMotor=n(deuda?.sancion),sancionFallback=n(ctx?.sancionSaldoInicial);
       const sancionParaProporcion=sancionBaseMotor>0?sancionBaseMotor:sancionFallback;
