@@ -17,8 +17,8 @@ const base = (sancion, fechaSancion, pagos) => ({
   assert.equal(r.sancion, 284000);
 }
 {
-  const r = makeMotor([{ anio: 2025, inflacion: 0.20 }]).calcular(base(400000, '2024-01-01', [{ fecha: '2026-07-22', valor: 1000, tipo: 'ART. 9 DECRETO 1419', esTDJ: true, tdj: 'T2' }]));
-  assert.equal(r.sancion, 489000);
+  const r = makeMotor([{ anio: 2025, inflacion: 0.20 }]).calcular(base(350000, '2024-01-01', [{ fecha: '2026-07-22', valor: 1000, tipo: 'ART. 9 DECRETO 1419', esTDJ: true, tdj: 'T2' }]));
+  assert.equal(r.sancion, 427000);
 }
 {
   const r = makeMotor([{ anio: 2025, inflacion: 0.20 }]).calcular(base(5000000, '2024-01-01', [{ fecha: '2026-07-22', valor: 1000, tipo: 'ART. 9 DECRETO 1419', esTDJ: true, tdj: 'T3' }]));
