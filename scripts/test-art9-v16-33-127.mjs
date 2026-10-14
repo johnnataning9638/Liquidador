@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { MotorLiquidacion } from '../js/motor-liquidacion.js?v=16.33.127';
 
 const makeMotor = (ipc = []) => new MotorLiquidacion({
-  uvt: [{ anio: 2026, valor: 52374, sancionMinima: 524000 }, { anio: 2024, valor: 47065, sancionMinima: 470000 }],
+  uvt: [{ anio: 2026, valor: 52374, sancionMinima: 524000 }, { anio: 2024, valor: 47065, sancionMinima: 0 }],
   intereses: [], ipc, tasasMoratorias: [], beneficios: [], sanciones: [],
   reglasObligaciones: [{ concepto: 'RENTA', familia: 'RENTA', vencimientos: 'NO_AUTOGENERAR' }]
 });
