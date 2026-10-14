@@ -9,6 +9,107 @@ const esSimple4a6=datos=>{
   return v.length>=4&&v.length<=6;
 };
 
+function esTDJRegistro(pago){
+  return pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="";
+}
+
+function fechaSancionExisteEnAplicacion(datos,pago){
+  const fechaSancion=iso(datos?.fechaSancion);
+  const fechaAplicacion=iso(pago?.fecha);
+  return String(datos?.tieneSancion||"").trim().toUpperCase()==="SI"
+    && n(datos?.valorSancion)>0
+    && Boolean(fechaSancion)
+    && Boolean(fechaAplicacion)
+    && fechaAplicacion>=fechaSancion;
+}
+
+/**
+ * Regla quirúrgica TDJ ordinario > $1.000.
+ *
+ * El motor base ya calcula la obligación y los intereses. Aquí únicamente
+ * se corrige la composición del pago cuando el registro es un TDJ mayor de
+ * $1.000 y, en la fecha efectiva de aplicación, la sanción ya existe.
+ *
+ * NO interviene en:
+ * - régimen simple 4-6 cuotas;
+ * - TDJ <= $1.000;
+ * - pagos normales/no TDJ;
+ * - títulos aplicados antes de existir la sanción.
+ *
+ * La fecha del título que gobierna intereses sigue siendo pago.fecha, porque
+ * es la fecha efectiva de aplicación del título en el motor.
+ */
+function redistribuirTDJOrdinarioMayor1000(r,datos,motor){
+  if(!r||!Array.isArray(r.detalle)||!r.detalle.length)return r;
+  if(esSimple4a6(datos))return r;
+  if(String(datos?.tieneSancion||"").trim().toUpperCase()!=="SI")return r;
+  if(n(datos?.valorSancion)<=0)return r;
+
+  let huboCambio=false;
+  for(const d of r.detalle){
+    const pago=d?.pago||{};
+    const valor=n(pago.valor);
+    if(!esTDJRegistro(pago) || valor<=1000)continue;
+    if(!fechaSancionExisteEnAplicacion(datos,pago))continue;
+
+    const aplicado=d.aplicado||{};
+    const saldo=d.saldo||{};
+
+    // El detalle conserva deuda antes = saldo posterior + aplicado. Esto
+    // permite reconstruir exactamente la deuda vigente en ese movimiento
+    // sin tocar el cálculo de intereses ni la secuencia cronológica.
+    const deudaAntes={
+      impuesto:n(saldo.impuesto)+n(aplicado.impuesto),
+      intereses:n(saldo.intereses)+n(aplicado.intereses),
+      sancion:n(saldo.sancion)+n(aplicado.sancion)
+    };
+    if(deudaAntes.impuesto+deudaAntes.intereses+deudaAntes.sancion<=0)continue;
+
+    // Reutilizamos la misma función proporcional del motor base para no crear
+    // una segunda fórmula de distribución. El único cambio es que, para este
+    // TDJ ordinario > $1.000, la sanción entra expresamente en la deuda.
+    const esperado=motor.aplicarProporcionalidad(valor,deudaAntes);
+    if(!esperado)continue;
+
+    const nuevo={
+      impuesto:Math.round(n(esperado.impuesto)),
+      intereses:Math.round(n(esperado.intereses)),
+      sancion:Math.round(n(esperado.sancion)),
+      excedente:Math.max(0,Math.round(valor-n(esperado.impuesto)-n(esperado.intereses)-n(esperado.sancion)))
+    };
+
+    // Si el motor base ya produjo la distribución correcta, no se toca nada.
+    const igual=n(aplicado.impuesto)===nuevo.impuesto
+      && n(aplicado.intereses)===nuevo.intereses
+      && n(aplicado.sancion)===nuevo.sancion
+      && n(aplicado.excedente)===nuevo.excedente;
+    if(igual)continue;
+
+    d.aplicado={...aplicado,...nuevo,total:nuevo.impuesto+nuevo.intereses+nuevo.sancion};
+    d.saldo={
+      ...saldo,
+      impuesto:Math.max(0,deudaAntes.impuesto-nuevo.impuesto),
+      intereses:Math.max(0,deudaAntes.intereses-nuevo.intereses),
+      sancion:Math.max(0,deudaAntes.sancion-nuevo.sancion)
+    };
+    d.saldo.total=n(d.saldo.impuesto)+n(d.saldo.intereses)+n(d.saldo.sancion);
+    huboCambio=true;
+  }
+
+  if(!huboCambio)return r;
+
+  // El resumen superior representa saldos pendientes. El último detalle es
+  // el saldo posterior a la secuencia completa de pagos/títulos.
+  const ultimo=r.detalle[r.detalle.length-1];
+  if(ultimo?.saldo){
+    r.impuesto=n(ultimo.saldo.impuesto);
+    r.intereses=n(ultimo.saldo.intereses);
+    r.sancion=n(ultimo.saldo.sancion);
+    r.total=n(r.impuesto)+n(r.intereses)+n(r.sancion);
+  }
+  return r;
+}
+
 function redistribuirSancionSimple(r,datos){
   if(!esSimple4a6(datos)||String(datos?.tieneSancion||"").trim().toUpperCase()!=="SI")return r;
   const sancionBase=n(datos?.valorSancion);
@@ -117,6 +218,7 @@ function redistribuirSancionSimple(r,datos){
 export class MotorLiquidacion extends MotorLiquidacionBase{
   calcular(datos){
     const r=super.calcular(datos);
-    return redistribuirSancionSimple(r,datos);
+    const corregidoTDJ=redistribuirTDJOrdinarioMayor1000(r,datos,this);
+    return redistribuirSancionSimple(corregidoTDJ,datos);
   }
 }
