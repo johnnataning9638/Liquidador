@@ -1,4 +1,4 @@
-import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.125";
+import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.126";
 
 const iso=v=>String(v||"").slice(0,10);
 const n=v=>Math.max(0,Number(v||0));
@@ -12,6 +12,12 @@ const esSimple4a6=datos=>{
 const esTDJMayor1000=pago=>{
   const esTDJ=pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="";
   return esTDJ && n(pago?.valor)>1000;
+};
+
+const esTDJMinimo= pago=>{
+  const esTDJ=pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="";
+  const valor=Number(pago?.valor||0);
+  return esTDJ && Number.isInteger(valor) && valor>0 && valor<=1000;
 };
 
 function redistribuirSancionSimple(r,datos){
@@ -121,9 +127,16 @@ function redistribuirSancionSimple(r,datos){
 
 export class MotorLiquidacion extends MotorLiquidacionBase{
   calcular(datos){
+    const pagosProporcionalizables=[...(datos?.pagos||[])]
+      .map((p,i)=>({...p,fecha:iso(p?.fecha),valor:Number(p?.valor||0),ordenOriginal:i}))
+      .filter(p=>p.fecha&&p.valor>0&&!(iso(datos?.fechaCorte)&&p.fecha>iso(datos?.fechaCorte))&&!esTDJMinimo(p))
+      .sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.ordenOriginal-b.ordenOriginal);
+
     this._tdjSancionContext={
       datos,
       pagoActual:null,
+      proporcionalidadIndex:0,
+      proporcionalidadPagos:pagosProporcionalizables,
       sancionSaldoInicial:n(datos?.valorSancion)
     };
     try{
@@ -134,14 +147,12 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     }
   }
 
-  calcularInteresesAntesPago(pago){
-    if(this._tdjSancionContext)this._tdjSancionContext.pagoActual=pago;
-    return super.calcularInteresesAntesPago(pago);
-  }
-
   aplicarProporcionalidad(pago,deuda){
     const ctx=this._tdjSancionContext;
-    const pagoActual=ctx?.pagoActual||pago;
+    const pagosProporcionalizables=ctx?.proporcionalidadPagos||[];
+    const pagoActual=pagosProporcionalizables[ctx?.proporcionalidadIndex??0]||null;
+    if(ctx)ctx.proporcionalidadIndex++;
+
     const datos=ctx?.datos;
     const tieneSancion=String(datos?.tieneSancion||"").trim().toUpperCase()==="SI";
     const sancionDeclarada=n(datos?.valorSancion)>0;
@@ -151,10 +162,9 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     // si la obligación tiene sanción, el título participa en la misma
     // proporcionalidad del motor base, sin consultar la fecha de constitución
     // del título ni la fecha de sanción. La fecha del título NO interviene.
-    // Para un TDJ anterior a la fecha de sanción, el motor base entrega sanción
-    // cero en `deuda`; en ese caso usamos el saldo de sanción que llevamos de
-    // la secuencia. Para pagos posteriores a la sanción se respeta el saldo que
-    // el motor base ya calculó (incluyendo sus actualizaciones/beneficios).
+    // El pago actual se obtiene del mismo orden cronológico que utiliza el
+    // motor base. Los TDJ <= $1.000 se excluyen del índice porque no pasan por
+    // esta función y conservan su regla especial histórica.
     if(esOrdinario && esTDJMayor1000(pagoActual) && tieneSancion && sancionDeclarada){
       const sancionBaseMotor=n(deuda?.sancion);
       const sancionFallback=n(ctx?.sancionSaldoInicial);
