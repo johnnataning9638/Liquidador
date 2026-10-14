@@ -24,6 +24,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           tdj = Path('js/tdj.js')
           s = tdj.read_text(encoding='utf-8')
@@ -35,23 +36,23 @@ jobs:
               raise SystemExit('No se encontró el bloque esperado de resumenObligaciones.')
           s = s.replace(old, new, 1)
 
-          old = '''    const saldoObligacionesPDF=saldoPendienteObligaciones;'''
+          old = '    const saldoObligacionesPDF=saldoPendienteObligaciones;'
           new = '''    const saldoObligacionesPDF=resumenObligaciones.reduce((a,x)=>\n      a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);'''
           if old not in s:
               raise SystemExit('No se encontró el cálculo esperado de saldoObligacionesPDF.')
           s = s.replace(old, new, 1)
 
-          old = '''  const saldoInterno=r.resumenObligaciones.reduce((a,o)=>a+Math.max(0,Number(o.saldo||0)),0);\n  const saldoCierre=Number(r.saldoObligacionesPDF||0);\n  const saldoAjuste=(r.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);\n  // PRESENTACIÓN: conservar en pantalla el saldo pendiente real previo al\n  // cierre técnico del remanente, exactamente como ya se hace en el PDF.\n  // No modifica cálculo, imputación ni endoso.\n  const totalSaldo=Math.max(0,saldoInterno,saldoCierre,saldoAjuste);'''
-          new = '''  const saldoCierre=Number(r.saldoObligacionesPDF||0);\n  // PRESENTACIÓN TDJ: el saldo final reportado excluye INTERESES y suma\n  // únicamente IMPUESTO + SANCIÓN pendientes. Los intereses se determinan\n  // en la fecha efectiva del pago/aplicación y no se arrastran como saldo final.\n  const totalSaldo=Math.max(0,saldoCierre);'''
-          if old not in s:
+          pattern = re.compile(r'''  const saldoInterno=r\.resumenObligaciones\.reduce\(\(a,o\)=>a\+Math\.max\(0,Number\(o\.saldo\|\|0\)\),0\);\n  const saldoCierre=Number\(r\.saldoObligacionesPDF\|\|0\);\n  const saldoAjuste=\(r\.ajustesCierreRemanente\|\|\[\]\)\.reduce\(\(a,x\)=>a\+Math\.max\(0,Number\(x\.valor\|\|0\)\),0\);\n  // PRESENTACIÓN: conservar en pantalla el saldo pendiente real previo al\n  // cierre técnico del remanente, exactamente como ya se hace en el PDF\.\n  // No modifica cálculo, imputación ni endoso\.\n  const totalSaldo=Math\.max\(0,saldoInterno,saldoCierre,saldoAjuste\);''')
+          replacement = '''  const saldoCierre=Number(r.saldoObligacionesPDF||0);\n  // PRESENTACIÓN TDJ: el saldo final reportado excluye INTERESES y suma\n  // únicamente IMPUESTO + SANCIÓN pendientes. Los intereses se determinan\n  // en la fecha efectiva del pago/aplicación y no se arrastran como saldo final.\n  const totalSaldo=Math.max(0,saldoCierre);'''
+          s, n = pattern.subn(replacement, s, count=1)
+          if n != 1:
               raise SystemExit('No se encontró el bloque esperado de pintarResultado.')
-          s = s.replace(old, new, 1)
 
-          old = '''    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);\n    const ajusteRemanentePDF=(resultado.ajustesCierreRemanente||[]).reduce((a,x)=>a+Math.max(0,Number(x.valor||0)),0);\n    // Fuente de verdad del PDF: conservar el saldo pendiente previo al cierre.\n    // Si se abre una liquidación generada por una versión anterior, el soporte\n    // usa como respaldo el saldo actual o el valor efectivamente cerrado por\    // remanente, sin tocar el cálculo ni el endoso.\n    const saldoPendientePDF=Math.max(\n      0,\n      Number(resultado.saldoObligacionesPDF||0),\n      saldoActualPDF,\n      ajusteRemanentePDF\n    );'''
-          new = '''    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);\n    // Fuente de verdad del PDF: IMPUESTO + SANCIÓN pendientes. Los INTERESES\n    // se calculan en la fecha efectiva del pago y no integran este indicador.\n    const saldoPendientePDF=Math.max(\n      0,\n      Number(resultado.saldoObligacionesPDF||0),\n      saldoActualPDF\n    );'''
-          if old not in s:
+          pattern = re.compile(r'''    const saldoActualPDF=resultado\.resumenObligaciones\.reduce\(\(a,x\)=>a\+Math\.max\(0,Number\(x\.saldo\|\|0\)\),0\);\n    const ajusteRemanentePDF=.*?\n    const saldoPendientePDF=Math\.max\(\n      0,\n      Number\(resultado\.saldoObligacionesPDF\|\|0\),\n      saldoActualPDF,\n      ajusteRemanentePDF\n    \);''', re.S)
+          replacement = '''    const saldoActualPDF=resultado.resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);\n    // Fuente de verdad del PDF: IMPUESTO + SANCIÓN pendientes. Los INTERESES\n    // se calculan en la fecha efectiva del pago y no integran este indicador.\n    const saldoPendientePDF=Math.max(\n      0,\n      Number(resultado.saldoObligacionesPDF||0),\n      saldoActualPDF\n    );'''
+          s, n = pattern.subn(replacement, s, count=1)
+          if n != 1:
               raise SystemExit('No se encontró el bloque esperado del saldo PDF.')
-          s = s.replace(old, new, 1)
 
           tdj.write_text(s, encoding='utf-8')
 
