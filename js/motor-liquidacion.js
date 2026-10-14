@@ -1,4 +1,4 @@
-import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.124";
+import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.125";
 
 const iso=v=>String(v||"").slice(0,10);
 const n=v=>Math.max(0,Number(v||0));
@@ -9,106 +9,10 @@ const esSimple4a6=datos=>{
   return v.length>=4&&v.length<=6;
 };
 
-function esTDJRegistro(pago){
-  return pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="";
-}
-
-function fechaSancionExisteEnAplicacion(datos,pago){
-  const fechaSancion=iso(datos?.fechaSancion);
-  const fechaAplicacion=iso(pago?.fecha);
-  return String(datos?.tieneSancion||"").trim().toUpperCase()==="SI"
-    && n(datos?.valorSancion)>0
-    && Boolean(fechaSancion)
-    && Boolean(fechaAplicacion)
-    && fechaAplicacion>=fechaSancion;
-}
-
-/**
- * Regla quirúrgica TDJ ordinario > $1.000.
- *
- * El motor base ya calcula la obligación y los intereses. Aquí únicamente
- * se corrige la composición del pago cuando el registro es un TDJ mayor de
- * $1.000 y, en la fecha efectiva de aplicación, la sanción ya existe.
- *
- * NO interviene en:
- * - régimen simple 4-6 cuotas;
- * - TDJ <= $1.000;
- * - pagos normales/no TDJ;
- * - títulos aplicados antes de existir la sanción.
- *
- * La fecha del título que gobierna intereses sigue siendo pago.fecha, porque
- * es la fecha efectiva de aplicación del título en el motor.
- */
-function redistribuirTDJOrdinarioMayor1000(r,datos,motor){
-  if(!r||!Array.isArray(r.detalle)||!r.detalle.length)return r;
-  if(esSimple4a6(datos))return r;
-  if(String(datos?.tieneSancion||"").trim().toUpperCase()!=="SI")return r;
-  if(n(datos?.valorSancion)<=0)return r;
-
-  let huboCambio=false;
-  for(const d of r.detalle){
-    const pago=d?.pago||{};
-    const valor=n(pago.valor);
-    if(!esTDJRegistro(pago) || valor<=1000)continue;
-    if(!fechaSancionExisteEnAplicacion(datos,pago))continue;
-
-    const aplicado=d.aplicado||{};
-    const saldo=d.saldo||{};
-
-    // El detalle conserva deuda antes = saldo posterior + aplicado. Esto
-    // permite reconstruir la deuda vigente en ese movimiento sin tocar el
-    // cálculo de intereses ni la secuencia cronológica.
-    const deudaAntes={
-      impuesto:n(saldo.impuesto)+n(aplicado.impuesto),
-      intereses:n(saldo.intereses)+n(aplicado.intereses),
-      sancion:n(saldo.sancion)+n(aplicado.sancion)
-    };
-    if(deudaAntes.impuesto+deudaAntes.intereses+deudaAntes.sancion<=0)continue;
-
-    // Reutilizamos la misma función proporcional del motor base. No se crea
-    // una segunda fórmula ni se redondean nuevamente los componentes: el
-    // método nativo conserva la regla DIAN y su tratamiento del remanente.
-    const esperado=motor.aplicarProporcionalidad(valor,deudaAntes);
-    if(!esperado)continue;
-
-    const nuevo={
-      impuesto:n(esperado.impuesto),
-      intereses:n(esperado.intereses),
-      sancion:n(esperado.sancion),
-      excedente:n(esperado.excedente)
-    };
-
-    // Si el motor base ya produjo la distribución correcta, no se toca nada.
-    const igual=n(aplicado.impuesto)===nuevo.impuesto
-      && n(aplicado.intereses)===nuevo.intereses
-      && n(aplicado.sancion)===nuevo.sancion
-      && n(aplicado.excedente)===nuevo.excedente;
-    if(igual)continue;
-
-    d.aplicado={...aplicado,...nuevo,total:nuevo.impuesto+nuevo.intereses+nuevo.sancion};
-    d.saldo={
-      ...saldo,
-      impuesto:Math.max(0,deudaAntes.impuesto-nuevo.impuesto),
-      intereses:Math.max(0,deudaAntes.intereses-nuevo.intereses),
-      sancion:Math.max(0,deudaAntes.sancion-nuevo.sancion)
-    };
-    d.saldo.total=n(d.saldo.impuesto)+n(d.saldo.intereses)+n(d.saldo.sancion);
-    huboCambio=true;
-  }
-
-  if(!huboCambio)return r;
-
-  // El resumen superior representa saldos pendientes. El último detalle es
-  // el saldo posterior a la secuencia completa de pagos/títulos.
-  const ultimo=r.detalle[r.detalle.length-1];
-  if(ultimo?.saldo){
-    r.impuesto=n(ultimo.saldo.impuesto);
-    r.intereses=n(ultimo.saldo.intereses);
-    r.sancion=n(ultimo.saldo.sancion);
-    r.total=n(r.impuesto)+n(r.intereses)+n(r.sancion);
-  }
-  return r;
-}
+const esTDJMayor1000=pago=>{
+  const esTDJ=pago?.esTDJ===true || String(pago?.tdj||"").trim()!=="";
+  return esTDJ && n(pago?.valor)>1000;
+};
 
 function redistribuirSancionSimple(r,datos){
   if(!esSimple4a6(datos)||String(datos?.tieneSancion||"").trim().toUpperCase()!=="SI")return r;
@@ -217,8 +121,46 @@ function redistribuirSancionSimple(r,datos){
 
 export class MotorLiquidacion extends MotorLiquidacionBase{
   calcular(datos){
-    const r=super.calcular(datos);
-    const corregidoTDJ=redistribuirTDJOrdinarioMayor1000(r,datos,this);
-    return redistribuirSancionSimple(corregidoTDJ,datos);
+    this._tdjSancionContext={datos,pagoActual:null};
+    try{
+      const r=super.calcular(datos);
+      return redistribuirSancionSimple(r,datos);
+    }finally{
+      this._tdjSancionContext=null;
+    }
+  }
+
+  calcularInteresesAntesPago(pago){
+    if(this._tdjSancionContext)this._tdjSancionContext.pagoActual=pago;
+    return super.calcularInteresesAntesPago(pago);
+  }
+
+  aplicarProporcionalidad(pago,deuda){
+    const ctx=this._tdjSancionContext;
+    const pagoActual=ctx?.pagoActual||pago;
+    const datos=ctx?.datos;
+    const tieneSancion=String(datos?.tieneSancion||"").trim().toUpperCase()==="SI";
+    const sancionDeclarada=n(datos?.valorSancion)>0;
+    const esOrdinario=!esSimple4a6(datos);
+
+    // REGLA EXCLUSIVA PARA TDJ ORDINARIO > $1.000:
+    // si la obligación tiene sanción, el título participa en la misma
+    // proporcionalidad del motor base, sin consultar la fecha de constitución
+    // del título ni la fecha de sanción. La fecha del título NO interviene.
+    // Si el motor base ya trae un saldo de sanción (por ejemplo, cuando el
+    // pago es posterior a la sanción), se conserva ese saldo. Si el pago es
+    // anterior a la fecha de sanción, el motor base lo deja en cero; en ese
+    // único caso se incorpora la sanción declarada para que el mismo algoritmo
+    // proporcional la distribuya. El motor base sigue limitando la aplicación
+    // efectiva al saldo real de sanción disponible.
+    if(esOrdinario && esTDJMayor1000(pagoActual) && tieneSancion && sancionDeclarada){
+      const deudaTDJ={
+        ...deuda,
+        sancion:Math.max(n(deuda?.sancion),n(datos?.valorSancion))
+      };
+      return super.aplicarProporcionalidad(pago,deudaTDJ);
+    }
+
+    return super.aplicarProporcionalidad(pago,deuda);
   }
 }
