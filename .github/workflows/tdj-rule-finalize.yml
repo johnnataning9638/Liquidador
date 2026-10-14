@@ -1,0 +1,61 @@
+name: tdj-rule-finalize
+on:
+  push:
+    branches: [main]
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply approved TDJ rule
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('js/motor-liquidacion-base.js')
+          s=p.read_text(encoding='utf-8')
+          pat=r'const sancionHabilitadaPorFecha\s*=\s*esSimplePorAnticipos\s*\?\s*true\s*:\s*\([\s\S]*?\n\s*\);'
+          m=re.search(pat,s)
+          if not m or 'pago.fecha>=fechaSancionReal' not in m.group(0):
+              raise SystemExit('No se encontró de forma segura el bloque de sanción esperado')
+          if len(re.findall(pat,s))!=1:
+              raise SystemExit('Se encontró más de un bloque de sanción')
+          repl='''const esTDJActual=(pago.esTDJ===true || String(pago.tdj||"").trim()!=="");
+    const valorTDJAplicado=Math.max(0,Number(pago.valor||0));
+    const esTDJOrdinarioMayor1000=esTDJActual && !esSimplePorAnticipos && valorTDJAplicado>1000;
+    // TDJ ORDINARIO > $1.000: la sanción se determina por la fecha efectiva
+    // de aplicación del título, nunca por la fecha en que fue constituido.
+    const sancionExisteAlAplicar=(datos.tieneSancion==="SI"
+      && sancionBaseOriginal>0
+      && Boolean(fechaSancionReal)
+      && pago.fecha>=fechaSancionReal);
+    const sancionHabilitadaPorFecha=esSimplePorAnticipos
+      ? true
+      : (sancionExisteAlAplicar && (esTDJOrdinarioMayor1000 || !esTDJActual || valorTDJAplicado<=1000));'''
+          s=s[:m.start()]+repl+s[m.end():]
+          p.write_text(s,encoding='utf-8')
+          for f in ['js/motor-liquidacion-base.js','js/motor-liquidacion.js','js/tdj.js','js/prioridad-tdj.js','titulos.html']:
+              q=Path(f)
+              if q.exists(): q.write_text(q.read_text(encoding='utf-8').replace('16.33.123','16.33.124'),encoding='utf-8')
+          final=p.read_text(encoding='utf-8')
+          for c in ['esTDJOrdinarioMayor1000','sancionExisteAlAplicar','pago.fecha>=fechaSancionReal','valorTDJAplicado>1000']:
+              assert c in final,c
+          assert '16.33.124' in final
+          PY
+      - name: Syntax check
+        run: |
+          node --check js/motor-liquidacion-base.js
+          node --check js/motor-liquidacion.js
+          node --check js/tdj.js
+          node --check js/prioridad-tdj.js
+      - name: Commit and cleanup
+        if: success()
+        run: |
+          rm -f .github/workflows/tdj-rule-finalize.yml TDJ_UPDATE_TRIGGER.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/motor-liquidacion-base.js js/motor-liquidacion.js js/tdj.js js/prioridad-tdj.js titulos.html .github/workflows/tdj-rule-finalize.yml TDJ_UPDATE_TRIGGER.md
+          git commit -m 'fix(tdj): aplicar sancion segun fecha efectiva del titulo [v16.33.124]'
+          git push
