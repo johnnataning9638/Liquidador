@@ -1,0 +1,18 @@
+name: regression Art. 9 v16.33.127
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test-art9:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validar sintaxis del motor
+        run: node --check js/motor-liquidacion.js
+      - name: Ejecutar matriz de regresión Art. 9
+        run: node scripts/test-art9-v16-33-127.mjs
