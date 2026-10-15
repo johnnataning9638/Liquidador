@@ -22,10 +22,11 @@ jobs:
       - name: Validar versión activa y regresiones TDJ
         run: |
           set -e
-          grep -q '16.33.130' js/prioridad-tdj.js
-          test -f RELEASES/16.33.130.md
+          grep -q '16.33.132' js/prioridad-tdj-v132.js
+          test -f RELEASES/16.33.132.md
           node tests/regresion-secuencia-tdj-129.mjs
           node tests/regresion-prioridad-pagos-tdj-130.mjs
+          node tests/regresion-idempotencia-tdj-132.mjs
 
       - name: Verificar que los motores no tengan cambios funcionales
         if: github.event_name == 'pull_request'
@@ -35,8 +36,14 @@ jobs:
           for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
             diff="$(git diff --unified=0 origin/main...HEAD -- "$f" || true)"
             echo "$diff"
-            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\?v='; then
+            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\\?v='; then
               echo "ERROR: se detectó un cambio funcional en $f."
               exit 1
             fi
           done
+
+      - name: Verificar que los tres botones usen el mismo cálculo
+        run: |
+          set -e
+          test "$(grep -o 'class=\"[^\"]*btn-calcular-normal[^\"]*\"' liquidacion.html | wc -l)" -eq 3
+          grep -q 'querySelectorAll(\".btn-calcular-normal\").*addEventListener(\"click\",calcular)' js/app.js
