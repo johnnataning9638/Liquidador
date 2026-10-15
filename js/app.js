@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.122";
-import {importarDatosInteligente} from "./importador.js?v=16.33.122";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.122";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.122";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.122";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.122";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.122";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.122";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.122";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.122";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.122";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.122";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.122";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.122";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.130";
+import {importarDatosInteligente} from "./importador.js?v=16.33.130";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.130";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.130";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.130";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.130";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.130";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.130";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.130";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.130";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.130";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.130";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.130";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj.js?v=16.33.130";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
