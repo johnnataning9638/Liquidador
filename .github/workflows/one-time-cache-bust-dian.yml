@@ -1,0 +1,32 @@
+name: one-time cache bust DIAN TDJ
+on:
+  push:
+    branches: ["main"]
+permissions:
+  contents: write
+jobs:
+  bust:
+    if: ${{ !contains(github.event.head_commit.message, 'cache-bust DIAN TDJ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Actualizar referencias de versión DIAN
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['js/app.js','liquidacion.html']:
+              p=Path(name)
+              s=p.read_text()
+              s=s.replace('?v=16.33.122','?v=16.33.130')
+              if name=='liquidacion.html':
+                  s=s.replace('versión 16.33.122','versión 16.33.130')
+              p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js liquidacion.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: cache bust DIAN para prioridad TDJ 16.33.130'
+          git push
