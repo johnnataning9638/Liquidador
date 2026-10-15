@@ -30,8 +30,14 @@ const base2={...obligacion2,pagos:[{id:'T1-O2',fecha:'2026-06-01',valor:40,tdj:'
 const r2=ajustarTDJParaPagosPosteriores(mockMotor(50),base2,{soloTDJId:'T1-O2'});
 assert.equal(r2.pagos.find(p=>p.id==='T1-O2').valor,40,'El excedente debe continuar a la obligación siguiente.');
 
-const baseO1Titulo2={...obligacion1,pagos:[{id:'T2',fecha:'2026-06-15',valor:25,tdj:'TDJ-2',esTDJ:true}]};
-const bloqueado=ajustarTDJParaPagosPosteriores(mockMotor(100),baseO1Titulo2,{soloTDJId:'T2'});
+// Primero se cubre realmente la obligación y luego se intenta aplicar un título
+// adicional a la misma obligación: el cursor debe impedir el retorno.
+reiniciarSecuenciaTDJ();
+const cubierta={...obligacion1,pagos:[{id:'T1-CUBRE',fecha:'2026-06-01',valor:100,tdj:'TDJ-CUBRE',esTDJ:true}]};
+const cierre=ajustarTDJParaPagosPosteriores(mockMotor(100),cubierta,{soloTDJId:'T1-CUBRE'});
+assert.equal(cierre.pagos.find(p=>p.id==='T1-CUBRE').valor,100);
+const posterior={...obligacion1,pagos:[{id:'T2',fecha:'2026-06-15',valor:25,tdj:'TDJ-2',esTDJ:true}]};
+const bloqueado=ajustarTDJParaPagosPosteriores(mockMotor(100),posterior,{soloTDJId:'T2'});
 assert.equal(bloqueado.pagos.find(p=>p.id==='T2').valor,0,'Un título posterior no puede regresar a una obligación ya cubierta.');
 
 // Un nuevo cálculo no debe heredar el cursor de una ejecución anterior.
