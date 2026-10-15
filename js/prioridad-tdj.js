@@ -1,7 +1,8 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.129
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.130
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
-// Ajusta la prioridad de aplicación de TDJ para que la cadena de obligaciones
-// sea persistente: una obligación ya cubierta no vuelve a recibir títulos.
+// Regla: los pagos reales tienen prioridad económica sobre los TDJ, incluso
+// cuando el pago real ocurre después del título. El TDJ solo cubre el saldo
+// que permanezca después de considerar los pagos reales y los TDJ anteriores.
 
 function esTDJ(p){
   return Boolean(String(p?.tdj||"").trim()) || p?.esTDJ===true;
@@ -58,8 +59,6 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   const idActual=opciones?.soloTDJId||"";
   prepararSecuencia(datos,idActual);
   const indiceActual=indiceObligacion(datos);
-  // Barrera principal: si el cursor ya pasó esta obligación, el TDJ actual no
-  // puede regresar a ella. El título continuará en la siguiente obligación.
   if(indiceActual<secuencia.cursor)return forzarTDJNoAplicable(datos,idActual);
 
   const originales=[...(datos?.pagos||[])].map((p,i)=>({...p,__ordenOriginal:i}));
@@ -69,12 +68,14 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
     try{if(resultadoCubreObligacion(motor.calcular(datos)))secuencia.cursor=Math.max(secuencia.cursor,indiceActual+1);}catch{}
     return datos;
   }
+
   const ajustados=originales.map(p=>({...p}));
   const hayPosterior=t=>normales.some(p=>String(p.fecha)>String(t.fecha));
   if(!tdjs.some(hayPosterior)){
     try{if(resultadoCubreObligacion(motor.calcular(datos)))secuencia.cursor=Math.max(secuencia.cursor,indiceActual+1);}catch{}
     return datos;
   }
+
   const simular=()=>{
     const pagos=ordenarMovimientosCronologicos(ajustados.map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)})));
     const maxFecha=pagos.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||"";
@@ -85,27 +86,66 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   for(let pasada=0;pasada<Math.max(4,tdjs.length*3);pasada++){
     let r;try{r=simular();}catch{return datos;}
     if(todosNormalesAplicados(r))break;
+
     let normalProblema=null;
-    for(let i=0;i<normales.length;i++){const p=normales[i];if(excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)>0.5){normalProblema=p;break;}}
-    if(!normalProblema)break;
-    const candidatos=ajustados.filter(p=>esTDJ(p)&&p.fecha&&String(p.fecha)<=String(normalProblema.fecha)&&Number(p.valor)>0&&(!opciones.soloTDJId||String(p.id)===String(opciones.soloTDJId)))
-      .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||Number(b.__ordenOriginal||0)-Number(a.__ordenOriginal||0));
-    const t=candidatos[0];if(!t)break;
-    const nominal=Math.max(0,Math.trunc(Number(t.__valorNominal??t.valor??0)));if(t.__valorNominal==null)t.__valorNominal=nominal;
-    let hi=Math.max(0,Math.trunc(Number(t.valor||0))),lo=0,mejor=0;
-    const esFactible=v=>{
-      const anterior=t.valor;t.valor=Math.max(0,Math.trunc(v));let rr=null;
-      try{rr=simular();}catch{t.valor=anterior;return false;}
-      const ok=todosNormalesAplicados(rr);t.valor=anterior;return ok;
-    };
-    if(esFactible(hi))mejor=hi;
-    else if(esFactible(0)){
-      for(let k=0;k<32;k++){if(lo>hi)break;const mid=Math.floor((lo+hi)/2);if(esFactible(mid)){mejor=mid;lo=mid+1;}else hi=mid-1;}
+    for(let i=0;i<normales.length;i++){
+      const p=normales[i];
+      if(excedentePagoNormal(r,clavePago(p,i),p.fecha,p.valor)>0.5){normalProblema=p;break;}
     }
-    t.valor=mejor;if(mejor===0)t.valor=0;
+    if(!normalProblema)break;
+
+    const candidatos=ajustados.filter(p=>esTDJ(p)&&p.fecha&&String(p.fecha)<=String(normalProblema.fecha)
+      &&Number(p.valor)>0&&(!opciones.soloTDJId||String(p.id)===String(opciones.soloTDJId)))
+      .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||Number(b.__ordenOriginal||0)-Number(a.__ordenOriginal||0));
+    const t=candidatos[0];
+    if(!t)break;
+
+    const valorOriginal=Math.max(0,Math.trunc(Number(t.valor||0)));
+    let hi=valorOriginal;
+
+    // CORRECCIÓN 16.33.130:
+    // Primero se calcula cuánto saldo queda cuando los pagos reales de la
+    // obligación tienen prioridad y el TDJ actual todavía no se consume.
+    // Ese saldo es el máximo que este TDJ puede aportar. De esta forma un
+    // pago real posterior jamás termina convertido en excedente por haber
+    // consumido previamente el TDJ completo.
+    try{
+      const sinActual=ajustados.filter(p=>String(p?.id||"")!==String(t?.id||""));
+      const pagosPrioridad=ordenarMovimientosCronologicos(sinActual.map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)})));
+      const cortePrioridad=pagosPrioridad.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||t.fecha;
+      const estadoConPagosPrioritarios=motor.calcular({...datos,pagos:pagosPrioridad,fechaCorte:cortePrioridad});
+      const saldoDespuesPagosReales=Math.max(0,Math.trunc(Number(estadoConPagosPrioritarios?.total||0)));
+      hi=Math.min(hi,saldoDespuesPagosReales);
+    }catch{}
+
+    let lo=0,mejor=0;
+    const esFactible=v=>{
+      const anterior=t.valor;
+      t.valor=Math.max(0,Math.trunc(v));
+      let rr=null;
+      try{rr=simular();}catch{t.valor=anterior;return false;}
+      const ok=todosNormalesAplicados(rr);
+      t.valor=anterior;
+      return ok;
+    };
+
+    if(hi<=0){
+      mejor=0;
+    }else if(esFactible(hi)){
+      mejor=hi;
+    }else if(esFactible(0)){
+      for(let k=0;k<32;k++){
+        if(lo>hi)break;
+        const mid=Math.floor((lo+hi)/2);
+        if(esFactible(mid)){mejor=mid;lo=mid+1;}else hi=mid-1;
+      }
+    }
+
+    t.valor=mejor;
+    if(mejor===0)t.valor=0;
   }
 
-  const pagosFinales=ajustados.map(p=>{const q={...p};delete q.__ordenOriginal;delete q.__valorNominal;return q;});
+  const pagosFinales=ajustados.map(p=>{const q={...p};delete q.__ordenOriginal;return q;});
   const salida={...datos,pagos:pagosFinales};
   try{if(resultadoCubreObligacion(motor.calcular(salida)))secuencia.cursor=Math.max(secuencia.cursor,indiceActual+1);}catch{}
   return salida;
