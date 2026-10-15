@@ -12,7 +12,7 @@ function motorMock(){
   return {
     calcular(datos){
       const orden=[...(datos.pagos||[])].sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
-      let saldo=100;
+      let saldo=120;
       const detalle=orden.map(p=>{
         const aplicado=Math.min(Number(p.valor||0),saldo);
         saldo-=aplicado;
@@ -27,7 +27,7 @@ function motorMock(){
   };
 }
 
-const datos=()=>({anio:2026,concepto:"RENTA",periodo:"1",vencimientos:[{id:"V1",numero:1,fecha:"2026-06-01",impuesto:100}],fechaCorte:"2026-10-01",pagos:pagosBase.map(p=>({...p}))});
+const datos=()=>({anio:2026,concepto:"RENTA",periodo:"1",vencimientos:[{id:"V1",numero:1,fecha:"2026-06-01",impuesto:120}],fechaCorte:"2026-10-01",pagos:pagosBase.map(p=>({...p}))});
 const motor=motorMock();
 
 const primera=ajustarTDJParaPagosPosteriores(motor,datos());
