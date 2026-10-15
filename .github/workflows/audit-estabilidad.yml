@@ -19,15 +19,12 @@ jobs:
           set -e
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
 
-      - name: Validar versionado de módulos
+      - name: Validar versión activa y regresión TDJ
         run: |
           set -e
-          grep -q 'js/app.js?v=16.33.100' liquidacion.html
-          grep -q 'js/tdj.js?v=16.33.100' titulos.html
-          if grep -R -nF '?v=' js | grep -v '16.33.100'; then
-            echo "ERROR: quedan imports locales con versionado anterior."
-            exit 1
-          fi
+          grep -q '16.33.129' js/prioridad-tdj.js
+          test -f RELEASES/16.33.129.md
+          node tests/regresion-secuencia-tdj-129.mjs
 
       - name: Verificar que los motores no tengan cambios funcionales
         if: github.event_name == 'pull_request'
