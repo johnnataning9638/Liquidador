@@ -30,11 +30,12 @@ jobs:
           s = p.read_text(encoding='utf-8')
           original = s
 
-          s = s.replace(
-              '    const paginas=[];\n',
-              '    const paginas=[];\n    const bloquesExcedentesFinal=[];\n',
-              1
-          )
+          if 'const bloquesExcedentesFinal=[];' not in s:
+              s = s.replace(
+                  '    const paginas=[];\n',
+                  '    const paginas=[];\n    const bloquesExcedentesFinal=[];\n',
+                  1
+              )
 
           s = s.replace(
               '      if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja">${bloqueExcedentes}</section>`);',
@@ -42,19 +43,21 @@ jobs:
               1
           )
 
-          s = s.replace(
-              '    const observacionesBeneficio1419=',
-              '    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);\n'
-              '    const hayExcedentesPago=bloquesExcedentesFinal.length>0;\n'
-              '    const observacionesBeneficio1419=',
-              1
-          )
+          if 'const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);' not in s:
+              s = s.replace(
+                  '    const observacionesBeneficio1419=',
+                  '    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);\n'
+                  '    const hayExcedentesPago=bloquesExcedentesFinal.length>0;\n'
+                  '    const observacionesBeneficio1419=',
+                  1
+              )
 
-          s = s.replace(
-              '    if(hayTitulosAplicados)    paginas.push(`',
-              '    if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`',
-              1
-          )
+          # IMPORTANTE: reemplazo dirigido al bloque final, no al primer
+          # occurrence de hayTitulosAplicados que exista en el archivo.
+          final_marker = '    if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">'
+          final_replacement = '    if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">'
+          if final_marker in s:
+              s = s.replace(final_marker, final_replacement, 1)
 
           s = s.replace(
               '</div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2>',
@@ -62,19 +65,25 @@ jobs:
               1
           )
 
-          if s == original:
-              raise SystemExit('No se aplicó ninguna corrección sobre js/tdj.js; se detiene para evitar un commit vacío.')
+          required = [
+              'const bloquesExcedentesFinal=[];',
+              'if(bloqueExcedentes)bloquesExcedentesFinal.push(bloqueExcedentes);',
+              'const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);',
+              'const hayExcedentesPago=bloquesExcedentesFinal.length>0;',
+              'if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">',
+              '${bloquesExcedentesFinal.join("")}<section class="pdf-bloque"><h2>TÍTULOS PARA ENDOSO</h2>'
+          ]
+          for needle in required:
+              if needle not in s:
+                  raise SystemExit(f'No quedó aplicada la corrección PDF requerida: {needle}')
 
           p.write_text(s, encoding='utf-8')
 
           # ------------------------------------------------------------
           # 2) LIMPIAR desde TÍTULOS: blindaje de interfaz.
-          #    Se captura antes que cualquier listener viejo/cacheado y
-          #    abre una URL con query nueva para forzar estado limpio.
           # ------------------------------------------------------------
           h = Path('titulos.html')
           html = h.read_text(encoding='utf-8')
-
           html = html.replace('js/tdj.js?v=16.33.123', 'js/tdj.js?v=16.33.141')
           html = html.replace('js/tdj.js?v=16.33.140', 'js/tdj.js?v=16.33.141')
           html = html.replace('Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.123', 'Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.141')
@@ -113,6 +122,7 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add js/tdj.js titulos.html
             git commit -m 'fix: resumen final endoso TDJ y limpieza global v16.33.141'
+            git pull --rebase origin main
             git push
           fi
 
