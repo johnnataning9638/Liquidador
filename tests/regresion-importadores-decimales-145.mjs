@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import { extraerRegistrosTDJTexto } from "../js/tdj-importador.js";
+import { numeroDesdeTexto, truncarValorEntero } from "../js/utilidades.js";
 
 const util=fs.readFileSync("js/utilidades.js","utf8");
 assert.match(util,/v16\.33\.145 — COMPATIBILIDAD AISLADA DE IMPORTADORES/);
@@ -17,7 +18,14 @@ const casos=[
   ["0.99",0]
 ];
 
-// Validación de la lógica de descarte decimal aplicada al pegado.
+// DIAN: la ruta numérica existente debe conservarse y, al final de la
+// importación, truncar hacia cero sin redondear.
+for(const [entrada,esperado] of casos){
+  assert.equal(truncarValorEntero(numeroDesdeTexto(entrada)),esperado,`DIAN ${entrada}`);
+}
+
+// Compatibilidad de pegado: descarta la parte decimal antes de que el
+// importador existente procese el texto, sin tocar enteros ni separadores de miles.
 const truncarImportado=s=>{
   let x=String(s);
   x=x.replace(/([+-]?\d{1,3}(?:,\d{3})+)\.(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/,/g,""));
@@ -28,7 +36,7 @@ const truncarImportado=s=>{
 };
 for(const [entrada,esperado] of casos){
   const salida=Number(truncarImportado(entrada));
-  assert.equal(salida,esperado,`decimal ${entrada}`);
+  assert.equal(salida,esperado,`pegado ${entrada}`);
 }
 
 // La ruta TDJ debe conservar documento/fecha y descartar únicamente decimales del valor.
