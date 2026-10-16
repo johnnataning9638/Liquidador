@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.135";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.135";
-import {importarDatosInteligente} from "./importador.js?v=16.33.135";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.135";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.135";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.135";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.135";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.135";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.135";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.135";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.135";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.136";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.136";
+import {importarDatosInteligente} from "./importador.js?v=16.33.136";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.136";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.136";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.136";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.136";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.136";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.136";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.136";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.136";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -2263,7 +2263,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.135-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.136-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -2340,7 +2340,7 @@ function leerVencimientosExcel(rows,headerIdx){
 function extraerTitulosTDJRobustoExcel(rows){
   const out=[];const seen=new Set();
   const add=(t,f,v,o="")=>{t=numeroTituloImportacion(t);f=fechaTituloImportacion(f);v=valorTituloImportacion(v);if(!t||!f||!(v>0))return;const k=`${t}|${f}|${v}`;if(seen.has(k))return;seen.add(k);out.push({tdj:t,fecha:f,valor:v,observacion:upper(o||"")});};
-  for(let h=0;h<rows.length;h++){const n=(rows[h]||[]).map(normImportacionTDJ);if(!n.includes("TDJ")||!n.includes("FECHA")||!n.some(x=>x.includes("VALOR")))continue;const it=n.findIndex(x=>x==="TDJ"||x.includes("TDJ N")||x==="TITULO"),ifx=n.findIndex(x=>x==="FECHA"||x.includes("FECHA TDJ")||x.includes("FECHA TITULO")),iv=n.findIndex(x=>x==="VALOR"||x.includes("VALOR TDJ")||x.includes("VALOR TITULO")||x==="VALOR ORIGINAL");if(it<0||ifx<0||iv<0)continue;for(let i=h+1;i<rows.length;i++){const r=rows[i]||[];const txt=r.filter(x=>String(x??"").trim()).join(" | ");if(!txt||/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|TOTAL ENDOSO|RESUMEN FINAL)/.test(normImportacionTDJ(txt)))break;let t=r[it],f=r[ifx],v=r[iv];if(!numeroTituloImportacion(t)||!fechaTituloImportacion(f)||!(valorTituloImportacion(v)>0)){const fi=r.findIndex(x=>fechaTituloImportacion(x));if(fi>=0){const c=r.map((x,j)=>({j,x,n:valorTituloImportacion(x)})).filter(x=>x.j!==fi&&x.n>0);const vc=c.find(x=>/[.$]/.test(String(x.x)))||c.at(-1),tc=c.filter(x=>x!==vc).find(x=>String(x.x).replace(/\D/g,"").length>=10)||c.find(x=>x!==vc);if(tc&&vc){t=tc.x;f=r[fi];v=vc.x;}}}add(t,f,v); } if(out.length)return out;} return out;}
+  for(let h=0;h<rows.length;h++){const n=(rows[h]||[]).map(normImportacionTDJ);if(!n.includes("TDJ")||!n.includes("FECHA")||!n.some(x=>x.includes("VALOR")))continue;const it=n.findIndex(x=>x==="TDJ"||x.includes("TDJ N")||x==="TITULO"),ifx=n.findIndex(x=>x==="FECHA"||x.includes("FECHA TDJ")||x.includes("FECHA TITULO")),iv=n.findIndex(x=>x==="VALOR"||x.includes("VALOR TDJ")||x.includes("VALOR TITULO")||x==="VALOR ORIGINAL");if(it<0||ifx<0||iv<0)continue;for(let i=h+1;i<rows.length;i++){const r=rows[i]||[];const txt=r.filter(x=>String(x??"").trim()).join(" | ");if(!txt||/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|TOTAL ENDOSO|RESUMEN FINAL)/.test(normImportacionTDJ(txt)))break;let t=r[it],f=r[ifx],v=r[iv];if(!numeroTituloImportacion(t)||!fechaTituloImportacion(f)||!(valorTituloImportacion(v)>0)||out.some(x=>x.tdj===numeroTituloImportacion(t)&&`${x.fecha}`!==`${fechaTituloImportacion(f)}`)){const fi=r.findIndex(x=>fechaTituloImportacion(x));if(fi>=0){const c=r.map((x,j)=>({j,x,n:valorTituloImportacion(x)})).filter(x=>x.j!==fi&&x.n>0);const vc=c.find(x=>/[.$]/.test(String(x.x)))||c.at(-1),tc=c.filter(x=>x!==vc).find(x=>String(x.x).replace(/\D/g,"").length>=10)||c.find(x=>x!==vc);if(tc&&vc){t=tc.x;f=r[fi];v=vc.x;}}}add(t,f,v); } if(out.length)return out;} return out;}
 function leerTitulosTDJRegistradosExcel(rows){
   const encontrados=[];
   const vistos=new Set();
