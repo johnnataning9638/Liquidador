@@ -1,6 +1,6 @@
-// CAPA DE IDEMPOTENCIA TDJ — v16.33.132
+// CAPA DE IDEMPOTENCIA TDJ — v16.33.133
 //
-// La lógica de prioridad económica permanece en prioridad-tdj.js v16.33.131.
+// La lógica de prioridad económica permanece en prioridad-tdj.js v16.33.133.
 // Esta capa reinicia exclusivamente el estado de secuencia al iniciar una
 // liquidación completa. Así, pulsar CALCULAR LIQUIDACIÓN repetidamente con
 // los mismos datos produce exactamente el mismo resultado.
@@ -11,7 +11,7 @@ import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
   reiniciarSecuenciaTDJ
-} from "./prioridad-tdj.js?v=16.33.131";
+} from "./prioridad-tdj.js?v=16.33.133";
 
 export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   if(!opciones?.soloTDJId) reiniciarSecuenciaTDJ();
