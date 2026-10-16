@@ -1,0 +1,152 @@
+name: Apply TDJ UI/Excel fix v16.33.135
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: contains(github.event.head_commit.message, 'tdj-ui-excel-135') == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch TDJ module
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('js/tdj.js')
+          s = p.read_text(encoding='utf-8')
+          old = 'function init(){\n  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];renderObligaciones();renderPagos();renderTitulos();'
+          new = 'function init(){\n  obligaciones=[nuevaObligacion(1)];titulos=[];renderObligaciones();renderPagos();renderTitulos();'
+          if old not in s: raise SystemExit('No se encontró init TDJ esperado')
+          s = s.replace(old, new, 1)
+          old = 'if(!titulos.length)titulos=[nuevoTitulo(1)];\n      renderTitulos();'
+          new = 'renderTitulos();'
+          if old not in s: raise SystemExit('No se encontró fallback de eliminación TDJ esperado')
+          s = s.replace(old, new, 1)
+          old = 'obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;resultadoDesactualizado=false;'
+          new = 'obligaciones=[nuevaObligacion(1)];titulos=[];resultado=null;resultadoDesactualizado=false;'
+          if old not in s: raise SystemExit('No se encontró limpiarTodo esperado')
+          s = s.replace(old, new, 1)
+          old = '// Estado canónico final: una única fila nueva completamente vacía.\n  titulos=[nuevoTitulo(1)];'
+          new = '// Estado canónico final: títulos sin filas hasta que el usuario agregue o importe.\n  titulos=[];'
+          if old not in s: raise SystemExit('No se encontró estado canónico esperado')
+          s = s.replace(old, new, 1)
+          old = 'titulos=nuevosTitulos.length?nuevosTitulos:[nuevoTitulo(1)];'
+          new = 'titulos=nuevosTitulos.length?nuevosTitulos:[];'
+          if old not in s: raise SystemExit('No se encontró fallback Excel esperado')
+          s = s.replace(old, new, 1)
+          s = s.replace('./utilidades.js?v=16.33.123','./utilidades.js?v=16.33.135')
+          s = s.replace('./motor-liquidacion.js?v=16.33.123','./motor-liquidacion.js?v=16.33.135')
+          s = s.replace('./importador.js?v=16.33.123','./importador.js?v=16.33.135')
+          s = s.replace('./importador-obligacion.js?v=16.33.123','./importador-obligacion.js?v=16.33.135')
+          s = s.replace('./ai-bridge.js?v=16.33.123','./ai-bridge.js?v=16.33.135')
+          s = s.replace('./motor-liquidacion-oficial.js?v=16.33.123','./motor-liquidacion-oficial.js?v=16.33.135')
+          s = s.replace('./supabase-config.js?v=16.33.123','./supabase-config.js?v=16.33.135')
+          s = s.replace('./importador-excel.js?v=16.33.123','./importador-excel.js?v=16.33.135')
+          s = s.replace('./decreto-1419.js?v=16.33.123','./decreto-1419.js?v=16.33.135')
+          s = s.replace('./prioridad-tdj-v132.js?v=16.33.132','./prioridad-tdj-v132.js?v=16.33.135')
+          s = s.replace('./tdj-importador.js?v=16.33.123','./tdj-importador.js?v=16.33.135')
+          s = s.replace('version:"16.33.123-TDJ"','version:"16.33.135-TDJ"')
+          p.write_text(s, encoding='utf-8')
+      - name: Strengthen Excel TDJ recovery parser
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('js/tdj.js')
+          s=p.read_text(encoding='utf-8')
+          marker='function leerTitulosTDJRegistradosExcel(rows){'
+          if marker not in s: raise SystemExit('No se encontró parser Excel TDJ')
+          helper=r'''function extraerTitulosTDJRobustoExcel(rows){
+  const out=[];const vistos=new Set();
+  const norm=v=>normImportacionTDJ(v);
+  const esFecha=v=>Boolean(fechaTituloImportacion(v));
+  const esFin=v=>/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|OBSERVACIONES|TOTAL ENDOSO|RESUMEN FINAL)/.test(norm(v||""));
+  const agregar=(tdj,fecha,valor,obs="")=>{
+    const t=numeroTituloImportacion(tdj),f=fechaTituloImportacion(fecha),v=valorTituloImportacion(valor);
+    if(!t||!f||!(v>0))return;
+    const key=`${t}|${f}|${v}`;
+    if(vistos.has(key))return;
+    vistos.add(key);out.push({tdj:t,fecha:f,valor:v,observacion:upper(obs||"")});
+  };
+  for(let h=0;h<rows.length;h++){
+    const nh=(rows[h]||[]).map(norm);
+    const esBloque=(nh.includes("TDJ")||nh.includes("TDJ Nº")||nh.includes("TITULO")) && nh.includes("FECHA") && nh.some(x=>x==="VALOR"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO"||x==="VALOR TDJ");
+    if(!esBloque)continue;
+    const ixF=nh.findIndex(x=>x==="FECHA"||x==="FECHA TDJ"||x==="FECHA TITULO"||x==="FECHA DEL TITULO");
+    const ixV=nh.findIndex(x=>x==="VALOR"||x==="VALOR TDJ"||x==="VALOR TITULO"||x==="VALOR ORIGINAL"||x==="VALOR DEL TITULO");
+    const ixT=nh.findIndex(x=>x==="TDJ"||x==="TDJ Nº"||x==="NUMERO TDJ"||x==="TITULO"||x==="TITULO Nº");
+    const ixO=nh.findIndex(x=>x==="OBSERVACION"||x==="OBSERVACIONES");
+    if(ixF<0||ixV<0||ixT<0)continue;
+    for(let i=h+1;i<rows.length;i++){
+      const r=rows[i]||[];const non=r.filter(v=>String(v??"").trim()!=="");
+      const joined=non.join(" | ");if(!joined||esFin(joined))break;
+      let f=fechaTituloImportacion(r[ixF]);let t=numeroTituloImportacion(r[ixT]);let v=valorTituloImportacion(r[ixV]);
+      if(!t||!f||!(v>0)){
+        const fechaIdx=r.findIndex(esFecha);
+        if(fechaIdx>=0){
+          const candidatos=r.map((cell,j)=>({j,raw:cell,val:valorTituloImportacion(cell)})).filter(x=>x.j!==fechaIdx&&x.val>0);
+          const monetarios=candidatos.filter(x=>/[.$]/.test(String(x.raw??"")));
+          const valCell=monetarios[monetarios.length-1]||candidatos[candidatos.length-1];
+          const tdjCandidates=candidatos.filter(x=>x!==valCell);
+          const tdjCell=tdjCandidates.find(x=>{const z=String(x.raw??"").replace(/\D/g,"");return z.length>=10&&z.length<=15;})||tdjCandidates[tdjCandidates.length-1];
+          if(tdjCell&&valCell){t=numeroTituloImportacion(tdjCell.raw);f=fechaTituloImportacion(r[fechaIdx]);v=valorTituloImportacion(valCell.raw);}
+        }
+      }
+      if(t&&f&&v>0)agregar(t,f,v,ixO>=0?r[ixO]:"");
+    }
+    if(out.length)return out;
+  }
+  return out;
+}
+
+'''
+          s=s.replace(marker,helper+marker,1)
+          old='const titulosCanonicos=leerTitulosTDJRegistradosExcel(rows);\n      if(titulosCanonicos.length){\n        nuevosTitulos.length=0;'
+          new='const titulosCanonicos=leerTitulosTDJRegistradosExcel(rows);\n      const titulosRobustos=extraerTitulosTDJRobustoExcel(rows);\n      const titulosFuente=(titulosRobustos.length>titulosCanonicos.length?titulosRobustos:titulosCanonicos);\n      if(titulosFuente.length){\n        nuevosTitulos.length=0;'
+          if old not in s: raise SystemExit('No se encontró selección canónica de títulos')
+          s=s.replace(old,new,1)
+          old='titulosCanonicos.forEach((t,i)=>{'
+          new='titulosFuente.forEach((t,i)=>{'
+          if old not in s: raise SystemExit('No se encontró iteración canónica')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+      - name: Add regression and release note
+        shell: bash
+        run: |
+          cat > tests/regresion-ui-titulos-135.mjs <<'JS'
+          import assert from 'node:assert/strict';
+          const source = await import('node:fs/promises').then(fs=>fs.readFile('js/tdj.js','utf8'));
+          assert.match(source,/obligaciones=\[nuevaObligacion\(1\)\];titulos=\[\];renderObligaciones\(\);renderPagos\(\);renderTitulos\(\);/);
+          assert.match(source,/titulos=nuevosTitulos\.length\?nuevosTitulos:\[\];/);
+          assert.match(source,/function extraerTitulosTDJRobustoExcel\(rows\)/);
+          assert.match(source,/const titulosFuente=/);
+          assert.doesNotMatch(source,/if\(!titulos\.length\)titulos=\[nuevoTitulo\(1\)\];/);
+          console.log('OK: TDJ inicia sin filas y Excel usa recuperación robusta de títulos.');
+          JS
+          cat > RELEASES/16.33.135.md <<'MD'
+          # v16.33.135
+
+          ## TDJ — comportamiento de filas e importación Excel
+
+          - TÍTULOS / TDJ inicia sin filas, igual que PAGOS.
+          - + AGREGAR TÍTULO crea la primera fila únicamente cuando el usuario la solicita.
+          - Importación por pegado continúa creando exactamente los títulos reconocidos.
+          - Importación Excel usa una recuperación robusta de TDJ + fecha + valor y tolera columnas vacías/mergeadas.
+          - Se mantiene la lógica de cálculo, proporcionalidad, intereses, sanciones, endoso y secuencia TDJ sin cambios.
+          MD
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          node --check js/tdj.js
+          node tests/regresion-ui-titulos-135.mjs
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/tdj.js tests/regresion-ui-titulos-135.mjs RELEASES/16.33.135.md
+          git commit -m 'fix: comportamiento filas e importacion Excel TDJ v16.33.135 tdj-ui-excel-135'
+          git push
