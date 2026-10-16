@@ -15,7 +15,9 @@ assert(!tdj.includes('if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja
 // PDF: el resumen final debe aparecer aunque ningún TDJ haya sido aplicado.
 assert(tdj.includes("const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);"), "Falta detección de títulos registrados.");
 assert(tdj.includes("const hayExcedentesPago=bloquesExcedentesFinal.length>0;"), "Falta detección de excedentes de pagos.");
-assert(tdj.includes("if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`"), "El resumen final todavía depende de títulos aplicados.");
+const condicionFinal = 'if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">';
+assert(tdj.includes(condicionFinal), "El resumen final todavía depende de títulos aplicados.");
+assert(!tdj.includes('if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">'), "El resumen final todavía está condicionado a títulos aplicados.");
 
 // PDF: ambos bloques deben quedar en la misma hoja final.
 assert(tdj.includes('${bloquesExcedentesFinal.join("")}<section class="pdf-bloque"><h2>TÍTULOS PARA ENDOSO</h2>'), "No se consolidaron excedentes y títulos para endoso en la misma hoja.");
