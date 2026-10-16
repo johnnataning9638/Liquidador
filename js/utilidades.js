@@ -4,24 +4,15 @@ export function numeroDesdeTexto(v){
   if(typeof v==="number")return Number.isFinite(v)?v:0;
   let s=String(v??"").trim().replace(/\s/g,"").replace(/\$/g,"");
   if(!s)return 0;
-  // Acepta valores COP tanto con separador de miles por punto como por coma:
-  // 1.688.000 / 1,688,000 / $1.688.000 / $1,688,000.
-  // Si hay varios separadores iguales, se interpretan como miles.
   if(/^[-+]?\d{1,3}(?:\.\d{3})+$/.test(s))s=s.replace(/\./g,"");
   else if(/^[-+]?\d{1,3}(?:,\d{3})+$/.test(s))s=s.replace(/,/g,"");
   else if(s.includes(".")&&s.includes(",")){
-    // Acepta ambos estilos cuando vienen desde Excel/portales: 3,471,000.00
-    // (miles con coma y decimal con punto) y 3.471.000,00 (miles con punto
-    // y decimal con coma). La posición del último separador determina el
-    // decimal cuando el patrón de miles del otro separador es válido.
     if(/^[-+]?\d{1,3}(?:,\d{3})+\.\d+$/.test(s))s=s.replace(/,/g,"");
     else if(/^[-+]?\d{1,3}(?:\.\d{3})+,\d+$/.test(s))s=s.replace(/\./g,"").replace(",",".");
     else s=s.replace(/\./g,"").replace(",",".");
   }
   else if(s.includes(",")){
     const partes=s.split(",");
-    // Una sola coma seguida de tres dígitos es normalmente separador de miles
-    // en los valores copiados de Excel/portales colombianos.
     if(partes.length===2&&/^\d{3}$/.test(partes[1]))s=partes[0]+partes[1];
     else s=s.replace(/,/g,".");
   }
@@ -35,20 +26,17 @@ export function diasEntre(a,b){const x=new Date(a+"T00:00:00"),y=new Date(b+"T00
 export function roundMil(v){return Math.round(Number(v||0)/1000)*1000;}
 export function roundupMil(v){return Math.ceil(Number(v||0)/1000)*1000;}
 
-// v16.33.145 — COMPATIBILIDAD AISLADA DE IMPORTADORES.
+// v16.33.146 — COMPATIBILIDAD AISLADA DE IMPORTADORES.
+// Complementa v16.33.145: reconoce el símbolo $ antes del importe, con o sin espacio.
 // No modifica el motor ni los valores digitados manualmente. Solo transforma
 // datos pegados en las cajas de importación, descartando la parte decimal
 // antes de que los importadores existentes procesen el texto.
 function truncarDecimalesImportacion(texto){
   let s=String(texto??"");
-  // Mixto: miles por coma + decimal por punto: 1,234,567.89 -> 1234567
-  s=s.replace(/([+-]?\d{1,3}(?:,\d{3})+)\.(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/,/g,""));
-  // Mixto: miles por punto + decimal por coma: 1.234.567,89 -> 1234567
-  s=s.replace(/([+-]?\d{1,3}(?:\.\d{3})+),(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/\./g,""));
-  // Decimal simple con punto: 1234567.89 -> 1234567
-  s=s.replace(/([+-]?\d+)\.(\d{1,2})(?!\d)/g,"$1");
-  // Decimal simple con coma: 1234567,89 -> 1234567
-  s=s.replace(/([+-]?\d+),(\d{1,2})(?!\d)/g,"$1");
+  s=s.replace(/(?:\$\s*)?([+-]?\d{1,3}(?:,\d{3})+)\.(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/,/g,""));
+  s=s.replace(/(?:\$\s*)?([+-]?\d{1,3}(?:\.\d{3})+),(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/\./g,""));
+  s=s.replace(/(?:\$\s*)?([+-]?\d+)\.(\d{1,2})(?!\d)/g,"$1");
+  s=s.replace(/(?:\$\s*)?([+-]?\d+),(\d{1,2})(?!\d)/g,"$1");
   return s;
 }
 function esCampoImportacionDecimal(el){
