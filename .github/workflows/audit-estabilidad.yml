@@ -22,8 +22,8 @@ jobs:
       - name: Validar versión activa y regresiones TDJ
         run: |
           set -e
-          grep -q '16.33.132' js/prioridad-tdj-v132.js
-          test -f RELEASES/16.33.132.md
+          grep -q '16.33.133' js/prioridad-tdj-v132.js
+          test -f RELEASES/16.33.133.md
           node tests/regresion-secuencia-tdj-129.mjs
           node tests/regresion-prioridad-pagos-tdj-130.mjs
           node tests/regresion-idempotencia-tdj-132.mjs
