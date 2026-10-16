@@ -35,10 +35,45 @@ function normalizarValorTDJ(v) {
   const s = String(v ?? "").trim();
   if (!s) return 0;
   const limpio = s.replace(/\$/g, "").replace(/\s/g, "");
-  if (/^\d{1,3}(?:\.\d{3})+$/.test(limpio)) return Number(limpio.replace(/\./g, ""));
-  if (/^\d{1,3}(?:,\d{3})+$/.test(limpio)) return Number(limpio.replace(/,/g, ""));
-  if (/^\d+$/.test(limpio)) return Number(limpio);
-  const n = Number(limpio.replace(/\./g, "").replace(",", "."));
+  if (/^[+-]?\d{1,3}(?:\.\d{3})+$/.test(limpio)) return Math.trunc(Number(limpio.replace(/\./g, "")));
+  if (/^[+-]?\d{1,3}(?:,\d{3})+$/.test(limpio)) return Math.trunc(Number(limpio.replace(/,/g, "")));
+  if (/^[+-]?\d+$/.test(limpio)) return Number(limpio);
+
+  // Complemento decimal: acepta punto o coma como separador decimal y
+  // descarta SIEMPRE la parte decimal, sin redondear. También reconoce
+  // formatos mixtos de Excel/Colombia con miles + decimales.
+  let normalizado = limpio;
+  if (normalizado.includes(".") && normalizado.includes(",")) {
+    if (/^[+-]?\d{1,3}(?:,\d{3})+\.\d+$/.test(normalizado)) {
+      normalizado = normalizado.replace(/,/g, "");
+    } else if (/^[+-]?\d{1,3}(?:\.\d{3})+,\d+$/.test(normalizado)) {
+      normalizado = normalizado.replace(/\./g, "").replace(",", ".");
+    } else {
+      const ultimoPunto = normalizado.lastIndexOf(".");
+      const ultimaComa = normalizado.lastIndexOf(",");
+      if (ultimoPunto > ultimaComa) normalizado = normalizado.replace(/,/g, "");
+      else normalizado = normalizado.replace(/\./g, "").replace(",", ".");
+    }
+  } else if (normalizado.includes(".")) {
+    const partes = normalizado.split(".");
+    if (partes.length === 2 && /^\d{1,2}$/.test(partes[1])) {
+      normalizado = `${partes[0]}.${partes[1]}`;
+    } else if (/^[+-]?\d{1,3}(?:\.\d{3})+$/.test(normalizado)) {
+      normalizado = normalizado.replace(/\./g, "");
+    } else {
+      normalizado = normalizado.replace(/\./g, "");
+    }
+  } else if (normalizado.includes(",")) {
+    const partes = normalizado.split(",");
+    if (partes.length === 2 && /^\d{1,2}$/.test(partes[1])) {
+      normalizado = `${partes[0]}.${partes[1]}`;
+    } else if (/^[+-]?\d{1,3}(?:,\d{3})+$/.test(normalizado)) {
+      normalizado = normalizado.replace(/,/g, "");
+    } else {
+      normalizado = normalizado.replace(/,/g, "");
+    }
+  }
+  const n = Number(normalizado);
   return Number.isFinite(n) ? Math.trunc(n) : 0;
 }
 
