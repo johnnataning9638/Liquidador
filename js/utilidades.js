@@ -37,6 +37,9 @@ function truncarDecimalesImportacion(texto){
   s=s.replace(/(?:\$\s*)?([+-]?\d{1,3}(?:\.\d{3})+),(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/\./g,""));
   s=s.replace(/(?:\$\s*)?([+-]?\d+)\.(\d{1,2})(?!\d)/g,"$1");
   s=s.replace(/(?:\$\s*)?([+-]?\d+),(\d{1,2})(?!\d)/g,"$1");
+  // El símbolo $ puede venir solo, con espacio o pegado al entero.
+  // Se elimina únicamente cuando precede directamente a un número.
+  s=s.replace(/\$\s*(?=[+-]?\d)/g,"");
   return s;
 }
 function esCampoImportacionDecimal(el){
