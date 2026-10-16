@@ -20,13 +20,14 @@ jobs:
       - name: Validar versión activa y regresiones TDJ/RIAN
         run: |
           set -e
-          grep -q '16.33.136' js/tdj.js
-          test -f RELEASES/16.33.136.md
+          grep -q '16.33.137' js/prioridad-tdj-v132.js
+          test -f RELEASES/16.33.137.md
           node tests/regresion-secuencia-tdj-129.mjs
           node tests/regresion-prioridad-pagos-tdj-130.mjs
           node tests/regresion-idempotencia-tdj-132.mjs
           node tests/regresion-saldo-final-134.mjs
           node tests/regresion-ui-titulos-136.mjs
+          node tests/regresion-limpiar-titulos-137.mjs
       - name: Verificar que los motores no tengan cambios funcionales
         if: github.event_name == 'pull_request'
         run: |
