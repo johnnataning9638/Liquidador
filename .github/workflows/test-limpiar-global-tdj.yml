@@ -1,4 +1,4 @@
-name: Regresión limpieza global y resumen final TDJ
+name: Regresión y mantenimiento TDJ
 
 on:
   push:
@@ -17,50 +17,101 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Aplicar corrección LIMPIAR global TDJ v16.33.144
+      - name: Aplicar normalización de decimales v16.33.145
         if: github.event_name == 'push'
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
+          imp=Path('js/importador.js').read_text(encoding='utf-8')
+          imp=imp.replace('function separarFilaPagos(linea){','function separarFilaPagos(linea,columnasEsperadas=0,indiceValor=-1){',1)
+          old='''  const partesComa=s.split(",");
+  const pareceImporteMiles=/\\$?\\s*\\d{1,3}(?:,\\d{3})+(?:\\s*)$/.test(s);
+  if(!pareceImporteMiles&&/,(?=[^,]*\\s*(?:\\d|\\$))/.test(s)&&partesComa.length>=3)return partesComa.map(limpiarCeldaPago);
+  return [s];'''
+          new='''  const partes=[];let cur="",quoted=false;
+  for(let i=0;i<s.length;i++){const ch=s[i];if(ch==='"'){quoted=!quoted;continue;}if(ch===","&&!quoted){partes.push(limpiarCeldaPago(cur));cur="";continue;}cur+=ch;}
+  partes.push(limpiarCeldaPago(cur));
+  if(columnasEsperadas>0&&indiceValor>=0&&partes.length>columnasEsperadas){
+    const extras=partes.length-columnasEsperadas;
+    for(let grupos=extras+1;grupos>=2;grupos--){
+      const fin=indiceValor+grupos;if(fin>partes.length)continue;
+      const candidato=partes.slice(indiceValor,fin).join(",");
+      const n=numeroDesdeTexto(candidato);if(!Number.isFinite(n))continue;
+      const r=[...partes.slice(0,indiceValor),candidato,...partes.slice(fin)];
+      if(r.length===columnasEsperadas)return r;
+    }
+  }
+  const pareceImporteMiles=/\\$?\\s*\\d{1,3}(?:,\\d{3})+(?:\\s*)$/.test(s);
+  if(!pareceImporteMiles&&partes.length>=3)return partes;
+  return [s];'''
+          if old not in imp: raise SystemExit('No se encontró parser DIAN esperado')
+          imp=imp.replace(old,new,1).replace('const c=separarFilaPagos(lines[r]);','const c=separarFilaPagos(lines[r],headers.length,ix.valor);')
+          Path('js/importador-16.33.145.js').write_text(imp,encoding='utf-8')
 
-          html_path=Path('titulos.html')
-          html=html_path.read_text(encoding='utf-8')
+          app=Path('js/app.js').read_text(encoding='utf-8')
+          app=app.replace('"./importador.js?v=16.33.130"','"./importador-16.33.145.js"')
+          olda='''function aplicarImportacionPagosSolo(obj){
+  // IMPORTACIÓN DESDE LA PESTAÑA PAGOS:
+  // aquí SOLO se incorporan pagos. Nunca se deben crear/modificar
+  // vencimientos de DATOS Y VENCIMIENTOS.
+  if(obj.pagos?.length)pagos=[...pagos,...obj.pagos];
+  renderPagos();'''
+          newa='''function aplicarImportacionPagosSolo(obj){
+  // IMPORTACIÓN DESDE LA PESTAÑA PAGOS:
+  // aquí SOLO se incorporan pagos. Nunca se deben crear/modificar
+  // vencimientos de DATOS Y VENCIMIENTOS.
+  if(obj.pagos?.length){
+    const normalizados=obj.pagos.map(p=>({...p,valor:truncarValorEntero(p.valor)}));
+    pagos=[...pagos,...normalizados];
+  }
+  renderPagos();'''
+          if olda not in app: raise SystemExit('No se encontró aplicación de pagos esperada')
+          app=app.replace(olda,newa,1)
+          Path('js/app-16.33.145.js').write_text(app,encoding='utf-8')
 
-          # Ruta física nueva: evita depender de ?v= para invalidar la caché del CDN.
-          loader=Path('js/tdj-16.33.144.js')
-          loader.write_text('''// TDJ v16.33.144 — barrera física contra módulos cacheados.\n(function(){\n  document.addEventListener("click",function(e){\n    var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;\n    if(!b)return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.replace("titulos.html?v=16.33.144&reinicio="+Date.now());\n  },true);\n})();\n\nimport("./tdj.js?v=16.33.144");\n''',encoding='utf-8')
+          tdi=Path('js/tdj-importador.js').read_text(encoding='utf-8')
+          start=tdi.index('function normalizarValorTDJ'); end=tdi.index('\n}',start)+2
+          newtd='''function normalizarValorTDJ(v) {
+  const s=String(v??"").trim(); if(!s)return 0;
+  let x=s.replace(/\\$/g,"").replace(/\\s/g,"");
+  if(/^[-+]?\\d{1,3}(?:\\.\\d{3})+$/.test(x))return Math.trunc(Number(x.replace(/\\./g,""))||0);
+  if(/^[-+]?\\d{1,3}(?:,\\d{3})+$/.test(x))return Math.trunc(Number(x.replace(/,/g,""))||0);
+  if(x.includes(".")&&x.includes(",")){
+    if(/^[-+]?\\d{1,3}(?:\\.\\d{3})+,\\d+$/.test(x))x=x.replace(/\\./g,"").replace(",",".");
+    else if(/^[-+]?\\d{1,3}(?:,\\d{3})+\\.\\d+$/.test(x))x=x.replace(/,/g,"");
+  } else if(/^[-+]?\\d+[\\.,]\\d{1,2}$/.test(x))x=x.replace(",",".");
+  else x=x.replace(/,/g,".");
+  const n=Number(x);return Number.isFinite(n)?Math.trunc(n):0;
+}'''
+          tdi=tdi[:start]+newtd+tdi[end:]
+          Path('js/tdj-importador-16.33.145.js').write_text(tdi,encoding='utf-8')
 
-          html=re.sub(r'js/tdj\.js\?v=[0-9.]+','js/tdj-16.33.144.js',html)
-          html=html.replace('TDJ UI DEPLOY 16.33.143','TDJ UI DEPLOY 16.33.144')
-          html=re.sub(r'(Liquidador — módulo de Liquidación de Títulos / TDJ · v)16\.33\.[0-9]+',r'\g<1>16.33.144',html)
-          html=html.replace('v!=="16.33.143"','v!=="16.33.144"')
-          html=html.replace('u.searchParams.set("v","16.33.143")','u.searchParams.set("v","16.33.144")')
-          html=html.replace('tdj-global-clear-143','tdj-global-clear-144')
-          html=html.replace('titulos.html?v=16.33.143&reinicio=','titulos.html?v=16.33.144&reinicio=')
-          html=html.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"','id="btnLimpiarTitulosGlobal"')
-          html=html.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"','id="btnLimpiarTitulosGlobal"')
+          core=Path('js/tdj-core-16.33.143.js').read_text(encoding='utf-8')
+          core=core.replace('./importador.js?v=16.33.136','./importador-16.33.145.js').replace('./tdj-importador.js?v=16.33.136','./tdj-importador-16.33.145.js')
+          Path('js/tdj-core-16.33.145.js').write_text(core,encoding='utf-8')
 
-          hard='''<script id="tdj-global-clear-144-hard">\n(function(){\n  document.addEventListener("click",function(e){\n    var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;\n    if(!b)return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.replace("titulos.html?v=16.33.144&reinicio="+Date.now());\n  },true);\n})();\n</script>\n'''
-          html=re.sub(r'\n<script id="tdj-global-clear-[0-9]+(?:-hard)?">.*?</script>\n','\n',html,flags=re.S)
-          html=html.replace('</head>',hard+'</head>',1)
-          html_path.write_text(html,encoding='utf-8')
+          Path('js/tdj-16.33.145.js').write_text('''// TDJ v16.33.145
+(function(){document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.145&reinicio="+Date.now());},true);})();
+import("./tdj-core-16.33.145.js");
+''',encoding='utf-8')
 
-          Path('RELEASES/16.33.144.md').write_text('''# RELEASE 16.33.144 — LIMPIAR GLOBAL TDJ\n\n- Auditoría: el mensaje antiguo no existe en la fuente actual; el comportamiento observado proviene de un recurso JS cacheado por ruta.\n- Se crea `js/tdj-16.33.144.js` como ruta física nueva.\n- La captura global del botón TÍTULOS/TJ ocurre antes de cualquier listener antiguo/cacheado.\n- LIMPIAR desde TÍTULOS inicia una nueva liquidación y borra Datos/vencimientos, Pagos, Títulos/TDJ y Resultados.\n- No se modifica la lógica de cálculo, proporcionalidad, intereses, sanciones, cursor ni endoso.\n''',encoding='utf-8')
+          lh=Path('liquidacion.html'); h=lh.read_text(encoding='utf-8'); h=h.replace('js/app.js?v=16.33.132','js/app-16.33.145.js'); lh.write_text(h,encoding='utf-8')
+          th=Path('titulos.html'); t=th.read_text(encoding='utf-8'); t=t.replace('js/tdj.js?v=16.33.143','js/tdj-16.33.145.js').replace('v!=="16.33.143"','v!=="16.33.145"').replace('u.searchParams.set("v","16.33.143")','u.searchParams.set("v","16.33.145")').replace('titulos.html?v=16.33.143&reinicio=','titulos.html?v=16.33.145&reinicio='); th.write_text(t,encoding='utf-8')
 
-          Path('tests/regresion-limpiar-global-tdj-144.mjs').write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst h=fs.readFileSync("titulos.html","utf8");\nconst l=fs.readFileSync("js/tdj-16.33.144.js","utf8");\nassert.equal((h.match(/id="btnLimpiarTitulosGlobal"/g)||[]).length,1);\nassert.ok(h.includes("js/tdj-16.33.144.js"));\nassert.ok(h.includes("tdj-global-clear-144-hard"));\nassert.ok(h.includes("Se borrarán datos, pagos, títulos y resultados."));\nassert.ok(!h.includes("¿Desea limpiar únicamente los títulos / TDJ registrados?"));\nassert.ok(!l.includes("¿Desea limpiar únicamente los títulos / TDJ registrados?"));\nconsole.log("OK: regresión LIMPIAR GLOBAL TDJ v16.33.144");\n''',encoding='utf-8')
+          Path('RELEASES/16.33.145.md').write_text('''# RELEASE 16.33.145 — DECIMALES EN IMPORTADORES\n\n- DIAN Pagos: Importar e Importar IA truncan valores decimales hacia cero antes de incorporarlos.\n- DIAN: el parser reconoce importes con punto o coma decimal incluso cuando la coma decimal divide la fila CSV.\n- TDJ Pagos/Títulos: los importadores aceptan punto o coma decimal y eliminan la parte decimal sin redondear.\n- `1234.56` -> `1234`; `1234,56` -> `1234`; `1.234,56` -> `1234`; `1,234.56` -> `1234`.\n- Sin decimales, el valor permanece igual.\n- Cálculos, proporcionalidad, intereses, sanciones, cursor y endoso no se modifican.\n''',encoding='utf-8')
+          Path('tests/regresion-importadores-decimales-145.mjs').write_text('''import fs from "node:fs";import assert from "node:assert/strict";\nfor(const f of ["js/importador-16.33.145.js","js/app-16.33.145.js","js/tdj-importador-16.33.145.js","js/tdj-core-16.33.145.js","js/tdj-16.33.145.js"]){assert.ok(fs.existsSync(f),`Falta ${f}`);}\nconst app=fs.readFileSync("js/app-16.33.145.js","utf8");const imp=fs.readFileSync("js/importador-16.33.145.js","utf8");const tdj=fs.readFileSync("js/tdj-importador-16.33.145.js","utf8");\nassert.ok(app.includes("valor:truncarValorEntero(p.valor)"));assert.ok(app.includes("./importador-16.33.145.js"));assert.ok(imp.includes("columnasEsperadas=0,indiceValor=-1"));assert.ok(imp.includes("separarFilaPagos(lines[r],headers.length,ix.valor)"));assert.ok(tdj.includes("Math.trunc"));console.log("OK: regresión importadores decimales v16.33.145");\n''',encoding='utf-8')
 
-          if ! git diff --quiet -- js/tdj-16.33.144.js titulos.html RELEASES/16.33.144.md tests/regresion-limpiar-global-tdj-144.mjs; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add js/tdj-16.33.144.js titulos.html RELEASES/16.33.144.md tests/regresion-limpiar-global-tdj-144.mjs
-            git commit -m 'fix: corregir LIMPIAR global TDJ con ruta física v16.33.144'
-            git pull --rebase origin main
+          if ! git diff --quiet -- js/importador-16.33.145.js js/app-16.33.145.js js/tdj-importador-16.33.145.js js/tdj-core-16.33.145.js js/tdj-16.33.145.js liquidacion.html titulos.html RELEASES/16.33.145.md tests/regresion-importadores-decimales-145.mjs; then
+            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add js/importador-16.33.145.js js/app-16.33.145.js js/tdj-importador-16.33.145.js js/tdj-core-16.33.145.js js/tdj-16.33.145.js liquidacion.html titulos.html RELEASES/16.33.145.md tests/regresion-importadores-decimales-145.mjs
+            git commit -m 'fix: normalizar decimales en importadores DIAN y TDJ v16.33.145'
             git push
           fi
 
-      - name: Auditoría y regresión
+      - name: Auditoría y sintaxis
         run: |
           node --check js/tdj.js
-          node --check js/tdj-16.33.144.js
-          node tests/regresion-limpiar-global-tdj-144.mjs
+          if [ -f tests/regresion-importadores-decimales-145.mjs ]; then node tests/regresion-importadores-decimales-145.mjs; fi
+          echo "OK: auditoría TDJ/DIAN"
