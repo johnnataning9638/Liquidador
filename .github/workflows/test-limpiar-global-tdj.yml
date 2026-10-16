@@ -1,4 +1,4 @@
-name: Regresión limpieza global TDJ
+name: Regresión limpieza global y resumen final TDJ
 
 on:
   push:
@@ -15,28 +15,109 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Actualizar cache bust del módulo TDJ
+      - name: Aplicar correcciones TDJ v16.33.141
         if: github.event_name == 'push'
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('titulos.html')
+          import re
+
+          # ------------------------------------------------------------
+          # 1) PDF: excedentes de pagos + títulos para endoso en UNA sola
+          #    hoja de resumen final. No se toca el motor de cálculo.
+          # ------------------------------------------------------------
+          p = Path('js/tdj.js')
           s = p.read_text(encoding='utf-8')
-          s2 = s.replace('js/tdj.js?v=16.33.123', 'js/tdj.js?v=16.33.140')
-          s2 = s2.replace('Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.123', 'Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.140')
-          if s2 != s:
-              p.write_text(s2, encoding='utf-8')
-              print('Referencia TDJ actualizada a v16.33.140.')
-          else:
-              print('La referencia TDJ ya está actualizada; no se crea un nuevo commit.')
+          original = s
+
+          s = s.replace(
+              '    const paginas=[];\n',
+              '    const paginas=[];\n    const bloquesExcedentesFinal=[];\n',
+              1
+          )
+
+          s = s.replace(
+              '      if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja">${bloqueExcedentes}</section>`);',
+              '      if(bloqueExcedentes)bloquesExcedentesFinal.push(bloqueExcedentes);',
+              1
+          )
+
+          s = s.replace(
+              '    const observacionesBeneficio1419=',
+              '    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);\n'
+              '    const hayExcedentesPago=bloquesExcedentesFinal.length>0;\n'
+              '    const observacionesBeneficio1419=',
+              1
+          )
+
+          s = s.replace(
+              '    if(hayTitulosAplicados)    paginas.push(`',
+              '    if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`',
+              1
+          )
+
+          s = s.replace(
+              '</div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2>',
+              '</div>${bloquesExcedentesFinal.join("")}<section class="pdf-bloque"><h2>TÍTULOS PARA ENDOSO</h2>',
+              1
+          )
+
+          if s == original:
+              raise SystemExit('No se aplicó ninguna corrección sobre js/tdj.js; se detiene para evitar un commit vacío.')
+
+          p.write_text(s, encoding='utf-8')
+
+          # ------------------------------------------------------------
+          # 2) LIMPIAR desde TÍTULOS: blindaje de interfaz.
+          #    Se captura antes que cualquier listener viejo/cacheado y
+          #    abre una URL con query nueva para forzar estado limpio.
+          # ------------------------------------------------------------
+          h = Path('titulos.html')
+          html = h.read_text(encoding='utf-8')
+
+          html = html.replace('js/tdj.js?v=16.33.123', 'js/tdj.js?v=16.33.141')
+          html = html.replace('js/tdj.js?v=16.33.140', 'js/tdj.js?v=16.33.141')
+          html = html.replace('Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.123', 'Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.141')
+          html = html.replace('Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.140', 'Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.141')
+
+          pattern = r'(<section class="tab-pane tdj-titulos-pane" data-pane="titulos">.*?<button type="button" class="tdj-clear btn-limpiar-tdj")'
+          html2, n = re.subn(pattern, r'\1 id="btnLimpiarTitulosGlobal"', html, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('No se encontró exactamente el botón LIMPIAR de TÍTULOS/TDJ.')
+          html = html2
+
+          marker = '<script type="module" src="js/tdj.js?v=16.33.141"></script>'
+          if 'id="tdj-global-clear-141"' not in html:
+              guard = '''<script id="tdj-global-clear-141">
+          document.addEventListener("DOMContentLoaded",function(){
+            const b=document.getElementById("btnLimpiarTitulosGlobal");
+            if(!b)return;
+            b.addEventListener("click",function(e){
+              e.stopImmediatePropagation();
+              if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
+              window.location.href="titulos.html?reinicio="+Date.now();
+            },true);
+          });
+          </script>
+          '''
+              html = html.replace(marker, guard + marker, 1)
+
+          html = html.replace('<!-- TDJ UI DEPLOY 16.33.123 -->', '<!-- TDJ UI DEPLOY 16.33.141 -->')
+          h.write_text(html, encoding='utf-8')
+
+          print('Correcciones TDJ v16.33.141 aplicadas.')
           PY
-          if ! git diff --quiet -- titulos.html; then
+
+          if ! git diff --quiet -- js/tdj.js titulos.html; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add titulos.html
-            git commit -m 'fix: forzar carga del limpiador global TDJ v16.33.140'
+            git add js/tdj.js titulos.html
+            git commit -m 'fix: resumen final endoso TDJ y limpieza global v16.33.141'
             git push
           fi
 
-      - name: Validar limpieza global TDJ
+      - name: Validar regresión v16.33.141
+        run: node tests/regresion-endoso-resumen-141.mjs
+
+      - name: Validar limpieza global v16.33.140
         run: node tests/regresion-limpiar-global-tdj-140.mjs
