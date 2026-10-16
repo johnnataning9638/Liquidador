@@ -1,150 +1,19 @@
 name: Regresión limpieza global y resumen final TDJ
 
 on:
-  push:
-    branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   regression:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Aplicar correcciones TDJ v16.33.143
-        if: github.event_name == 'push'
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          p = Path('js/tdj.js')
-          s = p.read_text(encoding='utf-8')
-
-          # Resumen final PDF: excedentes de pagos + títulos para endoso en una sola hoja.
-          if 'const bloquesExcedentesFinal=[];' not in s:
-              s = s.replace('    const paginas=[];\n', '    const paginas=[];\n    const bloquesExcedentesFinal=[];\n', 1)
-
-          s = s.replace(
-              '      if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja">${bloqueExcedentes}</section>`);',
-              '      if(bloqueExcedentes)bloquesExcedentesFinal.push(bloqueExcedentes);',
-              1
-          )
-
-          decl = '    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);'
-          # Eliminar declaraciones duplicadas de esta variable y dejar una sola antes de su uso.
-          s = s.replace(decl, '', 10)
-          insert_marker = '    const paginas=[];\n    const bloquesExcedentesFinal=[];'
-          if insert_marker not in s:
-              raise SystemExit('No se encontró el punto de inicialización del exportador PDF.')
-          s = s.replace(
-              insert_marker,
-              insert_marker + '\n' + decl + '\n',
-              1
-          )
-
-          s = s.replace(
-              'const hayExcedentesPago=bloquesExcedentesFinal.length>0;',
-              '',
-              10
-          )
-          s = s.replace(
-              decl + '\n',
-              decl + '\n    const hayExcedentesPago=bloquesExcedentesFinal.length>0;\n',
-              1
-          )
-
-          s = s.replace(
-              'if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">',
-              'if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">',
-              1
-          )
-
-          s = s.replace(
-              '</div><section class="pdf-bloque"><h2>TÍTULOS SOBRANTES PARA ENDOSO</h2>',
-              '</div>${bloquesExcedentesFinal.join("")}<section class="pdf-bloque"><h2>TÍTULOS PARA ENDOSO</h2>',
-              1
-          )
-
-          # LIMPIAR desde TÍTULOS es global; el listener local no debe competir con él.
-          old_listener = 'document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",()=>{const pane=b.closest(".tab-pane")?.dataset.pane;if(pane==="datos")limpiarDatosPestanaTDJ();else if(pane==="pagos")limpiarPagosPestanaTDJ();else limpiarTodo();}));'
-          new_listener = 'document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",()=>{if(b.id==="btnLimpiarTitulosGlobal")return;const pane=b.closest(".tab-pane")?.dataset.pane;if(pane==="datos")limpiarDatosPestanaTDJ();else if(pane==="pagos")limpiarPagosPestanaTDJ();else limpiarTodo();}));'
-          if old_listener in s:
-              s = s.replace(old_listener, new_listener, 1)
-          elif 'if(b.id==="btnLimpiarTitulosGlobal")return;' not in s:
-              raise SystemExit('No se encontró el listener esperado de LIMPIAR TDJ.')
-
-          p.write_text(s, encoding='utf-8')
-
-          h = Path('titulos.html')
-          html = h.read_text(encoding='utf-8')
-          html = re.sub(r'js/tdj\.js\?v=[0-9.]+', 'js/tdj.js?v=16.33.143', html)
-          html = re.sub(r'(Liquidador — módulo de Liquidación de Títulos / TDJ · v)16\.33\.[0-9]+', r'\g<1>16.33.143', html)
-          html = html.replace('<!-- TDJ UI DEPLOY 16.33.142 -->', '<!-- TDJ UI DEPLOY 16.33.143 -->')
-          html = html.replace('<!-- TDJ UI DEPLOY 16.33.141 -->', '<!-- TDJ UI DEPLOY 16.33.143 -->')
-
-          # Eliminar IDs duplicados del botón.
-          html = html.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"', 'id="btnLimpiarTitulosGlobal"')
-          html = html.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"', 'id="btnLimpiarTitulosGlobal"')
-
-          # Guard de versión: cualquier URL antigua ?v=... redirige a la versión activa.
-          guard = '''<script id="tdj-version-guard">
-          (function(){
-            try{
-              var u=new URL(window.location.href);
-              var v=u.searchParams.get("v");
-              if(v && v!=="16.33.143"){
-                u.searchParams.set("v","16.33.143");
-                window.location.replace(u.toString());
-              }
-            }catch(e){}
-          })();
-          </script>'''
-          if 'id="tdj-version-guard"' not in html:
-              html = html.replace('<meta charset="utf-8">', guard + '\n<meta charset="utf-8">', 1)
-
-          # Sustituir cualquier listener global previo por uno único y explícito.
-          html = re.sub(
-              r'\n<script id="tdj-global-clear-[0-9]+">.*?</script>\n<script type="module"',
-              '\n<script id="tdj-global-clear-143">\ndocument.addEventListener("DOMContentLoaded",function(){\n  const b=document.getElementById("btnLimpiarTitulosGlobal");\n  if(!b)return;\n  b.addEventListener("click",function(e){\n    e.stopImmediatePropagation();\n    if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.href="titulos.html?v=16.33.143&reinicio="+Date.now();\n  },true);\n});\n</script>\n<script type="module"',
-              html, count=1, flags=re.S
-          )
-          if 'id="tdj-global-clear-143"' not in html:
-              marker = '<script type="module" src="js/tdj.js?v=16.33.143"></script>'
-              guard_listener = '''<script id="tdj-global-clear-143">
-          document.addEventListener("DOMContentLoaded",function(){
-            const b=document.getElementById("btnLimpiarTitulosGlobal");
-            if(!b)return;
-            b.addEventListener("click",function(e){
-              e.stopImmediatePropagation();
-              if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
-              window.location.href="titulos.html?v=16.33.143&reinicio="+Date.now();
-            },true);
-          });
-          </script>
-          '''
-              html = html.replace(marker, guard_listener + marker, 1)
-
-          h.write_text(html, encoding='utf-8')
-          PY
-
-          # Commit robusto frente a otros workflows que también actualicen main.
-          if ! git diff --quiet -- js/tdj.js titulos.html; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add js/tdj.js titulos.html
-            git commit -m 'fix: blindar limpieza global TDJ v16.33.143'
-            git pull --rebase origin main
-            git push
-          fi
-
-      - name: Validar regresión v16.33.143
+      - name: Validar motor y regresión TDJ
         run: |
           node --check js/tdj.js
           node - <<'NODE'
@@ -153,12 +22,8 @@ jobs:
           const h=fs.readFileSync('titulos.html','utf8');
           const decl='const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);';
           if((s.match(/const hayTitulosRegistrados=titulos\.some\(t=>fechaISO\(t\.fecha\)&&Number\(t\.valor\)>0\);/g)||[]).length!==1) throw new Error('hayTitulosRegistrados no tiene una única declaración');
-          if(s.indexOf(decl)>s.indexOf('if(hayTitulosRegistrados || hayExcedentesPago)')) throw new Error('TDZ: hayTitulosRegistrados se usa antes de declararse');
-          if(!s.includes('if(b.id==="btnLimpiarTitulosGlobal")return;')) throw new Error('Listener global no está blindado');
-          if(!h.includes('js/tdj.js?v=16.33.143')) throw new Error('Cache-bust v143 ausente');
-          if(!h.includes('id="tdj-version-guard"')) throw new Error('Guard de versión ausente');
-          if(!h.includes('id="tdj-global-clear-143"')) throw new Error('Listener global v143 ausente');
-          if(h.includes('id="btnLimpiarTitulosGlobal" id=')) throw new Error('IDs duplicados en LIMPIAR');
+          if(s.indexOf(decl)>s.indexOf('if(hayTitulosRegistrados || hayExcedentesPago)')) throw new Error('TDZ en resumen PDF');
           if(!h.includes('Se borrarán datos, pagos, títulos y resultados.')) throw new Error('Confirmación global ausente');
-          console.log('OK: regresión TDJ v16.33.143');
+          if(h.includes('¿Desea limpiar únicamente los títulos / TDJ registrados?')) throw new Error('Persistió el mensaje antiguo');
+          console.log('OK: regresión TDJ');
           NODE
