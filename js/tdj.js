@@ -2122,6 +2122,9 @@ async function exportarPdfTDJ(){
     const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);
     const hayExcedentesPago=bloquesExcedentesFinal.length>0;
 
+
+    
+
     // Debe declararse antes de cualquier uso en el exportador PDF.
     // Evita TDZ: Cannot access 'hayTitulosRegistrados' before initialization.
 
