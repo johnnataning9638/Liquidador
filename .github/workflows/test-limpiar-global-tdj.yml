@@ -1,0 +1,15 @@
+name: Regresión limpieza global TDJ
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar limpieza global desde Títulos/TJ
+        run: node tests/regresion-limpiar-global-tdj-138.mjs
