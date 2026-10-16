@@ -22,20 +22,11 @@ jobs:
           from pathlib import Path
           import re
 
-          # ------------------------------------------------------------
-          # 1) PDF: excedentes de pagos + títulos para endoso en UNA sola
-          #    hoja de resumen final. No se toca el motor de cálculo.
-          # ------------------------------------------------------------
           p = Path('js/tdj.js')
           s = p.read_text(encoding='utf-8')
-          original = s
 
           if 'const bloquesExcedentesFinal=[];' not in s:
-              s = s.replace(
-                  '    const paginas=[];\n',
-                  '    const paginas=[];\n    const bloquesExcedentesFinal=[];\n',
-                  1
-              )
+              s = s.replace('    const paginas=[];\n', '    const paginas=[];\n    const bloquesExcedentesFinal=[];\n', 1)
 
           s = s.replace(
               '      if(bloqueExcedentes)paginas.push(`<section class="pdf-hoja">${bloqueExcedentes}</section>`);',
@@ -52,8 +43,6 @@ jobs:
                   1
               )
 
-          # IMPORTANTE: reemplazo dirigido al bloque final, no al primer
-          # occurrence de hayTitulosAplicados que exista en el archivo.
           final_marker = '    if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">'
           final_replacement = '    if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">'
           if final_marker in s:
@@ -76,12 +65,11 @@ jobs:
           for needle in required:
               if needle not in s:
                   raise SystemExit(f'No quedó aplicada la corrección PDF requerida: {needle}')
+          if 'if(hayTitulosAplicados)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen">' in s:
+              raise SystemExit('El resumen final todavía está condicionado a títulos aplicados.')
 
           p.write_text(s, encoding='utf-8')
 
-          # ------------------------------------------------------------
-          # 2) LIMPIAR desde TÍTULOS: blindaje de interfaz.
-          # ------------------------------------------------------------
           h = Path('titulos.html')
           html = h.read_text(encoding='utf-8')
           html = html.replace('js/tdj.js?v=16.33.123', 'js/tdj.js?v=16.33.141')
@@ -90,10 +78,9 @@ jobs:
           html = html.replace('Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.140', 'Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.141')
 
           pattern = r'(<section class="tab-pane tdj-titulos-pane" data-pane="titulos">.*?<button type="button" class="tdj-clear btn-limpiar-tdj")'
-          html2, n = re.subn(pattern, r'\1 id="btnLimpiarTitulosGlobal"', html, count=1, flags=re.S)
+          html, n = re.subn(pattern, r'\1 id="btnLimpiarTitulosGlobal"', html, count=1, flags=re.S)
           if n != 1:
               raise SystemExit('No se encontró exactamente el botón LIMPIAR de TÍTULOS/TDJ.')
-          html = html2
 
           marker = '<script type="module" src="js/tdj.js?v=16.33.141"></script>'
           if 'id="tdj-global-clear-141"' not in html:
@@ -113,8 +100,6 @@ jobs:
 
           html = html.replace('<!-- TDJ UI DEPLOY 16.33.123 -->', '<!-- TDJ UI DEPLOY 16.33.141 -->')
           h.write_text(html, encoding='utf-8')
-
-          print('Correcciones TDJ v16.33.141 aplicadas.')
           PY
 
           if ! git diff --quiet -- js/tdj.js titulos.html; then
@@ -128,6 +113,3 @@ jobs:
 
       - name: Validar regresión v16.33.141
         run: node tests/regresion-endoso-resumen-141.mjs
-
-      - name: Validar limpieza global v16.33.140
-        run: node tests/regresion-limpiar-global-tdj-140.mjs
