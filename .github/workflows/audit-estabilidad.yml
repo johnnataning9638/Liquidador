@@ -28,6 +28,7 @@ jobs:
           node tests/regresion-idempotencia-tdj-132.mjs
           node tests/regresion-saldo-final-134.mjs
           node tests/regresion-importadores-decimales-145.mjs
+          node tests/regresion-simbolo-peso-importadores-146.mjs
       - name: Verificar integridad del motor de liquidación
         if: github.event_name == 'pull_request'
         run: |
