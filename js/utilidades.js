@@ -34,3 +34,38 @@ export function fechaVisible(v){const iso=fechaISO(v);if(!iso)return "";const [y
 export function diasEntre(a,b){const x=new Date(a+"T00:00:00"),y=new Date(b+"T00:00:00");if(isNaN(x)||isNaN(y))return 0;return Math.max(0,Math.round((y-x)/86400000));}
 export function roundMil(v){return Math.round(Number(v||0)/1000)*1000;}
 export function roundupMil(v){return Math.ceil(Number(v||0)/1000)*1000;}
+
+// v16.33.145 — COMPATIBILIDAD AISLADA DE IMPORTADORES.
+// No modifica el motor ni los valores digitados manualmente. Solo transforma
+// datos pegados en las cajas de importación, descartando la parte decimal
+// antes de que los importadores existentes procesen el texto.
+function truncarDecimalesImportacion(texto){
+  let s=String(texto??"");
+  // Mixto: miles por coma + decimal por punto: 1,234,567.89 -> 1234567
+  s=s.replace(/([+-]?\d{1,3}(?:,\d{3})+)\.(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/,/g,""));
+  // Mixto: miles por punto + decimal por coma: 1.234.567,89 -> 1234567
+  s=s.replace(/([+-]?\d{1,3}(?:\.\d{3})+),(\d{1,2})(?!\d)/g,(_,entero)=>entero.replace(/\./g,""));
+  // Decimal simple con punto: 1234567.89 -> 1234567
+  s=s.replace(/([+-]?\d+)\.(\d{1,2})(?!\d)/g,"$1");
+  // Decimal simple con coma: 1234567,89 -> 1234567
+  s=s.replace(/([+-]?\d+),(\d{1,2})(?!\d)/g,"$1");
+  return s;
+}
+function esCampoImportacionDecimal(el){
+  return !!el && el.tagName==="TEXTAREA" && ["pegarDatos","importarPagosTexto","importarTitulosTexto"].includes(el.id);
+}
+if(typeof document!=="undefined"){
+  document.addEventListener("paste",e=>{
+    const el=e.target;
+    if(!esCampoImportacionDecimal(el))return;
+    const data=e.clipboardData?.getData("text/plain");
+    if(data==null)return;
+    const normalizado=truncarDecimalesImportacion(data);
+    if(normalizado===data)return;
+    e.preventDefault();
+    const inicio=Number(el.selectionStart??el.value.length);
+    const fin=Number(el.selectionEnd??el.value.length);
+    el.setRangeText(normalizado,inicio,fin,"end");
+    el.dispatchEvent(new Event("input",{bubbles:true}));
+  },true);
+}
