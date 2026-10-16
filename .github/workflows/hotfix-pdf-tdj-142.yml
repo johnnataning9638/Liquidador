@@ -1,4 +1,4 @@
-name: Hotfix PDF TDJ v16.33.142
+name: Hotfix PDF TDJ v16.33.143
 
 on:
   push:
@@ -23,49 +23,61 @@ jobs:
           from pathlib import Path
           import re
 
+          # 1) Blindar el botón LIMPIAR global del módulo TDJ.
           p = Path('js/tdj.js')
           s = p.read_text(encoding='utf-8')
-          old_block = '''    const paginas=[];\n    const bloquesExcedentesFinal=[];'''
-          new_block = '''    const paginas=[];\n    const bloquesExcedentesFinal=[];\n    // Debe declararse antes de cualquier uso en el exportador PDF.\n    // Evita TDZ: Cannot access 'hayTitulosRegistrados' before initialization.\n    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);'''
-          if old_block not in s:
-              raise SystemExit('No se encontró el punto de inicialización esperado en js/tdj.js')
-          s = s.replace(old_block, new_block, 1)
-          declaration = '    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);'
-          if s.count(declaration) != 2:
-              raise SystemExit(f'Se esperaba una declaración previa y la antigua, encontradas: {s.count(declaration)}')
-          s = s.replace(declaration + '\n    const hayExcedentesPago=', '    const hayExcedentesPago=', 1)
+          old = 'document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",()=>{const pane=b.closest(".tab-pane")?.dataset.pane;if(pane==="datos")limpiarDatosPestanaTDJ();else if(pane==="pagos")limpiarPagosPestanaTDJ();else limpiarTodo();}));'
+          new = 'document.querySelectorAll(".btn-limpiar-tdj").forEach(b=>b.addEventListener("click",()=>{if(b.id==="btnLimpiarTitulosGlobal")return;const pane=b.closest(".tab-pane")?.dataset.pane;if(pane==="datos")limpiarDatosPestanaTDJ();else if(pane==="pagos")limpiarPagosPestanaTDJ();else limpiarTodo();}));'
+          if old in s:
+              s = s.replace(old, new, 1)
+          else:
+              raise SystemExit('No se encontró el listener esperado de LIMPIAR TDJ.')
           p.write_text(s, encoding='utf-8')
 
+          # 2) Actualizar HTML, eliminar IDs duplicados y forzar cache-bust.
           h = Path('titulos.html')
           hs = h.read_text(encoding='utf-8')
-          hs = re.sub(r'js/tdj\.js\?v=[0-9.]+', 'js/tdj.js?v=16.33.142', hs)
-          hs = re.sub(r'(Liquidación de Títulos / TDJ · v)16\.33\.141', r'\g<1>16.33.142', hs)
-          hs = hs.replace('<!-- TDJ UI DEPLOY 16.33.141 -->', '<!-- TDJ UI DEPLOY 16.33.142 -->')
+          hs = re.sub(r'js/tdj\.js\?v=[0-9.]+', 'js/tdj.js?v=16.33.143', hs)
+          hs = re.sub(r'(?i)(v)16\.33\.14[0-2]', r'\g<1>16.33.143', hs)
+          hs = hs.replace('<!-- TDJ UI DEPLOY 16.33.142 -->', '<!-- TDJ UI DEPLOY 16.33.143 -->')
+          hs = hs.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"', 'id="btnLimpiarTitulosGlobal"')
+          hs = hs.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"', 'id="btnLimpiarTitulosGlobal"')
+
+          # Guard: cualquier URL vieja ?v=... se redirige a la versión activa.
+          guard = '''<script id="tdj-version-guard">
+          (function(){
+            try{
+              var u=new URL(window.location.href);
+              var v=u.searchParams.get("v");
+              if(v && v!=="16.33.143"){
+                u.searchParams.set("v","16.33.143");
+                window.location.replace(u.toString());
+              }
+            }catch(e){}
+          })();
+          </script>'''
+          if 'id="tdj-version-guard"' not in hs:
+              hs = hs.replace('<meta charset="utf-8">', guard + '\n<meta charset="utf-8">', 1)
+
+          # Garantizar que el listener global exista una sola vez.
+          hs = re.sub(r'\n<script id="tdj-global-clear-141">.*?</script>\n<script type="module"', '\n<script id="tdj-global-clear-143">\ndocument.addEventListener("DOMContentLoaded",function(){\n  const b=document.getElementById("btnLimpiarTitulosGlobal");\n  if(!b)return;\n  b.addEventListener("click",function(e){\n    e.stopImmediatePropagation();\n    if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.href="titulos.html?v=16.33.143&reinicio="+Date.now();\n  },true);\n});\n</script>\n<script type="module"', hs, count=1, flags=re.S)
+          if 'id="tdj-global-clear-143"' not in hs:
+              raise SystemExit('No se pudo instalar el listener global TDJ v16.33.143.')
           h.write_text(hs, encoding='utf-8')
 
-      - name: Crear regresión PDF TDJ v16.33.142
+      - name: Crear regresión TDJ v16.33.143
         shell: python
         run: |
           from pathlib import Path
-          import re
-
           s = Path('js/tdj.js').read_text(encoding='utf-8')
-          decl = 'const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);'
-          assert s.count(decl) == 1, 'La variable hayTitulosRegistrados debe declararse exactamente una vez.'
-          i_decl = s.index(decl)
-          i_use = s.index('if(hayTitulosRegistrados || hayExcedentesPago)')
-          assert i_decl < i_use, 'hayTitulosRegistrados debe inicializarse antes de utilizarse.'
-          assert 'const hayExcedentesPago=bloquesExcedentesFinal.length>0;' in s
-
-          html = Path('titulos.html').read_text(encoding='utf-8')
-          assert 'js/tdj.js?v=16.33.142' in html, 'No se actualizó el cache-bust de tdj.js.'
-
-          test = Path('tests/regresion-pdf-tdj-142.mjs')
-          test.parent.mkdir(parents=True, exist_ok=True)
-          test.write_text('''import fs from "node:fs";\nconst s=fs.readFileSync("js/tdj.js","utf8");\nconst decl="const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);";\nif((s.match(new RegExp(decl.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&"),"g"))||[]).length!==1) throw new Error("declaración duplicada/ausente");\nif(s.indexOf(decl)>s.indexOf("if(hayTitulosRegistrados || hayExcedentesPago)")) throw new Error("TDZ: declaración posterior al uso");\nconsole.log("OK: regresión PDF TDJ v16.33.142");\n''', encoding='utf-8')
-
-      - name: Ejecutar regresión
-        run: node tests/regresion-pdf-tdj-142.mjs
+          assert 'if(b.id==="btnLimpiarTitulosGlobal")return;' in s, 'El listener TDJ no excluye el botón global.'
+          h = Path('titulos.html').read_text(encoding='utf-8')
+          assert 'js/tdj.js?v=16.33.143' in h, 'Cache-bust TDJ incorrecto.'
+          assert 'id="tdj-version-guard"' in h, 'Falta guard de versión.'
+          assert 'id="btnLimpiarTitulosGlobal" id=' not in h, 'Persisten IDs duplicados.'
+          assert 'id="tdj-global-clear-143"' in h, 'Falta listener global v143.'
+          assert 'Se borrarán datos, pagos, títulos y resultados.' in h, 'Confirmación global ausente.'
+          print('OK: regresión LIMPIAR global TDJ v16.33.143')
 
       - name: Verificar sintaxis
         run: node --check js/tdj.js
@@ -75,10 +87,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add js/tdj.js titulos.html tests/regresion-pdf-tdj-142.mjs
+          git add js/tdj.js titulos.html .github/workflows/hotfix-pdf-tdj-142.yml
           if git diff --cached --quiet; then
             echo "No hay cambios pendientes."
             exit 0
           fi
-          git commit -m "fix: corregir exportacion PDF TDJ v16.33.142"
+          git commit -m "fix: blindar limpiar global TDJ y cache v16.33.143"
           git push
