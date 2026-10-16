@@ -2119,6 +2119,9 @@ async function exportarPdfTDJ(){
     );
     const paginas=[];
     const bloquesExcedentesFinal=[];
+    // Debe declararse antes de cualquier uso en el exportador PDF.
+    // Evita TDZ: Cannot access 'hayTitulosRegistrados' before initialization.
+    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);
 
     // PROYECCIÓN SIN MOVIMIENTO: una fecha de corte no es un pago ni un TDJ.
     // El motor sí calcula la obligación, pero antes el exportador no generaba
@@ -2171,7 +2174,6 @@ async function exportarPdfTDJ(){
       if(bloqueExcedentes)bloquesExcedentesFinal.push(bloqueExcedentes);
     });
 
-    const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);
     const hayExcedentesPago=bloquesExcedentesFinal.length>0;
     const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
     const endRows=resultado.resumenTitulos.filter(x=>Number(x.excedente||0)>0).map(x=>`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td></tr>`).join("")||`<tr><td colspan="5">NO HAY TÍTULOS SOBRANTES.</td></tr>`;
