@@ -14,10 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validar motor y regresión TDJ
+      - name: Validar motor y regresión TDJ e importadores
         run: |
           node --check js/tdj.js
           node --check js/tdj-core-16.33.143.js
+          node tests/regresion-secuencia-tdj-129.mjs
+          node tests/regresion-prioridad-pagos-tdj-130.mjs
+          node tests/regresion-idempotencia-tdj-132.mjs
+          node tests/regresion-saldo-final-134.mjs
+          node tests/regresion-ui-titulos-136.mjs
+          node tests/regresion-importadores-decimales-145.mjs
+          node tests/regresion-simbolo-peso-importadores-146.mjs
           node - <<'NODE'
           const fs=require('fs');
           const s=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
@@ -28,5 +35,5 @@ jobs:
           if(!h.includes('Se borrarán datos, pagos, títulos y resultados.')) throw new Error('Confirmación global ausente');
           if(h.includes('¿Desea limpiar únicamente los títulos / TDJ registrados?')) throw new Error('Persistió el mensaje antiguo');
           if(!h.includes('tdj-version-guard')) throw new Error('Guardia de versión TDJ ausente');
-          console.log('OK: regresión TDJ');
+          console.log('OK: regresión TDJ e importadores');
           NODE
