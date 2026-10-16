@@ -1,8 +1,10 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.130
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.133
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Regla: los pagos reales tienen prioridad económica sobre los TDJ, incluso
 // cuando el pago real ocurre después del título. El TDJ solo cubre el saldo
 // que permanezca después de considerar los pagos reales y los TDJ anteriores.
+// La proporcionalidad del TDJ se conserva; esta capa solo controla la secuencia
+// para impedir que títulos posteriores regresen a una obligación ya cerrada.
 
 function esTDJ(p){
   return Boolean(String(p?.tdj||"").trim()) || p?.esTDJ===true;
@@ -103,20 +105,10 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
     const valorOriginal=Math.max(0,Math.trunc(Number(t.valor||0)));
     let hi=valorOriginal;
 
-    // CORRECCIÓN 16.33.130:
-    // Primero se calcula cuánto saldo queda cuando los pagos reales de la
-    // obligación tienen prioridad y el TDJ actual todavía no se consume.
-    // Ese saldo es el máximo que este TDJ puede aportar. De esta forma un
-    // pago real posterior jamás termina convertido en excedente por haber
-    // consumido previamente el TDJ completo.
-    try{
-      const sinActual=ajustados.filter(p=>String(p?.id||"")!==String(t?.id||""));
-      const pagosPrioridad=ordenarMovimientosCronologicos(sinActual.map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)})));
-      const cortePrioridad=pagosPrioridad.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||t.fecha;
-      const estadoConPagosPrioritarios=motor.calcular({...datos,pagos:pagosPrioridad,fechaCorte:cortePrioridad});
-      const saldoDespuesPagosReales=Math.max(0,Math.trunc(Number(estadoConPagosPrioritarios?.total||0)));
-      hi=Math.min(hi,saldoDespuesPagosReales);
-    }catch{}
+    // IMPORTANTE: no limitar hi por el saldo calculado excluyendo el TDJ.
+    // Esa restricción fue introducida en v16.33.130 y alteraba la capacidad
+    // de aplicación/proporcionalidad del TDJ. La proporcionalidad existente
+    // queda intacta; aquí solo se determina cuánto necesita la secuencia.
 
     let lo=0,mejor=0;
     const esFactible=v=>{
