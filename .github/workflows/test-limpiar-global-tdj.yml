@@ -29,23 +29,20 @@ jobs:
 
           # Ruta física nueva: evita depender de ?v= para invalidar la caché del CDN.
           loader=Path('js/tdj-16.33.144.js')
-          loader.write_text('''// TDJ v16.33.144 — barrera física contra módulos cacheados.\n(function(){\n  document.addEventListener("click",function(e){\n    var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;\n    if(!b)return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.replace("titulos.html?v=16.33.144&reinicio="+Date.now());\n  },true);\n})();\n\n// Mantener intacto el motor existente; solo se antepone la barrera de limpieza.\nimport("./tdj.js?v=16.33.144");\n''',encoding='utf-8')
+          loader.write_text('''// TDJ v16.33.144 — barrera física contra módulos cacheados.\n(function(){\n  document.addEventListener("click",function(e){\n    var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;\n    if(!b)return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.replace("titulos.html?v=16.33.144&reinicio="+Date.now());\n  },true);\n})();\n\nimport("./tdj.js?v=16.33.144");\n''',encoding='utf-8')
 
-          html=re.sub(r'js/tdj\\.js\\?v=[0-9.]+','js/tdj-16.33.144.js',html)
+          html=re.sub(r'js/tdj\.js\?v=[0-9.]+','js/tdj-16.33.144.js',html)
           html=html.replace('TDJ UI DEPLOY 16.33.143','TDJ UI DEPLOY 16.33.144')
-          html=re.sub(r'(Liquidador — módulo de Liquidación de Títulos / TDJ · v)16\\.33\\.[0-9]+',r'\\g<1>16.33.144',html)
+          html=re.sub(r'(Liquidador — módulo de Liquidación de Títulos / TDJ · v)16\.33\.[0-9]+',r'\g<1>16.33.144',html)
           html=html.replace('v!=="16.33.143"','v!=="16.33.144"')
           html=html.replace('u.searchParams.set("v","16.33.143")','u.searchParams.set("v","16.33.144")')
           html=html.replace('tdj-global-clear-143','tdj-global-clear-144')
           html=html.replace('titulos.html?v=16.33.143&reinicio=','titulos.html?v=16.33.144&reinicio=')
-
-          # Asegurar que el botón de Títulos tenga un único identificador global.
           html=html.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"','id="btnLimpiarTitulosGlobal"')
           html=html.replace('id="btnLimpiarTitulosGlobal" id="btnLimpiarTitulosGlobal"','id="btnLimpiarTitulosGlobal"')
 
-          # Si existe el guard anterior, reemplazarlo por una barrera independiente del motor.
           hard='''<script id="tdj-global-clear-144-hard">\n(function(){\n  document.addEventListener("click",function(e){\n    var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;\n    if(!b)return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;\n    window.location.replace("titulos.html?v=16.33.144&reinicio="+Date.now());\n  },true);\n})();\n</script>\n'''
-          html=re.sub(r'\\n<script id="tdj-global-clear-[0-9]+(?:-hard)?">.*?</script>\\n','\\n',html,flags=re.S)
+          html=re.sub(r'\n<script id="tdj-global-clear-[0-9]+(?:-hard)?">.*?</script>\n','\n',html,flags=re.S)
           html=html.replace('</head>',hard+'</head>',1)
           html_path.write_text(html,encoding='utf-8')
 
