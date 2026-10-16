@@ -1,0 +1,38 @@
+name: Patch TDJ v16.33.136
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refine duplicate TDJ recovery and version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          msg=subprocess.check_output(['git','log','-1','--pretty=%s'],text=True)
+          if 'tdj-ui-excel-136' in msg: raise SystemExit(0)
+          p=Path('js/tdj.js'); s=p.read_text(encoding='utf-8')
+          old='if(!numeroTituloImportacion(t)||!fechaTituloImportacion(f)||!(valorTituloImportacion(v)>0)){'
+          new='if(!numeroTituloImportacion(t)||!fechaTituloImportacion(f)||!(valorTituloImportacion(v)>0)||out.some(x=>x.tdj===numeroTituloImportacion(t)&&`${x.fecha}`!==`${fechaTituloImportacion(f)}`)){'
+          if old not in s: raise SystemExit('condicion de recuperacion no encontrada')
+          s=s.replace(old,new,1)
+          s=s.replace('16.33.135','16.33.136')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validate
+        run: |
+          node --check js/tdj.js
+          grep -q '16.33.136' js/tdj.js
+          grep -q 'out.some(x=>x.tdj===numeroTituloImportacion(t)' js/tdj.js
+          git diff --check
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add js/tdj.js
+          git diff --cached --quiet || (git commit -m 'fix: reforzar duplicados TDJ Excel v16.33.136 tdj-ui-excel-136' && git push)
