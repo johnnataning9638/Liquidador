@@ -6,10 +6,37 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 jobs:
   regression:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validar limpieza global desde Títulos/TJ
-        run: node tests/regresion-limpiar-global-tdj-138.mjs
+
+      - name: Actualizar cache bust del módulo TDJ
+        if: github.event_name == 'push'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('titulos.html')
+          s = p.read_text(encoding='utf-8')
+          s2 = s.replace('js/tdj.js?v=16.33.123', 'js/tdj.js?v=16.33.140')
+          s2 = s2.replace('Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.123', 'Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.140')
+          if s2 != s:
+              p.write_text(s2, encoding='utf-8')
+              print('Referencia TDJ actualizada a v16.33.140.')
+          else:
+              print('La referencia TDJ ya está actualizada; no se crea un nuevo commit.')
+          PY
+          if ! git diff --quiet -- titulos.html; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add titulos.html
+            git commit -m 'fix: forzar carga del limpiador global TDJ v16.33.140'
+            git push
+          fi
+
+      - name: Validar limpieza global TDJ
+        run: node tests/regresion-limpiar-global-tdj-140.mjs
