@@ -5,7 +5,7 @@ import { extraerRegistrosTDJTexto } from "../js/tdj-importador.js";
 
 const util=fs.readFileSync("js/utilidades.js","utf8");
 assert.match(util,/v16\.33\.146/);
-assert.match(util,/\(\?:\\\$\\\\s\*\)\?/);
+assert.ok(util.includes("(?:\\$\\s*)?"),"La normalización debe reconocer $ con o sin espacio");
 
 const casos=[
   ["$1234567.89",1234567],
