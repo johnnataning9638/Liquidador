@@ -1,4 +1,4 @@
-// CAPA DE IDEMPOTENCIA TDJ — v16.33.134
+// CAPA DE IDEMPOTENCIA TDJ — v16.33.137
 //
 // La lógica de prioridad económica permanece en prioridad-tdj.js v16.33.133.
 // Esta capa reinicia exclusivamente el estado de secuencia al iniciar una
@@ -10,7 +10,11 @@
 // únicamente IMPUESTO + SANCIÓN pendientes, igual que el criterio ya aplicado
 // en TDJ. Esta corrección actúa solo sobre presentación; no modifica el motor,
 // proporcionalidad, intereses, sanciones, endoso ni saldos internos.
-import {dinero} from "./utilidades.js?v=16.33.134";
+//
+// CORRECCIÓN INDEPENDIENTE TDJ v16.33.137:
+// LIMPIAR en la pestaña TÍTULOS elimina exclusivamente todos los títulos/filas.
+// No ejecuta la limpieza global de la liquidación.
+import {dinero} from "./utilidades.js?v=16.33.137";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
@@ -56,9 +60,6 @@ function instalarPresentacionSaldoFinalRian(){
       targets.forEach(el=>observer.observe(el,{childList:true,characterData:true,subtree:true}));
     }
 
-    // El soporte PDF del Liquidador normal construye el resumen en una ventana
-    // nueva. Se ajusta exclusivamente la celda "SALDO TOTAL FINAL" antes de
-    // escribir el HTML, sin tocar las demás cifras del soporte.
     const openOriginal=window.open;
     if(typeof openOriginal!=="function")return;
     window.open=function(...args){
@@ -85,7 +86,51 @@ function instalarPresentacionSaldoFinalRian(){
   else iniciar();
 }
 
+function instalarLimpiezaExclusivaTitulosTDJ(){
+  if(typeof document==="undefined"||typeof window==="undefined")return;
+  if(window.__tdjLimpiarTitulos137)return;
+  window.__tdjLimpiarTitulos137=true;
+
+  // CAPTURE=true es intencional: el listener de tdj.js también está asociado
+  // al botón LIMPIAR y, sin esta barrera, ejecutaría limpiarTodo(). Aquí
+  // interceptamos únicamente el botón ubicado dentro de la pestaña TÍTULOS.
+  document.addEventListener("click",e=>{
+    const boton=e.target?.closest?.(".btn-limpiar-tdj");
+    if(!boton)return;
+    const pane=boton.closest(".tab-pane");
+    if(pane?.dataset?.pane!=="titulos")return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if(!window.confirm("¿Desea limpiar únicamente los títulos / TDJ registrados?"))return;
+
+    // Cada botón ELIMINAR existente actualiza el estado canónico `titulos`
+    // dentro de tdj.js. Al hacer clic uno por uno evitamos depender de
+    // variables internas no exportadas y mantenemos toda la lógica existente.
+    let guard=0;
+    while(guard++<10000){
+      const del=document.querySelector("#tablaTitulos tbody [data-del]");
+      if(!del)break;
+      del.click();
+    }
+
+    const importar=document.getElementById("importarTitulosTexto");
+    if(importar)importar.value="";
+    const resultadoImportacion=document.getElementById("resultadoImportacionTitulos");
+    if(resultadoImportacion)resultadoImportacion.textContent="";
+    const resultado=document.getElementById("resultadoTDJ");
+    if(resultado)resultado.hidden=true;
+
+    // Limpieza física final: no debe quedar ni una fila visible en TÍTULOS.
+    const tbody=document.querySelector("#tablaTitulos tbody");
+    if(tbody)tbody.innerHTML="";
+  },true);
+}
+
 instalarPresentacionSaldoFinalRian();
+instalarLimpiezaExclusivaTitulosTDJ();
 
 export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   if(!opciones?.soloTDJId) reiniciarSecuenciaTDJ();
