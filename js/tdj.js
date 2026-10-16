@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.123";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.123";
-import {importarDatosInteligente} from "./importador.js?v=16.33.123";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.123";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.123";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.123";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.123";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.123";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.123";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.132";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.123";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.135";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.135";
+import {importarDatosInteligente} from "./importador.js?v=16.33.135";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.135";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.135";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.135";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.135";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.135";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.135";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.135";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.135";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -707,7 +707,6 @@ function renderTitulos(){
     tr.querySelector('[data-del]').addEventListener('click',()=>{
       invalidarResultadoTDJ();
       titulos=titulos.filter(x=>x.id!==t.id);
-      if(!titulos.length)titulos=[nuevoTitulo(1)];
       renderTitulos();
     });
     tbody.appendChild(tr);
@@ -2264,7 +2263,7 @@ function renderPanelesTasasIPC(){
   const si=$("estadoIPCConexionTDJ"); if(si) si.textContent=`Disponible · ${ipc.length} registros`;
 }
 
-function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.123-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
+function exportarJSON(){if(!resultado)return alert("Primero realice la aplicación.");const data={version:"16.33.135-TDJ",nit:$("nitGlobal").value,razonSocial:upper($("razonGlobal").value),obligaciones,titulos,resultado};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});descargar(blob,`liquidacion_tdj_${$("nitGlobal").value||"expediente"}.json`);}
 function descargar(blob,nombre){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 
@@ -2338,6 +2337,10 @@ function leerVencimientosExcel(rows,headerIdx){
   return out;
 }
 
+function extraerTitulosTDJRobustoExcel(rows){
+  const out=[];const seen=new Set();
+  const add=(t,f,v,o="")=>{t=numeroTituloImportacion(t);f=fechaTituloImportacion(f);v=valorTituloImportacion(v);if(!t||!f||!(v>0))return;const k=`${t}|${f}|${v}`;if(seen.has(k))return;seen.add(k);out.push({tdj:t,fecha:f,valor:v,observacion:upper(o||"")});};
+  for(let h=0;h<rows.length;h++){const n=(rows[h]||[]).map(normImportacionTDJ);if(!n.includes("TDJ")||!n.includes("FECHA")||!n.some(x=>x.includes("VALOR")))continue;const it=n.findIndex(x=>x==="TDJ"||x.includes("TDJ N")||x==="TITULO"),ifx=n.findIndex(x=>x==="FECHA"||x.includes("FECHA TDJ")||x.includes("FECHA TITULO")),iv=n.findIndex(x=>x==="VALOR"||x.includes("VALOR TDJ")||x.includes("VALOR TITULO")||x==="VALOR ORIGINAL");if(it<0||ifx<0||iv<0)continue;for(let i=h+1;i<rows.length;i++){const r=rows[i]||[];const txt=r.filter(x=>String(x??"").trim()).join(" | ");if(!txt||/^(RECUPERACION COMPLETA|FIN RECUPERACION|OBSERVACION|TOTAL ENDOSO|RESUMEN FINAL)/.test(normImportacionTDJ(txt)))break;let t=r[it],f=r[ifx],v=r[iv];if(!numeroTituloImportacion(t)||!fechaTituloImportacion(f)||!(valorTituloImportacion(v)>0)){const fi=r.findIndex(x=>fechaTituloImportacion(x));if(fi>=0){const c=r.map((x,j)=>({j,x,n:valorTituloImportacion(x)})).filter(x=>x.j!==fi&&x.n>0);const vc=c.find(x=>/[.$]/.test(String(x.x)))||c.at(-1),tc=c.filter(x=>x!==vc).find(x=>String(x.x).replace(/\D/g,"").length>=10)||c.find(x=>x!==vc);if(tc&&vc){t=tc.x;f=r[fi];v=vc.x;}}}add(t,f,v); } if(out.length)return out;} return out;}
 function leerTitulosTDJRegistradosExcel(rows){
   const encontrados=[];
   const vistos=new Set();
@@ -2675,10 +2678,12 @@ async function importarExcelTDJ(){
       // ENDOSOS O RECUPERACIÓN COMPLETA GENEREN UNA FILA PARCIAL PARA EL
       // PRIMER TÍTULO. TODOS LOS TÍTULOS SE LEEN POR TDJ + FECHA + VALOR.
       const titulosCanonicos=leerTitulosTDJRegistradosExcel(rows);
-      if(titulosCanonicos.length){
+      const titulosRobustos=extraerTitulosTDJRobustoExcel(rows);
+      const titulosFuente=titulosRobustos.length>titulosCanonicos.length?titulosRobustos:titulosCanonicos;
+      if(titulosFuente.length){
         nuevosTitulos.length=0;
         const vistosCanonicos=new Set();
-        titulosCanonicos.forEach((t,i)=>{
+        titulosFuente.forEach((t,i)=>{
           const key=`${t.tdj}|${t.fecha}|${t.valor}`;
           if(vistosCanonicos.has(key))return;
           vistosCanonicos.add(key);
@@ -2700,7 +2705,7 @@ async function importarExcelTDJ(){
       // El tipo de liquidación de TDJ siempre se maneja como PRIVADA.
       nuevas.forEach(o=>{o.tipoLiquidacion="PRIVADA";o.fechaAutoAdmisorio="";o.fechaProvidenciaDefinitiva="";});
       obligaciones=nuevas.length?nuevas:[nuevaObligacion(1)];
-      titulos=nuevosTitulos.length?nuevosTitulos:[nuevoTitulo(1)];
+      titulos=nuevosTitulos.length?nuevosTitulos:[];
       resultado=null;
       $("resultadoTDJ").hidden=true;
       renderObligaciones();renderTitulos();actualizarSelectoresImportacion();
@@ -2738,7 +2743,7 @@ function limpiarPagosPestanaTDJ(){
 function limpiarTodo(){
   if(!confirm("¿Desea iniciar una nueva liquidación de títulos?"))return;
   $("nitGlobal").value="";$("razonGlobal").value="";
-  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];resultado=null;resultadoDesactualizado=false;
+  obligaciones=[nuevaObligacion(1)];titulos=[];resultado=null;resultadoDesactualizado=false;
   $("resultadoTDJ").hidden=true;
   renderObligaciones();renderPagos();renderTitulos();actualizarSelectoresImportacion();
 
@@ -2753,8 +2758,8 @@ function limpiarTodo(){
   ["resTotalTitulos","resAplicado","resSaldo","resEndoso"].forEach(id=>{const el=$(id);if(el)el.textContent="$ 0";});
   ["tablaResultadoObligaciones","tablaAplicacion","tablaEndoso"].forEach(id=>{const tb=$(id)?.querySelector("tbody");if(tb)tb.innerHTML="";});
 
-  // Estado canónico final: una única fila nueva completamente vacía.
-  titulos=[nuevoTitulo(1)];
+  // Estado canónico final: títulos sin filas hasta que el usuario agregue o importe.
+  titulos=[];
   renderTitulos();
   document.querySelectorAll("#tablaTitulos input").forEach(limpiarCampo);
   document.querySelectorAll("#tablaTitulos .fecha-native").forEach(limpiarCampo);
@@ -2960,7 +2965,7 @@ function iniciarTabs(){
 }
 
 function init(){
-  obligaciones=[nuevaObligacion(1)];titulos=[nuevoTitulo(1)];renderObligaciones();renderPagos();renderTitulos();
+  obligaciones=[nuevaObligacion(1)];titulos=[];renderObligaciones();renderPagos();renderTitulos();
   const razonGlobal=$("razonGlobal");
   if(razonGlobal){
     // NO USAR upper() DURANTE INPUT: trim() ELIMINARÍA EL ESPACIO FINAL
