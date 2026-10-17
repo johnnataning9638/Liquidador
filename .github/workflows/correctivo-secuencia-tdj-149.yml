@@ -1,0 +1,87 @@
+name: Correctivo secuencia TDJ v16.33.149
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  correctivo:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Actualizar referencias de versión y romper caché
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          replacements = {
+              'js/app.js': [
+                  ('./prioridad-tdj-v132.js?v=16.33.132', './prioridad-tdj-v132.js?v=16.33.149'),
+              ],
+              'js/tdj-core-16.33.143.js': [
+                  ('?v=16.33.136', '?v=16.33.149'),
+              ],
+              'js/tdj.js': [
+                  ('./tdj-core-16.33.143.js?v=16.33.148', './tdj-core-16.33.143.js?v=16.33.149'),
+              ],
+              'liquidacion.html': [
+                  ('js/app.js?v=16.33.132', 'js/app.js?v=16.33.149'),
+                  ('Liquidador — versión 16.33.132', 'Liquidador — versión 16.33.149'),
+              ],
+              'titulos.html': [
+                  ('16.33.143', '16.33.149'),
+              ],
+          }
+          for name, pairs in replacements.items():
+              p = Path(name)
+              text = p.read_text(encoding='utf-8')
+              original = text
+              for old, new in pairs:
+                  text = text.replace(old, new)
+              if text != original:
+                  p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verificar imports críticos
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'prioridad-tdj-v132.js?v=16.33.149' js/app.js
+          grep -F 'prioridad-tdj-v132.js?v=16.33.149' js/tdj-core-16.33.143.js
+          grep -F 'tdj-core-16.33.143.js?v=16.33.149' js/tdj.js
+          grep -F 'js/app.js?v=16.33.149' liquidacion.html
+          grep -F 'js/tdj.js?v=16.33.149' titulos.html
+
+      - name: Auditoría funcional de sintaxis y regresiones
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check js/prioridad-tdj.js
+          node --check js/prioridad-tdj-v132.js
+          node --check js/tdj.js
+          node --check js/app.js
+          if [ -f tests/regresion-secuencia-tdj-129.mjs ]; then node tests/regresion-secuencia-tdj-129.mjs; fi
+          if [ -f tests/regresion-secuencia-tdj-149.mjs ]; then node tests/regresion-secuencia-tdj-149.mjs; fi
+
+      - name: Commit correctivo
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js liquidacion.html titulos.html
+          if git diff --cached --quiet; then
+            echo 'SIN_CAMBIOS_CORRECTIVOS'
+            exit 0
+          fi
+          git commit -m 'fix: activar secuencia TDJ v16.33.149 y romper cache'
+          git push origin main
