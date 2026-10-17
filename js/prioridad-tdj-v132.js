@@ -1,13 +1,12 @@
-// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.148
+// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.150
 //
 // La lógica económica permanece en prioridad-tdj.js v16.33.148.
-// Esta capa reinicia exclusivamente el estado de secuencia al iniciar una
-// liquidación completa y conserva las correcciones de presentación existentes.
+// Esta capa controla únicamente la secuencia entre títulos y conserva las
+// correcciones de presentación existentes.
 //
-// CORRECCIÓN TDJ v16.33.148:
-// Un título que encuentra una obligación ya cerrada se anula SOLO para esa
-// obligación, permitiendo que la capa superior conserve el valor disponible
-// y continúe inmediatamente con la siguiente obligación.
+// REGLA FUNCIONAL v16.33.150:
+// PRIMERO SE AGOTA LA NECESIDAD DE LA OBLIGACIÓN ACTUAL; SOLO CUANDO ESTA
+// QUEDA CUBIERTA, EL TÍTULO PUEDE CONTINUAR CON LA SIGUIENTE OBLIGACIÓN.
 import {dinero} from "./utilidades.js?v=16.33.148";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
@@ -108,11 +107,50 @@ function instalarLimpiezaExclusivaTitulosTDJ(){
   },true);
 }
 
+function tituloActual(datos,idActual){
+  return (datos?.pagos||[]).find(p=>String(p?.id||"")===String(idActual||""))||null;
+}
+
+function obligacionYaCubiertaAntesDelTitulo(motor,datos,idActual){
+  if(!motor||typeof motor.calcular!=="function")return false;
+  const actual=tituloActual(datos,idActual);
+  if(!actual||!String(actual.fecha||""))return false;
+  const fechaActual=String(actual.fecha).slice(0,10);
+  const previos=(datos?.pagos||[]).filter(p=>String(p?.id||"")!==String(idActual||""))
+    .filter(p=>p?.fecha&&String(p.fecha).slice(0,10)<=fechaActual)
+    .filter(p=>Number(p?.valor||0)>0);
+  if(!previos.length)return false;
+  try{
+    // Se calcula exclusivamente con los movimientos anteriores al título
+    // actual. Así, un segundo TDJ de la misma fecha no puede volver a consumir
+    // la obligación que el primer TDJ ya agotó.
+    const r=motor.calcular({...datos,pagos:previos});
+    return Number(r?.total||0)<=0.5;
+  }catch(e){
+    console.warn("Secuencia TDJ v16.33.150:",e);
+    return false;
+  }
+}
+
 instalarPresentacionSaldoFinalRian();
 instalarLimpiezaExclusivaTitulosTDJ();
 
 export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   if(!opciones?.soloTDJId) reiniciarSecuenciaTDJ();
+
+  const idActual=opciones?.soloTDJId||"";
+  if(idActual && obligacionYaCubiertaAntesDelTitulo(motor,datos,idActual)){
+    // IMPORTANTE: se anula únicamente la representación del título dentro de
+    // esta obligación. La capa superior conserva el 'disponible' original y
+    // puede aplicarlo inmediatamente a la siguiente obligación.
+    const pagos=(datos?.pagos||[]).map(p=>
+      String(p?.id||"")===String(idActual)
+        ? {...p,valor:0}
+        : {...p}
+    );
+    return {...datos,pagos};
+  }
+
   return ajustarBase(motor,datos,opciones);
 }
 
