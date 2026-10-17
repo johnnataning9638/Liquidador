@@ -1,4 +1,4 @@
-name: Auditoría secuencia TDJ v16.33.153
+name: Auditoría secuencia TDJ v16.33.157
 
 on:
   push:
@@ -24,17 +24,22 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           checks = {
-              'regla': ('REGLA FUNDAMENTAL v16.33.153', 'js/tdj-core-16.33.143.js'),
-              'corte': ('if(saldoObligacionActual>0.5)break;', 'js/tdj-core-16.33.143.js'),
-              'core-import': ('prioridad-tdj-v132.js?v=16.33.153', 'js/tdj-core-16.33.143.js'),
-              'tdj-import': ('tdj-core-16.33.143.js?v=16.33.153', 'js/tdj.js'),
-              'html-import': ('js/tdj.js?v=16.33.153', 'titulos.html'),
+              'regla': ('v16.33.157: el remanente del título', 'js/tdj-core-16.33.143.js'),
+              'sin-barrera': ('saldoObligacionActual>0.5)break;', 'js/tdj-core-16.33.143.js'),
+              'core-import': ('prioridad-tdj-v132.js?v=16.33.157', 'js/tdj-core-16.33.143.js'),
+              'tdj-import': ('tdj-core-16.33.143.js?v=16.33.157', 'js/tdj.js'),
+              'html-import': ('js/tdj.js?v=16.33.157', 'titulos.html'),
           }
+          text_core=Path('js/tdj-core-16.33.143.js').read_text(encoding='utf-8')
+          if 'saldoObligacionActual>0.5)break;' in text_core:
+              raise SystemExit('FALLO sin-barrera: persiste bloqueo de secuencia TDJ')
           for label,(needle,name) in checks.items():
               text=Path(name).read_text(encoding='utf-8')
+              if label == 'sin-barrera':
+                  continue
               if needle not in text:
                   raise SystemExit(f'FALLO {label}: {needle}')
-          print('AUDITORIA CADENA TDJ 16.33.153: OK')
+          print('AUDITORIA CADENA TDJ 16.33.157: OK')
           PY
 
       - name: Sintaxis y regresiones TDJ
@@ -45,6 +50,6 @@ jobs:
           node --check js/tdj.js
           node --check js/prioridad-tdj.js
           node --check js/prioridad-tdj-v132.js
-          node tests/regresion-secuencia-tdj-153.mjs
+          node tests/regresion-secuencia-tdj-157.mjs
           node tests/regresion-secuencia-tdj-152.mjs
           node tests/regresion-secuencia-tdj-151.mjs
