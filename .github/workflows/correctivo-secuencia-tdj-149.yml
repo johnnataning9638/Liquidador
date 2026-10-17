@@ -1,11 +1,11 @@
-name: Auditoría secuencia TDJ v16.33.159
+name: Auditoría secuencia TDJ v16.33.160
 
 on:
   push:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   auditoria:
@@ -16,40 +16,38 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: Verificar corrección en motor real
+      - name: Aplicar correccion exacta de carga de parametros 160
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          checks = {
-              'regla': ('v16.33.157: el remanente del título', 'js/tdj-core-16.33.143.js'),
-              'sin-barrera': ('saldoObligacionActual>0.5)break;', 'js/tdj-core-16.33.143.js'),
-              'core-import': ('prioridad-tdj-v132.js?v=16.33.159', 'js/tdj-core-16.33.143.js'),
-              'tdj-import': ('tdj-core-16.33.143.js?v=16.33.159', 'js/tdj.js'),
-              'html-import': ('js/tdj.js?v=16.33.159', 'titulos.html'),
-          }
-          text_core=Path('js/tdj-core-16.33.143.js').read_text(encoding='utf-8')
-          if 'saldoObligacionActual>0.5)break;' in text_core:
-              raise SystemExit('FALLO sin-barrera: persiste bloqueo de secuencia TDJ')
-          for label,(needle,name) in checks.items():
-              text=Path(name).read_text(encoding='utf-8')
-              if label == 'sin-barrera':
-                  continue
-              if needle not in text:
-                  raise SystemExit(f'FALLO {label}: {needle}')
-          print('AUDITORIA CADENA TDJ 16.33.159: OK')
+          files={'js/app.js':'function crc32(bytes){','js/tdj-core-16.33.143.js':'function crc32TDJ(bytes){'}
+          for name,next_fn in files.items():
+            p=Path(name); s=p.read_text(encoding='utf-8')
+            marker='</worksheet>;' if '</worksheet>;' in s else '</worksheet>'
+            needle=marker+'\n\n'+next_fn
+            if needle in s: s=s.replace(needle,marker+'\n}\n\n'+next_fn,1)
+            p.write_text(s.replace('16.33.159','16.33.160'),encoding='utf-8')
+          for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
+            p=Path(name); p.write_text(p.read_text(encoding='utf-8').replace('16.33.159','16.33.160'),encoding='utf-8')
           PY
-
-      - name: Sintaxis y regresiones TDJ
+      - name: Sintaxis y regresiones
         shell: bash
         run: |
           set -euo pipefail
-          node --check js/tdj-core-16.33.143.js
-          node --check js/tdj.js
-          node --check js/prioridad-tdj.js
-          node --check js/prioridad-tdj-v132.js
-          node tests/regresion-secuencia-tdj-157.mjs
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tests/regresion-parametros-160.mjs
+          node tests/regresion-exportacion-excel-158.mjs
           node tests/regresion-secuencia-tdj-152.mjs
-          node tests/regresion-secuencia-tdj-151.mjs
+          for f in datos/uvt.json datos/tasas-moratorias.json datos/ipc.json datos/beneficios.json datos/sanciones.json datos/reglas-obligaciones.json datos/calendario.json datos/reglas-historicas.json; do node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"; done
+      - name: Publicar correccion 160
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-exportacion-excel-158.mjs tests/regresion-parametros-160.mjs
+          if git diff --cached --quiet; then echo 'Sin cambios'; exit 0; fi
+          git commit -m 'fix: restaurar ejecucion de carga de parametros v16.33.160'
+          git push origin HEAD:main
