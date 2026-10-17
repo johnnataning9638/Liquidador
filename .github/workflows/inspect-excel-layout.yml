@@ -1,0 +1,25 @@
+name: Inspect Excel layout
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect XLSX builders
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          for p, fn, end in [
+              ('js/app.js','xlsxSheet','function crc32('),
+              ('js/tdj-core-16.33.143.js','xlsxSheetTDJ','function crc32TDJ('),
+          ]:
+              s=Path(p).read_text()
+              a=s.find('function '+fn)
+              b=s.find(end,a)
+              print(f'===== {p} :: {fn} =====')
+              print(s[a:b])
+          PY
