@@ -1,4 +1,4 @@
-name: Correctivo secuencia TDJ v16.33.151
+name: Correctivo secuencia TDJ v16.33.152
 
 on:
   push:
@@ -25,19 +25,24 @@ jobs:
           from pathlib import Path
           replacements = {
               'js/tdj-core-16.33.143.js': [
-                  ('?v=16.33.149', '?v=16.33.151'),
+                  ('?v=16.33.151', '?v=16.33.152'),
+                  ('?v=16.33.149', '?v=16.33.152'),
               ],
               'js/tdj.js': [
-                  ('16.33.148', '16.33.151'),
-                  ('16.33.149', '16.33.151'),
+                  ('16.33.151', '16.33.152'),
+                  ('16.33.150', '16.33.152'),
+                  ('16.33.149', '16.33.152'),
+                  ('16.33.148', '16.33.152'),
               ],
               'js/prioridad-tdj-v132.js': [
-                  ('16.33.150', '16.33.151'),
-                  ('16.33.148', '16.33.151'),
+                  ('16.33.151', '16.33.152'),
+                  ('16.33.150', '16.33.152'),
+                  ('16.33.148', '16.33.152'),
               ],
               'titulos.html': [
-                  ('16.33.149', '16.33.151'),
-                  ('16.33.150', '16.33.151'),
+                  ('16.33.151', '16.33.152'),
+                  ('16.33.150', '16.33.152'),
+                  ('16.33.149', '16.33.152'),
               ],
           }
           for name, pairs in replacements.items():
@@ -54,10 +59,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'prioridad-tdj-v132.js?v=16.33.151' js/tdj-core-16.33.143.js
-          grep -F 'tdj-core-16.33.143.js?v=16.33.151' js/tdj.js
-          grep -F 'js/tdj.js?v=16.33.151' titulos.html
-          grep -F '16.33.151' js/prioridad-tdj-v132.js
+          grep -F 'prioridad-tdj-v132.js?v=16.33.152' js/tdj-core-16.33.143.js
+          grep -F 'tdj-core-16.33.143.js?v=16.33.152' js/tdj.js
+          grep -F 'js/tdj.js?v=16.33.152' titulos.html
+          grep -F '16.33.152' js/prioridad-tdj-v132.js
 
       - name: Auditoría funcional de sintaxis y regresiones
         shell: bash
@@ -69,6 +74,7 @@ jobs:
           if [ -f tests/regresion-secuencia-tdj-129.mjs ]; then node tests/regresion-secuencia-tdj-129.mjs; fi
           if [ -f tests/regresion-secuencia-tdj-149.mjs ]; then node tests/regresion-secuencia-tdj-149.mjs; fi
           if [ -f tests/regresion-secuencia-tdj-151.mjs ]; then node tests/regresion-secuencia-tdj-151.mjs; fi
+          if [ -f tests/regresion-secuencia-tdj-152.mjs ]; then node tests/regresion-secuencia-tdj-152.mjs; fi
 
       - name: Commit correctivo
         shell: bash
@@ -81,5 +87,5 @@ jobs:
             echo 'SIN_CAMBIOS_CORRECTIVOS'
             exit 0
           fi
-          git commit -m 'fix: activar cadena TDJ v16.33.151 y romper cache'
+          git commit -m 'fix: activar cadena TDJ v16.33.152 y romper cache'
           git push origin main
