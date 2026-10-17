@@ -1,15 +1,25 @@
-// TDJ v16.33.164 — DISEÑO DE TÍTULOS POR OBLIGACIÓN.
+// TDJ v16.33.165 — DISEÑO DE TÍTULOS POR OBLIGACIÓN.
 // PRESENTACIÓN ÚNICAMENTE: NO MODIFICA EL MOTOR, CÁLCULOS, PAGOS NI RESULTADOS.
 (function(){
   "use strict";
 
-  // Catálogo acordado en el diseño aprobado.
+  // Catálogo visual IDENTICO al selector TIPO de PAGOS del liquidador.
+  // El valor inicial normal es TASA DIAN.
   const BENEFICIOS = [
-    "SIN BENEFICIO",
-    "ART. 3 D. 0240",
-    "ART. 4 D. 0240",
-    "ART. 9 D. 1419",
-    "ART. 10 D. 1419"
+    "TASA DIAN",
+    "ART. 45 LEY 2155",
+    "ART. 91 LEY 2277",
+    "ART. 93 LEY 2277 - OMISAS",
+    "ART. 48 LEY 2155",
+    "ART. 1 DECRETO 688 DE 2020 - IBC",
+    "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
+    "ART. 20 DECRETO 1474 DE 2025",
+    "ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",
+    "ART. 3 DECRETO 0240 DE 2026",
+    "ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECCION",
+    "ART. 9 DECRETO 1419 DE 2026 - TRIBUTARIO",
+    "ART. 10 DECRETO 1419 DE 2026 - OMISAS TRIBUTARIAS",
+    "ART. 10 DECRETO 1419 DE 2026 - CORRECCIONES TRIBUTARIAS"
   ];
 
   // La selección es exclusivamente visual. Se conserva mientras la fila
@@ -104,7 +114,7 @@
     const select=document.createElement("select");
     select.className="tdj-beneficio-select";
     select.dataset.visualOnly="true";
-    select.setAttribute("aria-label",`Beneficio visual de la OBLIGACIÓN ${index+1}`);
+    select.setAttribute("aria-label",`Tipo visual de la OBLIGACIÓN ${index+1}`);
 
     const clave=claveSeleccion(titleId,index);
     const actual=seleccionVisual.get(clave) || BENEFICIOS[0];
@@ -180,7 +190,7 @@
       });
 
       ultimaFirma=firma;
-      table.dataset.tdjVisualVersion="16.33.164";
+      table.dataset.tdjVisualVersion="16.33.165";
     }finally{
       pintando=false;
     }
