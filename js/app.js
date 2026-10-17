@@ -737,6 +737,14 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
   const lastRow=Math.max(1,safeRows.length);
   const dimension=`A1:${xlsxCol(lastCol)}${lastRow}`;
+  const valueCols=new Set([
+    ...moneyCols,
+    ...percentCols,
+    ...Object.values(rowMoneyCols||{}).flatMap(v=>Array.isArray(v)?v:[]),
+    ...Object.values(rowPercentCols||{}).flatMap(v=>Array.isArray(v)?v:[])
+  ].map(Number));
+  const excelWidths=Array.from({length:lastCol},(_,i)=>Math.max(10,Number(columnWidths[i]||16)+(valueCols.has(i+1)?4:0)));
+  const cols=excelWidths.map((width,i)=>`<col min="${i+1}" max="${i+1}" width="${width}" customWidth="1"/>`).join("");
   const body=safeRows.map((r,i)=>{
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
@@ -758,14 +766,6 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
       return xlsxCell(v,j+1,i+1,style);
     }).join("")}</row>`;
   }).join("");
-  const valueCols=new Set([
-    ...moneyCols,
-    ...percentCols,
-    ...Object.values(rowMoneyCols||{}).flatMap(v=>Array.isArray(v)?v:[]),
-    ...Object.values(rowPercentCols||{}).flatMap(v=>Array.isArray(v)?v:[])
-  ].map(Number));
-  const excelWidths=Array.from({length:lastCol},(_,i)=>Math.max(10,Number(columnWidths[i]||16)+(valueCols.has(i+1)?4:0)));
-  const cols=excelWidths.map((width,i)=>`<col min="${i+1}" max="${i+1}" width="${width}" customWidth="1"/>`).join("");
   const autoMerges=titleRows.filter(i=>{const row=safeRows[i]||[];return row.filter(v=>String(v??"").trim()!=="").length<=1;}).map(i=>`A${i+1}:${xlsxCol(lastCol)}${i+1}`);
   const allMerges=[...new Set([...(mergeRanges||[]),...autoMerges])];
   const merges=allMerges.map(x=>`<mergeCell ref="${x}"/>`).join("");
