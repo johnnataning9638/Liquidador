@@ -1,4 +1,4 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.148
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.152
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Regla: los pagos reales tienen prioridad económica sobre los TDJ, incluso
 // cuando el pago real ocurre después del título. El TDJ solo cubre el saldo
@@ -6,12 +6,11 @@
 // La proporcionalidad del TDJ se conserva; esta capa controla exclusivamente
 // la secuencia para impedir regresar a una obligación ya cerrada.
 //
-// CORRECCIÓN v16.33.148:
-// Cuando la obligación actual ya fue cerrada por títulos anteriores y/o pagos,
-// el TDJ actual debe quedar en CERO SOLO PARA ESTA OBLIGACIÓN. La capa superior
-// conserva el valor disponible del título y, al detectar aplicación 0, continúa
-// con la siguiente obligación. Esto permite que un segundo TDJ de la misma fecha
-// avance a la obligación siguiente sin alterar la proporcionalidad ni los pagos.
+// CORRECCIÓN v16.33.152:
+// La secuencia de obligaciones es estado de una liquidación completa. El cierre
+// debe conservarse cuando un TDJ ya fue descartado de una obligación cubierta,
+// para que la misma disponibilidad pueda continuar con la obligación siguiente
+// sin que un título posterior vuelva a una obligación anterior.
 
 function esTDJ(p){
   return Boolean(String(p?.tdj||"").trim()) || p?.esTDJ===true;
