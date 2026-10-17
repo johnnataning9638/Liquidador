@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: Aplicar regla exacta de secuencia TDJ
-        shell: python
+        shell: python {0}
         run: |
           from pathlib import Path
           core=Path('js/tdj-core-16.33.143.js')
@@ -31,17 +31,18 @@ jobs:
           core.write_text(s,encoding='utf-8')
 
       - name: Actualizar cache-busting TDJ a 16.33.155
-        shell: python
+        shell: python {0}
         run: |
+          from pathlib import Path
           files=['titulos.html','js/tdj.js','js/tdj-core-16.33.143.js','js/prioridad-tdj-v132.js']
           for name in files:
-            p=__import__('pathlib').Path(name)
+            p=Path(name)
             s=p.read_text(encoding='utf-8')
             s=s.replace('16.33.154','16.33.155')
             p.write_text(s,encoding='utf-8')
 
       - name: Crear regresion de la regla unica
-        shell: python
+        shell: python {0}
         run: |
           from pathlib import Path
           Path('tests/regresion-secuencia-tdj-155.mjs').write_text(r'''import fs from 'node:fs';
