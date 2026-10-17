@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   syntax-and-integrity:
@@ -16,44 +16,38 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Ajuste Excel 161
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'habilitar ajuste Excel 161')
+      - name: Validar sintaxis JavaScript
         run: |
           set -e
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          def patch(path, fn, cell, crc):
-              p=Path(path); s=p.read_text(); a=s.index(f'function {fn}('); b=s.index(f'function {crc}',a); block=s[a:b]
-              pattern=re.compile(r'  const body=safeRows\.map\(\(r,i\)=>\{.*?  const cols=Array\.from\(\{length:lastCol\},\(_,i\)=>`<col min=\\"\$\{i\+1\}\\" max=\\"\$\{i\+1\}\\" width=\\"\$\{Number\(columnWidths\[i\]\|\|16\)\}\\" customWidth=\\"1\\"/>`\)\.join\(\"\"\);',re.S)
-              new=f'''  const valueCols=new Set([...(moneyCols||[]),...Object.values(rowMoneyCols||{{}}).flat(),...(percentCols||[]),...Object.values(rowPercentCols||{{}}).flat()].map(Number));\n  const widths=Array.from({{length:lastCol}},(_,i)=>{{const base=Number(columnWidths[i]||16);return valueCols.has(i+1)?base+4:base;}});\n  const body=safeRows.map((r,i)=>{{const row=Array.isArray(r)?r:[],rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols,rp=Array.isArray(rowPercentCols[i])?rowPercentCols[i]:percentCols,title=titleRows.includes(i),header=headerRows.includes(i);const lines=Math.max(1,...row.map((v,j)=>Math.ceil(String(v??\"\").length/Math.max(8,Number(widths[j]||16)*1.15))),height=title?24:Math.min(header?45:60,Math.max(title?24:(header?20:18),lines*15));return `<row r=\"${{i+1}}\" ht=\"${{height}}\" customHeight=\"1\">${{row.map((v,j)=>{{let style=0;if(title)style=1;else if(header)style=2;else if(rm.includes(j+1))style=3;else if(rp.includes(j+1))style=4;return {cell}(v,j+1,i+1,style);}}).join(\"\")}}</row>`;}}).join(\"\");\n  const cols=Array.from({{length:lastCol}},(_,i)=>`<col min=\"${{i+1}}\" max=\"${{i+1}}\" width=\"${{Number(widths[i]||16)}}\" customWidth=\"1\"/>`).join(\"\");'''
-              if not pattern.search(block): raise SystemExit(f'No se encontró bloque XLSX esperado en {path}')
-              p.write_text(s[:a]+pattern.sub(new,block,count=1)+s[b:])
-          patch('js/app.js','xlsxSheet','xlsxCell','crc32'); patch('js/tdj-core-16.33.143.js','xlsxSheetTDJ','xlsxCellTDJ','crc32TDJ')
-          for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
-              p=Path(name); p.write_text(p.read_text().replace('16.33.160','16.33.161'))
-          PY
-          cat > tests/regresion-excel-dimensiones-161.mjs <<'EOF'
-          import fs from 'node:fs';
-          for(const [file,fn,cell,crc] of [['js/app.js','xlsxSheet','xlsxCell','crc32'],['js/tdj-core-16.33.143.js','xlsxSheetTDJ','xlsxCellTDJ','crc32TDJ']]){const s=fs.readFileSync(file,'utf8'),a=s.indexOf(`function ${fn}(`),b=s.indexOf(`function ${crc}`,a),x=s.slice(a,b);for(const t of ['const valueCols=new Set','const widths=Array.from','return valueCols.has(i+1)?base+4:base','const lines=Math.max(1','customHeight="1"'])if(!x.includes(t))throw new Error(`Falta ${t}`);if(!s.includes('16.33.161'))throw new Error(`Versión inválida en ${file}`)}
-          console.log('REGRESION EXCEL DIMENSIONES 16.33.161 OK');
-          EOF
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
-          node tests/regresion-excel-dimensiones-161.mjs
+      - name: Ejecutar regresiones históricas y de importadores
+        run: |
+          set -e
           node tests/regresion-parametros-160.mjs
           node tests/regresion-exportacion-excel-158.mjs
+          node tests/regresion-secuencia-tdj-129.mjs
+          node tests/regresion-prioridad-pagos-tdj-130.mjs
+          node tests/regresion-idempotencia-tdj-132.mjs
+          node tests/regresion-saldo-final-134.mjs
           node tests/regresion-importadores-decimales-145.mjs
           node tests/regresion-simbolo-peso-importadores-146.mjs
           node tests/regresion-secuencia-tdj-151.mjs
           node tests/regresion-secuencia-tdj-152.mjs
-          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-excel-dimensiones-161.mjs
-          git commit -m 'feat: ajustar dimensiones Excel v16.33.161'; git push
-      - name: Validar sintaxis JavaScript
-        run: find js -name '*.js' -print0 | xargs -0 -n1 node --check
-      - name: Ejecutar regresiones
+      - name: Verificar integridad del motor de liquidación
+        if: github.event_name == 'pull_request'
         run: |
-          node tests/regresion-parametros-160.mjs
-          node tests/regresion-exportacion-excel-158.mjs
-          node tests/regresion-secuencia-tdj-151.mjs
-          node tests/regresion-secuencia-tdj-152.mjs
+          set -e
+          git fetch origin main --quiet
+          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
+            diff="$(git diff --unified=0 origin/main...HEAD -- "$f" || true)"
+            echo "$diff"
+            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\\?v='; then
+              echo "ERROR: se detectó un cambio funcional en $f."
+              exit 1
+            fi
+          done
+      - name: Verificar controles de cálculo DIAN
+        run: |
+          set -e
+          test "$(grep -o 'class=\"[^\"]*btn-calcular-normal[^\"]*\"' liquidacion.html | wc -l)" -eq 3
+          grep -q 'querySelectorAll(\".btn-calcular-normal\").*addEventListener(\"click\",calcular)' js/app.js
