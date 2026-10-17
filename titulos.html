@@ -18,14 +18,14 @@
 })();
 </script>
 
-<!-- TDJ UI DEPLOY 16.33.154 -->
+<!-- TDJ UI DEPLOY 16.33.155 -->
 <script id="tdj-version-guard">
 (function(){
   try{
     var u=new URL(window.location.href);
     var v=u.searchParams.get("v");
-    if(v && v!=="16.33.154"){
-      u.searchParams.set("v","16.33.154");
+    if(v && v!=="16.33.155"){
+      u.searchParams.set("v","16.33.155");
       window.location.replace(u.toString());
     }
   }catch(e){}
@@ -241,7 +241,7 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 
   <div class="nav-footer"><button class="secundario" type="button" onclick="window.location.href='index.html'">← MÓDULO DE INICIO</button><button class="secundario" type="button" onclick="window.location.href='liquidacion.html'">IR A LIQUIDACIÓN DE OBLIGACIONES</button></div>
 </main>
-<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.154</footer>
+<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.155</footer>
 <script id="tdj-global-clear-143">
 document.addEventListener("DOMContentLoaded",function(){
   const b=document.getElementById("btnLimpiarTitulosGlobal");
@@ -249,9 +249,9 @@ document.addEventListener("DOMContentLoaded",function(){
   b.addEventListener("click",function(e){
     e.stopImmediatePropagation();
     if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
-    window.location.href="titulos.html?v=16.33.154&reinicio="+Date.now();
+    window.location.href="titulos.html?v=16.33.155&reinicio="+Date.now();
   },true);
 });
 </script>
-<script type="module" src="js/tdj.js?v=16.33.154"></script>
+<script type="module" src="js/tdj.js?v=16.33.155"></script>
 </body></html>

@@ -1,18 +1,18 @@
-// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.154
+// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.155
 //
 // La lógica económica permanece en prioridad-tdj.js.
 // Esta capa controla únicamente la secuencia entre títulos y conserva las
 // correcciones de presentación existentes.
 //
-// REGLA FUNCIONAL v16.33.154:
+// REGLA FUNCIONAL v16.33.155:
 // PRIMERO SE AGOTA LA NECESIDAD DE LA OBLIGACIÓN ACTUAL; SOLO CUANDO ESTA
 // QUEDA CUBIERTA, EL TÍTULO PUEDE CONTINUAR CON LA SIGUIENTE OBLIGACIÓN.
-import {dinero} from "./utilidades.js?v=16.33.154";
+import {dinero} from "./utilidades.js?v=16.33.155";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
   reiniciarSecuenciaTDJ
-} from "./prioridad-tdj.js?v=16.33.154";
+} from "./prioridad-tdj.js?v=16.33.155";
 
 export function saldoFinalSinIntereses(impuesto=0,sancion=0){
   const i=Number(impuesto||0),s=Number(sancion||0);
@@ -124,7 +124,7 @@ function obligacionYaCubiertaAntesDelTitulo(motor,datos,idActual){
     const r=motor.calcular({...datos,pagos:previos});
     return Number(r?.total||0)<=0.5;
   }catch(e){
-    console.warn("Secuencia TDJ v16.33.154:",e);
+    console.warn("Secuencia TDJ v16.33.155:",e);
     return false;
   }
 }
