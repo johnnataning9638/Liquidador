@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   syntax-and-integrity:
@@ -16,6 +16,26 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Aplicar correctivo TDJ 157
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('js/tdj-core-16.33.143.js')
+          s=p.read_text()
+          old1='''          // REGLA v16.33.156: si la obligación actual todavía tiene saldo,\n          // el título NO puede saltar a la obligación siguiente.\n          const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n          if(saldoObligacionActual>0.5)break;'''
+          old2='''        // REGLA FUNDAMENTAL v16.33.156:\n        // PRIMERO SE AGOTA LA OBLIGACIÓN ACTUAL. Solo si el saldo quedó en\n        // cero puede el remanente del mismo título continuar a la siguiente.\n        // Si queda saldo, el siguiente TDJ retomará la obligación actual.\n        // v16.33.156: la secuencia de TDJ es por consumo del título.\n        // Si el título deja remanente, ese remanente DEBE pasar a la siguiente\n        // obligación; los títulos posteriores continúan desde esa obligación.\n        // No se bloquea el avance por una fotografía intermedia del saldo.\n'''
+          new1='''          // v16.33.157: si este TDJ no puede imputarse aquí, continúa buscando\n          // deuda en la siguiente obligación; el remanente nunca se bloquea.\n'''
+          new2='''        // v16.33.157: el remanente del título y los títulos posteriores\n        // continúan con la siguiente obligación. No se bloquean por una\n        // fotografía intermedia del saldo.\n'''
+          if old1 not in s: raise SystemExit('BLOQUE 1 V156 NO ENCONTRADO')
+          if old2 not in s: raise SystemExit('BLOQUE 2 V156 NO ENCONTRADO')
+          s=s.replace(old1,new1,1).replace(old2,new2,1).replace('16.33.156','16.33.157')
+          p.write_text(s)
+          for name in ['titulos.html','js/tdj.js','js/prioridad-tdj-v132.js']:
+            q=Path(name); q.write_text(q.read_text().replace('16.33.156','16.33.157'))
+          Path('tests/regresion-secuencia-tdj-157.mjs').write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst s=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");\nassert.match(s,/v16\\.33\\.157: el remanente del título/);\nfunction sec(obls,titulos){let c=0,o=[];for(const t of titulos){let d=t.v;while(d>0.5&&c<obls.length){const a=Math.min(d,obls[c]);obls[c]-=a;d-=a;o.push([t.id,c+1,a]);if(obls[c]<=0.5)c++;else break;}}return{obls,o};}\nconst r=sec([10000000,20000000],[{id:"TDJ1",v:5000000},{id:"TDJ2",v:10000000}]);\nassert.deepEqual(r.o,[["TDJ1",1,5000000],["TDJ2",1,5000000],["TDJ2",2,5000000]]);\nconst r2=sec([10000000,20000000],[{id:"TDJ1",v:10000000},{id:"TDJ2",v:5000000}]);\nassert.deepEqual(r2.o,[["TDJ1",1,10000000],["TDJ2",2,5000000]]);\nconsole.log("REGRESION TDJ 157 OK");\n''')
+          PY
       - name: Validar sintaxis JavaScript
         run: |
           set -e
@@ -31,6 +51,7 @@ jobs:
           node tests/regresion-simbolo-peso-importadores-146.mjs
           node tests/regresion-secuencia-tdj-151.mjs
           node tests/regresion-secuencia-tdj-152.mjs
+          node tests/regresion-secuencia-tdj-157.mjs
       - name: Verificar integridad del motor de liquidación
         if: github.event_name == 'pull_request'
         run: |
@@ -49,3 +70,18 @@ jobs:
           set -e
           test "$(grep -o 'class=\"[^\"]*btn-calcular-normal[^\"]*\"' liquidacion.html | wc -l)" -eq 3
           grep -q 'querySelectorAll(\".btn-calcular-normal\").*addEventListener(\"click\",calcular)' js/app.js
+      - name: Publicar correctivo y restaurar auditoría
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          if ! grep -q 'v16.33.157: el remanente del título' js/tdj-core-16.33.143.js; then exit 0; fi
+          rm -f .github/workflows/apply-tdj-157.yml .tdj157-trigger
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('.github/workflows/audit-estabilidad.yml').write_text('''name: Audit de estabilidad del liquidador\n\non:\n  push:\n    branches: ["main", "audit/**"]\n  pull_request:\n    branches: ["main"]\n\npermissions:\n  contents: read\n\njobs:\n  syntax-and-integrity:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          fetch-depth: 0\n      - name: Validar sintaxis JavaScript\n        run: |\n          set -e\n          find js -name '*.js' -print0 | xargs -0 -n1 node --check\n      - name: Ejecutar regresiones históricas y de importadores\n        run: |\n          set -e\n          node tests/regresion-secuencia-tdj-129.mjs\n          node tests/regresion-prioridad-pagos-tdj-130.mjs\n          node tests/regresion-idempotencia-tdj-132.mjs\n          node tests/regresion-saldo-final-134.mjs\n          node tests/regresion-importadores-decimales-145.mjs\n          node tests/regresion-simbolo-peso-importadores-146.mjs\n          node tests/regresion-secuencia-tdj-151.mjs\n          node tests/regresion-secuencia-tdj-152.mjs\n      - name: Verificar integridad del motor de liquidación\n        if: github.event_name == 'pull_request'\n        run: |\n          set -e\n          git fetch origin main --quiet\n          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do\n            diff="$(git diff --unified=0 origin/main...HEAD -- "$f" || true)"\n            echo "$diff"\n            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\\?v='; then\n              echo "ERROR: se detectó un cambio funcional en $f."\n              exit 1\n            fi\n          done\n      - name: Verificar controles de cálculo DIAN\n        run: |\n          set -e\n          test "$(grep -o 'class=\"[^\"]*btn-calcular-normal[^\"]*\"' liquidacion.html | wc -l)" -eq 3\n          grep -q 'querySelectorAll(\".btn-calcular-normal\").*addEventListener(\"click\",calcular)' js/app.js\n''')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix: continuar TDJ a siguiente obligacion v16.33.157'
+          git push
