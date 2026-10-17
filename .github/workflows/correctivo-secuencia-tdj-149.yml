@@ -1,4 +1,4 @@
-name: Auditoría secuencia TDJ v16.33.157
+name: Auditoría secuencia TDJ v16.33.159
 
 on:
   push:
@@ -26,9 +26,9 @@ jobs:
           checks = {
               'regla': ('v16.33.157: el remanente del título', 'js/tdj-core-16.33.143.js'),
               'sin-barrera': ('saldoObligacionActual>0.5)break;', 'js/tdj-core-16.33.143.js'),
-              'core-import': ('prioridad-tdj-v132.js?v=16.33.157', 'js/tdj-core-16.33.143.js'),
-              'tdj-import': ('tdj-core-16.33.143.js?v=16.33.157', 'js/tdj.js'),
-              'html-import': ('js/tdj.js?v=16.33.157', 'titulos.html'),
+              'core-import': ('prioridad-tdj-v132.js?v=16.33.159', 'js/tdj-core-16.33.143.js'),
+              'tdj-import': ('tdj-core-16.33.143.js?v=16.33.159', 'js/tdj.js'),
+              'html-import': ('js/tdj.js?v=16.33.159', 'titulos.html'),
           }
           text_core=Path('js/tdj-core-16.33.143.js').read_text(encoding='utf-8')
           if 'saldoObligacionActual>0.5)break;' in text_core:
@@ -39,7 +39,7 @@ jobs:
                   continue
               if needle not in text:
                   raise SystemExit(f'FALLO {label}: {needle}')
-          print('AUDITORIA CADENA TDJ 16.33.157: OK')
+          print('AUDITORIA CADENA TDJ 16.33.159: OK')
           PY
 
       - name: Sintaxis y regresiones TDJ
