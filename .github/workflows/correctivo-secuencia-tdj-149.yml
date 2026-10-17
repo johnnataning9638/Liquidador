@@ -1,4 +1,4 @@
-name: Correctivo secuencia TDJ v16.33.152
+name: Correctivo secuencia TDJ v16.33.153
 
 on:
   push:
@@ -17,32 +17,56 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Actualizar referencias TDJ y romper caché
+      - name: Corregir avance prematuro TDJ y romper caché
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+
+          # ÚNICO CAMBIO FUNCIONAL: la secuencia de títulos NO puede pasar a
+          # la siguiente obligación mientras la obligación actual conserve saldo.
+          # No se toca el motor matemático ni la proporcionalidad.
+          p = Path('js/tdj-core-16.33.143.js')
+          text = p.read_text(encoding='utf-8')
+
+          old = '''        if(aplicado<=0)continue;\n'''
+          new = '''        if(aplicado<=0){\n          // REGLA v16.33.153: si la obligación actual todavía tiene saldo,\n          // el título NO puede saltar a la obligación siguiente. El mismo título\n          // conserva su disponibilidad para que el SIGUIENTE TDJ continúe aquí.\n          const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n          if(saldoObligacionActual>0.5)break;\n          continue;\n        }\n'''
+          if old not in text:
+              raise SystemExit('NO_SE_ENCONTRO_BLOQUE_APLICADO_CERO')
+          text = text.replace(old, new, 1)
+
+          old2 = '''        disponible=excedente;\n\n        if(aplicado>0){\n'''
+          new2 = '''        disponible=excedente;\n\n        // REGLA FUNDAMENTAL v16.33.153:\n        // PRIMERO SE AGOTA LA OBLIGACIÓN ACTUAL. Solo si el saldo quedó en\n        // cero puede el remanente del mismo título continuar a la siguiente.\n        // Si queda saldo, se detiene EXCLUSIVAMENTE el recorrido de obligaciones\n        // para este título; el siguiente título retomará la obligación actual.\n        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n        if(saldoObligacionActual>0.5)break;\n\n        if(aplicado>0){\n'''
+          if old2 not in text:
+              raise SystemExit('NO_SE_ENCONTRO_BLOQUE_DISPONIBLE')
+          text = text.replace(old2, new2, 1)
+
+          # Cadena de caché únicamente TDJ.
           replacements = {
               'js/tdj-core-16.33.143.js': [
-                  ('?v=16.33.151', '?v=16.33.152'),
-                  ('?v=16.33.149', '?v=16.33.152'),
+                  ('?v=16.33.152', '?v=16.33.153'),
+                  ('?v=16.33.151', '?v=16.33.153'),
+                  ('?v=16.33.149', '?v=16.33.153'),
               ],
               'js/tdj.js': [
-                  ('16.33.151', '16.33.152'),
-                  ('16.33.150', '16.33.152'),
-                  ('16.33.149', '16.33.152'),
-                  ('16.33.148', '16.33.152'),
+                  ('16.33.152', '16.33.153'),
+                  ('16.33.151', '16.33.153'),
+                  ('16.33.150', '16.33.153'),
+                  ('16.33.149', '16.33.153'),
+                  ('16.33.148', '16.33.153'),
               ],
               'js/prioridad-tdj-v132.js': [
-                  ('16.33.151', '16.33.152'),
-                  ('16.33.150', '16.33.152'),
-                  ('16.33.148', '16.33.152'),
+                  ('16.33.152', '16.33.153'),
+                  ('16.33.151', '16.33.153'),
+                  ('16.33.150', '16.33.153'),
+                  ('16.33.148', '16.33.153'),
               ],
               'titulos.html': [
-                  ('16.33.151', '16.33.152'),
-                  ('16.33.150', '16.33.152'),
-                  ('16.33.149', '16.33.152'),
+                  ('16.33.152', '16.33.153'),
+                  ('16.33.151', '16.33.153'),
+                  ('16.33.150', '16.33.153'),
+                  ('16.33.149', '16.33.153'),
               ],
           }
           for name, pairs in replacements.items():
@@ -55,14 +79,16 @@ jobs:
                   p.write_text(text, encoding='utf-8')
           PY
 
-      - name: Verificar cadena real de carga TDJ
+      - name: Verificar que el corte de secuencia está en el motor real
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'prioridad-tdj-v132.js?v=16.33.152' js/tdj-core-16.33.143.js
-          grep -F 'tdj-core-16.33.143.js?v=16.33.152' js/tdj.js
-          grep -F 'js/tdj.js?v=16.33.152' titulos.html
-          grep -F '16.33.152' js/prioridad-tdj-v132.js
+          grep -F 'REGLA FUNDAMENTAL v16.33.153' js/tdj-core-16.33.143.js
+          grep -F 'if(saldoObligacionActual>0.5)break;' js/tdj-core-16.33.143.js
+          grep -F 'prioridad-tdj-v132.js?v=16.33.153' js/tdj-core-16.33.143.js
+          grep -F 'tdj-core-16.33.143.js?v=16.33.153' js/tdj.js
+          grep -F 'js/tdj.js?v=16.33.153' titulos.html
+          grep -F '16.33.153' js/prioridad-tdj-v132.js
 
       - name: Auditoría funcional de sintaxis y regresiones
         shell: bash
@@ -71,10 +97,12 @@ jobs:
           node --check js/prioridad-tdj.js
           node --check js/prioridad-tdj-v132.js
           node --check js/tdj.js
+          node --check js/tdj-core-16.33.143.js
           if [ -f tests/regresion-secuencia-tdj-129.mjs ]; then node tests/regresion-secuencia-tdj-129.mjs; fi
           if [ -f tests/regresion-secuencia-tdj-149.mjs ]; then node tests/regresion-secuencia-tdj-149.mjs; fi
           if [ -f tests/regresion-secuencia-tdj-151.mjs ]; then node tests/regresion-secuencia-tdj-151.mjs; fi
           if [ -f tests/regresion-secuencia-tdj-152.mjs ]; then node tests/regresion-secuencia-tdj-152.mjs; fi
+          if [ -f tests/regresion-secuencia-tdj-153.mjs ]; then node tests/regresion-secuencia-tdj-153.mjs; fi
 
       - name: Commit correctivo
         shell: bash
@@ -87,5 +115,5 @@ jobs:
             echo 'SIN_CAMBIOS_CORRECTIVOS'
             exit 0
           fi
-          git commit -m 'fix: activar cadena TDJ v16.33.152 y romper cache'
+          git commit -m 'fix: TDJ no salta de obligacion con saldo v16.33.153'
           git push origin main
