@@ -29,6 +29,25 @@ jobs:
           node tests/regresion-saldo-final-134.mjs
           node tests/regresion-importadores-decimales-145.mjs
           node tests/regresion-simbolo-peso-importadores-146.mjs
+      - name: Inspeccionar orquestación TDJ real
+        run: |
+          set -e
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const f=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
+          const needles=['ajustarTDJParaPagosPosteriores','ordenarMovimientosCronologicos','obligaciones.forEach','for (const obligacion','for(const obligacion','resultado=','resultado ='];
+          for(const n of needles){
+            let pos=0,count=0;
+            while((pos=f.indexOf(n,pos))>=0){
+              count++;
+              const a=Math.max(0,pos-700),b=Math.min(f.length,pos+1800);
+              console.log(`\\n===== OCURRENCIA ${n} #${count} =====\\n`+f.slice(a,b));
+              pos+=n.length;
+              if(count>=8)break;
+            }
+            console.log(`TOTAL ${n}: ${count}`);
+          }
+          NODE
       - name: Verificar integridad del motor de liquidación
         if: github.event_name == 'pull_request'
         run: |
