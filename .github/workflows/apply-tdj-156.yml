@@ -1,0 +1,40 @@
+name: TDJ 156
+on: [push]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Aplicar correccion exacta
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('js/tdj-core-16.33.143.js')
+          s=p.read_text()
+          old='''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n\n        // v16.33.155: regla única. Si la obligación actual aún tiene saldo,\n        // este título termina aquí. Solo el excedente posterior a cubrirla\n        // puede avanzar; el siguiente título retoma la obligación actual.\n        if(saldoObligacionActual>0.5)break;'''
+          new='''        // v16.33.156: la secuencia de TDJ es por consumo del título.\n        // Si el título deja remanente, ese remanente DEBE pasar a la siguiente\n        // obligación; los títulos posteriores continúan desde esa obligación.\n        // No se bloquea el avance por una fotografía intermedia del saldo.\n'''
+          if old not in s: raise SystemExit('BLOQUE V155 NO ENCONTRADO')
+          p.write_text(s.replace(old,new,1).replace('16.33.155','16.33.156'))
+          for name in ['titulos.html','js/tdj.js','js/prioridad-tdj-v132.js']:
+            q=Path(name); q.write_text(q.read_text().replace('16.33.155','16.33.156'))
+          Path('tests/regresion-secuencia-tdj-156.mjs').write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst s=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");\nassert.match(s,/v16\\.33\\.156: la secuencia de TDJ es por consumo del título/);\nassert.doesNotMatch(s,/saldoObligacionActual>0\\.5\\)break/);\nfunction sec(obls,titulos){let c=0,o=[];for(const t of titulos){let d=t.v;while(d>0.5&&c<obls.length){const a=Math.min(d,obls[c]);obls[c]-=a;d-=a;o.push([t.id,c+1,a]);if(obls[c]<=0.5)c++;else break;}}return{obls,o};}\nconst r=sec([10000000,20000000],[{id:"TDJ1",v:5000000},{id:"TDJ2",v:10000000}]);\nassert.deepEqual(r.o,[["TDJ1",1,5000000],["TDJ2",1,5000000],["TDJ2",2,5000000]]);\nconsole.log("REGRESION TDJ 156 OK");\n''')
+          PY
+      - name: Validar
+        run: |
+          node --check js/tdj-core-16.33.143.js
+          node --check js/tdj.js
+          node --check js/prioridad-tdj-v132.js
+          node tests/regresion-secuencia-tdj-156.mjs
+      - name: Publicar y retirar correctivo
+        run: |
+          rm -f .github/workflows/apply-tdj-156.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'fix: flujo secuencial de remanentes TDJ v16.33.156'
+          git push
