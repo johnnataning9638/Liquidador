@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.130";
-import {importarDatosInteligente} from "./importador.js?v=16.33.130";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.130";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.130";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.130";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.130";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.130";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.130";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.130";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.130";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.130";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.130";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.130";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.149";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.158";
+import {importarDatosInteligente} from "./importador.js?v=16.33.158";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.158";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.158";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.158";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.158";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.158";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.158";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.158";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.158";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.158";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.158";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.158";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.158";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -732,7 +732,7 @@ function xlsxCell(v,col,row,style=0){
   const preserve=/^\s|\s$/.test(String(v??""))?` xml:space="preserve"`:"";
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t${preserve}>${text}</t></is></c>`;
 }
-function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[0],headerRows=[0],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){
+function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}
   const safeRows=Array.isArray(rows)?rows:[];
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
   const lastRow=Math.max(1,safeRows.length);
@@ -741,27 +741,28 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
     const rp=Array.isArray(rowPercentCols[i])?rowPercentCols[i]:percentCols;
-    return `<row r="${i+1}">${row.map((v,j)=>{
+    const title=titleRows.includes(i),header=headerRows.includes(i),height=title?24:(header?20:18);
+    return `<row r="${i+1}" ht="${height}" customHeight="1">${row.map((v,j)=>{
       let style=0;
-      if(titleRows.includes(i))style=1;
-      else if(headerRows.includes(i))style=2;
+      if(title)style=1;
+      else if(header)style=2;
       else if(rm.includes(j+1))style=3;
       else if(rp.includes(j+1))style=4;
       return xlsxCell(v,j+1,i+1,style);
     }).join("")}</row>`;
   }).join("");
   const cols=Array.from({length:lastCol},(_,i)=>`<col min="${i+1}" max="${i+1}" width="${Number(columnWidths[i]||16)}" customWidth="1"/>`).join("");
-  const merges=mergeRanges.map(x=>`<mergeCell ref="${x}"/>`).join("");
+  const autoMerges=titleRows.filter(i=>{const row=safeRows[i]||[];return row.filter(v=>String(v??"").trim()!=="").length<=1;}).map(i=>`A${i+1}:${xlsxCol(lastCol)}${i+1}`);
+  const allMerges=[...new Set([...(mergeRanges||[]),...autoMerges])];
+  const merges=allMerges.map(x=>`<mergeCell ref="${x}"/>`).join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
-    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+
-    `<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>`+
-    `<dimension ref="${dimension}"/><sheetViews><sheetView workbookViewId="0" showGridLines="1"/></sheetViews>`+
-    `<sheetFormatPr defaultRowHeight="16"/><cols>${cols}</cols><sheetData>${body}</sheetData>`+
-    (merges?`<mergeCells count="${mergeRanges.length}">${merges}</mergeCells>`:"")+
-    `<pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>`+
-    `<pageSetup orientation="${landscape?'landscape':'portrait'}" paperSize="9" fitToWidth="${fitToWidth}" fitToHeight="${fitToHeight}"/>`+
-    `</worksheet>`;
-}
+    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>`+
+    `<dimension ref="${dimension}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0" zoomScale="90"/></sheetViews>`+
+    `<sheetFormatPr defaultRowHeight="18"/><cols>${cols}</cols><sheetData>${body}</sheetData>`+
+    (allMerges.length?`<mergeCells count="${allMerges.length}">${merges}</mergeCells>`:"")+`<printOptions gridLines="0" horizontalCentered="1"/>`+
+    `<pageMargins left="0.28" right="0.28" top="0.45" bottom="0.45" header="0.2" footer="0.2"/>`+
+    `<pageSetup orientation="${landscape?'landscape':'portrait'}" paperSize="9" fitToWidth="${fitToWidth}" fitToHeight="${fitToHeight}"/></worksheet>`;
+
 
 function crc32(bytes){
   let table=crc32.table;if(!table){table=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);table[n]=c>>>0;}crc32.table=table;}
@@ -1265,7 +1266,7 @@ function exportarExcel(){
       {name:"docProps/app.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Liquidador DIAN</Application><DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop><HeadingPairs><vt:vector size="2" baseType="variant"><vt:variant><vt:lpstr>Hojas</vt:lpstr></vt:variant><vt:variant><vt:i4>1</vt:i4></vt:variant></vt:vector></HeadingPairs><TitlesOfParts><vt:vector size="1" baseType="lpstr"><vt:lpstr>Liquidación completa</vt:lpstr></vt:vector></TitlesOfParts></Properties>`},
       {name:"xl/workbook.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><fileVersion appName="xl" lastEdited="7" lowestEdited="7" rupBuild="30626"/><workbookPr defaultThemeVersion="164011"/><bookViews><workbookView xWindow="0" yWindow="0" windowWidth="18000" windowHeight="12000"/></bookViews><sheets><sheet name="Liquidación completa" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>`},
       {name:"xl/_rels/workbook.xml.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
-      {name:"xl/styles.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="[$$-es-CO] #,##0"/><numFmt numFmtId="165" formatCode="0.000%"/></numFmts><fonts count="3"><font><sz val="10"/><name val="Arial"/><family val="2"/></font><font><b/><sz val="14"/><name val="Arial"/><family val="2"/></font><font><b/><sz val="10"/><name val="Arial"/><family val="2"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="DCEAF4"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="173F5F"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="A8BBC9"/></left><right style="thin"><color rgb="A8BBC9"/></right><top style="thin"><color rgb="A8BBC9"/></top><bottom style="thin"><color rgb="A8BBC9"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="1" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`},
+      {name:"xl/styles.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="[$$-es-CO] #,##0"/><numFmt numFmtId="165" formatCode="0.000%"/></numFmts><fonts count="3"><font><sz val="10"/><name val="Arial"/><family val="2"/><color rgb="17324D"/></font><font><b/><sz val="14"/><name val="Arial"/><family val="2"/><color rgb="FFFFFF"/></font><font><b/><sz val="10"/><name val="Arial"/><family val="2"/><color rgb="17324D"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="DCEAF4"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="173F5F"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="A8BBC9"/></left><right style="thin"><color rgb="A8BBC9"/></right><top style="thin"><color rgb="A8BBC9"/></top><bottom style="thin"><color rgb="A8BBC9"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`},
       {name:"xl/worksheets/sheet1.xml",data:xlsxSheet(rows,{titleRows,headerRows,rowMoneyCols,rowPercentCols,columnWidths:[10,18,30,18,18,12,14,24,20,20,20,20,20,20],landscape:true,fitToWidth:1,fitToHeight:0})}
     ];
     descargarBlob(zipStore(files),nombreBase+".xlsx");

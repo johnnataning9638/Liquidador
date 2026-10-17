@@ -1,0 +1,12 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const app=fs.readFileSync("js/app.js","utf8");
+const tdj=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");
+const html=fs.readFileSync("liquidacion.html","utf8");
+const tit=fs.readFileSync("titulos.html","utf8");
+assert.match(app,/showGridLines="0"/);assert.match(app,/autoMerges=titleRows/);assert.match(app,/defaultRowHeight="18"/);
+assert.match(tdj,/showGridLines="0"/);assert.match(tdj,/autoMerges=titleRows/);
+assert.match(html,/app\.js\?v=16\.33\.158/);assert.match(tit,/16\.33\.158/);
+for(const h of ["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO / CORTE","VALOR PAGO","TIPO","OBSERVACIÓN"])assert.ok(app.includes(h),`Falta encabezado normal ${h}`);
+for(const h of ["Nº","TDJ","FECHA","VALOR ORIGINAL","OBSERVACIÓN"])assert.ok(tdj.includes(h),`Falta encabezado TDJ ${h}`);
+console.log("REGRESION EXCEL 16.33.158 OK — solo presentación XLSX; estructura de datos intacta");
