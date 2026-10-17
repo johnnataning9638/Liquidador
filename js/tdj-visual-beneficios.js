@@ -15,6 +15,8 @@
   // La selección es exclusivamente visual. Se conserva mientras la fila
   // exista, pero NO se escribe en el objeto del motor ni alimenta cálculos.
   const seleccionVisual = new Map();
+  let ultimaFirma = "";
+  let pintando = false;
 
   const esc = value => String(value ?? "").replace(/[&<>\"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -120,58 +122,68 @@
   }
 
   function reconstruirTabla(){
+    if(pintando)return;
     const table=document.getElementById("tablaTitulos");
     if(!table)return;
     const head=table.tHead?.rows?.[0];
     const body=table.tBodies?.[0];
     if(!head || !body)return;
 
-    instalarEstilos();
-
     const obligaciones=obtenerObligaciones();
     const cantidad=Math.max(1,obligaciones.length);
     const detalles=obligaciones.map((card,i)=>detalleObligacion(card,i));
+    const ids=[...body.rows].map(tr=>tr.dataset.tituloId||"").join(",");
+    const firma=`${cantidad}|${detalles.join("||")}|${body.rows.length}|${ids}`;
+    if(firma===ultimaFirma)return;
 
-    // La tabla base conserva OBSERVACIÓN internamente para no alterar el motor.
-    marcarObservacionLegacyHead(head);
-    [...body.rows].forEach(marcarObservacionLegacy);
+    pintando=true;
+    try{
+      instalarEstilos();
 
-    // Retirar únicamente la presentación agregada por esta capa.
-    head.querySelectorAll(":scope > .tdj-obligacion-head").forEach(el=>el.remove());
-    body.querySelectorAll(":scope > tr").forEach(tr=>
-      tr.querySelectorAll(":scope > .tdj-beneficio-visual").forEach(el=>el.remove())
-    );
+      // La tabla base conserva OBSERVACIÓN internamente para no alterar el motor.
+      marcarObservacionLegacyHead(head);
+      [...body.rows].forEach(marcarObservacionLegacy);
 
-    const accionHead=head.querySelector(":scope > .tdj-accion-head") || head.cells[head.cells.length-1];
-    if(!accionHead)return;
-    accionHead.classList.add("tdj-accion-head");
-    accionHead.textContent="ELIMINAR";
+      // Retirar únicamente la presentación agregada por esta capa.
+      head.querySelectorAll(":scope > .tdj-obligacion-head").forEach(el=>el.remove());
+      body.querySelectorAll(":scope > tr").forEach(tr=>
+        tr.querySelectorAll(":scope > .tdj-beneficio-visual").forEach(el=>el.remove())
+      );
 
-    // Generación horizontal: OBLIGACIÓN 1 por defecto y las siguientes hacia la derecha.
-    obligaciones.forEach((_,i)=>{
-      const th=document.createElement("th");
-      th.className="tdj-obligacion-head";
-      th.innerHTML=detalles[i];
-      head.insertBefore(th,accionHead);
-    });
+      const accionHead=head.querySelector(":scope > .tdj-accion-head") || head.cells[head.cells.length-1];
+      if(!accionHead)return;
+      accionHead.classList.add("tdj-accion-head");
+      accionHead.textContent="ELIMINAR";
 
-    // Si por alguna razón el contenedor aún no tiene obligación, siempre mostramos OBLIGACIÓN 1.
-    if(!obligaciones.length){
-      const th=document.createElement("th");
-      th.className="tdj-obligacion-head";
-      th.textContent="OBLIGACIÓN 1";
-      head.insertBefore(th,accionHead);
+      // Generación horizontal: OBLIGACIÓN 1 por defecto y las siguientes hacia la derecha.
+      obligaciones.forEach((_,i)=>{
+        const th=document.createElement("th");
+        th.className="tdj-obligacion-head";
+        th.innerHTML=detalles[i];
+        head.insertBefore(th,accionHead);
+      });
+
+      // Si por alguna razón el contenedor aún no tiene obligación, siempre mostramos OBLIGACIÓN 1.
+      if(!obligaciones.length){
+        const th=document.createElement("th");
+        th.className="tdj-obligacion-head";
+        th.textContent="OBLIGACIÓN 1";
+        head.insertBefore(th,accionHead);
+      }
+
+      [...body.rows].forEach(tr=>{
+        const titleId=tr.dataset.tituloId || "fila";
+        const accion=tr.querySelector(":scope > .tdj-accion-cell") || tr.cells[tr.cells.length-1];
+        if(!accion)return;
+        accion.classList.add("tdj-accion-cell");
+        for(let i=0;i<cantidad;i++)tr.insertBefore(crearSelect(titleId,i),accion);
+      });
+
+      ultimaFirma=firma;
+      table.dataset.tdjVisualVersion="16.33.164";
+    }finally{
+      pintando=false;
     }
-
-    [...body.rows].forEach(tr=>{
-      const titleId=tr.dataset.tituloId || "fila";
-      const accion=tr.querySelector(":scope > .tdj-accion-cell") || tr.cells[tr.cells.length-1];
-      if(!accion)return;
-      accion.classList.add("tdj-accion-cell");
-      for(let i=0;i<cantidad;i++)tr.insertBefore(crearSelect(titleId,i),accion);
-    });
-
-    table.dataset.tdjVisualVersion="16.33.164";
   }
 
   function iniciar(){
@@ -188,7 +200,10 @@
 
     // Los cambios de Datos y vencimientos deben reflejarse inmediatamente en las columnas.
     document.addEventListener("change",e=>{
-      if(e.target?.closest?.("#listaObligaciones"))repintar();
+      if(e.target?.closest?.("#listaObligaciones")){
+        ultimaFirma="";
+        repintar();
+      }
     },true);
   }
 
