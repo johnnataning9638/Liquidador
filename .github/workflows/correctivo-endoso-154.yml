@@ -9,13 +9,20 @@ permissions:
 
 jobs:
   correctivo:
-    if: ${{ !contains(github.event.head_commit.message, 'fix: permitir remanente TDJ protegido continuar a siguiente obligacion v16.33.154') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Evitar segunda ejecución del commit correctivo
+        shell: bash
+        run: |
+          if git log -1 --pretty=%B | grep -Fq 'fix: permitir remanente TDJ protegido continuar a siguiente obligacion v16.33.154'; then
+            echo 'COMMIT CORRECTIVO YA PUBLICADO — NO SE REPITE EL PARCHE.'
+            exit 0
+          fi
 
       - name: Aplicar corrección exacta al motor TDJ
         shell: python
