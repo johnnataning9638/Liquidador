@@ -1,10 +1,16 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.133
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.147
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Regla: los pagos reales tienen prioridad económica sobre los TDJ, incluso
 // cuando el pago real ocurre después del título. El TDJ solo cubre el saldo
 // que permanezca después de considerar los pagos reales y los TDJ anteriores.
 // La proporcionalidad del TDJ se conserva; esta capa solo controla la secuencia
 // para impedir que títulos posteriores regresen a una obligación ya cerrada.
+//
+// CORRECCIÓN v16.33.147:
+// Cuando una obligación ya fue cerrada por títulos anteriores, un título nuevo
+// no debe ser destruido/convertido en valor 0 por esta capa. Debe conservar su
+// valor nominal para que la capa superior de secuencia pueda continuar con la
+// siguiente obligación y determinar allí su aplicación o endoso.
 
 function esTDJ(p){
   return Boolean(String(p?.tdj||"").trim()) || p?.esTDJ===true;
@@ -50,10 +56,6 @@ function indiceObligacion(datos){
   return secuencia.obligationOrder.get(key);
 }
 function resultadoCubreObligacion(resultado){return Number(resultado?.total||0)<=0.5;}
-function forzarTDJNoAplicable(datos,id){
-  const pagos=(datos?.pagos||[]).map(p=>String(p?.id||"")===String(id||"")?{...p,valor:0}:p);
-  return {...datos,pagos};
-}
 export function reiniciarSecuenciaTDJ(){reiniciarSecuencia();}
 
 export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
@@ -61,7 +63,17 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   const idActual=opciones?.soloTDJId||"";
   prepararSecuencia(datos,idActual);
   const indiceActual=indiceObligacion(datos);
-  if(indiceActual<secuencia.cursor)return forzarTDJNoAplicable(datos,idActual);
+
+  // Si la obligación actual ya fue cerrada por títulos anteriores, NO anulamos
+  // el TDJ actual. La capa superior necesita conservar su valor para poder
+  // intentar la siguiente obligación. Anularlo aquí era precisamente lo que
+  // hacía que un segundo título con la MISMA FECHA terminara como endoso sin
+  // haber sido ofrecido a la obligación siguiente.
+  //
+  // La proporcionalidad, intereses, sanción y prioridad de pagos permanecen
+  // intactas: aquí solo se evita consumir el título antes de que la secuencia
+  // externa decida su siguiente destino.
+  if(indiceActual<secuencia.cursor)return datos;
 
   const originales=[...(datos?.pagos||[])].map((p,i)=>({...p,__ordenOriginal:i}));
   const tdjs=originales.filter(esTDJ).filter(p=>p.fecha&&Number(p.valor)>0);
