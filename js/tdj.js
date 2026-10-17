@@ -1,4 +1,4 @@
-// TDJ v16.33.169 — navegación TAB + tasa individual + restricciones.
+// TDJ v16.33.170 — navegación TAB + tasa individual + restricciones.
 (function(){
   function omitirObservacion(){
     document.querySelectorAll('#tablaTitulos tbody [data-t="observacion"]').forEach(function(el){el.tabIndex=-1;});
@@ -33,20 +33,20 @@
 (function(){
   document.addEventListener("DOMContentLoaded",function(){
     var footer=document.querySelector("footer");
-    if(footer)footer.textContent=footer.textContent.replace(/v16\\.33\\.163/g,"v16.33.169").replace(/v16\\.33\\.164/g,"v16.33.169").replace(/v16\\.33\\.165/g,"v16.33.169").replace(/v16\\.33\\.166/g,"v16.33.169").replace(/v16\\.33\\.167/g,"v16.33.169").replace(/v16\\.33\\.168/g,"v16.33.169");
+    if(footer)footer.textContent=footer.textContent.replace(/v16\\.33\\.163/g,"v16.33.170").replace(/v16\\.33\\.164/g,"v16.33.170").replace(/v16\\.33\\.165/g,"v16.33.170").replace(/v16\\.33\\.166/g,"v16.33.170").replace(/v16\\.33\\.167/g,"v16.33.170").replace(/v16\\.33\\.168/g,"v16.33.170").replace(/v16\\.33\\.169/g,"v16.33.170");
   },{once:true});
 
   document.addEventListener("click",function(e){
     var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;
     e.preventDefault();e.stopImmediatePropagation();
     if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
-    window.location.replace("titulos.html?v=16.33.169&reinicio="+Date.now());
+    window.location.replace("titulos.html?v=16.33.170&reinicio="+Date.now());
   },true);
 })();
 
 // Motor histórico protegido; no se modifica su contenido.
-import("./tdj-core-16.33.143.js?v=16.33.169");
+import("./tdj-core-16.33.143.js?v=16.33.170");
 // Capa visual TDJ × OBLIGACIÓN.
-import("./tdj-visual-beneficios.js?v=16.33.169");
+import("./tdj-visual-beneficios.js?v=16.33.170");
 // Puente de aplicación efectiva de tasa + restricciones de vigencia.
-import("./tdj-tasa-bridge-16.33.169.js?v=16.33.169");
+import("./tdj-tasa-bridge-16.33.170.js?v=16.33.170");
