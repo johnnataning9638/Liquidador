@@ -6,11 +6,11 @@
     e.preventDefault();
     e.stopImmediatePropagation();
     if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
-    window.location.replace("titulos.html?v=16.33.159&reinicio="+Date.now());
+    window.location.replace("titulos.html?v=16.33.160&reinicio="+Date.now());
   },true);
 })();
 
 // El motor original se conserva íntegramente; el querystring fuerza la
 // revalidación del módulo para evitar que el navegador reutilice una versión
 // anterior del motor TDJ.
-import("./tdj-core-16.33.143.js?v=16.33.159");
+import("./tdj-core-16.33.143.js?v=16.33.160");
