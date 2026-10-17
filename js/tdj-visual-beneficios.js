@@ -16,6 +16,25 @@
     "&":"&amp;","<":"&lt;",">":"&gt;",\"":"&quot;","'":"&#039;"
   }[m]));
 
+  function instalarEstilos(){
+    if(document.getElementById("tdj-visual-beneficios-style"))return;
+    const style=document.createElement("style");
+    style.id="tdj-visual-beneficios-style";
+    style.textContent=`
+      #tablaTitulos{table-layout:fixed;width:100%;min-width:0}
+      #tablaTitulos th,#tablaTitulos td{vertical-align:middle}
+      #tablaTitulos .tdj-obligacion-head{background:#e8eef3;color:#173047;text-align:center;font-size:10px;text-transform:uppercase;white-space:normal;line-height:1.2}
+      #tablaTitulos .tdj-obligacion-detalle{display:block;margin-top:2px;font-size:9px;font-weight:600;color:#687783;text-transform:none}
+      #tablaTitulos .tdj-beneficio-visual{padding:5px 6px;min-width:125px}
+      #tablaTitulos .tdj-beneficio-select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #aebbc8;border-radius:5px;padding:6px 7px;background:#fff;color:#173047;font-size:11px}
+      #tablaTitulos .tdj-beneficio-select:focus{outline:2px solid #8eb8cf;outline-offset:1px}
+      #tablaTitulos .tdj-observacion-legacy{display:none!important}
+      #tablaTitulos .tdj-accion-head,#tablaTitulos .tdj-accion-cell{white-space:nowrap;text-align:center}
+      @media(max-width:900px){#tablaTitulos{min-width:900px}.tdj-beneficio-select{font-size:10px}}
+    `;
+    document.head.appendChild(style);
+  }
+
   function obligaciones(){
     const root=document.getElementById("listaObligaciones");
     if(!root)return [];
@@ -41,7 +60,7 @@
     select.setAttribute("aria-label",`Beneficio visual de la obligación ${index+1}`);
     select.dataset.visualOnly="true";
     select.innerHTML=BENEFICIOS.map((x,i)=>`<option value="${esc(x)}"${i===0?" selected":""}>${esc(x)}</option>`).join("");
-    // Intencionalmente no se registra ningún listener de cálculo.
+    // No hay listener ni escritura sobre el estado del liquidador.
     td.appendChild(select);
     return td;
   }
@@ -53,46 +72,44 @@
     const cantidad=Math.max(1,lista.length);
     const head=table.tHead;
     const row=head?.rows?.[0];
-    if(!row)return;
+    const body=table.tBodies?.[0];
+    if(!row || !body)return;
 
-    // Primera pasada: dejamos intactas las cuatro columnas de datos del TDJ
-    // y el último botón de eliminación; solo reconstruimos la zona visual.
-    while(row.cells.length>4)row.deleteCell(4);
+    const detalles=lista.map((card,i)=>detalleObligacion(card,i));
+    const firma=`${cantidad}|${detalles.join("||")}`;
+    const visualHeadCount=[...row.cells].filter(c=>c.classList.contains("tdj-obligacion-head")).length;
+    const visualRowOk=[...body.rows].every(tr=>tr.querySelectorAll(":scope > .tdj-beneficio-visual").length===cantidad);
+    if(table.dataset.tdjVisualSignature===firma && visualHeadCount===cantidad && visualRowOk)return;
+
+    instalarEstilos();
+
+    // Conservamos el campo OBSERVACIÓN real en el DOM para no afectar
+    // importación, estado ni cálculo; visualmente solo se oculta.
+    if(row.cells[4])row.cells[4].classList.add("tdj-observacion-legacy");
+
+    // Limpiar únicamente las columnas visuales creadas por esta capa.
+    row.querySelectorAll(":scope > .tdj-obligacion-head").forEach(el=>el.remove());
+
+    // Las columnas nuevas se insertan antes de la acción existente.
+    const accionHead=row.cells[row.cells.length-1];
     for(let i=0;i<cantidad;i++){
       const th=document.createElement("th");
       th.className="tdj-obligacion-head";
-      th.innerHTML=detalleObligacion(lista[i],i);
-      row.appendChild(th);
+      th.innerHTML=detalles[i];
+      row.insertBefore(th,accionHead);
     }
-    const thAcc=document.createElement("th");
-    thAcc.className="tdj-accion-head";
-    thAcc.textContent="ELIMINAR";
-    row.appendChild(thAcc);
+    accionHead.classList.add("tdj-accion-head");
+    accionHead.textContent="ELIMINAR";
 
-    const body=table.tBodies?.[0];
-    if(!body)return;
     [...body.rows].forEach(tr=>{
-      // El núcleo TDJ ya creó las primeras cuatro celdas y una celda final
-      // con la acción. No tocamos inputs ni handlers de esas celdas.
-      while(tr.cells.length>4)tr.deleteCell(4);
-      for(let i=0;i<cantidad;i++)tr.appendChild(crearSelect(i));
-      const accion=document.createElement("td");
-      accion.className="tdj-accion-visual";
-      const boton=document.createElement("button");
-      boton.type="button";
-      boton.className="peligro small tdj-eliminar-proxy";
-      boton.textContent="Eliminar";
-      // El botón visual delega al botón real creado por el núcleo, sin alterar
-      // su lógica. Si no existe, no hace nada.
-      boton.addEventListener("click",function(){
-        const reales=[...tr.querySelectorAll("button")].filter(x=>x!==boton);
-        const real=reales.find(x=>/eliminar|trash|remove/i.test(String(x.textContent||"")+' '+String(x.getAttribute('aria-label')||"")));
-        if(real)real.click();
-      });
-      accion.appendChild(boton);
-      tr.appendChild(accion);
+      tr.querySelectorAll(":scope > .tdj-beneficio-visual").forEach(el=>el.remove());
+      if(tr.cells[4])tr.cells[4].classList.add("tdj-observacion-legacy");
+      const accion=tr.cells[tr.cells.length-1];
+      if(accion)accion.classList.add("tdj-accion-cell");
+      for(let i=0;i<cantidad;i++)tr.insertBefore(crearSelect(i),accion||null);
     });
 
+    table.dataset.tdjVisualSignature=firma;
     table.dataset.tdjVisualVersion="16.33.162";
   }
 
@@ -100,21 +117,17 @@
     const table=document.getElementById("tablaTitulos");
     const root=document.getElementById("listaObligaciones");
     if(!table)return;
-
+    instalarEstilos();
     reconstruirTabla();
 
     const observer=new MutationObserver(()=>{
-      if(table.dataset.tdjVisualLock)return;
-      table.dataset.tdjVisualLock="1";
-      requestAnimationFrame(()=>{
-        table.dataset.tdjVisualLock="";
-        reconstruirTabla();
-      });
+      // El núcleo puede reconstruir las filas al agregar/importar/eliminar.
+      // Solo se vuelve a pintar si realmente falta la capa visual.
+      requestAnimationFrame(reconstruirTabla);
     });
     observer.observe(table.tBodies?.[0] || table,{childList:true,subtree:true});
     if(root)observer.observe(root,{childList:true,subtree:true});
 
-    // Cambios en los datos de las obligaciones solo actualizan los encabezados.
     document.addEventListener("change",function(e){
       if(e.target?.closest?.("#listaObligaciones"))requestAnimationFrame(reconstruirTabla);
     },true);
