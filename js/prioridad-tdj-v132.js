@@ -1,19 +1,19 @@
-// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.147
+// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.148
 //
-// La lógica económica permanece en prioridad-tdj.js v16.33.147.
+// La lógica económica permanece en prioridad-tdj.js v16.33.148.
 // Esta capa reinicia exclusivamente el estado de secuencia al iniciar una
 // liquidación completa y conserva las correcciones de presentación existentes.
 //
-// CORRECCIÓN TDJ v16.33.147:
-// Un título que encuentra una obligación ya cerrada no se anula en esta capa;
-// conserva su valor para que el motor externo continúe con la siguiente
-// obligación. Esto permite múltiples títulos en la misma fecha.
-import {dinero} from "./utilidades.js?v=16.33.147";
+// CORRECCIÓN TDJ v16.33.148:
+// Un título que encuentra una obligación ya cerrada se anula SOLO para esa
+// obligación, permitiendo que la capa superior conserve el valor disponible
+// y continúe inmediatamente con la siguiente obligación.
+import {dinero} from "./utilidades.js?v=16.33.148";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
   reiniciarSecuenciaTDJ
-} from "./prioridad-tdj.js?v=16.33.147";
+} from "./prioridad-tdj.js?v=16.33.148";
 
 export function saldoFinalSinIntereses(impuesto=0,sancion=0){
   const i=Number(impuesto||0),s=Number(sancion||0);
@@ -44,8 +44,8 @@ function actualizarSaldoFinalRian(){
 function instalarPresentacionSaldoFinalRian(){
   if(typeof window==="undefined"||typeof document==="undefined")return;
   if(window.__saldoFinalRian134)return;
-  window.__saldoFinalRian134=true;
 
+  window.__saldoFinalRian134=true;
   const iniciar=()=>{
     actualizarSaldoFinalRian();
     const targets=[document.getElementById("rSaldoImpuesto"),document.getElementById("rSaldoSancion"),document.getElementById("rSaldoTotal")].filter(Boolean);
@@ -53,7 +53,6 @@ function instalarPresentacionSaldoFinalRian(){
       const observer=new MutationObserver(()=>actualizarSaldoFinalRian());
       targets.forEach(el=>observer.observe(el,{childList:true,characterData:true,subtree:true}));
     }
-
     const openOriginal=window.open;
     if(typeof openOriginal!=="function")return;
     window.open=function(...args){
@@ -75,7 +74,6 @@ function instalarPresentacionSaldoFinalRian(){
       return child;
     };
   };
-
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar,{once:true});
   else iniciar();
 }
@@ -84,36 +82,27 @@ function instalarLimpiezaExclusivaTitulosTDJ(){
   if(typeof document==="undefined"||typeof window==="undefined")return;
   if(window.__tdjLimpiarTitulos137)return;
   window.__tdjLimpiarTitulos137=true;
-
-  // CAPTURE=true es intencional: el listener de tdj.js también está asociado
-  // al botón LIMPIAR y, sin esta barrera, ejecutaría limpiarTodo(). Aquí
-  // interceptamos únicamente el botón ubicado dentro de la pestaña TÍTULOS.
   document.addEventListener("click",e=>{
     const boton=e.target?.closest?.(".btn-limpiar-tdj");
     if(!boton)return;
     const pane=boton.closest(".tab-pane");
     if(pane?.dataset?.pane!=="titulos")return;
-
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-
     if(!window.confirm("¿Desea limpiar únicamente los títulos / TDJ registrados?"))return;
-
     let guard=0;
     while(guard++<10000){
       const del=document.querySelector("#tablaTitulos tbody [data-del]");
       if(!del)break;
       del.click();
     }
-
     const importar=document.getElementById("importarTitulosTexto");
     if(importar)importar.value="";
     const resultadoImportacion=document.getElementById("resultadoImportacionTitulos");
     if(resultadoImportacion)resultadoImportacion.textContent="";
     const resultado=document.getElementById("resultadoTDJ");
     if(resultado)resultado.hidden=true;
-
     const tbody=document.querySelector("#tablaTitulos tbody");
     if(tbody)tbody.innerHTML="";
   },true);
