@@ -7,12 +7,12 @@
 // REGLA FUNCIONAL v16.33.157:
 // PRIMERO SE AGOTA LA NECESIDAD DE LA OBLIGACIÓN ACTUAL; SOLO CUANDO ESTA
 // QUEDA CUBIERTA, EL TÍTULO PUEDE CONTINUAR CON LA SIGUIENTE OBLIGACIÓN.
-import {dinero} from "./utilidades.js?v=16.33.158";
+import {dinero} from "./utilidades.js?v=16.33.159";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
   reiniciarSecuenciaTDJ
-} from "./prioridad-tdj.js?v=16.33.158";
+} from "./prioridad-tdj.js?v=16.33.159";
 
 export function saldoFinalSinIntereses(impuesto=0,sancion=0){
   const i=Number(impuesto||0),s=Number(sancion||0);

@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.158";
-import {importarDatosInteligente} from "./importador.js?v=16.33.158";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.158";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.158";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.158";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.158";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.158";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.158";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.158";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.158";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.158";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.158";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.158";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.158";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.159";
+import {importarDatosInteligente} from "./importador.js?v=16.33.159";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.159";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.159";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.159";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.159";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.159";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.159";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.159";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.159";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.159";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.159";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.159";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.159";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -732,7 +732,7 @@ function xlsxCell(v,col,row,style=0){
   const preserve=/^\s|\s$/.test(String(v??""))?` xml:space="preserve"`:"";
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t${preserve}>${text}</t></is></c>`;
 }
-function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}
+function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){
   const safeRows=Array.isArray(rows)?rows:[];
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
   const lastRow=Math.max(1,safeRows.length);

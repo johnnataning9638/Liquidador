@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.158";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.158";
-import {importarDatosInteligente} from "./importador.js?v=16.33.158";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.158";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.158";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.158";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.158";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.158";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.158";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.158";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.158";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.159";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.159";
+import {importarDatosInteligente} from "./importador.js?v=16.33.159";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.159";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.159";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.159";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.159";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.159";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.159";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.159";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.159";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1416,7 +1416,7 @@ function xlsxCellTDJ(v,col,row,style=0){
   const preserve=/^\s|\s$/.test(String(v??""))?` xml:space="preserve"`:"";
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t${preserve}>${text}</t></is></c>`;
 }
-function xlsxSheetTDJ(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}
+function xlsxSheetTDJ(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){
   const safeRows=Array.isArray(rows)?rows:[];
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
   const lastRow=Math.max(1,safeRows.length);
