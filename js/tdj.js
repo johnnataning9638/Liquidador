@@ -1,5 +1,10 @@
 // TDJ v16.33.164 — barrera física contra módulos cacheados + capa visual aislada.
 (function(){
+  document.addEventListener("DOMContentLoaded",function(){
+    var footer=document.querySelector("footer");
+    if(footer)footer.textContent=footer.textContent.replace(/v16\.33\.163/g,"v16.33.164");
+  },{once:true});
+
   document.addEventListener("click",function(e){
     var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;
     if(!b)return;
