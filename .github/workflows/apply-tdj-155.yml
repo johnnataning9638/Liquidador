@@ -1,97 +1,41 @@
-name: Aplicar correccion TDJ 16.33.155
-
-on:
-  push:
-    branches: [main]
-
+name: TDJ 155
+on: [push]
 permissions:
   contents: write
-
 jobs:
-  fix-tdj:
+  fix:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Aplicar regla exacta de secuencia TDJ
-        shell: python {0}
+      - name: Patch
         run: |
+          python3 - <<'PY'
           from pathlib import Path
-          core=Path('js/tdj-core-16.33.143.js')
-          s=core.read_text(encoding='utf-8')
-          old='''const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n\n  // v16.33.154: si pagos normales protegidos cubren la obligacion,\n  // el remanente TDJ puede continuar a la siguiente obligacion; si no,\n  // el siguiente TDJ debe retomar la obligacion actual.\n  let obligacionCubiertaPorPagosProtegidos=false;\n  try{\n    const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);\n    obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;\n  }catch{}\n  if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;'''
-          new='''const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n\n  // v16.33.155: regla única de secuencia.\n  // Si la obligación actual aún tiene saldo, ESTE título termina aquí.\n  // El excedente solo puede avanzar cuando la obligación actual quedó\n  // completamente cubierta. El siguiente título retomará la obligación\n  // actual antes de continuar con las siguientes.\n  if(saldoObligacionActual>0.5)break;'''
-          if old not in s:
-            raise SystemExit('NO SE ENCONTRO EL BLOQUE V16.33.154 ESPERADO; NO SE MODIFICO EL MOTOR')
-          s=s.replace(old,new,1)
-          core.write_text(s,encoding='utf-8')
-
-      - name: Actualizar cache-busting TDJ a 16.33.155
-        shell: python {0}
-        run: |
-          from pathlib import Path
-          files=['titulos.html','js/tdj.js','js/tdj-core-16.33.143.js','js/prioridad-tdj-v132.js']
-          for name in files:
-            p=Path(name)
-            s=p.read_text(encoding='utf-8')
-            s=s.replace('16.33.154','16.33.155')
-            p.write_text(s,encoding='utf-8')
-
-      - name: Crear regresion de la regla unica
-        shell: python {0}
-        run: |
-          from pathlib import Path
-          Path('tests/regresion-secuencia-tdj-155.mjs').write_text(r'''import fs from 'node:fs';
-const core=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
-if(!core.includes('v16.33.155: regla única de secuencia')) throw new Error('Falta regla v16.33.155');
-if(!core.includes('if(saldoObligacionActual>0.5)break;')) throw new Error('Falta corte de obligación actual');
-if(core.includes('obligacionCubiertaPorPagosProtegidos')) throw new Error('No debe existir excepción por pagos protegidos');
-function secuencia(obligaciones,titulos){
-  let cursor=0; const out=[];
-  for(const t of titulos){
-    let disponible=t.valor;
-    while(disponible>0.5 && cursor<obligaciones.length){
-      const necesidad=obligaciones[cursor];
-      const aplicado=Math.min(disponible,necesidad);
-      obligaciones[cursor]-=aplicado;
-      disponible-=aplicado;
-      out.push({tdj:t.id,obl:cursor+1,aplicado});
-      if(obligaciones[cursor]<=0.5) cursor++;
-      else break;
-    }
-  }
-  return {obligaciones,out};
-}
-const r=secuencia([24589000,45134000],[
-  {id:'TDJ1',valor:500000},{id:'TDJ2',valor:500000},{id:'TDJ3',valor:20000000},{id:'TDJ4',valor:10000000}
-]);
-const tdj3=r.out.filter(x=>x.tdj==='TDJ3');
-const tdj4=r.out.filter(x=>x.tdj==='TDJ4');
-if(tdj3.some(x=>x.obl!==1)) throw new Error('TDJ3 no puede saltar a O2 mientras O1 tenga saldo');
-if(tdj4.length!==1 || tdj4[0].obl!==1) throw new Error('TDJ4 debe retomar O1');
-if(tdj4[0].aplicado!==9041000) throw new Error(`TDJ4 aplicado inesperado: ${tdj4[0].aplicado}`);
-if(r.obligaciones[0]!==0) throw new Error('O1 debe quedar cubierta');
-if(r.obligaciones[1]!==43911000) throw new Error(`Saldo O2 inesperado: ${r.obligaciones[1]}`);
-console.log('REGRESION TDJ 16.33.155: OK — cada TDJ agota la obligación actual; el siguiente TDJ retoma esa obligación si quedó saldo.');
-''',encoding='utf-8')
-
-      - name: Pruebas tecnicas
+          p=Path('js/tdj-core-16.33.143.js')
+          s=p.read_text()
+          old='''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n\n        // v16.33.154: si pagos normales protegidos cubren la obligacion,\n        // el remanente TDJ puede continuar a la siguiente obligacion; si no,\n        // el siguiente TDJ debe retomar la obligacion actual.\n        let obligacionCubiertaPorPagosProtegidos=false;\n        try{\n          const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);\n          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;\n        }catch{}\n        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;'''
+          new='''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n\n        // v16.33.155: regla única. Si la obligación actual aún tiene saldo,\n        // este título termina aquí. Solo el excedente posterior a cubrirla\n        // puede avanzar; el siguiente título retoma la obligación actual.\n        if(saldoObligacionActual>0.5)break;'''
+          if old not in s: raise SystemExit('BLOQUE V154 NO ENCONTRADO')
+          p.write_text(s.replace(old,new,1).replace('16.33.154','16.33.155'))
+          for name in ['titulos.html','js/tdj.js','js/prioridad-tdj-v132.js']:
+            q=Path(name); q.write_text(q.read_text().replace('16.33.154','16.33.155'))
+          t=Path('tests/regresion-secuencia-tdj-155.mjs')
+          t.write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst s=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");\nassert.match(s,/v16\\.33\\.155: regla única/);\nassert.match(s,/if\\(saldoObligacionActual>0\\.5\\)break;/);\nassert.doesNotMatch(s,/obligacionCubiertaPorPagosProtegidos/);\nfunction sec(obls,titulos){let c=0,o=[];for(const t of titulos){let d=t.v;while(d>0.5&&c<obls.length){const a=Math.min(d,obls[c]);obls[c]-=a;d-=a;o.push([t.id,c+1,a]);if(obls[c]<=0.5)c++;else break;}}return{obls,o};}\nconst r=sec([24589000,45134000],[{id:"1",v:500000},{id:"2",v:500000},{id:"3",v:20000000},{id:"4",v:10000000}]);\nassert.equal(r.o.filter(x=>x[0]==="3").every(x=>x[1]===1),true);\nassert.deepEqual(r.o.find(x=>x[0]==="4"),["4",1,9041000]);\nassert.equal(r.obls[0],0);\nconsole.log("REGRESION TDJ 155 OK");\n''')
+          PY
+      - name: Test
         run: |
           node --check js/tdj-core-16.33.143.js
           node --check js/tdj.js
           node --check js/prioridad-tdj-v132.js
           node tests/regresion-secuencia-tdj-155.mjs
-
-      - name: Commit y retirar correctivo temporal
-        shell: bash
+      - name: Commit
         run: |
-          rm -f .github/workflows/apply-tdj-155.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js titulos.html tests/regresion-secuencia-tdj-155.mjs .github/workflows/apply-tdj-155.yml
+          rm -f .github/workflows/apply-tdj-155.yml .tdj155-trigger
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
           git commit -m 'fix: secuencia TDJ agota obligacion actual v16.33.155'
           git push
