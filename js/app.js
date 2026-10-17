@@ -1,17 +1,17 @@
-import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.160";
-import {importarDatosInteligente} from "./importador.js?v=16.33.160";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.160";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.160";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.160";
-import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.160";
-import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.160";
-import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.160";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.160";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.160";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.160";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.160";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.160";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.160";
+import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
+import {importarDatosInteligente} from "./importador.js?v=16.33.161";
+import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.161";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.161";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.161";
+import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
+import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
+import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
+import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.161";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.161";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.161";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -741,7 +741,14 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
     const rp=Array.isArray(rowPercentCols[i])?rowPercentCols[i]:percentCols;
-    const title=titleRows.includes(i),header=headerRows.includes(i),height=title?24:(header?20:18);
+    const title=titleRows.includes(i),header=headerRows.includes(i);
+    const maxLines=Math.max(1,...row.map((v,j)=>{
+      const texto=String(v??"");
+      const ancho=Math.max(10,excelWidths[j]||16);
+      const caracteresPorLinea=Math.max(8,Math.floor(ancho*1.05));
+      return Math.ceil(Math.max(1,texto.length)/caracteresPorLinea);
+    }));
+    const height=title?24:(header?Math.min(45,Math.max(20,18+(maxLines-1)*9)):Math.min(60,Math.max(18,18+(maxLines-1)*12)));
     return `<row r="${i+1}" ht="${height}" customHeight="1">${row.map((v,j)=>{
       let style=0;
       if(title)style=1;
@@ -751,7 +758,14 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
       return xlsxCell(v,j+1,i+1,style);
     }).join("")}</row>`;
   }).join("");
-  const cols=Array.from({length:lastCol},(_,i)=>`<col min="${i+1}" max="${i+1}" width="${Number(columnWidths[i]||16)}" customWidth="1"/>`).join("");
+  const valueCols=new Set([
+    ...moneyCols,
+    ...percentCols,
+    ...Object.values(rowMoneyCols||{}).flatMap(v=>Array.isArray(v)?v:[]),
+    ...Object.values(rowPercentCols||{}).flatMap(v=>Array.isArray(v)?v:[])
+  ].map(Number));
+  const excelWidths=Array.from({length:lastCol},(_,i)=>Math.max(10,Number(columnWidths[i]||16)+(valueCols.has(i+1)?4:0)));
+  const cols=excelWidths.map((width,i)=>`<col min="${i+1}" max="${i+1}" width="${width}" customWidth="1"/>`).join("");
   const autoMerges=titleRows.filter(i=>{const row=safeRows[i]||[];return row.filter(v=>String(v??"").trim()!=="").length<=1;}).map(i=>`A${i+1}:${xlsxCol(lastCol)}${i+1}`);
   const allMerges=[...new Set([...(mergeRanges||[]),...autoMerges])];
   const merges=allMerges.map(x=>`<mergeCell ref="${x}"/>`).join("");
