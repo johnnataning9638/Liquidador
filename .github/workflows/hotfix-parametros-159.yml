@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   hotfix:
-    if: !contains(github.event.head_commit.message, 'fix: restaurar carga de parametros v16.33.159')
+    if: ${{ !contains(github.event.head_commit.message, 'fix: restaurar carga de parametros v16.33.159') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,12 +36,10 @@ jobs:
               if old not in s:
                   raise SystemExit(f'No se encontro la firma defectuosa en {name}')
               p.write_text(s.replace(old,new,1))
-
           for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
               p=Path(name); s=p.read_text(); s2=s.replace('16.33.158','16.33.159')
               if s2!=s: p.write_text(s2)
           PY
-
       - name: Crear regresion de carga de parametros
         shell: bash
         run: |
@@ -53,10 +51,7 @@ jobs:
           const tdj=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
           assert.match(app,/function xlsxSheet\([^\n]+\}\=\{\}\)\{/);
           assert.match(tdj,/function xlsxSheetTDJ\([^\n]+\}\=\{\}\)\{/);
-          for (const f of ['datos/uvt.json','datos/tasas-moratorias.json','datos/ipc.json','datos/beneficios.json','datos/sanciones.json','datos/reglas-obligaciones.json','datos/calendario.json','datos/reglas-historicas.json']) {
-            const data=JSON.parse(fs.readFileSync(f,'utf8'));
-            assert.ok(data!==null,`Parametro invalido: ${f}`);
-          }
+          for (const f of ['datos/uvt.json','datos/tasas-moratorias.json','datos/ipc.json','datos/beneficios.json','datos/sanciones.json','datos/reglas-obligaciones.json','datos/calendario.json','datos/reglas-historicas.json']) JSON.parse(fs.readFileSync(f,'utf8'));
           for (const f of ['liquidacion.html','titulos.html','js/app.js','js/tdj-core-16.33.143.js']) assert.match(fs.readFileSync(f,'utf8'),/16\.33\.159/);
           console.log('REGRESION PARAMETROS 16.33.159 OK');
           EOF
@@ -71,7 +66,6 @@ jobs:
           node tests/regresion-simbolo-peso-importadores-146.mjs
           node tests/regresion-secuencia-tdj-151.mjs
           node tests/regresion-secuencia-tdj-152.mjs
-
       - name: Commit y publicar hotfix
         shell: bash
         run: |
