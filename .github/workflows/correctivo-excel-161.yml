@@ -17,7 +17,6 @@ jobs:
           set -e
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           files = [Path('js/app.js'), Path('js/tdj-core-16.33.143.js')]
           for p in files:
@@ -48,7 +47,7 @@ jobs:
               s=s.replace(oldh,newh,1)
               s=s.replace('v=16.33.160','v=16.33.161')
               p.write_text(s,encoding='utf-8')
-          
+
           for p in [Path('liquidacion.html'),Path('titulos.html'),Path('js/tdj.js'),Path('js/prioridad-tdj-v132.js')]:
               s=p.read_text(encoding='utf-8')
               s=s.replace('v=16.33.160','v=16.33.161')
@@ -64,8 +63,8 @@ jobs:
             if(!s.includes('valueCols=new Set')) throw new Error(`${name}: falta ampliación de columnas de valor`);
             if(!s.includes('const excelWidths=')) throw new Error(`${name}: falta cálculo de anchos`);
             if(!s.includes('Math.min(60')) throw new Error(`${name}: falta altura adaptativa`);
-            if(!s.includes('customHeight=\\"1\\"')) throw new Error(`${name}: falta altura personalizada`);
-            if(!s.includes('v=16.33.161')) throw new Error(`${name}: versión 161 ausente`);
+            if(!s.includes('customHeight="1"')) throw new Error(`${name}: falta altura personalizada`);
+            if(!s.includes('16.33.161')) throw new Error(`${name}: versión 161 ausente`);
           }
           for(const f of ['liquidacion.html','titulos.html','js/tdj.js','js/prioridad-tdj-v132.js']){
             if(!fs.readFileSync(f,'utf8').includes('16.33.161')) throw new Error(`${f}: versión 161 ausente`);
@@ -89,3 +88,4 @@ jobs:
           git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-excel-dimensiones-161.mjs .github/workflows/correctivo-excel-161.yml
           git commit -m 'feat: ajustar dimensiones Excel v16.33.161'
           git push origin main
+          # correctivo temporal eliminado en el mismo commit; la auditoría permanente queda read-only.
