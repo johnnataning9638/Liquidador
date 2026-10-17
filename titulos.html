@@ -18,14 +18,14 @@
 })();
 </script>
 
-<!-- TDJ UI DEPLOY 16.33.160 -->
+<!-- TDJ UI DEPLOY 16.33.163 -->
 <script id="tdj-version-guard">
 (function(){
   try{
     var u=new URL(window.location.href);
     var v=u.searchParams.get("v");
-    if(v && v!=="16.33.160"){
-      u.searchParams.set("v","16.33.160");
+    if(v && v!=="16.33.163"){
+      u.searchParams.set("v","16.33.163");
       window.location.replace(u.toString());
     }
   }catch(e){}
@@ -49,7 +49,7 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 .tdj-global-import .tdj-import-grid .tdj-import-actions{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:7px;align-items:center;width:185px;margin-top:0;}
 .tdj-global-import .tdj-import-actions button{width:185px;min-height:36px;display:flex;align-items:center;justify-content:center;gap:7px;}
 .tdj-global-import .tdj-import-actions .indicador-ia{margin-top:2px;}
-@media(max-width:900px){.tdj-global-import .tdj-import-grid{grid-template-columns:1fr;}.tdj-global-import .tdj-import-grid .import-destino,.tdj-global-import .tdj-import-grid textarea,.tdj-global-import .tdj-import-grid .tdj-import-actions{grid-column:1;grid-row:auto;}.tdj-global-import .tdj-import-grid .tdj-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;}.tdj-global-import .tdj-import-actions button{width:auto;min-width:150px;}}
+@media(max-width:900px){.tdj-global-import .tdj-import-grid{grid-template-columns:1fr;}.tdj-global-import .tdj-import-grid .import-destino,.tdj-global-import .tdj-import-grid textarea,.tdj-global-import .tdj-global-import .tdj-import-actions{grid-column:1;grid-row:auto;}.tdj-global-import .tdj-import-grid .tdj-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;}.tdj-global-import .tdj-import-actions button{width:auto;min-width:150px;}}
 .tdj-titulos-pane .tdj-sheet-actions{margin-top:14px}@media(max-width:900px){.tdj-title-import-grid{grid-template-columns:1fr}.tdj-title-import-actions{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center}.tdj-title-import-actions button{width:auto;min-width:150px}.tdj-title-import-actions .indicador-ia{align-self:center}.tdj-title-import-actions #resultadoImportacionTitulos{width:auto}}
 /* AJUSTE VISUAL TDJ v16.33.123 — DISTRIBUCIÓN EQUILIBRADA DE COLUMNAS DE TÍTULOS, SOLO PRESENTACIÓN */
 #tablaTitulos{table-layout:fixed;width:100%;min-width:0}
@@ -241,7 +241,7 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 
   <div class="nav-footer"><button class="secundario" type="button" onclick="window.location.href='index.html'">← MÓDULO DE INICIO</button><button class="secundario" type="button" onclick="window.location.href='liquidacion.html'">IR A LIQUIDACIÓN DE OBLIGACIONES</button></div>
 </main>
-<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.160</footer>
+<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.163</footer>
 <script id="tdj-global-clear-143">
 document.addEventListener("DOMContentLoaded",function(){
   const b=document.getElementById("btnLimpiarTitulosGlobal");
@@ -249,9 +249,9 @@ document.addEventListener("DOMContentLoaded",function(){
   b.addEventListener("click",function(e){
     e.stopImmediatePropagation();
     if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
-    window.location.href="titulos.html?v=16.33.161&reinicio="+Date.now();
+    window.location.href="titulos.html?v=16.33.163&reinicio="+Date.now();
   },true);
 });
 </script>
-<script type="module" src="js/tdj.js?v=16.33.161"></script>
+<script type="module" src="js/tdj.js?v=16.33.163"></script>
 </body></html>
