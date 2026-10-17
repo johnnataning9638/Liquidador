@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   correctivo:
-    if: !contains(github.event.head_commit.message, 'fix: permitir remanente TDJ protegido continuar a siguiente obligacion v16.33.154')
+    if: ${{ !contains(github.event.head_commit.message, 'fix: permitir remanente TDJ protegido continuar a siguiente obligacion v16.33.154') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,26 +21,21 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import re
-
           core = Path('js/tdj-core-16.33.143.js')
           s = core.read_text(encoding='utf-8')
-
           old = '''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
         if(saldoObligacionActual>0.5)break;
 
         if(aplicado>0){'''
-
           new = '''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
 
         // v16.33.154 — PRIORIDAD DE PAGOS + FLUJO ENTRE OBLIGACIONES:
-        // `r` representa la fotografía a la fecha del TDJ y por eso puede
-        // conservar saldo aunque exista un pago normal posterior que ya fue
-        // protegido por ajustarTDJParaPagosPosteriores. Si esos pagos reales
-        // cubren la obligación, el remanente del TDJ NO es endoso: puede
-        // continuar a la siguiente obligación sin desplazar el pago normal.
-        // Si ni los pagos protegidos ni el título actual cubren la obligación,
-        // se mantiene la regla v16.33.153: el siguiente TDJ debe retomarla.
+        // `r` es la fotografía a la fecha del TDJ. Puede conservar saldo
+        // aunque exista un pago normal posterior que ya fue protegido por
+        // ajustarTDJParaPagosPosteriores. Si esos pagos reales cubren la
+        // obligación, el remanente TDJ NO es endoso: continúa a la siguiente
+        // obligación sin desplazar el pago normal. Si no la cubren, se conserva
+        // la regla v16.33.153: el siguiente TDJ retoma la obligación actual.
         let obligacionCubiertaPorPagosProtegidos=false;
         try{
           const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
@@ -49,20 +44,13 @@ jobs:
         if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;
 
         if(aplicado>0){'''
-
           if old not in s:
               raise SystemExit('BLOQUE OBJETIVO NO ENCONTRADO EN tdj-core-16.33.143.js')
-          s = s.replace(old, new, 1)
-
-          # Actualizar únicamente referencias de versión de la cadena TDJ que
-          # participa en esta corrección. No se toca el motor tributario ni la
-          # lógica de proporcionalidad.
-          for p in [core, Path('js/tdj.js'), Path('js/prioridad-tdj-v132.js'), Path('titulos.html')]:
-              txt=p.read_text(encoding='utf-8')
-              txt=txt.replace('16.33.153','16.33.154')
-              p.write_text(txt,encoding='utf-8')
-
+          s=s.replace(old,new,1)
           core.write_text(s,encoding='utf-8')
+          for p in [core,Path('js/tdj.js'),Path('js/prioridad-tdj-v132.js'),Path('titulos.html')]:
+              txt=p.read_text(encoding='utf-8').replace('16.33.153','16.33.154')
+              p.write_text(txt,encoding='utf-8')
           print('CORRECCIÓN TDJ v16.33.154 APLICADA')
 
       - name: Crear regresión v16.33.154
@@ -71,25 +59,17 @@ jobs:
           cat > tests/regresion-endoso-tdj-154.mjs <<'EOF'
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
-
           const core=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
-          assert.match(core,/obligacionCubiertaPorPagosProtegidos/,'Debe existir la comprobación de cobertura por pagos protegidos');
-          assert.match(core,/saldoObligacionActual>0\.5 && !obligacionCubiertaPorPagosProtegidos/,'El bloqueo debe conservarse solo cuando los pagos protegidos NO cubren la obligación');
-          assert.match(core,/motorActual\.calcular\(datosAjustados\)/,'La decisión debe usar la misma fotografía que protege los pagos posteriores');
-          assert.match(core,/16\.33\.154/,'El motor TDJ debe quedar versionado en 16.33.154');
-
-          // Modelo de la regla:
-          // O1 conserva saldo en la fotografía del TDJ, pero un pago normal
-          // posterior protegido cubre el saldo. El remanente TDJ puede seguir
-          // a O2. Si no existe esa cobertura, el siguiente TDJ debe retomar O1.
-          const casoProtegido={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:0,remanenteTDJ:4452000};
-          assert.equal(casoProtegido.saldoFotografiaTDJ>0,true);
-          assert.equal(casoProtegido.saldoConPagosProtegidos<=0.5,true);
-          assert.equal(casoProtegido.remanenteTDJ>0,true);
-
-          const casoNoProtegido={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:9041000,remanenteTDJ:4452000};
-          assert.equal(casoNoProtegido.saldoConPagosProtegidos>0.5,true);
-
+          assert.match(core,/obligacionCubiertaPorPagosProtegidos/);
+          assert.match(core,/saldoObligacionActual>0\.5 && !obligacionCubiertaPorPagosProtegidos/);
+          assert.match(core,/motorActual\.calcular\(datosAjustados\)/);
+          assert.match(core,/16\.33\.154/);
+          const protegido={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:0,remanenteTDJ:4452000};
+          assert.equal(protegido.saldoFotografiaTDJ>0.5,true);
+          assert.equal(protegido.saldoConPagosProtegidos<=0.5,true);
+          assert.equal(protegido.remanenteTDJ>0,true);
+          const noProtegido={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:9041000,remanenteTDJ:4452000};
+          assert.equal(noProtegido.saldoConPagosProtegidos>0.5,true);
           console.log('REGRESIÓN TDJ 16.33.154: OK — pago posterior protegido mantiene prioridad y el remanente TDJ puede continuar a la siguiente obligación; si no cubre, el siguiente TDJ retoma la obligación actual.');
           EOF
           node --check js/tdj-core-16.33.143.js
