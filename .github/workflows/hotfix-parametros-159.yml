@@ -31,7 +31,7 @@ jobs:
           for name,(old,new) in fixes.items():
               p=Path(name); s=p.read_text()
               if old in s: p.write_text(s.replace(old,new,1))
-          for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
+          for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html','tests/regresion-exportacion-excel-158.mjs']:
               p=Path(name); s=p.read_text(); p.write_text(s.replace('16.33.158','16.33.159'))
           PY
       - name: Pruebas y auditoria
@@ -55,7 +55,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html
+          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-exportacion-excel-158.mjs
           git diff --cached --quiet && exit 0
           git commit -m 'fix: restaurar carga de parametros v16.33.159'
           git push origin HEAD:main
