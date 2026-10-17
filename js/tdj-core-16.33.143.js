@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.153";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.153";
-import {importarDatosInteligente} from "./importador.js?v=16.33.153";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.153";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.153";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.153";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.153";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.153";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.153";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.153";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.153";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.154";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.154";
+import {importarDatosInteligente} from "./importador.js?v=16.33.154";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.154";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.154";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.154";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.154";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.154";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.154";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.154";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.154";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1081,7 +1081,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         // continúa buscando la siguiente obligación y, si no encuentra deuda
         // imputable, conserva íntegramente su valor para endoso.
         if(aplicado<=0){
-          // REGLA v16.33.153: si la obligación actual todavía tiene saldo,
+          // REGLA v16.33.154: si la obligación actual todavía tiene saldo,
           // el título NO puede saltar a la obligación siguiente.
           const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
           if(saldoObligacionActual>0.5)break;
@@ -1196,12 +1196,21 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         traz.push(fila);
         disponible=excedente;
 
-        // REGLA FUNDAMENTAL v16.33.153:
+        // REGLA FUNDAMENTAL v16.33.154:
         // PRIMERO SE AGOTA LA OBLIGACIÓN ACTUAL. Solo si el saldo quedó en
         // cero puede el remanente del mismo título continuar a la siguiente.
         // Si queda saldo, el siguiente TDJ retomará la obligación actual.
         const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
-        if(saldoObligacionActual>0.5)break;
+
+        // v16.33.154: si pagos normales protegidos cubren la obligacion,
+        // el remanente TDJ puede continuar a la siguiente obligacion; si no,
+        // el siguiente TDJ debe retomar la obligacion actual.
+        let obligacionCubiertaPorPagosProtegidos=false;
+        try{
+          const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
+          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;
+        }catch{}
+        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;
 
         if(aplicado>0){
           // El siguiente título verá este pago como antecedente y calculará
