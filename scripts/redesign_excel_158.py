@@ -14,7 +14,7 @@ def patch_sheet(path, fn, colfn, cellfn, crcfn):
   const safeRows=Array.isArray(rows)?rows:[];
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
   const lastRow=Math.max(1,safeRows.length);
-  const dimension=`A1:${{{colfn}}(lastCol)}${{lastRow}}`;
+  const dimension=`A1:${{{colfn}(lastCol)}}${{lastRow}}`;
   const body=safeRows.map((r,i)=>{{
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
@@ -30,7 +30,7 @@ def patch_sheet(path, fn, colfn, cellfn, crcfn):
     }}).join("")}}</row>`;
   }}).join("");
   const cols=Array.from({{length:lastCol}},(_,i)=>`<col min="${{i+1}}" max="${{i+1}}" width="${{Number(columnWidths[i]||16)}}" customWidth="1"/>`).join("");
-  const autoMerges=titleRows.filter(i=>{{const row=safeRows[i]||[];return row.filter(v=>String(v??"").trim()!=="").length<=1;}}).map(i=>`A${{i+1}}:${{{colfn}}(lastCol)}${{i+1}}`);
+  const autoMerges=titleRows.filter(i=>{{const row=safeRows[i]||[];return row.filter(v=>String(v??"").trim()!=="").length<=1;}}).map(i=>`A${{i+1}}:${{{colfn}(lastCol)}}${{i+1}}`);
   const allMerges=[...new Set([...(mergeRanges||[]),...autoMerges])];
   const merges=allMerges.map(x=>`<mergeCell ref="${{x}}"/>`).join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
