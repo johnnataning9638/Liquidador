@@ -38,10 +38,9 @@ jobs:
           node tests/regresion-simbolo-peso-importadores-146.mjs
           if git diff --name-only | grep -E '^(js/motor-liquidacion\.js|js/motor-liquidacion-oficial\.js|js/motor-liquidacion-base\.js)$'; then echo 'ERROR: motor modificado'; exit 1; fi
           rm -f .excel158-trigger
-          sed -i 's/contents: write/contents: read/' .github/workflows/audit-estabilidad.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html scripts/redesign_excel_158.py tests/regresion-exportacion-excel-158.mjs .github/workflows/audit-estabilidad.yml
+          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html scripts/redesign_excel_158.py tests/regresion-exportacion-excel-158.mjs
           git commit -m 'feat: rediseñar exportación Excel estilo PDF v16.33.158'
           git push
 
