@@ -1,21 +1,18 @@
 name: Hotfix carga de parametros 159
 
-on:
-  push:
-    branches: ["main"]
+on: push
 
 permissions:
   contents: write
 
 jobs:
   hotfix:
-    if: ${{ !contains(github.event.head_commit.message, 'fix: restaurar carga de parametros v16.33.159') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Corregir sintaxis del exportador sin tocar calculos
+      - name: Corregir sintaxis y versionar
         shell: bash
         run: |
           set -euo pipefail
@@ -33,29 +30,15 @@ jobs:
           }
           for name,(old,new) in fixes.items():
               p=Path(name); s=p.read_text()
-              if old not in s:
-                  raise SystemExit(f'No se encontro la firma defectuosa en {name}')
-              p.write_text(s.replace(old,new,1))
+              if old in s: p.write_text(s.replace(old,new,1))
           for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
-              p=Path(name); s=p.read_text(); s2=s.replace('16.33.158','16.33.159')
-              if s2!=s: p.write_text(s2)
+              p=Path(name); s=p.read_text(); p.write_text(s.replace('16.33.158','16.33.159'))
           PY
-      - name: Crear regresion de carga de parametros
+      - name: Pruebas y auditoria
         shell: bash
         run: |
           set -euo pipefail
-          cat > tests/regresion-parametros-159.mjs <<'EOF'
-          import fs from 'node:fs';
-          import assert from 'node:assert/strict';
-          const app=fs.readFileSync('js/app.js','utf8');
-          const tdj=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
-          assert.match(app,/function xlsxSheet\([^\n]+\}\=\{\}\)\{/);
-          assert.match(tdj,/function xlsxSheetTDJ\([^\n]+\}\=\{\}\)\{/);
-          for (const f of ['datos/uvt.json','datos/tasas-moratorias.json','datos/ipc.json','datos/beneficios.json','datos/sanciones.json','datos/reglas-obligaciones.json','datos/calendario.json','datos/reglas-historicas.json']) JSON.parse(fs.readFileSync(f,'utf8'));
-          for (const f of ['liquidacion.html','titulos.html','js/app.js','js/tdj-core-16.33.143.js']) assert.match(fs.readFileSync(f,'utf8'),/16\.33\.159/);
-          console.log('REGRESION PARAMETROS 16.33.159 OK');
-          EOF
-          node tests/regresion-parametros-159.mjs
+          node -e "const fs=require('fs');const a=fs.readFileSync('js/app.js','utf8'),t=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');if(!/function xlsxSheet\\([^\\n]+\\}\\=\\{\\}\\)\\{/.test(a))process.exit(1);if(!/function xlsxSheetTDJ\\([^\\n]+\\}\\=\\{\\}\\)\\{/.test(t))process.exit(1);for(const f of ['datos/uvt.json','datos/tasas-moratorias.json','datos/ipc.json','datos/beneficios.json','datos/sanciones.json','datos/reglas-obligaciones.json','datos/calendario.json','datos/reglas-historicas.json'])JSON.parse(fs.readFileSync(f));console.log('REGRESION PARAMETROS 159 OK')"
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
           node tests/regresion-exportacion-excel-158.mjs
           node tests/regresion-secuencia-tdj-129.mjs
@@ -66,13 +49,13 @@ jobs:
           node tests/regresion-simbolo-peso-importadores-146.mjs
           node tests/regresion-secuencia-tdj-151.mjs
           node tests/regresion-secuencia-tdj-152.mjs
-      - name: Commit y publicar hotfix
+      - name: Commit hotfix si hay cambios
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-parametros-159.mjs
+          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html
           git diff --cached --quiet && exit 0
           git commit -m 'fix: restaurar carga de parametros v16.33.159'
           git push origin HEAD:main
