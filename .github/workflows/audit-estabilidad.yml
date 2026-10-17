@@ -7,55 +7,23 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   syntax-and-integrity:
-    if: ${{ !contains(github.event.head_commit.message, 'fix: restaurar ejecucion de carga de parametros v16.33.160') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Aplicar correctivo exacto de carga de parametros 160
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          files={
-            'js/app.js': 'function crc32(bytes){',
-            'js/tdj-core-16.33.143.js': 'function crc32TDJ(bytes){'
-          }
-          changed=False
-          for name,next_fn in files.items():
-            p=Path(name); s=p.read_text(encoding='utf-8')
-            marker='</worksheet>;' if '</worksheet>;' in s else '</worksheet>'
-            needle=marker+'\n\n'+next_fn
-            if needle in s:
-              s=s.replace(needle, marker+'\n}\n\n'+next_fn, 1)
-              changed=True
-            p.write_text(s.replace('16.33.159','16.33.160'),encoding='utf-8')
-          for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
-            p=Path(name); s=p.read_text(encoding='utf-8'); s2=s.replace('16.33.159','16.33.160')
-            if s2!=s: changed=True; p.write_text(s2,encoding='utf-8')
-          if not changed:
-            print('Correctivo 160 ya estaba aplicado; no se modifica fuente.')
-          PY
       - name: Validar sintaxis JavaScript
         run: |
           set -e
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
-      - name: Regresión exacta de parámetros 160
-        run: |
-          set -e
-          node --check js/app.js
-          node --check js/tdj-core-16.33.143.js
-          node tests/regresion-parametros-160.mjs
-          for f in datos/uvt.json datos/tasas-moratorias.json datos/ipc.json datos/beneficios.json datos/sanciones.json datos/reglas-obligaciones.json datos/calendario.json datos/reglas-historicas.json; do node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"; done
       - name: Ejecutar regresiones históricas y de importadores
         run: |
           set -e
+          node tests/regresion-parametros-160.mjs
           node tests/regresion-exportacion-excel-158.mjs
           node tests/regresion-secuencia-tdj-129.mjs
           node tests/regresion-prioridad-pagos-tdj-130.mjs
@@ -65,15 +33,19 @@ jobs:
           node tests/regresion-simbolo-peso-importadores-146.mjs
           node tests/regresion-secuencia-tdj-151.mjs
           node tests/regresion-secuencia-tdj-152.mjs
-      - name: Commit correctivo 160
+      - name: Verificar integridad del motor de liquidación
+        if: github.event_name == 'pull_request'
         run: |
           set -e
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-exportacion-excel-158.mjs tests/regresion-parametros-160.mjs
-          if git diff --cached --quiet; then echo 'Sin cambios para publicar.'; exit 0; fi
-          git commit -m 'fix: restaurar ejecucion de carga de parametros v16.33.160'
-          git push origin HEAD:main
+          git fetch origin main --quiet
+          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
+            diff="$(git diff --unified=0 origin/main...HEAD -- "$f" || true)"
+            echo "$diff"
+            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\\?v='; then
+              echo "ERROR: se detectó un cambio funcional en $f."
+              exit 1
+            fi
+          done
       - name: Verificar controles de cálculo DIAN
         run: |
           set -e
