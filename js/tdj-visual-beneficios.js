@@ -1,4 +1,4 @@
-// TDJ v16.33.162 — PRESENTACIÓN ÚNICAMENTE.
+// TDJ v16.33.163 — PRESENTACIÓN ÚNICAMENTE.
 // Este módulo modifica exclusivamente la interfaz de la tabla de títulos.
 // NO escribe sobre obligaciones, títulos, pagos, motor ni resultados.
 (function(){
@@ -110,7 +110,7 @@
     });
 
     table.dataset.tdjVisualSignature=firma;
-    table.dataset.tdjVisualVersion="16.33.162";
+    table.dataset.tdjVisualVersion="16.33.163";
   }
 
   function iniciar(){
