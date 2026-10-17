@@ -1,4 +1,4 @@
-// TDJ v16.33.157 — barrera física contra módulos cacheados.
+// TDJ v16.33.162 — barrera física contra módulos cacheados + capa visual aislada.
 (function(){
   document.addEventListener("click",function(e){
     var b=e.target && e.target.closest ? e.target.closest("#btnLimpiarTitulosGlobal") : null;
@@ -14,3 +14,7 @@
 // revalidación del módulo para evitar que el navegador reutilice una versión
 // anterior del motor TDJ.
 import("./tdj-core-16.33.143.js?v=16.33.161");
+
+// Capa exclusivamente visual: genera las columnas OBLIGACIÓN 1..N y sus
+// listas de beneficio por cada título. No modifica el estado del motor.
+import("./tdj-visual-beneficios.js?v=16.33.162");
