@@ -1,16 +1,17 @@
-// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.147
+// PRIORIDAD DE PAGOS NORMALES FRENTE A TDJ — v16.33.148
 // Esta capa NO modifica formulas de impuesto, intereses ni sancion.
 // Regla: los pagos reales tienen prioridad económica sobre los TDJ, incluso
 // cuando el pago real ocurre después del título. El TDJ solo cubre el saldo
 // que permanezca después de considerar los pagos reales y los TDJ anteriores.
-// La proporcionalidad del TDJ se conserva; esta capa solo controla la secuencia
-// para impedir que títulos posteriores regresen a una obligación ya cerrada.
+// La proporcionalidad del TDJ se conserva; esta capa controla exclusivamente
+// la secuencia para impedir regresar a una obligación ya cerrada.
 //
-// CORRECCIÓN v16.33.147:
-// Cuando una obligación ya fue cerrada por títulos anteriores, un título nuevo
-// no debe ser destruido/convertido en valor 0 por esta capa. Debe conservar su
-// valor nominal para que la capa superior de secuencia pueda continuar con la
-// siguiente obligación y determinar allí su aplicación o endoso.
+// CORRECCIÓN v16.33.148:
+// Cuando la obligación actual ya fue cerrada por títulos anteriores y/o pagos,
+// el TDJ actual debe quedar en CERO SOLO PARA ESTA OBLIGACIÓN. La capa superior
+// conserva el valor disponible del título y, al detectar aplicación 0, continúa
+// con la siguiente obligación. Esto permite que un segundo TDJ de la misma fecha
+// avance a la obligación siguiente sin alterar la proporcionalidad ni los pagos.
 
 function esTDJ(p){
   return Boolean(String(p?.tdj||"").trim()) || p?.esTDJ===true;
@@ -64,16 +65,23 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   prepararSecuencia(datos,idActual);
   const indiceActual=indiceObligacion(datos);
 
-  // Si la obligación actual ya fue cerrada por títulos anteriores, NO anulamos
-  // el TDJ actual. La capa superior necesita conservar su valor para poder
-  // intentar la siguiente obligación. Anularlo aquí era precisamente lo que
-  // hacía que un segundo título con la MISMA FECHA terminara como endoso sin
-  // haber sido ofrecido a la obligación siguiente.
+  // REGLA DE CIERRE DEFINITIVO:
+  // Si la secuencia ya avanzó a una obligación posterior, esta obligación está
+  // cerrada. El TDJ actual NO se aplica nuevamente aquí. Se coloca en cero solo
+  // dentro de esta fotografía para que la capa superior conserve 'disponible'
+  // y lo intente inmediatamente contra la siguiente obligación.
   //
-  // La proporcionalidad, intereses, sanción y prioridad de pagos permanecen
-  // intactas: aquí solo se evita consumir el título antes de que la secuencia
-  // externa decida su siguiente destino.
-  if(indiceActual<secuencia.cursor)return datos;
+  // Esto es especialmente importante para TDJ con la MISMA FECHA: la fecha no
+  // crea una nueva obligación; el cierre de la obligación sí determina cuándo
+  // debe avanzar el título.
+  if(indiceActual<secuencia.cursor){
+    const pagos=[...(datos?.pagos||[])].map(p=>
+      String(p?.id||"")===String(idActual||"")
+        ? {...p,valor:0}
+        : {...p}
+    );
+    return {...datos,pagos};
+  }
 
   const originales=[...(datos?.pagos||[])].map((p,i)=>({...p,__ordenOriginal:i}));
   const tdjs=originales.filter(esTDJ).filter(p=>p.fecha&&Number(p.valor)>0);
@@ -116,12 +124,6 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
 
     const valorOriginal=Math.max(0,Math.trunc(Number(t.valor||0)));
     let hi=valorOriginal;
-
-    // IMPORTANTE: no limitar hi por el saldo calculado excluyendo el TDJ.
-    // Esa restricción fue introducida en v16.33.130 y alteraba la capacidad
-    // de aplicación/proporcionalidad del TDJ. La proporcionalidad existente
-    // queda intacta; aquí solo se determina cuánto necesita la secuencia.
-
     let lo=0,mejor=0;
     const esFactible=v=>{
       const anterior=t.valor;
