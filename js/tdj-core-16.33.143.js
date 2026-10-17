@@ -1,14 +1,14 @@
-import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.156";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.156";
-import {importarDatosInteligente} from "./importador.js?v=16.33.156";
-import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.156";
-import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.156";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.156";
-import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.156";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.156";
-import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.156";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.156";
-import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.156";
+import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.157";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.157";
+import {importarDatosInteligente} from "./importador.js?v=16.33.157";
+import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.157";
+import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.157";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.157";
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.157";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.157";
+import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.157";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.157";
+import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.157";
 
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1081,10 +1081,10 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         // continúa buscando la siguiente obligación y, si no encuentra deuda
         // imputable, conserva íntegramente su valor para endoso.
         if(aplicado<=0){
-          // REGLA v16.33.156: si la obligación actual todavía tiene saldo,
-          // el título NO puede saltar a la obligación siguiente.
-          const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
-          if(saldoObligacionActual>0.5)break;
+          // v16.33.157: un TDJ que no puede aplicarse a esta obligación
+          // continúa con la siguiente. No se conserva el título bloqueado por
+          // una fotografía intermedia del saldo.
+
           continue;
         }
 
@@ -1196,14 +1196,9 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         traz.push(fila);
         disponible=excedente;
 
-        // REGLA FUNDAMENTAL v16.33.156:
-        // PRIMERO SE AGOTA LA OBLIGACIÓN ACTUAL. Solo si el saldo quedó en
-        // cero puede el remanente del mismo título continuar a la siguiente.
-        // Si queda saldo, el siguiente TDJ retomará la obligación actual.
-        // v16.33.156: la secuencia de TDJ es por consumo del título.
-        // Si el título deja remanente, ese remanente DEBE pasar a la siguiente
-        // obligación; los títulos posteriores continúan desde esa obligación.
-        // No se bloquea el avance por una fotografía intermedia del saldo.
+        // v16.33.157: el remanente del título y los títulos posteriores
+        // deben continuar con la siguiente obligación. La validación final
+        // de endoso solo debe recibir remanentes realmente no imputables.
 
 
         if(aplicado>0){
