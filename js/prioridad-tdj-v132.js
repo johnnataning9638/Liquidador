@@ -1,18 +1,18 @@
-// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.151
+// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.152
 //
-// La lógica económica permanece en prioridad-tdj.js v16.33.151.
+// La lógica económica permanece en prioridad-tdj.js.
 // Esta capa controla únicamente la secuencia entre títulos y conserva las
 // correcciones de presentación existentes.
 //
-// REGLA FUNCIONAL v16.33.151:
+// REGLA FUNCIONAL v16.33.152:
 // PRIMERO SE AGOTA LA NECESIDAD DE LA OBLIGACIÓN ACTUAL; SOLO CUANDO ESTA
 // QUEDA CUBIERTA, EL TÍTULO PUEDE CONTINUAR CON LA SIGUIENTE OBLIGACIÓN.
-import {dinero} from "./utilidades.js?v=16.33.151";
+import {dinero} from "./utilidades.js?v=16.33.152";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
   reiniciarSecuenciaTDJ
-} from "./prioridad-tdj.js?v=16.33.151";
+} from "./prioridad-tdj.js?v=16.33.152";
 
 export function saldoFinalSinIntereses(impuesto=0,sancion=0){
   const i=Number(impuesto||0),s=Number(sancion||0);
@@ -121,13 +121,10 @@ function obligacionYaCubiertaAntesDelTitulo(motor,datos,idActual){
     .filter(p=>Number(p?.valor||0)>0);
   if(!previos.length)return false;
   try{
-    // Se calcula exclusivamente con los movimientos anteriores al título
-    // actual. Así, un segundo TDJ de la misma fecha no puede volver a consumir
-    // la obligación que el primer TDJ ya agotó.
     const r=motor.calcular({...datos,pagos:previos});
     return Number(r?.total||0)<=0.5;
   }catch(e){
-    console.warn("Secuencia TDJ v16.33.151:",e);
+    console.warn("Secuencia TDJ v16.33.152:",e);
     return false;
   }
 }
@@ -141,14 +138,15 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
   const idActual=opciones?.soloTDJId||"";
   if(idActual && obligacionYaCubiertaAntesDelTitulo(motor,datos,idActual)){
     // IMPORTANTE: se anula únicamente la representación del título dentro de
-    // esta obligación. La capa superior conserva el 'disponible' original y
-    // puede aplicarlo inmediatamente a la siguiente obligación.
+    // esta obligación, pero la secuencia base también recibe esta fotografía.
+    // Así puede reconocer el cierre y avanzar el cursor antes de que la capa
+    // superior intente la misma disponibilidad contra la siguiente obligación.
     const pagos=(datos?.pagos||[]).map(p=>
       String(p?.id||"")===String(idActual)
         ? {...p,valor:0}
         : {...p}
     );
-    return {...datos,pagos};
+    return ajustarBase(motor,{...datos,pagos},opciones);
   }
 
   return ajustarBase(motor,datos,opciones);
