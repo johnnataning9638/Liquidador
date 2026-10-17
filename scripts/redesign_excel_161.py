@@ -2,6 +2,7 @@ from pathlib import Path
 
 FILES = [Path('js/app.js'), Path('js/tdj-core-16.33.143.js')]
 VERSION_FILES = [Path('js/app.js'), Path('js/tdj-core-16.33.143.js'), Path('js/tdj.js'), Path('js/prioridad-tdj-v132.js'), Path('liquidacion.html'), Path('titulos.html')]
+TEST_FILES = [Path('tests/regresion-parametros-160.mjs'), Path('tests/regresion-exportacion-excel-158.mjs')]
 OLD_WIDTH = 'const cols=Array.from({length:lastCol},(_,i)=>`<col min="${i+1}" max="${i+1}" width="${Number(columnWidths[i]||16)}" customWidth="1"/>`).join("");'
 NEW_WIDTH = '''const valueCols=new Set([
     ...moneyCols,
@@ -34,6 +35,10 @@ for path in FILES:
 
 for path in VERSION_FILES:
     s = path.read_text(encoding='utf-8').replace('v=16.33.160', 'v=16.33.161')
+    path.write_text(s, encoding='utf-8')
+
+for path in TEST_FILES:
+    s = path.read_text(encoding='utf-8').replace('16.33.160', '16.33.161')
     path.write_text(s, encoding='utf-8')
 
 print('AJUSTE EXCEL 16.33.161 APLICADO: columnas de valores +4 y alturas adaptativas. Solo presentación XLSX.')
