@@ -25,10 +25,13 @@ jobs:
           files={'js/app.js':'function crc32(bytes){','js/tdj-core-16.33.143.js':'function crc32TDJ(bytes){'}
           for name,next_fn in files.items():
             p=Path(name); s=p.read_text(encoding='utf-8')
-            needle='</worksheet>`;\n\n'+next_fn
-            if needle not in s:
-              raise SystemExit(f'No se encontro el cierre XLSX defectuoso en {name}')
-            s=s.replace(needle,'</worksheet>`;\n}\n\n'+next_fn,1)
+            idx=s.find(next_fn)
+            if idx<0:
+              raise SystemExit(f'No se encontro {next_fn} en {name}')
+            before=s[:idx]
+            if before.rstrip().endswith('}'):
+              raise SystemExit(f'El cierre ya existe o la estructura no es la esperada en {name}')
+            s=s[:idx]+'}\n\n'+s[idx:]
             p.write_text(s.replace('16.33.159','16.33.160'),encoding='utf-8')
           for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
             p=Path(name); p.write_text(p.read_text(encoding='utf-8').replace('16.33.159','16.33.160'),encoding='utf-8')
