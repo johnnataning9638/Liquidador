@@ -6,10 +6,14 @@ STYLE='''<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006
 def patch_sheet(path, fn, colfn, cellfn, crcfn):
     p=Path(path)
     s=p.read_text(encoding='utf-8')
-    start=s.find(f'function {fn}(rows,{{')
-    end=s.find(f'\n\nfunction {crcfn}', start)
-    if start < 0 or end < 0:
+    m=re.search(rf'function\s+{re.escape(fn)}\s*\(rows,\{{',s)
+    if not m:
         raise RuntimeError(f'No se encontró la función {fn} en {path}')
+    start=m.start()
+    endm=re.search(rf'\n\nfunction\s+{re.escape(crcfn)}\b',s[start:])
+    if not endm:
+        raise RuntimeError(f'No se encontró el final de {fn} en {path}')
+    end=start+endm.start()
     new=f'''function {fn}(rows,{{moneyCols=[],percentCols=[],rowMoneyCols={{}},rowPercentCols={{}},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}}={{}}
   const safeRows=Array.isArray(rows)?rows:[];
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
