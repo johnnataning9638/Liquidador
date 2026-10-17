@@ -1,0 +1,84 @@
+name: Hotfix carga de parametros 159
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  hotfix:
+    if: !contains(github.event.head_commit.message, 'fix: restaurar carga de parametros v16.33.159')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Corregir sintaxis del exportador sin tocar calculos
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          fixes = {
+              'js/app.js': (
+                  'function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}\n',
+                  'function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){\n'
+              ),
+              'js/tdj-core-16.33.143.js': (
+                  'function xlsxSheetTDJ(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}\n',
+                  'function xlsxSheetTDJ(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){\n'
+              )
+          }
+          for name,(old,new) in fixes.items():
+              p=Path(name); s=p.read_text()
+              if old not in s:
+                  raise SystemExit(f'No se encontro la firma defectuosa en {name}')
+              p.write_text(s.replace(old,new,1))
+
+          for name in ['js/app.js','js/tdj-core-16.33.143.js','js/tdj.js','js/prioridad-tdj-v132.js','liquidacion.html','titulos.html']:
+              p=Path(name); s=p.read_text(); s2=s.replace('16.33.158','16.33.159')
+              if s2!=s: p.write_text(s2)
+          PY
+
+      - name: Crear regresion de carga de parametros
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > tests/regresion-parametros-159.mjs <<'EOF'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const app=fs.readFileSync('js/app.js','utf8');
+          const tdj=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
+          assert.match(app,/function xlsxSheet\([^\n]+\}\=\{\}\)\{/);
+          assert.match(tdj,/function xlsxSheetTDJ\([^\n]+\}\=\{\}\)\{/);
+          for (const f of ['datos/uvt.json','datos/tasas-moratorias.json','datos/ipc.json','datos/beneficios.json','datos/sanciones.json','datos/reglas-obligaciones.json','datos/calendario.json','datos/reglas-historicas.json']) {
+            const data=JSON.parse(fs.readFileSync(f,'utf8'));
+            assert.ok(data!==null,`Parametro invalido: ${f}`);
+          }
+          for (const f of ['liquidacion.html','titulos.html','js/app.js','js/tdj-core-16.33.143.js']) assert.match(fs.readFileSync(f,'utf8'),/16\.33\.159/);
+          console.log('REGRESION PARAMETROS 16.33.159 OK');
+          EOF
+          node tests/regresion-parametros-159.mjs
+          find js -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tests/regresion-exportacion-excel-158.mjs
+          node tests/regresion-secuencia-tdj-129.mjs
+          node tests/regresion-prioridad-pagos-tdj-130.mjs
+          node tests/regresion-idempotencia-tdj-132.mjs
+          node tests/regresion-saldo-final-134.mjs
+          node tests/regresion-importadores-decimales-145.mjs
+          node tests/regresion-simbolo-peso-importadores-146.mjs
+          node tests/regresion-secuencia-tdj-151.mjs
+          node tests/regresion-secuencia-tdj-152.mjs
+
+      - name: Commit y publicar hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js liquidacion.html titulos.html tests/regresion-parametros-159.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: restaurar carga de parametros v16.33.159'
+          git push origin HEAD:main
