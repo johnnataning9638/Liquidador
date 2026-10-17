@@ -13,4 +13,4 @@
 // El motor original se conserva íntegramente; el querystring fuerza la
 // revalidación del módulo para evitar que el navegador reutilice una versión
 // anterior del motor TDJ.
-import("./tdj-core-16.33.143.js?v=16.33.148");
+import("./tdj-core-16.33.143.js?v=16.33.149");
