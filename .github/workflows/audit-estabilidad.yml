@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Ajuste Excel 161
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'habilitar ejecución ajuste Excel 161')
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'habilitar ajuste Excel 161')
         run: |
           set -e
           python3 - <<'PY'
