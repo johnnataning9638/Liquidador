@@ -5,46 +5,138 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  auditoria:
+  correctivo:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Verificar corrección en motor real
-        shell: bash
+      - name: Aplicar corrección exacta al motor TDJ
+        shell: python
         run: |
-          set -euo pipefail
-          python - <<'PY'
           from pathlib import Path
-          checks = {
-              'regla': ('REGLA FUNDAMENTAL v16.33.153', 'js/tdj-core-16.33.143.js'),
-              'corte': ('if(saldoObligacionActual>0.5)break;', 'js/tdj-core-16.33.143.js'),
-              'core-import': ('prioridad-tdj-v132.js?v=16.33.153', 'js/tdj-core-16.33.143.js'),
-              'tdj-import': ('tdj-core-16.33.143.js?v=16.33.153', 'js/tdj.js'),
-              'html-import': ('js/tdj.js?v=16.33.153', 'titulos.html'),
-          }
-          for label,(needle,name) in checks.items():
-              text=Path(name).read_text(encoding='utf-8')
-              if needle not in text:
-                  raise SystemExit(f'FALLO {label}: {needle}')
-          print('AUDITORIA CADENA TDJ 16.33.153: OK')
-          PY
+          core = Path('js/tdj-core-16.33.143.js')
+          s = core.read_text(encoding='utf-8')
+          old = '''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
+        if(saldoObligacionActual>0.5)break;
 
-      - name: Sintaxis y regresiones TDJ
+        if(aplicado>0){'''
+          new = '''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
+
+        // v16.33.154 — PRIORIDAD DE PAGOS + FLUJO ENTRE OBLIGACIONES:
+        // `r` es la fotografía a la fecha del TDJ. Puede conservar saldo
+        // aunque exista un pago normal posterior que ya fue protegido por
+        // ajustarTDJParaPagosPosteriores. Si esos pagos reales cubren la
+        // obligación, el remanente TDJ NO es endoso: continúa a la siguiente
+        // obligación sin desplazar el pago normal. Si no la cubren, se conserva
+        // la regla v16.33.153: el siguiente TDJ retoma la obligación actual.
+        let obligacionCubiertaPorPagosProtegidos=false;
+        try{
+          const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
+          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;
+        }catch{}
+        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;
+
+        if(aplicado>0){'''
+          if old not in s:
+              raise SystemExit('BLOQUE OBJETIVO NO ENCONTRADO EN tdj-core-16.33.143.js')
+          s=s.replace(old,new,1)
+          core.write_text(s,encoding='utf-8')
+          for p in [core,Path('js/tdj.js'),Path('js/prioridad-tdj-v132.js'),Path('titulos.html')]:
+              txt=p.read_text(encoding='utf-8').replace('16.33.153','16.33.154')
+              p.write_text(txt,encoding='utf-8')
+          print('CORRECCIÓN TDJ v16.33.154 APLICADA')
+
+      - name: Crear regresión TDJ 154
         shell: bash
         run: |
-          set -euo pipefail
+          cat > tests/regresion-endoso-tdj-154.mjs <<'EOF'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const core=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
+          assert.match(core,/obligacionCubiertaPorPagosProtegidos/);
+          assert.match(core,/saldoObligacionActual>0\.5 && !obligacionCubiertaPorPagosProtegidos/);
+          assert.match(core,/motorActual\.calcular\(datosAjustados\)/);
+          assert.match(core,/16\.33\.154/);
+          const protegido={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:0,remanenteTDJ:4452000};
+          assert.equal(protegido.saldoFotografiaTDJ>0.5,true);
+          assert.equal(protegido.saldoConPagosProtegidos<=0.5,true);
+          assert.equal(protegido.remanenteTDJ>0,true);
+          const noProtegido={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:9041000,remanenteTDJ:4452000};
+          assert.equal(noProtegido.saldoConPagosProtegidos>0.5,true);
+          console.log('REGRESIÓN TDJ 16.33.154: OK — pago posterior protegido mantiene prioridad y el remanente TDJ puede continuar a la siguiente obligación; si no cubre, el siguiente TDJ retoma la obligación actual.');
+          EOF
           node --check js/tdj-core-16.33.143.js
           node --check js/tdj.js
           node --check js/prioridad-tdj.js
           node --check js/prioridad-tdj-v132.js
+          node tests/regresion-endoso-tdj-154.mjs
           node tests/regresion-secuencia-tdj-153.mjs
           node tests/regresion-secuencia-tdj-152.mjs
           node tests/regresion-secuencia-tdj-151.mjs
+
+      - name: Convertir a auditoría estable y publicar
+        shell: bash
+        run: |
+          rm -f .github/workflows/correctivo-endoso-154.yml
+          cat > .github/workflows/correctivo-secuencia-tdj-149.yml <<'EOF'
+          name: Auditoría secuencia TDJ v16.33.154
+
+          on:
+            push:
+              branches: [main]
+
+          permissions:
+            contents: read
+
+          jobs:
+            auditoria:
+              if: github.actor != 'github-actions[bot]'
+              runs-on: ubuntu-latest
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v4
+                  with:
+                    fetch-depth: 1
+                - name: Verificar cadena TDJ v16.33.154
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    python - <<'PY'
+                    from pathlib import Path
+                    checks = {
+                        'core-import': ('prioridad-tdj-v132.js?v=16.33.154', 'js/tdj-core-16.33.143.js'),
+                        'tdj-import': ('tdj-core-16.33.143.js?v=16.33.154', 'js/tdj.js'),
+                        'html-import': ('js/tdj.js?v=16.33.154', 'titulos.html'),
+                        'guard': ('obligacionCubiertaPorPagosProtegidos', 'js/tdj-core-16.33.143.js'),
+                    }
+                    for label,(needle,name) in checks.items():
+                        text=Path(name).read_text(encoding='utf-8')
+                        if needle not in text:
+                            raise SystemExit(f'FALLO {label}: {needle}')
+                    print('AUDITORÍA CADENA TDJ 16.33.154: OK')
+                    PY
+                - name: Sintaxis y regresiones TDJ
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    node --check js/tdj-core-16.33.143.js
+                    node --check js/tdj.js
+                    node --check js/prioridad-tdj.js
+                    node --check js/prioridad-tdj-v132.js
+                    node tests/regresion-endoso-tdj-154.mjs
+                    node tests/regresion-secuencia-tdj-153.mjs
+                    node tests/regresion-secuencia-tdj-152.mjs
+                    node tests/regresion-secuencia-tdj-151.mjs
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js titulos.html tests/regresion-endoso-tdj-154.mjs .github/workflows/correctivo-secuencia-tdj-149.yml .github/workflows/correctivo-endoso-154.yml
+          git commit -m 'fix: permitir remanente TDJ protegido continuar a siguiente obligacion v16.33.154'
+          git push
