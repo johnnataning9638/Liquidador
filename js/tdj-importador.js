@@ -1,24 +1,54 @@
+// TDJ IMPORTADOR v16.33.166
+// CAPA AISLADA DE IMPORTACIÓN DE TÍTULOS / TDJ.
+// No modifica obligaciones, motor, pagos ni resultados.
+
 const normTextoTDJ = v => String(v ?? "")
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
   .replace(/[º°]/g, "")
   .replace(/\s+/g, " ").trim().toUpperCase();
 
+function limpiarCeldaTDJ(v){
+  return String(v ?? "").replace(/\r/g, "").trim().replace(/^\|+|\|+$/g, "").trim();
+}
+
 function separarCeldasTDJ(linea) {
   const s = String(linea ?? "").replace(/\r/g, "").trim();
   if (!s) return [];
-  if (s.includes("\t")) return s.split("\t").map(x => x.trim());
-  return s.split(/\s{2,}/).map(x => x.trim()).filter(Boolean);
+
+  // Tablas copiadas desde Excel / navegador.
+  if (s.includes("\t")) return s.split("\t").map(limpiarCeldaTDJ).filter(Boolean);
+
+  // Tablas Markdown / tablas copiadas con separador vertical.
+  if (s.includes("|")) {
+    return s.split("|").map(limpiarCeldaTDJ).filter(Boolean);
+  }
+
+  // Formato tradicional con columnas separadas por espacios.
+  return s.split(/\s{2,}/).map(limpiarCeldaTDJ).filter(Boolean);
 }
 
 function digitosTDJ(v) { return String(v ?? "").replace(/\D/g, ""); }
 
-export function esDocumentoFuenteTDJ(v) {
-  const raw = String(v ?? "").trim();
-  if (!raw || /[A-Za-z]/.test(raw)) return false;
-  return /^\d{10,15}$/.test(digitosTDJ(raw));
+function expandirNotacionCientificaTDJ(v){
+  const s=String(v ?? "").trim().replace(/\s/g, "");
+  if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)[eE][+-]?\d+$/.test(s))return s;
+  const n=Number(s);
+  if(!Number.isFinite(n))return "";
+  return String(Math.trunc(n));
 }
 
-function normalizarDocumentoTDJ(v) { return esDocumentoFuenteTDJ(v) ? digitosTDJ(v) : ""; }
+export function esDocumentoFuenteTDJ(v) {
+  const raw = String(v ?? "").trim();
+  if (!raw) return false;
+  const expandido=expandirNotacionCientificaTDJ(raw);
+  if(!expandido || /[A-Za-z]/.test(expandido)) return false;
+  return /^\d{10,15}$/.test(digitosTDJ(expandido));
+}
+
+function normalizarDocumentoTDJ(v) {
+  const expandido=expandirNotacionCientificaTDJ(v);
+  return esDocumentoFuenteTDJ(expandido) ? digitosTDJ(expandido) : "";
+}
 
 function normalizarFechaTDJ(v) {
   const s = String(v ?? "").trim();
@@ -35,13 +65,16 @@ function normalizarValorTDJ(v) {
   const s = String(v ?? "").trim();
   if (!s) return 0;
   const limpio = s.replace(/\$/g, "").replace(/\s/g, "");
+  if(!limpio)return 0;
+
+  // Excel puede copiar valores grandes en notación científica.
+  const expandido=expandirNotacionCientificaTDJ(limpio);
+  if(expandido!==limpio && expandido) return Math.trunc(Number(expandido));
+
   if (/^[+-]?\d{1,3}(?:\.\d{3})+$/.test(limpio)) return Math.trunc(Number(limpio.replace(/\./g, "")));
   if (/^[+-]?\d{1,3}(?:,\d{3})+$/.test(limpio)) return Math.trunc(Number(limpio.replace(/,/g, "")));
   if (/^[+-]?\d+$/.test(limpio)) return Number(limpio);
 
-  // Complemento decimal: acepta punto o coma como separador decimal y
-  // descarta SIEMPRE la parte decimal, sin redondear. También reconoce
-  // formatos mixtos de Excel/Colombia con miles + decimales.
   let normalizado = limpio;
   if (normalizado.includes(".") && normalizado.includes(",")) {
     if (/^[+-]?\d{1,3}(?:,\d{3})+\.\d+$/.test(normalizado)) {
@@ -85,12 +118,11 @@ function indiceCabeceraTDJ(headers, aliases) {
   }
   return -1;
 }
+
 function encontrarDocTDJ(celdas) { for (const c of celdas) { const d=normalizarDocumentoTDJ(c); if(d)return d; } return ""; }
 function encontrarFechaTDJ(celdas) { for (const c of celdas) { const f=normalizarFechaTDJ(c); if(f)return f; } return ""; }
 
 function encontrarValorTDJ(celdas, indiceDoc=-1, indiceFecha=-1) {
-  // Sin encabezado confiable, solo consideramos números que estén DESPUÉS de la fecha.
-  // Esto elimina REPETICIÓN=1 sin prohibir valores TDJ pequeños como 157 o 1000.
   const fechaIndex = indiceFecha >= 0 ? indiceFecha : celdas.findIndex(c => Boolean(normalizarFechaTDJ(c)));
   for(let i=celdas.length-1;i>=0;i--){
     if(i===indiceDoc || i===indiceFecha || (fechaIndex>=0 && i<=fechaIndex))continue;
@@ -122,22 +154,39 @@ export function extraerRegistrosTDJTexto(texto){
   if(!lineas.length)return [];
   const filas=lineas.map(separarCeldasTDJ).filter(Boolean);
   if(!filas.length)return [];
-  const headerIndex=filas.findIndex(cells=>{const h=cells.map(normTextoTDJ);return h.some(x=>/DOCUMENTO FUENTE/.test(x))&&h.some(x=>/FECHA PRESENTACION|FECHA DE PRESENTACION|FECHA/.test(x));});
+
+  // Reconoce tanto el formato histórico DOCUMENTO FUENTE como RECIBO/TDJ.
+  const headerIndex=filas.findIndex(cells=>{
+    const h=cells.map(normTextoTDJ);
+    const tieneDoc=h.some(x=>/DOCUMENTO FUENTE|RECIBO|TDJ|TITULO|TITULO DEPOSITO|NUMERO/.test(x));
+    const tieneFecha=h.some(x=>/FECHA PRESENTACION|FECHA DE PRESENTACION|FECHA|FECHA TDJ/.test(x));
+    const tieneValor=h.some(x=>/VALOR PAGADO|VALOR PAGO|VALOR TDJ|VALOR/.test(x));
+    return tieneDoc&&tieneFecha&&tieneValor;
+  });
+
   let idxDoc=-1,idxFecha=-1,idxValor=-1,inicio=0;
   if(headerIndex>=0){
     const headers=filas[headerIndex];
-    idxDoc=indiceCabeceraTDJ(headers,["NO. DOCUMENTO FUENTE","N° DOCUMENTO FUENTE","NUMERO DOCUMENTO FUENTE","NÚMERO DOCUMENTO FUENTE","DOCUMENTO FUENTE"]);
-    idxFecha=indiceCabeceraTDJ(headers,["FECHA PRESENTACION","FECHA DE PRESENTACION","FECHA PRESENTACIÓN","FECHA DE PRESENTACIÓN","FECHA"]);
-    idxValor=indiceCabeceraTDJ(headers,["VALOR PAGADO","VALOR PAGO","VALOR"]);
+    idxDoc=indiceCabeceraTDJ(headers,[
+      "NO. DOCUMENTO FUENTE","N° DOCUMENTO FUENTE","NUMERO DOCUMENTO FUENTE","NÚMERO DOCUMENTO FUENTE","DOCUMENTO FUENTE",
+      "RECIBO","Nº RECIBO","NO RECIBO","TDJ","Nº TDJ","NO. TDJ","NUMERO TDJ","NÚMERO TDJ","TITULO","TÍTULO"
+    ]);
+    idxFecha=indiceCabeceraTDJ(headers,["FECHA PRESENTACION","FECHA DE PRESENTACION","FECHA PRESENTACIÓN","FECHA DE PRESENTACIÓN","FECHA TDJ","FECHA"]);
+    idxValor=indiceCabeceraTDJ(headers,["VALOR PAGADO","VALOR PAGO","VALOR TDJ","VALOR"]);
     inicio=headerIndex+1;
   }
+
   const out=[],vistos=new Set();
   for(let r=inicio;r<filas.length;r++){
     const item=filaTDJ(filas[r],idxDoc,idxFecha,idxValor);
     if(!item)continue;
-    const key=`${item.tdj}|${item.fecha}|${item.valor}`;
+
+    // Una fila origen representa un solo TDJ. Se deduplica por documento + fecha,
+    // incluso si el mismo registro llega dos veces con pequeñas diferencias de formato.
+    const key=`${item.tdj}|${item.fecha}`;
     if(vistos.has(key))continue;
-    vistos.add(key);out.push(item);
+    vistos.add(key);
+    out.push(item);
   }
   return out;
 }
