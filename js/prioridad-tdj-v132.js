@@ -1,25 +1,19 @@
-// CAPA DE IDEMPOTENCIA TDJ — v16.33.137
+// CAPA DE SECUENCIA / IDEMPOTENCIA TDJ — v16.33.147
 //
-// La lógica de prioridad económica permanece en prioridad-tdj.js v16.33.133.
+// La lógica económica permanece en prioridad-tdj.js v16.33.147.
 // Esta capa reinicia exclusivamente el estado de secuencia al iniciar una
-// liquidación completa. Así, pulsar CALCULAR LIQUIDACIÓN repetidamente con
-// los mismos datos produce exactamente el mismo resultado.
+// liquidación completa y conserva las correcciones de presentación existentes.
 //
-// CORRECCIÓN INDEPENDIENTE RIAN — SALDO TOTAL FINAL:
-// La presentación de SALDO TOTAL FINAL debe excluir INTERESES y mostrar
-// únicamente IMPUESTO + SANCIÓN pendientes, igual que el criterio ya aplicado
-// en TDJ. Esta corrección actúa solo sobre presentación; no modifica el motor,
-// proporcionalidad, intereses, sanciones, endoso ni saldos internos.
-//
-// CORRECCIÓN INDEPENDIENTE TDJ v16.33.137:
-// LIMPIAR en la pestaña TÍTULOS elimina exclusivamente todos los títulos/filas.
-// No ejecuta la limpieza global de la liquidación.
-import {dinero} from "./utilidades.js?v=16.33.137";
+// CORRECCIÓN TDJ v16.33.147:
+// Un título que encuentra una obligación ya cerrada no se anula en esta capa;
+// conserva su valor para que el motor externo continúe con la siguiente
+// obligación. Esto permite múltiples títulos en la misma fecha.
+import {dinero} from "./utilidades.js?v=16.33.147";
 import {
   ajustarTDJParaPagosPosteriores as ajustarBase,
   ordenarMovimientosCronologicos,
   reiniciarSecuenciaTDJ
-} from "./prioridad-tdj.js?v=16.33.133";
+} from "./prioridad-tdj.js?v=16.33.147";
 
 export function saldoFinalSinIntereses(impuesto=0,sancion=0){
   const i=Number(impuesto||0),s=Number(sancion||0);
@@ -74,10 +68,10 @@ function instalarPresentacionSaldoFinalRian(){
               const texto=dinero(saldo);
               html=String(html).replace(/(<b>SALDO TOTAL FINAL<\/b><strong>)[\s\S]*?(<\/strong>)/,`$1${texto}$2`);
             }
-          }catch(e){console.warn("Presentación SALDO TOTAL FINAL RIAN:",e);}
+          }catch(e){console.warn("Presentación SALDO TOTAL FINAL:",e);}
           return writeOriginal(html);
         };
-      }catch(e){console.warn("No se pudo preparar el soporte PDF RIAN:",e);}
+      }catch(e){console.warn("No se pudo preparar el soporte PDF:",e);}
       return child;
     };
   };
@@ -106,9 +100,6 @@ function instalarLimpiezaExclusivaTitulosTDJ(){
 
     if(!window.confirm("¿Desea limpiar únicamente los títulos / TDJ registrados?"))return;
 
-    // Cada botón ELIMINAR existente actualiza el estado canónico `titulos`
-    // dentro de tdj.js. Al hacer clic uno por uno evitamos depender de
-    // variables internas no exportadas y mantenemos toda la lógica existente.
     let guard=0;
     while(guard++<10000){
       const del=document.querySelector("#tablaTitulos tbody [data-del]");
@@ -123,7 +114,6 @@ function instalarLimpiezaExclusivaTitulosTDJ(){
     const resultado=document.getElementById("resultadoTDJ");
     if(resultado)resultado.hidden=true;
 
-    // Limpieza física final: no debe quedar ni una fila visible en TÍTULOS.
     const tbody=document.querySelector("#tablaTitulos tbody");
     if(tbody)tbody.innerHTML="";
   },true);
