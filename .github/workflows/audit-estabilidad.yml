@@ -35,15 +35,15 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const f=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
-          const needles=['ajustarTDJParaPagosPosteriores','ordenarMovimientosCronologicos','obligaciones.forEach','for (const obligacion','for(const obligacion','resultado=','resultado ='];
+          const needles=['ajustarTDJParaPagosPosteriores','reiniciarSecuenciaTDJ','function calcular','async function calcular','function aplicarTitulos','async function aplicarTitulos','resumenTitulos'];
           for(const n of needles){
             let pos=0,count=0;
             while((pos=f.indexOf(n,pos))>=0){
               count++;
-              const a=Math.max(0,pos-700),b=Math.min(f.length,pos+1800);
+              const a=Math.max(0,pos-3500),b=Math.min(f.length,pos+6500);
               console.log(`\\n===== OCURRENCIA ${n} #${count} =====\\n`+f.slice(a,b));
               pos+=n.length;
-              if(count>=8)break;
+              if(count>=5)break;
             }
             console.log(`TOTAL ${n}: ${count}`);
           }
