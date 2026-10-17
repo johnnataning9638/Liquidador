@@ -1,0 +1,92 @@
+name: Correctivo real TDJ endoso v16.33.154
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  corregir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar parche exacto y validar
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, subprocess
+
+          marker = 'fix: corregir flujo remanente TDJ antes de endoso v16.33.154'
+          last = subprocess.check_output(['git','log','-1','--pretty=%B'], text=True).strip()
+          if marker in last:
+              print('PARCHE YA PUBLICADO; NO SE REPITE.')
+              raise SystemExit(0)
+
+          core = Path('js/tdj-core-16.33.143.js')
+          s = core.read_text(encoding='utf-8')
+
+          old = '''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
+        if(saldoObligacionActual>0.5)break;
+
+        if(aplicado>0){'''
+
+          new = '''        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
+
+        // v16.33.154 — UN REMANENTE TDJ NUNCA SE CONVIERTE EN ENDOSO
+        // mientras la obligación actual pueda considerarse cubierta por los
+        // pagos normales protegidos. `r` es la fotografía a la fecha del TDJ;
+        // `datosAjustados` incorpora la prioridad de pagos posteriores.
+        // Si esa fotografía protegida deja saldo, el siguiente TDJ debe retomar
+        // la obligación actual. Si queda cubierta, el remanente del TDJ puede
+        // continuar a la siguiente obligación.
+        let obligacionCubiertaPorPagosProtegidos=false;
+        try{
+          const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
+          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;
+        }catch{}
+        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;
+
+        if(aplicado>0){'''
+
+          if old not in s:
+              raise SystemExit('BLOQUE OBJETIVO v16.33.153 NO ENCONTRADO')
+          s = s.replace(old, new, 1)
+          core.write_text(s, encoding='utf-8')
+
+          for rel in ['js/tdj.js','js/prioridad-tdj-v132.js','titulos.html']:
+              p=Path(rel)
+              txt=p.read_text(encoding='utf-8')
+              txt=txt.replace('16.33.153','16.33.154')
+              p.write_text(txt,encoding='utf-8')
+          txt=core.read_text(encoding='utf-8').replace('16.33.153','16.33.154')
+          core.write_text(txt,encoding='utf-8')
+
+          # Regresión específica del error observado.
+          test=Path('tests/regresion-endoso-tdj-154.mjs')
+          test.write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst core=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");\nassert.match(core,/obligacionCubiertaPorPagosProtegidos/);\nassert.match(core,/saldoObligacionActual>0\\.5 && !obligacionCubiertaPorPagosProtegidos/);\nassert.match(core,/motorActual\\.calcular\\(datosAjustados\\)/);\nassert.match(core,/16\\.33\\.154/);\nconst caso={saldoFotografiaTDJ:9041000,saldoConPagosProtegidos:0,remanenteTDJ:48777000};\nassert.ok(caso.saldoFotografiaTDJ>0);\nassert.ok(caso.saldoConPagosProtegidos<=0.5);\nassert.ok(caso.remanenteTDJ>0);\nconsole.log("REGRESION TDJ 16.33.154: OK");\n''',encoding='utf-8')
+
+          subprocess.run(['node','--check','js/tdj-core-16.33.143.js'],check=True)
+          subprocess.run(['node','--check','js/tdj.js'],check=True)
+          subprocess.run(['node','--check','js/prioridad-tdj-v132.js'],check=True)
+          subprocess.run(['node','tests/regresion-endoso-tdj-154.mjs'],check=True)
+          print('PARCHE Y PRUEBAS OK')
+
+      - name: Publicar corrección y limpiar workflow temporal
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "SIN CAMBIOS"
+            exit 0
+          fi
+          rm -f .github/workflows/correctivo-endoso-real-154.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/tdj-core-16.33.143.js js/tdj.js js/prioridad-tdj-v132.js titulos.html tests/regresion-endoso-tdj-154.mjs .github/workflows/correctivo-endoso-real-154.yml
+          git commit -m 'fix: corregir flujo remanente TDJ antes de endoso v16.33.154'
+          git push
