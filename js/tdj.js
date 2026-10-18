@@ -1,22 +1,51 @@
-// TDJ v16.33.185 — CORRECCIÓN AISLADA DE SECUENCIA MULTIOBLIGACIÓN.
-// Mantiene la interfaz actual, los motores históricos y las guardias previas.
-import "./tdj-tasa-bridge-16.33.174.js?v=16.33.174";
-import "./tdj-secuencia-guard-16.33.183.js?v=16.33.183";
-import "./tdj-secuencia-guard-16.33.184.js?v=16.33.184";
+// TDJ PRE-MIGRACIÓN DIAN→TDJ — V16.33.129
+//
+// Este archivo es deliberadamente un puente de compatibilidad para restaurar
+// SOLO el comportamiento del módulo TDJ al estado inmediatamente anterior a
+// la migración estructural 16.33.130 (commit dce4726f...).
+//
+// NO modifica el liquidador BIEN/RIAN, el motor compartido ni el importador
+// Excel. Carga la versión histórica de TDJ y su prioridad 16.33.129 desde el
+// commit de referencia y resuelve sus dependencias compartidas contra el
+// código actual del proyecto.
 
-(function(){
-  function omitirObservacion(){document.querySelectorAll('#tablaTitulos tbody [data-t="observacion"]').forEach(function(el){el.tabIndex=-1;});}
-  function enfocar(el){if(!el)return;setTimeout(function(){try{el.focus({preventScroll:true});}catch(_){try{el.focus();}catch(__){}}if(typeof el.select==='function'&&el.tagName!=='SELECT'){try{el.select();}catch(_) {}}},0);}
-  document.addEventListener('DOMContentLoaded',omitirObservacion,{once:true});
-  document.addEventListener('focusin',omitirObservacion,true);
-  document.addEventListener('keydown',function(e){if(e.key!=='Tab')return;const el=e.target;if(!el||!el.closest||!el.closest('#tablaTitulos'))return;if(!el.matches('[data-t="tdj"], .fecha-campo, [data-t="valor"]'))return;omitirObservacion();const tr=el.closest('tbody tr');if(!tr)return;const tbody=tr.parentElement;if(!tbody)return;const filas=[...tbody.querySelectorAll('tr')],filaActual=filas.indexOf(tr);const campos=[tr.querySelector('[data-t="tdj"]'),tr.querySelector('.fecha-campo'),tr.querySelector('[data-t="valor"]')].filter(Boolean),posicion=campos.indexOf(el);if(posicion<0)return;const paso=e.shiftKey?-1:1;let destino=null;if(posicion+paso>=0&&posicion+paso<campos.length)destino=campos[posicion+paso];else if(paso>0&&posicion===campos.length-1)destino=filas[filaActual+1]?.querySelector('[data-t="tdj"]')||null;else if(paso<0&&posicion===0)destino=filas[filaActual-1]?.querySelector('[data-t="valor"]')||null;if(destino){e.preventDefault();e.stopImmediatePropagation();enfocar(destino);}},true);
+(async function(){
+  "use strict";
+
+  const REV="dce4726f2fa10d5110c00e71269aa53035a96311";
+  const RAW="https://raw.githubusercontent.com/johnnataning9638/Liquidador/"+REV+"/";
+  const renderJs=new URL("./",import.meta.url).href;
+
+  async function cargar(path){
+    const r=await fetch(RAW+path,{cache:"no-store"});
+    if(!r.ok)throw new Error("No fue posible cargar el componente histórico TDJ: "+path+" (HTTP "+r.status+")");
+    return r.text();
+  }
+
+  function resolverImports(source,base){
+    source=source.replace(/from\s+(["'])\.\//g,(m,q)=>`from ${q}${base}`);
+    source=source.replace(/import\(\s*(["'])\.\//g,(m,q)=>`import(${q}${base}`);
+    return source;
+  }
+
+  // 1. Recuperamos exactamente la capa de prioridad que existía antes de la
+  // migración: pagos normales primero, TDJ después, SIMPLE 4–6 excluido.
+  let prioridad=await cargar("js/prioridad-tdj.js");
+  prioridad=resolverImports(prioridad,renderJs);
+  const prioridadUrl=URL.createObjectURL(new Blob([prioridad],{type:"text/javascript"}));
+
+  // 2. Recuperamos el tdj.js histórico inmediatamente anterior a la migración.
+  let tdj=await cargar("js/tdj.js");
+  tdj=tdj.replace(/from\s+(["'])\.\/prioridad-tdj\.js(?:\?[^"']*)?\1/g,()=>`from "${prioridadUrl}"`);
+  tdj=resolverImports(tdj,renderJs);
+
+  // 3. Ejecutamos el módulo histórico como ES module para conservar sus
+  // exportaciones/importaciones y su estado interno exactamente como fue diseñado.
+  const tdjUrl=URL.createObjectURL(new Blob([tdj],{type:"text/javascript"}));
+  try{
+    await import(tdjUrl);
+  }finally{
+    URL.revokeObjectURL(tdjUrl);
+    URL.revokeObjectURL(prioridadUrl);
+  }
 })();
-(function(){
-  document.addEventListener("DOMContentLoaded",function(){var footer=document.querySelector("footer");if(footer)footer.textContent=footer.textContent.replace(/v16\\.33\\.(163|164|165|166|167|168|169|170|171|172|174|175|176|177|178|179|180|181|182|183|184)/g,"v16.33.185");},{once:true});
-  document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.185&reinicio="+Date.now());},true);
-})();
-// Puente v16.33.185: conserva el core histórico y corrige únicamente la
-// contaminación del valor nominal por el ajuste de prioridad.
-import("./tdj-core-16.33.185.js?v=16.33.185");
-// Capa visual TDJ × OBLIGACIÓN.
-import("./tdj-visual-beneficios.js?v=16.33.185");
