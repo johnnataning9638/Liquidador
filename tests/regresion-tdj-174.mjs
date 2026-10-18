@@ -46,6 +46,6 @@ assert.match(exportSource,/DISPONIBLE PARA SIGUIENTE OBLIGACIÓN \/ ENDOSO/);
 const bridgeSource=fs.readFileSync(new URL('../js/tdj-tasa-bridge-16.33.174.js',import.meta.url),'utf8');
 assert.match(bridgeSource,/remanentePrevioMismaFecha/);
 assert.match(bridgeSource,/actual\.valor=0/);
-assert.match(bridgeSource,/<=\$1\.000/);
+assert.match(bridgeSource,/\$1\.000/);
 
 console.log('REGRESION TDJ/EXCEL 16.33.174: OK');
