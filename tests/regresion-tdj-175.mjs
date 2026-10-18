@@ -5,9 +5,8 @@ const guard=fs.readFileSync(new URL('../js/tdj-secuencia-guard-16.33.175.js',imp
 const importer=fs.readFileSync(new URL('../js/importador-excel.js',import.meta.url),'utf8');
 const tdj=fs.readFileSync(new URL('../js/tdj.js',import.meta.url),'utf8');
 
-// Contrato DIAN observado en el PDF correcto:
-// si al ejecutar el motor con el TDJ actual = 0 la obligación queda saldada,
-// ese título no se consume en la obligación corriente.
+// Contrato histórico de la guardia 175: el parche original debía poder
+// simular el motor sin consumir el TDJ actual.
 assert.match(guard,/const sinActual=/);
 assert.match(guard,/valor:0/);
 assert.match(guard,/const saldo=num\(r\?\.total\)/);
@@ -21,8 +20,10 @@ assert.doesNotMatch(importer,/await\s+import\(/);
 assert.doesNotMatch(importer,/^\s*import\s+["']\.\/export-dian-guard-/m);
 assert.match(importer,/import\(\"\.\/export-tdj-recovery-16\.33\.174\.js\?v=16\.33\.174\"\)/);
 
-// La guardia debe cargarse desde TDJ sin modificar el core protegido.
-assert.match(tdj,/tdj-secuencia-guard-16\.33\.175\.js\?v=16\.33\.175/);
+// Desde v16.33.176 la guardia vigente es la 176 y se carga estáticamente para
+// impedir que la primera liquidación ocurra antes de instalar la secuencia.
+assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.176\.js\?v=16\.33\.176"/);
+assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
 assert.match(tdj,/tdj-core-16\.33\.143\.js/);
 
-console.log('REGRESION TDJ 16.33.175 / CARGA DIAN: OK');
+console.log('REGRESION TDJ 16.33.175 / CARGA DIAN: OK — compatibilidad con guardia 176');
