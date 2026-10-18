@@ -10,11 +10,25 @@ function parseSharedStrings(xmlBytes){if(!xmlBytes)return [];const xml=textDecod
 function parseSheet(xmlBytes,sharedStrings=[]){const xml=textDecoder.decode(xmlBytes),doc=new DOMParser().parseFromString(xml,"application/xml");if(doc.querySelector("parsererror"))throw new Error("No se pudo leer la hoja del Excel.");const ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main",rows=[];for(const rn of doc.getElementsByTagNameNS(ns,"row")){const cells=[...rn.getElementsByTagNameNS(ns,"c")],obj={};for(const c of cells){const ref=c.getAttribute("r")||"",col=colNum(ref),type=c.getAttribute("t")||"";let val="";const is=c.getElementsByTagNameNS(ns,"is")[0],v=c.getElementsByTagNameNS(ns,"v")[0],raw=xmlText(v);if(type==="s"){const idx=Number(raw);val=Number.isInteger(idx)&&idx>=0&&idx<sharedStrings.length?sharedStrings[idx]:raw}else if(type==="inlineStr"){val=xmlText(is?.getElementsByTagNameNS(ns,"t")[0]||is)}else if(type==="str"){val=raw}else val=raw;obj[col]=val}const max=Math.max(0,...Object.keys(obj).map(Number));const row=Array(max).fill("");for(const [k,v] of Object.entries(obj))row[Number(k)-1]=v;rows.push(row)}return rows}
 export async function leerXlsxPrimeraHoja(file){const buf=await file.arrayBuffer(),entries=await unzipEntries(buf);let sheet=entries["xl/worksheets/sheet1.xml"];if(!sheet){const k=Object.keys(entries).find(x=>/^xl\/worksheets\/sheet\d+\.xml$/i.test(x));sheet=k&&entries[k]}if(!sheet)throw new Error("El Excel no contiene una hoja de datos compatible.");const shared=parseSharedStrings(entries["xl/sharedStrings.xml"]);return parseSheet(sheet,shared)}
 export function numExcel(v){if(typeof v==="number")return Number.isFinite(v)?v:0;let s=String(v??"").trim();if(!s)return 0;s=s.replace(/\s/g,"").replace(/\$/g,"");if(/^[-+]?\d+(?:\.\d+)?e[-+]?\d+$/i.test(s))return Number(s)||0;if(s.includes(".")&&s.includes(",")){s=s.replace(/\./g,"").replace(",",".")}else if(/^-?\d{1,3}(?:\.\d{3})+$/.test(s)){s=s.replace(/\./g,"")}else if(s.includes(",")){const parts=s.split(",");if(parts.length>1&&parts.at(-1).length<=2)s=parts.slice(0,-1).join("")+"."+parts.at(-1);else s=s.replace(/,/g,"")}return Number(s)||0}
-export function fechaExcel(v){const s=String(v??"").trim();if(!s)return "";if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)){const [d,m,y]=s.split("/").map(Number),yy=y<100?2000+y:y;return `${yy}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`}return s}
+function fechaValidaISO(iso){if(!/^\d{4}-\d{2}-\d{2}$/.test(iso))return false;const [y,m,d]=iso.split("-").map(Number);if(y<1900||y>2100||m<1||m>12||d<1)return false;const dt=new Date(Date.UTC(y,m-1,d));return dt.getUTCFullYear()===y&&dt.getUTCMonth()+1===m&&dt.getUTCDate()===d}
+function serialExcelAFecha(v){const n=Number(v);if(!Number.isFinite(n)||n<1||n>2958465)return "";const dias=Math.floor(n);const base=Date.UTC(1899,11,30);const dt=new Date(base+dias*86400000);if(Number.isNaN(dt.getTime()))return "";const iso=`${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,"0")}-${String(dt.getUTCDate()).padStart(2,"0")}`;return fechaValidaISO(iso)?iso:""}
+export function fechaExcel(v){
+  if(v instanceof Date&&!Number.isNaN(v.getTime())){const iso=`${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;return fechaValidaISO(iso)?iso:"";}
+  const raw=String(v??"").trim();if(!raw)return "";
+  const s=raw.replace(/\u00a0/g," ").replace(/T/g," ").replace(/\s+/g," ").trim();
+  if(/^[-+]?\d+(?:[.,]\d+)?(?:e[-+]?\d+)?$/i.test(s)&&!/^\d{4}$/.test(s)){
+    const serial=serialExcelAFecha(s.replace(",","."));if(serial)return serial;
+  }
+  let m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:\s+.*)?$/);if(m){const iso=`${m[1]}-${String(Number(m[2])).padStart(2,"0")}-${String(Number(m[3])).padStart(2,"0")}`;if(fechaValidaISO(iso))return iso;}
+  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})(?:\s+.*)?$/);if(m){const yy=Number(m[3])<100?2000+Number(m[3]):Number(m[3]);const iso=`${yy}-${String(Number(m[2])).padStart(2,"0")}-${String(Number(m[1])).padStart(2,"0")}`;if(fechaValidaISO(iso))return iso;}
+  m=s.match(/^(\d{2})(\d{2})(\d{4})$/);if(m){const iso=`${m[3]}-${m[2]}-${m[1]}`;if(fechaValidaISO(iso))return iso;}
+  m=s.match(/^(\d{4})(\d{2})(\d{2})$/);if(m){const iso=`${m[1]}-${m[2]}-${m[3]}`;if(fechaValidaISO(iso))return iso;}
+  return "";
+}
 export function filaHeader(rows,pred){return rows.findIndex(r=>pred(norm(r.map(x=>norm(x)).join(" | "))))}
 export {norm};
 
-/* CONTROL 16.33.180 — RECUPERACIÓN COMPLETA COMO FUENTE DE VERDAD. */
+/* CONTROL 16.33.186 — RECUPERACIÓN COMPLETA COMO FUENTE DE VERDAD + CONTEO INDEPENDIENTE. */
 function textoFilaRecovery(row){return norm((row||[]).filter(v=>v!==null&&v!==undefined&&String(v)!=="").join(" | "));}
 function indiceFilaRecovery(rows,pred,desde=0){for(let i=desde;i<rows.length;i++)if(pred(textoFilaRecovery(rows[i])))return i;return -1;}
 function leerSeccionPagosRecovery(rows,headerIdx){
@@ -77,22 +91,49 @@ async function aplicarPagosRecoveryUI(pagosRecovery){
 }
 async function corregirImportacionRecovery(file){
   try{
-    const rows=await leerXlsxPrimeraHoja(file),recovery=indiceFilaRecovery(rows,s=>s.includes("RECUPERACION COMPLETA")||s.includes("RECUPERACIÓN COMPLETA"));if(recovery<0)return;
+    const rows=await leerXlsxPrimeraHoja(file),recovery=indiceFilaRecovery(rows,s=>s.includes("RECUPERACION COMPLETA")||s.includes("RECUPERACIÓN COMPLETA"));if(recovery<0)return null;
     const pagosHeader=indiceFilaRecovery(rows,s=>s.startsWith("PAGOS | Nº | TDJ Nº | RECIBO Nº | FECHA | VALOR | TIPO | OBSERVACION"),recovery+1);
     const titulosHeader=indiceFilaRecovery(rows,s=>s.startsWith("TITULOS TDJ | Nº | TDJ | FECHA | VALOR | TIPO | OBSERVACION"),recovery+1);
-    const pagosRecovery=leerSeccionPagosRecovery(rows,pagosHeader),titulosRecovery=leerTitulosRecovery(rows,titulosHeader);if(!pagosRecovery.length&&!titulosRecovery.length)return;
-    await aplicarPagosRecoveryUI(fusionarRecoveryPagos(pagosRecovery,titulosRecovery));
-    console.info("CONTROL 16.33.180 — recuperación completa aplicada como fuente de verdad",{pagos:pagosRecovery.length,titulos:titulosRecovery.length});
-  }catch(e){console.warn("CONTROL 16.33.180 — no fue posible restaurar recuperación completa:",e);}
+    const pagosRecovery=leerSeccionPagosRecovery(rows,pagosHeader),titulosRecovery=leerTitulosRecovery(rows,titulosHeader);if(!pagosRecovery.length&&!titulosRecovery.length)return null;
+    const pagosNormales=pagosRecovery.filter(p=>!String(p.tdj||"").trim());
+    const titulos=titulosRecovery.length;
+    const registrosFinales=fusionarRecoveryPagos(pagosRecovery,titulosRecovery);
+    await aplicarPagosRecoveryUI(registrosFinales);
+    const stats={pagosNormales:pagosNormales.length,titulos,totalRegistros:registrosFinales.length,pagosRecovery:pagosRecovery.length};
+    console.info("CONTROL 16.33.186 — recuperación completa aplicada como fuente de verdad",stats);
+    return stats;
+  }catch(e){console.warn("CONTROL 16.33.186 — no fue posible restaurar recuperación completa:",e);return null;}
 }
 (function instalarControlRecovery(){
-  if(typeof EventTarget==="undefined")return;const originalAdd=EventTarget.prototype.addEventListener;if(originalAdd.__controlRecovery180)return;
+  if(typeof EventTarget==="undefined")return;const originalAdd=EventTarget.prototype.addEventListener;if(originalAdd.__controlRecovery186)return;
   function add(type,listener,options){
     const esInputExcel=this&&this.tagName==="INPUT"&&String(this.type||"").toLowerCase()==="file"&&/xlsx|spreadsheetml|\.xlsx/i.test(String(this.accept||""));
-    if(esInputExcel&&type==="change"&&typeof listener==="function"&&!listener.__controlRecovery180){const originalListener=listener;const wrapped=async function(event){let exito=false;try{await originalListener.call(this,event);exito=true}finally{if(exito){const file=this.files?.[0];if(file)await corregirImportacionRecovery(file);}}};wrapped.__controlRecovery180=true;return originalAdd.call(this,type,wrapped,options)}
+    if(esInputExcel&&type==="change"&&typeof listener==="function"&&!listener.__controlRecovery186){
+      const originalListener=listener;
+      const wrapped=async function(event){
+        const file=this.files?.[0];
+        if(!file)return originalListener.call(this,event);
+        let rows=null,esRecovery=false;
+        try{rows=await leerXlsxPrimeraHoja(file);esRecovery=indiceFilaRecovery(rows,s=>s.includes("RECUPERACION COMPLETA")||s.includes("RECUPERACIÓN COMPLETA"))>=0;}catch{}
+        if(!esRecovery)return originalListener.call(this,event);
+        const alertOriginal=window.alert,capturados=[];
+        window.alert=(mensaje)=>{capturados.push(String(mensaje??""));};
+        let error=null;
+        try{await originalListener.call(this,event);}catch(e){error=e;}finally{window.alert=alertOriginal;}
+        if(error)throw error;
+        const stats=await corregirImportacionRecovery(file);
+        if(stats){
+          const vencimientos=document.querySelectorAll("#tablaVencimientos tbody tr").length;
+          alert(`Excel importado correctamente.\n\nVencimientos: ${vencimientos}\nPagos: ${stats.pagosNormales}\nTítulos: ${stats.titulos}\nTotal registros pagos/títulos: ${stats.totalRegistros}\n\nLa liquidación NO se ejecutó. Puede revisar/modificar los datos y luego calcular.`);
+        }else if(capturados.length){
+          const mensaje=capturados.find(x=>/Excel importado correctamente/i.test(x));if(mensaje)alert(mensaje);
+        }
+      };
+      wrapped.__controlRecovery186=true;return originalAdd.call(this,type,wrapped,options);
+    }
     return originalAdd.call(this,type,listener,options);
   }
-  add.__controlRecovery180=true;EventTarget.prototype.addEventListener=add;originalAdd.__controlRecovery180=true;
+  add.__controlRecovery186=true;EventTarget.prototype.addEventListener=add;originalAdd.__controlRecovery186=true;
 })();
 
 if(!document.querySelector('#tablaTitulos'))import('./export-dian-tdj-control-16.33.178.js?v=16.33.178').catch(()=>{});
