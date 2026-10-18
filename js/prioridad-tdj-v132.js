@@ -5,6 +5,7 @@
 // correcciones de presentación existentes.
 import {dinero} from "./utilidades.js?v=16.33.161";
 import {ajustarTDJParaPagosPosteriores as ajustarBase,ordenarMovimientosCronologicos,reiniciarSecuenciaTDJ} from "./prioridad-tdj.js?v=16.33.161";
+import "./export-lian-complete-16.33.179.js";
 export function saldoFinalSinIntereses(impuesto=0,sancion=0){const i=Number(impuesto||0),s=Number(sancion||0);return Math.max(0,(Number.isFinite(i)?i:0)+(Number.isFinite(s)?s:0));}
 function leerSaldoFinalRian(){if(typeof document==="undefined")return null;const impuesto=Number(document.getElementById("rSaldoImpuesto")?.textContent?.replace(/[^0-9-]/g,"")||0),sancion=Number(document.getElementById("rSaldoSancion")?.textContent?.replace(/[^0-9-]/g,"")||0),tieneImpuesto=document.getElementById("rSaldoImpuesto"),tieneSancion=document.getElementById("rSaldoSancion");if(!tieneImpuesto&&!tieneSancion)return null;return saldoFinalSinIntereses(impuesto,sancion);}
 function actualizarSaldoFinalRian(){if(typeof document==="undefined")return;const saldo=leerSaldoFinalRian();if(saldo==null)return;const texto=dinero(saldo);["rSaldoTotal","rSaldoTotalFooter"].forEach(id=>{const el=document.getElementById(id);if(el&&el.textContent!==texto)el.textContent=texto;});}
