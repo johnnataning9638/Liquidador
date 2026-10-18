@@ -1,4 +1,3 @@
-import "./export-dian-guard-16.33.174.js?v=16.33.174";
 const norm=v=>{const s=String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[–—−]/g,"-").replace(/\s+/g," ").trim().toUpperCase();const equivalencias={"DOCUMENTO FUENTE":"TDJ","FECHA PRESENTACION":"FECHA","VALOR PAGADO":"VALOR","NO.":"Nº"};return equivalencias[s]||s;};
 const textDecoder=new TextDecoder("utf-8");
 function u16(d,o){return d.getUint16(o,true)} function u32(d,o){return d.getUint32(o,true)}
