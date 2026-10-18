@@ -67,5 +67,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verificar recursos TDJ 177 en Render LIVE
         run: node tests/live-resource-177.mjs
+      - name: Diagnóstico directo prioridad TDJ4 177
+        run: node tests/live-diagnostic-sequence-177.mjs
       - name: Ejecutar caso crítico TDJ en Render LIVE
         run: node tests/live-tdj-177-final.mjs
