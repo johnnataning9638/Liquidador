@@ -35,6 +35,7 @@ jobs:
           node tests/regresion-tdj-174.mjs
           node tests/regresion-tdj-175.mjs
           node tests/regresion-tdj-176.mjs
+          node tests/regresion-tdj-177.mjs
       - name: Verificar integridad del motor de liquidación
         if: github.event_name == 'pull_request'
         run: |
