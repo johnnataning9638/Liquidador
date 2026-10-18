@@ -1,8 +1,8 @@
 import fs from 'node:fs';
-import crypto from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 
 const read=p=>fs.readFileSync(p,'utf8');
-const sha1=p=>crypto.createHash('sha1').update(read(p)).digest('hex');
+const blobSha=p=>execFileSync('git',['rev-parse',`HEAD:${p}`],{encoding:'utf8'}).trim();
 const assert=(ok,msg)=>{if(!ok)throw new Error(`REGRESIÓN TDJ 177: ${msg}`)};
 
 const tdj=read('js/tdj.js');
@@ -31,7 +31,7 @@ const protegidos={
   'js/prioridad-tdj-v132.js':'8fd18189feea29eb3f3697e37f1dd24e08a78b40'
 };
 for(const [p,h] of Object.entries(protegidos)){
-  assert(sha1(p)===h,`${p} fue modificado; la lógica matemática protegida no puede cambiar`);
+  assert(blobSha(p)===h,`${p} fue modificado; la lógica matemática protegida no puede cambiar`);
 }
 
 console.log('TDJ 177 REGRESSION OK');
