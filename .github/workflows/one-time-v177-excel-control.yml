@@ -1,0 +1,36 @@
+name: one-time-v177-excel-control
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install canonical DIAN Excel control loader
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp js/importador-excel.js js/importador-excel-control-177.js
+          cat >> js/importador-excel-control-177.js <<'EOF'
+
+// DIAN 177: control final TDJ aislado, sin top-level await.
+if(!document.querySelector('#tablaTitulos'))import('./export-dian-tdj-control-16.33.177.js?v=16.33.177').catch(()=>{});
+EOF
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('js/app.js')
+          s=p.read_text(encoding='utf-8')
+          old='importador-excel.js?v=16.33.177'
+          new='importador-excel-control-177.js?v=16.33.177'
+          if old not in s:
+              raise SystemExit('No se encontró el importador 177 en app.js')
+          p.write_text(s.replace(old,new),encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/importador-excel-control-177.js js/app.js
+          git commit -m 'fix(Excel): activate canonical TDJ control 177 loader'
+          git push
