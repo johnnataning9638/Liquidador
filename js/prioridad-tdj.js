@@ -97,6 +97,32 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,opciones={}){
     return datos;
   }
 
+  // CORRECCIÓN 16.33.177:
+  // Cuando existen varios TDJ en la misma fecha y el TDJ actual es el último
+  // de esa fecha, primero se prueba la obligación SIN ese título. Si los pagos
+  // normales posteriores ya cubren completamente la obligación, el título NO
+  // pertenece a esta obligación y conserva el 100 % de su valor para endoso /
+  // aplicación posterior. Esto corrige la causa real del caso TDJ4: la capa
+  // anterior solo buscaba el mínimo necesario para que los pagos posteriores
+  // fueran aplicables, pero no preguntaba si el TDJ era completamente innecesario.
+  const actual=ajustados.find(p=>String(p?.id||"")===String(idActual||""));
+  if(actual&&Number(actual.valor)>0&&hayPosterior(actual)){
+    const prevMisma=ajustados.filter(p=>esTDJ(p)&&String(p?.fecha||"")===String(actual?.fecha||"")&&String(p?.id||"")!==String(actual?.id||"")&&Number(p?.valor)>0);
+    if(prevMisma.length){
+      const sinActual=ajustados.map(p=>String(p?.id||"")===String(actual?.id||"")?{...p,valor:0}:{...p});
+      const pagosSinActual=ordenarMovimientosCronologicos(sinActual.map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)})));
+      const maxFechaSinActual=pagosSinActual.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||"";
+      try{
+        const rSinActual=motor.calcular({...datos,pagos:pagosSinActual,fechaCorte:maxFechaSinActual});
+        const normalesCompletamenteAplicados=normales.every((p,i)=>excedentePagoNormal(rSinActual,clavePago(p,i),p.fecha,p.valor)<=0.5);
+        if(resultadoCubreObligacion(rSinActual)&&normalesCompletamenteAplicados){
+          const salidaSinActual={...datos,pagos:sinActual.map(p=>{const q={...p};delete q.__ordenOriginal;return q;})};
+          return salidaSinActual;
+        }
+      }catch{}
+    }
+  }
+
   const simular=()=>{
     const pagos=ordenarMovimientosCronologicos(ajustados.map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)})));
     const maxFecha=pagos.map(p=>p.fecha).filter(Boolean).sort().at(-1)||datos.fechaCorte||"";
