@@ -9,7 +9,7 @@ import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.16
 import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
-import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.161";
+import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.177";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
 import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.161";
 
