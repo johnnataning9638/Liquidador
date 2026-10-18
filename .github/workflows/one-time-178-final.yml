@@ -1,0 +1,16 @@
+name: One-time 178 final verification
+on:
+  push:
+    branches: ["main"]
+permissions:
+  contents: read
+jobs:
+  final-live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/live-tdj-177-final.mjs
+      - run: node tests/live-resource-177.mjs
+      - run: node tests/live-diagnostic-sequence-177.mjs
