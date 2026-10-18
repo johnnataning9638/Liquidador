@@ -12,75 +12,11 @@ import { MotorLiquidacionOficial as MotorLiquidacionOficial183 } from "./motor-l
   const esTDJ=p=>p?.esTDJ===true||String(p?.tdj??"").trim()!=="";
   const firma=datos=>{const v=(datos?.vencimientos||[]).map(x=>`${iso(x?.fecha)}:${num(x?.impuesto??x?.valor)}`).join(",");return `${num(datos?.anio)}|${String(datos?.concepto??"").trim().toUpperCase()}|${String(datos?.periodo??"")}|${v}`;};
   const detalle=(r,p)=>{const id=String(p?.id??"");return (r?.detalle||[]).find(x=>String(x?.pago?.id??"")===id)||(r?.detalle||[]).find(x=>esTDJ(x?.pago)&&String(x?.pago?.tdj??"")===String(p?.tdj??"")&&iso(x?.pago?.fecha)===iso(p?.fecha))||null;};
-  function prepararArrastres(datos){
-    const actual=firma(datos);
-    return {...datos,pagos:(datos?.pagos||[]).map(p=>{
-      if(!esTDJ(p)||!p.__tdjArrastrePorCierre)return p;
-      const origen=String(p.__tdjArrastreOrigen||"");
-      if(origen&&origen!==actual){
-        return {...p,valor:Math.max(0,Math.trunc(num(p.__tdjArrastreValor))),__tdjArrastreConsumible:true};
-      }
-      return p;
-    })};
-  }
-  function actualizarArrastres(datos,r){
-    const actual=firma(datos);
-    const pagos=(datos?.pagos||[]).map(p=>{
-      if(!esTDJ(p))return p;
-      const d=detalle(r,p);
-      const original=Math.max(0,Math.trunc(num(p.__tdjArrastreValor??p.valor)));
-      const aplicado=Math.max(0,num(d?.aplicado?.total));
-      let residual=null;
-      if(d){
-        const candidatos=[d?.saldoTDJ,d?.saldoTdj,d?.saldo_tdj,d?.saldo?.tdj,d?.saldo?.tdjTotal,d?.excedente,d?.aplicado?.excedente];
-        for(const x of candidatos){if(x!=null&&Number.isFinite(Number(x))){residual=Math.max(0,Math.trunc(Number(x)));break;}}
-        if(residual==null&&original>0)residual=Math.max(0,original-Math.trunc(aplicado));
-      }
-      if(residual==null)return p;
-      return {...p,__tdjArrastreValor:residual,__tdjArrastreOrigen:actual,__tdjArrastrePorCierre:true};
-    });
-    return {...datos,pagos};
-  }
-  function candidatoCierre(datos,original){
-    const pagos=Array.isArray(datos?.pagos)?datos.pagos:[];
-    const tdjs=pagos.filter(esTDJ).filter(p=>iso(p?.fecha)&&num(p?.valor)>0);
-    for(let i=tdjs.length-1;i>=1;i--){
-      const actual=tdjs[i],fecha=iso(actual.fecha);
-      const prev=tdjs.slice(0,i).some(p=>iso(p?.fecha)===fecha&&num(p?.valor)>0);
-      if(!prev)continue;
-      const posteriores=pagos.filter(p=>!esTDJ(p)&&iso(p?.fecha)>fecha&&num(p?.valor)>0);
-      if(!posteriores.length)continue;
-      const sin={...datos,pagos:pagos.map(p=>String(p?.id??"")===String(actual?.id??"")?{...p,valor:0}:{...p})};
-      try{
-        const corte=posteriores.map(p=>iso(p.fecha)).sort().at(-1)||fecha;
-        const r=original.call(this,{...sin,fechaCorte:corte});
-        const ultimo=posteriores.slice().sort((a,b)=>iso(a.fecha).localeCompare(iso(b.fecha))).at(-1);
-        const d=detalle(r,ultimo);
-        const saldo=Math.max(0,num(r?.total));
-        const aplicado=Math.max(0,num(d?.aplicado?.total));
-        const completo=aplicado+1000>=num(ultimo?.valor);
-        if((saldo<=1000&&completo)||saldo<=1000)return actual;
-      }catch{}
-    }
-    return null;
-  }
-  function instalar(Clase){
-    if(!Clase?.prototype?.calcular)return;
-    const p=Clase.prototype,original=p.calcular;
-    if(original.__tdj183)return;
-    function calcular(datos,...rest){
-      if(window.__tdj183Bypass)return original.call(this,datos,...rest);
-      const preparados=prepararArrastres(datos);
-      const actual=candidatoCierre.call(this,preparados,original);
-      const usados=actual?{...preparados,pagos:(preparados.pagos||[]).map(p=>String(p?.id??"")===String(actual?.id??"")?{...p,valor:0,__tdjArrastreValor:Math.max(0,Math.trunc(num(p?.valor))),__tdjArrastreOrigen:firma(preparados),__tdjArrastrePorCierre:true}:p)}:preparados;
-      const anterior=Boolean(window.__tdj183Bypass);window.__tdj183Bypass=true;
-      let r;try{r=original.call(this,usados,...rest);}finally{window.__tdj183Bypass=anterior;}
-      try{r=actualizarArrastres(usados,r);}catch{}
-      return r;
-    }
-    calcular.__tdj183=true;
-    p.calcular=calcular;
-  }
+  function prepararArrastres(datos){const actual=firma(datos);return {...datos,pagos:(datos?.pagos||[]).map(p=>{if(!esTDJ(p)||!p.__tdjArrastrePorCierre)return p;const origen=String(p.__tdjArrastreOrigen||"");if(origen&&origen!==actual)return {...p,valor:Math.max(0,Math.trunc(num(p.__tdjArrastreValor))),__tdjArrastreConsumible:true};return p;})};}
+  function actualizarArrastres(datos,r){const actual=firma(datos);const pagos=(datos?.pagos||[]).map(p=>{if(!esTDJ(p))return p;const d=detalle(r,p);const original=Math.max(0,Math.trunc(num(p.__tdjArrastreValor??p.valor)));const aplicado=Math.max(0,num(d?.aplicado?.total));let residual=null;if(d){const candidatos=[d?.saldoTDJ,d?.saldoTdj,d?.saldo_tdj,d?.saldo?.tdj,d?.saldo?.tdjTotal,d?.excedente,d?.aplicado?.excedente];for(const x of candidatos){if(x!=null&&Number.isFinite(Number(x))){residual=Math.max(0,Math.trunc(Number(x)));break;}}if(residual==null&&original>0)residual=Math.max(0,original-Math.trunc(aplicado));}if(residual==null)return p;return {...p,__tdjArrastreValor:residual,__tdjArrastreOrigen:actual,__tdjArrastrePorCierre:true};});datos.pagos=pagos;return r;}
+  function copiarMetadata(origen,destino){const mapa=new Map((origen?.pagos||[]).map(p=>[String(p?.id??""),p]));if(!Array.isArray(destino?.pagos))return;for(const p of destino.pagos){const q=mapa.get(String(p?.id??""));if(!q)continue;if(q.__tdjArrastrePorCierre){p.__tdjArrastreValor=q.__tdjArrastreValor;p.__tdjArrastreOrigen=q.__tdjArrastreOrigen;p.__tdjArrastrePorCierre=true;}}}
+  function candidatoCierre(datos,original){const pagos=Array.isArray(datos?.pagos)?datos.pagos:[];const tdjs=pagos.filter(esTDJ).filter(p=>iso(p?.fecha)&&num(p?.valor)>0);for(let i=tdjs.length-1;i>=1;i--){const actual=tdjs[i],fecha=iso(actual.fecha);const prev=tdjs.slice(0,i).some(p=>iso(p?.fecha)===fecha&&num(p?.valor)>0);if(!prev)continue;const posteriores=pagos.filter(p=>!esTDJ(p)&&iso(p?.fecha)>fecha&&num(p?.valor)>0);if(!posteriores.length)continue;const sin={...datos,pagos:pagos.map(p=>String(p?.id??"")===String(actual?.id??"")?{...p,valor:0}:{...p})};try{const corte=posteriores.map(p=>iso(p.fecha)).sort().at(-1)||fecha;const r=original.call(this,{...sin,fechaCorte:corte});const ultimo=posteriores.slice().sort((a,b)=>iso(a.fecha).localeCompare(iso(b.fecha))).at(-1);const d=detalle(r,ultimo);const saldo=Math.max(0,num(r?.total));const aplicado=Math.max(0,num(d?.aplicado?.total));const completo=aplicado+1000>=num(ultimo?.valor);if(saldo<=1000&&completo)return actual;}catch{}}return null;}
+  function instalar(Clase){if(!Clase?.prototype?.calcular)return;const p=Clase.prototype,original=p.calcular;if(original.__tdj183)return;function calcular(datos,...rest){if(window.__tdj183Bypass)return original.call(this,datos,...rest);const preparados=prepararArrastres(datos);const actual=candidatoCierre.call(this,preparados,original);const usados=actual?{...preparados,pagos:(preparados.pagos||[]).map(p=>String(p?.id??"")===String(actual?.id??"")?{...p,valor:0,__tdjArrastreValor:Math.max(0,Math.trunc(num(p?.valor))),__tdjArrastreOrigen:firma(preparados),__tdjArrastrePorCierre:true}:p)}:preparados;const anterior=Boolean(window.__tdj183Bypass);window.__tdj183Bypass=true;let r;try{r=original.call(this,usados,...rest);}finally{window.__tdj183Bypass=anterior;}try{actualizarArrastres(usados,r);copiarMetadata(usados,datos);}catch{}return r;}calcular.__tdj183=true;p.calcular=calcular;}
   instalar(MotorLiquidacion183);
   instalar(MotorLiquidacionOficial183);
   window.__tdjSecuenciaGuard183Ready=true;
