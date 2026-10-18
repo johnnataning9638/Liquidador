@@ -32,6 +32,7 @@ jobs:
           node tests/regresion-simbolo-peso-importadores-146.mjs
           node tests/regresion-secuencia-tdj-151.mjs
           node tests/regresion-secuencia-tdj-152.mjs
+          node tests/regresion-tdj-174.mjs
       - name: Verificar integridad del motor de liquidación
         if: github.event_name == 'pull_request'
         run: |
