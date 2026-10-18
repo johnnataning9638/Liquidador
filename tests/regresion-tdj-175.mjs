@@ -14,16 +14,14 @@ assert.match(guard,/saldo<=0\.5/);
 assert.match(guard,/const corregidos=/);
 
 // Protección contra la regresión que dejó DIAN en "CARGANDO PARÁMETROS":
-// importador-excel no puede contener top-level await ni una importación estática
-// del parche de recuperación.
+// importador-excel no puede contener top-level await ni overlays de exportación.
 assert.doesNotMatch(importer,/await\s+import\(/);
-assert.doesNotMatch(importer,/^\s*import\s+["']\.\/export-dian-guard-/m);
-assert.match(importer,/import\(\"\.\/export-tdj-recovery-16\.33\.174\.js\?v=16\.33\.174\"\)/);
+assert.doesNotMatch(importer,/export-tdj-recovery-16\.33\.174/);
+assert.doesNotMatch(importer,/export-dian-guard/);
 
-// Desde v16.33.176 la guardia vigente es la 176 y se carga estáticamente para
-// impedir que la primera liquidación ocurra antes de instalar la secuencia.
-assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.176\.js\?v=16\.33\.176"/);
+// La guardia vigente fue evolucionada a 177 y se carga estáticamente.
+assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.177\.js\?v=16\.33\.177"/);
 assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
 assert.match(tdj,/tdj-core-16\.33\.143\.js/);
 
-console.log('REGRESION TDJ 16.33.175 / CARGA DIAN: OK — compatibilidad con guardia 176');
+console.log('REGRESION TDJ 16.33.175 / CARGA DIAN: OK — compatibilidad con guardia 177');
