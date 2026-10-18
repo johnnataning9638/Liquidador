@@ -4,8 +4,12 @@
 // innecesario para cerrar la obligación NO debe imputar ni siquiera $1.000.
 // El valor nominal permanece íntegro para la siguiente obligación / endoso.
 // No modifica fórmulas tributarias ni la proporcionalidad económica.
-import { MotorLiquidacion } from "./motor-liquidacion.js?v=16.33.181";
-import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.181";
+// Se parchean las dos instancias de módulo usadas actualmente (cache-bust 161
+// y 181) para evitar que una URL antigua deje sin efecto la corrección.
+import { MotorLiquidacion as MotorLiquidacion181 } from "./motor-liquidacion.js?v=16.33.181";
+import { MotorLiquidacionOficial as MotorLiquidacionOficial181 } from "./motor-liquidacion-oficial.js?v=16.33.181";
+import { MotorLiquidacion as MotorLiquidacion161 } from "./motor-liquidacion.js?v=16.33.161";
+import { MotorLiquidacionOficial as MotorLiquidacionOficial161 } from "./motor-liquidacion-oficial.js?v=16.33.161";
 (function(){
   "use strict";
   if(window.__tdjSecuenciaGuard181Installed)return;
@@ -59,5 +63,6 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     }
     calcular.__tdj181=true;p.calcular=calcular;
   }
-  instalar(MotorLiquidacion);instalar(MotorLiquidacionOficial);window.__tdjSecuenciaGuard181Ready=true;
+  instalar(MotorLiquidacion181);instalar(MotorLiquidacionOficial181);instalar(MotorLiquidacion161);instalar(MotorLiquidacionOficial161);
+  window.__tdjSecuenciaGuard181Ready=true;
 })();
