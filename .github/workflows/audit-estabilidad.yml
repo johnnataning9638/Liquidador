@@ -54,3 +54,16 @@ jobs:
           set -e
           test "$(grep -o 'class=\"[^\"]*btn-calcular-normal[^\"]*\"' liquidacion.html | wc -l)" -eq 3
           grep -q 'querySelectorAll(\".btn-calcular-normal\").*addEventListener(\"click\",calcular)' js/app.js
+
+  live-tdj-smoke:
+    needs: syntax-and-integrity
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Ejecutar caso crítico TDJ en Render LIVE
+        run: node tests/live-tdj-177.mjs
