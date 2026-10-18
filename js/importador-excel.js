@@ -44,7 +44,7 @@ function leerSeccionPagosRecovery(rows,headerIdx){
   for(let i=headerIdx+1;i<rows.length;i++){
     const r=rows[i]||[],s=textoFilaRecovery(r);
     if(!s){if(out.length)break;continue;}
-    if(/^(TITULOS TDJ|TÍTULOS TDJ|FIN RECUPERACION COMPLETA|FIN RECUPERACIÓN COMPLETA)/.test(s))break;
+    if(/^(TITULOS TDJ|TÍTULOS TDJ|FIN RECUPERACION COMPLETA|FIN RECUPERACIÓN COMPLETA|OBLIGACION(?:\s|\|)|OBLIGACIÓN(?:\s|\|))/.test(s))break;
     const f=fechaExcel(r[ixF]),valor=Math.trunc(numExcel(r[ixV]));
     const tdj=ixT>=0?String(r[ixT]??"").trim():"",recibo=ixR>=0?String(r[ixR]??"").trim():"";
     if(!f&&!valor&&!tdj&&!recibo)continue;
