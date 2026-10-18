@@ -1,32 +1,13 @@
-name: Auditoría secuencia TDJ v16.33.160
+name: Historico deshabilitado — auditoria TDJ 16.33.160
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  auditoria:
-    if: github.actor != 'github-actions[bot]'
+  historico:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Verificar integridad de la secuencia TDJ
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check js/tdj-core-16.33.143.js
-          node --check js/tdj.js
-          node --check js/prioridad-tdj.js
-          node --check js/prioridad-tdj-v132.js
-          node tests/regresion-secuencia-tdj-157.mjs
-          node tests/regresion-secuencia-tdj-152.mjs
-          node tests/regresion-secuencia-tdj-151.mjs
-          grep -q 'tdj-core-16.33.143.js?v=16.33.160' js/tdj.js
-          grep -q 'js/tdj.js?v=16.33.160' titulos.html
-          echo 'AUDITORIA CADENA TDJ 16.33.160: OK'
+      - run: echo "Workflow histórico deshabilitado; las regresiones vigentes se ejecutan mediante los workflows actuales."
