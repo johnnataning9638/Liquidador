@@ -13,4 +13,4 @@ export function numExcel(v){if(typeof v==="number")return Number.isFinite(v)?v:0
 export function fechaExcel(v){const s=String(v??"").trim();if(!s)return "";if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)){const [d,m,y]=s.split("/").map(Number),yy=y<100?2000+y:y;return `${yy}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`}return s}
 export function filaHeader(rows,pred){return rows.findIndex(r=>pred(norm(r.map(x=>norm(x)).join(" | "))))}
 export {norm};
-if(!document.querySelector('#tablaTitulos'))import('./export-dian-tdj-control-16.33.177.js?v=16.33.177').catch(()=>{});
+if(!document.querySelector('#tablaTitulos'))import('./export-dian-tdj-control-16.33.178.js?v=16.33.178').catch(()=>{});
