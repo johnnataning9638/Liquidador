@@ -28,13 +28,9 @@ const protegidos={
   'js/tdj-core-16.33.143.js':'d74c0790a90701187d97490f5eaaae0e2b3bf7b1',
   'js/motor-liquidacion.js':'723107d58f1b79a9aeab916edc01df141fbc97d7',
   'js/motor-liquidacion-oficial.js':'d794fd7ae606b402161949955f768d38ffc0fb84',
-  'js/prioridad-tdj-v132.js':'8fd18189ea?'
+  'js/prioridad-tdj-v132.js':'8fd18189feea29eb3f3697e37f1dd24e08a78b40'
 };
-// El hash SHA-1 de prioridad-tdj-v132 se verifica por contenido crítico para
-// evitar acoplar la regresión a una futura actualización autorizada de esta
-// capa de secuencia; en esta release el archivo debe seguir siendo idéntico.
-assert(read('js/prioridad-tdj-v132.js').includes('REGLA DE CIERRE DEFINITIVO'),'prioridad-tdj-v132 perdió su regla de cierre protegida');
-for(const [p,h] of Object.entries(protegidos).filter(([p])=>p!=='js/prioridad-tdj-v132.js')){
+for(const [p,h] of Object.entries(protegidos)){
   assert(sha1(p)===h,`${p} fue modificado; la lógica matemática protegida no puede cambiar`);
 }
 
