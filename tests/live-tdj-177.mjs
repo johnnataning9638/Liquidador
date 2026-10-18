@@ -17,7 +17,7 @@ try{
   }
   assert(ok,`Render no entregó la interfaz 16.33.177 (${last})`);
   await page.waitForSelector('#listaObligaciones .obligacion-card',{timeout:30000});
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(1500);
 
   await page.locator('#nitGlobal').fill('901473152');
   const ob=page.locator('#listaObligaciones .obligacion-card').first();
@@ -32,17 +32,19 @@ try{
   await setNativeDate(vto.locator('.fecha-native'),'2026-01-14');
   await setMoney(vto.locator('[data-v="impuesto"]'),40771000);
 
-  for(let i=0;i<3;i++)await page.getByRole('button',{name:'+ AGREGAR PAGO'}).click();
+  await page.locator('[data-tab="pagos"]').click();
+  for(let i=0;i<3;i++)await page.locator('[data-action="agregar-pago"]').click();
   const pagos=page.locator('.pagos-mini tbody tr');assert(await pagos.count()===3,'no se crearon los 3 pagos normales');
   const fechas=['2026-06-16','2026-07-14','2026-10-01'],valores=[15027000,5986000,8193000];
   for(let i=0;i<3;i++){await setNativeDate(pagos.nth(i).locator('.fecha-native'),fechas[i]);await setMoney(pagos.nth(i).locator('[data-p="valor"]'),valores[i]);}
   await pagos.nth(2).locator('[data-p="tipo"]').selectOption({label:'ART. 9 DECRETO 1419 DE 2026 - TRIBUTARIO'});await pagos.nth(2).locator('[data-p="tipo"]').dispatchEvent('change');
 
-  for(let i=0;i<4;i++)await page.getByRole('button',{name:'+ AGREGAR TÍTULO'}).click();
+  await page.locator('[data-tab="titulos"]').click();
+  for(let i=0;i<4;i++)await page.locator('#btnAgregarTitulo').click();
   const tit=page.locator('#tablaTitulos tbody tr'),tdjs=['469030003386678','46903000338669','469030003386680','469030003387674'],tvals=[500000,500000,20000000,10000000];
   for(let i=0;i<4;i++){await tit.nth(i).locator('[data-t="tdj"]').fill(tdjs[i]);await tit.nth(i).locator('[data-t="valor"]').fill(String(tvals[i]));await tit.nth(i).locator('[data-t="valor"]').dispatchEvent('input');await tit.nth(i).locator('[data-t="valor"]').blur();await setNativeDate(tit.nth(i).locator('.fecha-native'),'2026-07-24');}
 
-  await page.getByRole('button',{name:'CALCULAR LIQUIDACIÓN'}).last().click();
+  await page.locator('.btn-calcular-tdj').click();
   await page.waitForFunction(()=>document.querySelector('#resEndoso')?.textContent?.trim()!=='' ,{timeout:30000});
   await page.waitForTimeout(1000);
   const summary={total:money(await page.locator('#resTotalTitulos').innerText()),applied:money(await page.locator('#resAplicado').innerText()),saldo:money(await page.locator('#resSaldo').innerText()),endoso:money(await page.locator('#resEndoso').innerText())};
