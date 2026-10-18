@@ -14,22 +14,9 @@ export function fechaExcel(v){const s=String(v??"").trim();if(!s)return "";if(/^
 export function filaHeader(rows,pred){return rows.findIndex(r=>pred(norm(r.map(x=>norm(x)).join(" | "))))}
 export {norm};
 
-/*
- * CONTROL 16.33.180 — RECUPERACIÓN COMPLETA COMO FUENTE DE VERDAD.
- *
- * El Excel contiene una sección de resultados denominada "PAGOS Y APLICACIÓN".
- * Esa sección NO es fuente de importación porque el valor de un TDJ puede ser
- * el valor ya aplicado/reducido (ej.: $20.000.000 nominales -> $15.548.000
- * aplicados). La fuente de captura es RECUPERACIÓN COMPLETA, donde PAGOS y
- * TÍTULOS conservan los valores originales registrados.
- *
- * No se toca el motor de liquidación ni la exportación. Este control solamente
- * corrige, después de la importación existente, los registros capturados desde
- * el Excel que contiene RECUPERACIÓN COMPLETA.
- */
+/* CONTROL 16.33.180 — RECUPERACIÓN COMPLETA COMO FUENTE DE VERDAD. */
 function textoFilaRecovery(row){return norm((row||[]).filter(v=>v!==null&&v!==undefined&&String(v)!=="").join(" | "));}
 function indiceFilaRecovery(rows,pred,desde=0){for(let i=desde;i<rows.length;i++)if(pred(textoFilaRecovery(rows[i])))return i;return -1;}
-function headerRecovery(rows,desde,aliases){for(let i=Math.max(0,desde);i<rows.length;i++){const h=(rows[i]||[]).map(norm);if(aliases.every(a=>a.some(x=>h.includes(norm(x)))))return i;}return -1;}
 function leerSeccionPagosRecovery(rows,headerIdx){
   if(headerIdx<0)return [];
   const h=rows[headerIdx]||[],n=h.map(norm);
@@ -37,79 +24,47 @@ function leerSeccionPagosRecovery(rows,headerIdx){
   const ixR=n.findIndex(x=>["RECIBO Nº","RECIBO","RECIBO NÚMERO"].map(norm).includes(x));
   const ixF=n.findIndex(x=>["FECHA","FECHA PAGO","FECHA PAGO / CORTE"].map(norm).includes(x));
   const ixV=n.findIndex(x=>["VALOR","VALOR PAGO","VALOR PAGADO"].map(norm).includes(x));
-  const ixTipo=n.findIndex(x=>x==="TIPO");
-  const ixObs=n.findIndex(x=>x==="OBSERVACIÓN"||x==="OBSERVACION");
+  const ixTipo=n.findIndex(x=>x==="TIPO"),ixObs=n.findIndex(x=>x==="OBSERVACIÓN"||x==="OBSERVACION");
   if(ixF<0||ixV<0)return [];
   const out=[];
   for(let i=headerIdx+1;i<rows.length;i++){
     const r=rows[i]||[],s=textoFilaRecovery(r);
     if(!s){if(out.length)break;continue;}
-    if(/^(TÍTULOS TDJ|TITULOS TDJ|FIN RECUPERACIÓN COMPLETA|FIN RECUPERACION COMPLETA)/.test(s))break;
-    if(/^(OBSERVACIÓN|OBSERVACION)/.test(s))break;
-    const f=fechaExcel(r[ixF]),valor=truncarImportRecovery(numExcel(r[ixV]));
+    if(/^(TITULOS TDJ|TÍTULOS TDJ|FIN RECUPERACION COMPLETA|FIN RECUPERACIÓN COMPLETA)/.test(s))break;
+    const f=fechaExcel(r[ixF]),valor=Math.trunc(numExcel(r[ixV]));
     const tdj=ixT>=0?String(r[ixT]??"").trim():"",recibo=ixR>=0?String(r[ixR]??"").trim():"";
     if(!f&&!valor&&!tdj&&!recibo)continue;
-    out.push({tdj:tdj.toUpperCase(),recibo:tdj?"":recibo.toUpperCase(),fecha:f||"",valor,tipo:(ixTipo>=0?String(r[ixTipo]??""):"TASA DIAN").trim().toUpperCase()||"TASA DIAN",observacion:(ixObs>=0?String(r[ixObs]??""):"").trim().toUpperCase()});
+    out.push({tdj:tdj.toUpperCase(),recibo:tdj?"":recibo.toUpperCase(),fecha:f||"",valor:Number.isFinite(valor)?valor:0,tipo:(ixTipo>=0?String(r[ixTipo]??""):"TASA DIAN").trim().toUpperCase()||"TASA DIAN",observacion:(ixObs>=0?String(r[ixObs]??""):"").trim().toUpperCase()});
   }
   return out;
 }
 function leerTitulosRecovery(rows,headerIdx){
   if(headerIdx<0)return [];
   const h=rows[headerIdx]||[],n=h.map(norm);
-  const ixT=n.findIndex(x=>x==="TDJ");
-  const ixF=n.findIndex(x=>x==="FECHA");
-  const ixV=n.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL");
-  const ixTipo=n.findIndex(x=>x==="TIPO");
-  const ixObs=n.findIndex(x=>x==="OBSERVACIÓN"||x==="OBSERVACION");
+  const ixT=n.findIndex(x=>x==="TDJ"),ixF=n.findIndex(x=>x==="FECHA"),ixV=n.findIndex(x=>x==="VALOR"||x==="VALOR ORIGINAL"),ixTipo=n.findIndex(x=>x==="TIPO"),ixObs=n.findIndex(x=>x==="OBSERVACIÓN"||x==="OBSERVACION");
   if(ixT<0||ixF<0||ixV<0)return [];
   const out=[];
   for(let i=headerIdx+1;i<rows.length;i++){
-    const r=rows[i]||[],s=textoFilaRecovery(r);
-    if(!s)break;
-    if(/^FIN RECUPERACIÓN COMPLETA|^FIN RECUPERACION COMPLETA/.test(s))break;
-    const tdj=String(r[ixT]??"").trim(),f=fechaExcel(r[ixF]),valor=truncarImportRecovery(numExcel(r[ixV]));
-    if(!tdj||!f||valor<0)continue;
+    const r=rows[i]||[],s=textoFilaRecovery(r);if(!s)break;if(/^FIN RECUPERACION COMPLETA|^FIN RECUPERACIÓN COMPLETA/.test(s))break;
+    const tdj=String(r[ixT]??"").trim(),f=fechaExcel(r[ixF]),valor=Math.trunc(numExcel(r[ixV]));
+    if(!tdj||!f||!Number.isFinite(valor)||valor<0)continue;
     out.push({tdj:tdj.toUpperCase(),fecha:f,valor,tipo:(ixTipo>=0?String(r[ixTipo]??""):"TASA DIAN").trim().toUpperCase()||"TASA DIAN",observacion:(ixObs>=0?String(r[ixObs]??""):"").trim().toUpperCase()});
   }
   return out;
 }
-function truncarImportRecovery(v){const n=Number(v||0);return Number.isFinite(n)?Math.trunc(n):0;}
 function fechaVisibleRecovery(iso){const s=fechaExcel(iso);if(!s)return "";const [y,m,d]=s.split("-");return `${d}/${m}/${y}`;}
 function fusionarRecoveryPagos(pagosRecovery,titulosRecovery){
-  const porTDJ=new Map(titulosRecovery.map(t=>[String(t.tdj).trim(),t]));
-  const usados=new Set();
-  const salida=pagosRecovery.map(p=>{
-    const key=String(p.tdj||"").trim();
-    if(!key)return p;
-    const t=porTDJ.get(key);
-    if(!t)return p;
-    usados.add(key);
-    return {...p,tdj:t.tdj,fecha:t.fecha,valor:t.valor,tipo:t.tipo||p.tipo,observacion:t.observacion||p.observacion};
-  });
-  for(const t of titulosRecovery){
-    const key=String(t.tdj).trim();
-    if(usados.has(key))continue;
-    if(salida.some(p=>String(p.tdj||"").trim()===key))continue;
-    salida.push({tdj:t.tdj,recibo:"",fecha:t.fecha,valor:t.valor,tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});
-  }
+  const porTDJ=new Map(titulosRecovery.map(t=>[String(t.tdj).trim(),t])),usados=new Set();
+  const salida=pagosRecovery.map(p=>{const key=String(p.tdj||"").trim();if(!key)return p;const t=porTDJ.get(key);if(!t)return p;usados.add(key);return {...p,tdj:t.tdj,fecha:t.fecha,valor:t.valor,tipo:t.tipo||p.tipo,observacion:t.observacion||p.observacion};});
+  for(const t of titulosRecovery){const key=String(t.tdj).trim();if(usados.has(key)||salida.some(p=>String(p.tdj||"").trim()===key))continue;salida.push({tdj:t.tdj,recibo:"",fecha:t.fecha,valor:t.valor,tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});}
   return salida;
 }
-function establecerCampoRecovery(id,valor){const el=document.getElementById(id);if(!el)return;el.value=String(valor??"");el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));}
-function limpiarPagosRecoveryUI(){
-  const tbody=document.querySelector("#tablaPagos tbody");
-  if(!tbody)return;
-  let boton=tbody.querySelector("button[data-del]");
-  while(boton){boton.click();boton=tbody.querySelector("button[data-del]");}
-}
+function limpiarPagosRecoveryUI(){const tbody=document.querySelector("#tablaPagos tbody");if(!tbody)return;let boton=tbody.querySelector("button[data-del]");while(boton){boton.click();boton=tbody.querySelector("button[data-del]");}}
 async function aplicarPagosRecoveryUI(pagosRecovery){
-  const agregar=document.getElementById("btnAgregarPago");
-  const tbody=document.querySelector("#tablaPagos tbody");
-  if(!agregar||!tbody)throw new Error("No se encontró la tabla de pagos del Liquidador para restaurar la información completa.");
+  const agregar=document.getElementById("btnAgregarPago"),tbody=document.querySelector("#tablaPagos tbody");if(!agregar||!tbody)throw new Error("No se encontró la tabla de pagos del Liquidador para restaurar la información completa.");
   limpiarPagosRecoveryUI();
   for(const p of pagosRecovery){
-    agregar.click();
-    const tr=tbody.lastElementChild;
-    if(!tr)continue;
+    agregar.click();const tr=tbody.lastElementChild;if(!tr)continue;
     const tdj=tr.querySelector('[data-k="tdj"]'),recibo=tr.querySelector('[data-k="recibo"]'),fecha=tr.querySelector(".fecha-campo"),picker=tr.querySelector(".fecha-native"),valor=tr.querySelector('[data-k="valor"]'),tipo=tr.querySelector('[data-k="tipo"]'),obs=tr.querySelector('[data-k="observacion"]');
     if(tdj){tdj.value=p.tdj||"";tdj.dispatchEvent(new Event("input",{bubbles:true}));tdj.dispatchEvent(new Event("change",{bubbles:true}));}
     if(recibo){recibo.value=p.recibo||"";recibo.dispatchEvent(new Event("input",{bubbles:true}));recibo.dispatchEvent(new Event("change",{bubbles:true}));}
@@ -122,43 +77,22 @@ async function aplicarPagosRecoveryUI(pagosRecovery){
 }
 async function corregirImportacionRecovery(file){
   try{
-    const rows=await leerXlsxPrimeraHoja(file);
-    const recovery=indiceFilaRecovery(rows,s=>s.includes("RECUPERACION COMPLETA")||s.includes("RECUPERACIÓN COMPLETA"));
-    if(recovery<0)return;
-    const pagosHeader=indiceFilaRecovery(rows,s=>s==="PAGOS | Nº | TDJ Nº | RECIBO Nº | FECHA | VALOR | TIPO | OBSERVACIÓN",recovery+1);
-    const titulosHeader=indiceFilaRecovery(rows,s=>s==="TÍTULOS TDJ | Nº | TDJ | FECHA | VALOR | TIPO | OBSERVACIÓN"||s==="TITULOS TDJ | Nº | TDJ | FECHA | VALOR | TIPO | OBSERVACION",recovery+1);
-    const pagosRecovery=leerSeccionPagosRecovery(rows,pagosHeader);
-    const titulosRecovery=leerTitulosRecovery(rows,titulosHeader);
-    if(!pagosRecovery.length&&!titulosRecovery.length)return;
-    const pagosFinal=fusionarRecoveryPagos(pagosRecovery,titulosRecovery);
-    await aplicarPagosRecoveryUI(pagosFinal);
-    console.info("CONTROL 16.33.180 — recuperación completa aplicada como fuente de verdad",{pagos:pagosFinal.length,titulos:titulosRecovery.length});
-    const estado=document.getElementById("estadoSistema");
-    if(estado){estado.className="indicador-parametros listo";estado.title=`Recuperación completa: ${pagosFinal.length} pago(s) restaurado(s) desde datos de trabajo`;}
+    const rows=await leerXlsxPrimeraHoja(file),recovery=indiceFilaRecovery(rows,s=>s.includes("RECUPERACION COMPLETA")||s.includes("RECUPERACIÓN COMPLETA"));if(recovery<0)return;
+    const pagosHeader=indiceFilaRecovery(rows,s=>s.startsWith("PAGOS | Nº | TDJ Nº | RECIBO Nº | FECHA | VALOR | TIPO | OBSERVACION"),recovery+1);
+    const titulosHeader=indiceFilaRecovery(rows,s=>s.startsWith("TITULOS TDJ | Nº | TDJ | FECHA | VALOR | TIPO | OBSERVACION"),recovery+1);
+    const pagosRecovery=leerSeccionPagosRecovery(rows,pagosHeader),titulosRecovery=leerTitulosRecovery(rows,titulosHeader);if(!pagosRecovery.length&&!titulosRecovery.length)return;
+    await aplicarPagosRecoveryUI(fusionarRecoveryPagos(pagosRecovery,titulosRecovery));
+    console.info("CONTROL 16.33.180 — recuperación completa aplicada como fuente de verdad",{pagos:pagosRecovery.length,titulos:titulosRecovery.length});
   }catch(e){console.warn("CONTROL 16.33.180 — no fue posible restaurar recuperación completa:",e);}
 }
-
 (function instalarControlRecovery(){
-  if(typeof EventTarget==="undefined")return;
-  const originalAdd=EventTarget.prototype.addEventListener;
-  if(originalAdd.__controlRecovery180)return;
+  if(typeof EventTarget==="undefined")return;const originalAdd=EventTarget.prototype.addEventListener;if(originalAdd.__controlRecovery180)return;
   function add(type,listener,options){
     const esInputExcel=this&&this.tagName==="INPUT"&&String(this.type||"").toLowerCase()==="file"&&/xlsx|spreadsheetml|\.xlsx/i.test(String(this.accept||""));
-    if(esInputExcel&&type==="change"&&typeof listener==="function"&&!listener.__controlRecovery180){
-      const originalListener=listener;
-      const wrapped=async function(event){
-        let exito=false;
-        try{await originalListener.call(this,event);exito=true;}
-        finally{if(exito){const file=this.files?.[0];if(file)await corregirImportacionRecovery(file);}}
-      };
-      wrapped.__controlRecovery180=true;
-      return originalAdd.call(this,type,wrapped,options);
-    }
+    if(esInputExcel&&type==="change"&&typeof listener==="function"&&!listener.__controlRecovery180){const originalListener=listener;const wrapped=async function(event){let exito=false;try{await originalListener.call(this,event);exito=true}finally{if(exito){const file=this.files?.[0];if(file)await corregirImportacionRecovery(file);}}};wrapped.__controlRecovery180=true;return originalAdd.call(this,type,wrapped,options)}
     return originalAdd.call(this,type,listener,options);
   }
-  add.__controlRecovery180=true;
-  EventTarget.prototype.addEventListener=add;
-  originalAdd.__controlRecovery180=true;
+  add.__controlRecovery180=true;EventTarget.prototype.addEventListener=add;originalAdd.__controlRecovery180=true;
 })();
 
 if(!document.querySelector('#tablaTitulos'))import('./export-dian-tdj-control-16.33.178.js?v=16.33.178').catch(()=>{});
