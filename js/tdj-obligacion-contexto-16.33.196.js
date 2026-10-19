@@ -36,11 +36,6 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     return UPPER(sel?.value||"");
   }
 
-  // Cuando el cálculo ya contiene un TDJ, el propio pago creado por
-  // aplicarTitulos conserva la selección de la obligación en tipoTasaObligacion
-  // y tipo. Eso es una identidad funcional mucho más fuerte que
-  // concepto/año/período y funciona incluso cuando las obligaciones son
-  // idénticas en esos tres campos.
   function indicePorTipoTDJ(d){
     const pagos=Array.isArray(d?.pagos)?d.pagos:[];
     const candidatos=pagos.filter(p=>p?.esTDJ===true||String(p?.tdj||"").trim()!=="");
@@ -57,15 +52,15 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
       }
     }
     // Si varias obligaciones usan exactamente el mismo tratamiento, cualquiera
-    // de ellas produce la misma selección de tasa/beneficio; no forzamos una
-    // distinción artificial. Para tratamientos diferentes, el match es único.
+    // de ellas produce la misma selección de tasa/beneficio. Para tratamientos
+    // diferentes, el match identifica la obligación correcta.
     return matches.length?matches[0]:-1;
   }
 
   const estadoPorMotor=new WeakMap();
   function estado(Clase){
     let e=estadoPorMotor.get(Clase);
-    if(!e){e={cursor:0,reset:false};estadoPorMotor.set(Clase,e);}
+    if(!e){e={cursor:0,reset:false,lastIndex:-1};estadoPorMotor.set(Clase,e);}
     return e;
   }
   function indiceBaseSecuencial(Clase){
@@ -76,7 +71,7 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     e.cursor=(e.cursor+1)%cs.length;
     if(!e.reset){
       e.reset=true;
-      setTimeout(()=>{e.cursor=0;e.reset=false;},0);
+      setTimeout(()=>{e.cursor=0;e.reset=false;e.lastIndex=-1;},0);
     }
     return i;
   }
@@ -86,8 +81,12 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     if(exp>=0)return exp;
     const porTipo=indicePorTipoTDJ(d);
     if(porTipo>=0)return porTipo;
-    // Las primeras llamadas del cálculo corresponden a la liquidación base
-    // de OBLIGACIÓN 1, 2, 3...; el cursor se reinicia al terminar el evento.
+    const e=estado(Clase);
+    // Una fotografía inmediatamente posterior a un cálculo TDJ puede omitir
+    // temporalmente el TDJ actual (por ejemplo estadoAntesTDJ). Conservamos
+    // el contexto de la obligación que acabamos de procesar en esa misma
+    // ejecución síncrona antes de recurrir al cursor base.
+    if(e.lastIndex>=0)return e.lastIndex;
     return indiceBaseSecuencial(Clase);
   }
 
@@ -99,6 +98,8 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     function calcular196(datos,...rest){
       const d=datos&&typeof datos==="object"?datos:{};
       const i=resolver(Clase,d);
+      const e=estado(Clase);
+      e.lastIndex=i;
       d.__tdjObligacionIndex=i;
       const card=cards()[i];
       const id=String(card?.dataset?.id||"").trim();
