@@ -1,0 +1,45 @@
+name: TDJ remanente fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Apply isolated TDJ remanent correction
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('js/tdj-core-16.33.143.js')
+          s = p.read_text(encoding='utf-8')
+          old = '        if(corteObligacion&&t.fecha>corteObligacion)continue;'
+          new = ('        // v16.33.198: una fecha de corte es informativa para proyecciones; '
+                 'un TDJ real es un movimiento efectivo y debe poder continuar hacia '
+                 'la obligación pendiente para consumir el remanente antes de endosar.\n'
+                 '        if(corteObligacion&&t.fecha>corteObligacion&&!String(t.tdj||"").trim())continue;')
+          if old not in s:
+              print('La corrección ya está aplicada o el patrón no existe. No se modifica el archivo.')
+              raise SystemExit(0)
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit isolated correction
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tdj-core-16.33.143.js
+          git diff --cached --quiet && exit 0
+          git commit -m "fix TDJ remanent allocation before endoso"
+          git push
