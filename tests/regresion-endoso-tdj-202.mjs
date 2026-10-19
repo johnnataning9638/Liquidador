@@ -1,0 +1,10 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const core=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");
+const tdj=fs.readFileSync("js/tdj.js","utf8");
+assert.match(core,/saldoObligacionActual/);
+assert.match(core,/obligacionCubiertaPorPagosProtegidos/);
+assert.match(core,/if\(saldoObligacionActual>0\.5 && !obligacionCubiertaPorPagosProtegidos\)break/);
+assert.doesNotMatch(core,/obligacionCubiertaPorPagosProtegidos\)return/);
+assert.match(tdj,/v16\.33\.202/);
+console.log("REGRESION TDJ 202 OK");

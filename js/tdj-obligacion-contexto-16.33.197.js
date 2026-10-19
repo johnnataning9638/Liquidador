@@ -1,4 +1,4 @@
-// TDJ v16.33.201 — RESOLUCIÓN ROBUSTA DE OBLIGACIÓN + SILENCIO DE ALERTA FALSA DE ENDOSO.
+// TDJ v16.33.202 — RESOLUCIÓN ROBUSTA DE OBLIGACIÓN + SILENCIO DE ALERTA FALSA DE ENDOSO.
 // CORRECCIÓN AISLADA: evita que __tdjObligacionIndex / obligacionId de una llamada
 // anterior queden pegados a un payload reutilizado y hagan que la obligación 2+
 // herede la tasa de la obligación 1.

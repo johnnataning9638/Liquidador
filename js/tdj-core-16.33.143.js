@@ -1087,7 +1087,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
           obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;
         }catch{}
-        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)return;
+        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;
 
         // Si esta obligación ya está totalmente cubierta (o el título todavía
         // no puede imputarse a ella), no generamos una fila ficticia. El título
