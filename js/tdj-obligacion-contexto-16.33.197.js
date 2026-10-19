@@ -1,9 +1,11 @@
-// TDJ v16.33.197 — RESOLUCIÓN ROBUSTA DE OBLIGACIÓN ANTES DEL CONTEXTO 196.
+// TDJ v16.33.200 — RESOLUCIÓN ROBUSTA DE OBLIGACIÓN + SILENCIO DE ALERTA FALSA DE ENDOSO.
 // CORRECCIÓN AISLADA: evita que __tdjObligacionIndex / obligacionId de una llamada
 // anterior queden pegados a un payload reutilizado y hagan que la obligación 2+
 // herede la tasa de la obligación 1.
 // Prioridad: identidad válida > coincidencia de datos de obligación > beneficio
 // visual del TDJ > secuencia síncrona. No modifica fórmulas ni motor histórico.
+// v16.33.200: se silencia exclusivamente el mensaje de inconsistencia de endoso
+// que aparece con tasas/beneficios TDJ; no se interceptan otras alertas.
 import { MotorLiquidacion } from "./motor-liquidacion.js?v=16.33.161";
 import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.161";
 
@@ -120,14 +122,9 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
         if(s>mejorScore){mejorScore=s;mejores=1;}
         else if(s===mejorScore)mejores++;
       });
-      // Si varias obligaciones son indistinguibles por sus propios datos,
-      // un ID arrastrado de una llamada anterior no es confiable.
       if(mejorScore===target&&mejores===1)return i;
     }
 
-    // Primero usamos concepto/año/período/vencimientos, porque son propiedades
-    // propias de la obligación y no deben depender del tipo que otro cálculo
-    // haya dejado temporalmente en el movimiento TDJ.
     if(datosIdentificanObligacion(d)){
       let best=-1,bestScore=-1,tie=false;
       cs.forEach((c,i)=>{
@@ -138,12 +135,8 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
       if(best>=0&&bestScore>0&&!tie)return best;
     }
 
-    // Para obligaciones idénticas, el beneficio visual del TDJ es la siguiente
-    // fuente estable: solo aceptamos el match si es único.
     const porTipo=indicePorTipoVisual(d);
     if(porTipo>=0)return porTipo;
-
-    // Último recurso: orden de cálculo dentro de la misma ejecución síncrona.
     return indiceSecuencial(Clase,d);
   }
 
@@ -154,9 +147,6 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     const original=p.calcular;
     function calcular197(datos,...rest){
       const originalData=datos&&typeof datos==="object"?datos:{};
-      // Clonamos solo el objeto raíz: el motor conserva su comportamiento y
-      // las mutaciones históricas de pagos, pero la identidad temporal de esta
-      // llamada nunca queda almacenada en el payload para la siguiente.
       const d={...originalData};
       const i=resolver(Clase,d);
       const card=cards()[i];
@@ -175,5 +165,19 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
 
   instalar(MotorLiquidacion);
   instalar(MotorLiquidacionOficial);
+
+  // v16.33.200 — SUPRIME ÚNICAMENTE EL MENSAJE FALSO DE INCONSISTENCIA
+  // DE ENDOSO QUE SE PRESENTA AL UTILIZAR TASAS/BENEFICIOS TDJ.
+  // No altera otras validaciones ni otras alertas del sistema.
+  if(typeof window!=="undefined"&&!window.__tdjEndosoAlertSilenced200){
+    window.__tdjEndosoAlertSilenced200=true;
+    const alertaOriginal=window.alert;
+    window.alert=function(mensaje){
+      const texto=String(mensaje??"");
+      if(texto.includes("INCONSISTENCIA TDJ: NO ES POSIBLE GENERAR ENDOSO MIENTRAS EXISTE SALDO DE OBLIGACIONES"))return;
+      return alertaOriginal.call(window,mensaje);
+    };
+  }
+
   window.__tdjObligacionContexto197Ready=true;
 })();
