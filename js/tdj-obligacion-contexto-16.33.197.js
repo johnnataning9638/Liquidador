@@ -1,4 +1,4 @@
-// TDJ v16.33.200 — RESOLUCIÓN ROBUSTA DE OBLIGACIÓN + SILENCIO DE ALERTA FALSA DE ENDOSO.
+// TDJ v16.33.201 — RESOLUCIÓN ROBUSTA DE OBLIGACIÓN + SILENCIO DE ALERTA FALSA DE ENDOSO.
 // CORRECCIÓN AISLADA: evita que __tdjObligacionIndex / obligacionId de una llamada
 // anterior queden pegados a un payload reutilizado y hagan que la obligación 2+
 // herede la tasa de la obligación 1.
@@ -165,19 +165,6 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
 
   instalar(MotorLiquidacion);
   instalar(MotorLiquidacionOficial);
-
-  // v16.33.200 — SUPRIME ÚNICAMENTE EL MENSAJE FALSO DE INCONSISTENCIA
-  // DE ENDOSO QUE SE PRESENTA AL UTILIZAR TASAS/BENEFICIOS TDJ.
-  // No altera otras validaciones ni otras alertas del sistema.
-  if(typeof window!=="undefined"&&!window.__tdjEndosoAlertSilenced200){
-    window.__tdjEndosoAlertSilenced200=true;
-    const alertaOriginal=window.alert;
-    window.alert=function(mensaje){
-      const texto=String(mensaje??"");
-      if(texto.includes("INCONSISTENCIA TDJ: NO ES POSIBLE GENERAR ENDOSO MIENTRAS EXISTE SALDO DE OBLIGACIONES"))return;
-      return alertaOriginal.call(window,mensaje);
-    };
-  }
 
   window.__tdjObligacionContexto197Ready=true;
 })();

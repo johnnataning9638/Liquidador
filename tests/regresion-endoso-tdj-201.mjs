@@ -1,0 +1,12 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const core=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");
+const tdj=fs.readFileSync("js/tdj.js","utf8");
+const ctx=fs.readFileSync("js/tdj-obligacion-contexto-16.33.197.js","utf8");
+assert.match(core,/saldoObligacionActual/);
+assert.match(core,/obligacionCubiertaPorPagosProtegidos/);
+assert.match(core,/motorActual\.calcular\(datosAjustados\)/);
+assert.match(tdj,/v16\.33\.201/);
+assert.match(tdj,/tdj-core-16\.33\.143\.js\?v=16\.33\.201/);
+assert.doesNotMatch(ctx,/tdjEndosoAlertSilenced200/);
+console.log("REGRESION TDJ ENDOSO 201 OK");

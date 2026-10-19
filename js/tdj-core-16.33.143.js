@@ -1077,6 +1077,18 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           Math.max(0,Number(ultimo?.aplicado?.total||0))
         );
 
+        // v16.33.201: una obligación debe agotarse antes de que el remanente
+        // del TDJ pueda avanzar a la siguiente. Se conserva la excepción de
+        // pagos normales protegidos: si esos pagos ya cubren la obligación,
+        // el remanente sí puede continuar.
+        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));
+        let obligacionCubiertaPorPagosProtegidos=false;
+        try{
+          const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
+          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;
+        }catch{}
+        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)return;
+
         // Si esta obligación ya está totalmente cubierta (o el título todavía
         // no puede imputarse a ella), no generamos una fila ficticia. El título
         // continúa buscando la siguiente obligación y, si no encuentra deuda
