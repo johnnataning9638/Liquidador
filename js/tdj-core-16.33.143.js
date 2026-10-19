@@ -987,7 +987,8 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         if(disponible<=0)break;
 
         const corteObligacion=fechaCorteTDJ(o);
-        if(corteObligacion&&t.fecha>corteObligacion)continue;
+        // v16.33.198: una fecha de corte es informativa para proyecciones; un TDJ real es un movimiento efectivo y debe poder continuar hacia la obligación pendiente para consumir el remanente antes de endosar.
+        if(corteObligacion&&t.fecha>corteObligacion&&!String(t.tdj||"").trim())continue;
         const pagosBase=pagosRealesHastaCorteTDJ(o,corteObligacion)
           .filter(p=>p.fecha<=t.fecha)
           .sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.numero||0)-Number(b.numero||0))
