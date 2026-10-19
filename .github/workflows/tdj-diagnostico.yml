@@ -1,0 +1,37 @@
+name: TDJ Diagnostic
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect TDJ core
+        shell: bash
+        run: |
+          set -e
+          FILE=js/tdj-core-16.33.143.js
+          echo '=== MATCHES ==='
+          grep -nE 'INCONSISTENCIA TDJ|fechaCorteTDJ|corteObligacion|endoso|remanente|saldoOblig|aplicarTitulos' "$FILE" || true
+          echo '=== CONTEXT ENDOSO/INCONSISTENCIA ==='
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('js/tdj-core-16.33.143.js')
+          s=p.read_text()
+          needles=['INCONSISTENCIA TDJ','fechaCorteTDJ','corteObligacion','aplicarTitulos','remanente','endoso']
+          for n in needles:
+              pos=0
+              count=0
+              while True:
+                  i=s.find(n,pos)
+                  if i<0: break
+                  count+=1
+                  a=max(0,i-1800); b=min(len(s),i+3200)
+                  print(f'--- {n} occurrence {count} ---')
+                  print(s[a:b])
+                  pos=i+len(n)
+                  if count>=5: break
+          PY
