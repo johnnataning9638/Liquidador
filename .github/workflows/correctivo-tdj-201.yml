@@ -1,0 +1,66 @@
+name: Correctivo TDJ v16.33.201
+
+on: push
+
+permissions:
+  contents: write
+
+jobs:
+  corregir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restaurar agotamiento de obligación TDJ y preparar v201
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          core=Path('js/tdj-core-16.33.143.js')
+          s=core.read_text(encoding='utf-8')
+          old='''        const aplicado=Math.min(\n          Math.max(0,disponible),\n          Math.max(0,Number(ultimo?.aplicado?.total||0))\n        );\n\n        // Si esta obligación ya está totalmente cubierta (o el título todavía\n        // no puede imputarse a ella), no generamos una fila ficticia. El título\n        // continúa buscando la siguiente obligación y, si no encuentra deuda\n        // imputable, conserva íntegramente su valor para endoso.\n        if(aplicado<=0){'''
+          new='''        const aplicado=Math.min(\n          Math.max(0,disponible),\n          Math.max(0,Number(ultimo?.aplicado?.total||0))\n        );\n\n        // v16.33.201: una obligación debe agotarse antes de que el remanente\n        // del TDJ pueda avanzar a la siguiente. Se conserva la excepción de\n        // pagos normales protegidos: si esos pagos ya cubren la obligación,\n        // el remanente sí puede continuar.\n        const saldoObligacionActual=Math.max(0,Number(ultimo?.saldo?.total??r.total??0));\n        let obligacionCubiertaPorPagosProtegidos=false;\n        try{\n          const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);\n          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;\n        }catch{}\n        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)return;\n\n        // Si esta obligación ya está totalmente cubierta (o el título todavía\n        // no puede imputarse a ella), no generamos una fila ficticia. El título\n        // continúa buscando la siguiente obligación y, si no encuentra deuda\n        // imputable, conserva íntegramente su valor para endoso.\n        if(aplicado<=0){'''
+          if old not in s:
+              raise SystemExit('BLOQUE TDJ 201 NO ENCONTRADO')
+          core.write_text(s.replace(old,new,1),encoding='utf-8')
+
+          ctx=Path('js/tdj-obligacion-contexto-16.33.197.js')
+          cs=ctx.read_text(encoding='utf-8')
+          start='''  // v16.33.200 — SUPRIME ÚNICAMENTE EL MENSAJE FALSO DE INCONSISTENCIA\n  // DE ENDOSO QUE SE PRESENTA AL UTILIZAR TASAS/BENEFICIOS TDJ.\n  // No altera otras validaciones ni otras alertas del sistema.\n  if(typeof window!=="undefined"&&!window.__tdjEndosoAlertSilenced200){\n    window.__tdjEndosoAlertSilenced200=true;\n    const alertaOriginal=window.alert;\n    window.alert=function(mensaje){\n      const texto=String(mensaje??"");\n      if(texto.includes("INCONSISTENCIA TDJ: NO ES POSIBLE GENERAR ENDOSO MIENTRAS EXISTE SALDO DE OBLIGACIONES"))return;\n      return alertaOriginal.call(window,mensaje);\n    };\n  }\n\n'''
+          if start not in cs:
+              raise SystemExit('BLOQUE DE SILENCIAMIENTO 200 NO ENCONTRADO')
+          cs=cs.replace(start,'',1).replace('TDJ v16.33.200','TDJ v16.33.201',1)
+          ctx.write_text(cs,encoding='utf-8')
+
+          tdj=Path('js/tdj.js')
+          ts=tdj.read_text(encoding='utf-8')
+          ts=ts.replace('TDJ v16.33.200','TDJ v16.33.201',1)
+          ts=ts.replace('tdj-obligacion-contexto-16.33.197.js?v=16.33.200','tdj-obligacion-contexto-16.33.197.js?v=16.33.201')
+          ts=ts.replace('tdj-core-16.33.143.js?v=16.33.200','tdj-core-16.33.143.js?v=16.33.201')
+          ts=ts.replace('tdj-visual-beneficios.js?v=16.33.200','tdj-visual-beneficios.js?v=16.33.201')
+          ts=ts.replace('199)/g,"v16.33.200"','199|200)/g,"v16.33.201"')
+          ts=ts.replace('titulos.html?v=16.33.200&reinicio=','titulos.html?v=16.33.201&reinicio=')
+          tdj.write_text(ts,encoding='utf-8')
+
+          html=Path('titulos.html')
+          hs=html.read_text(encoding='utf-8').replace('16.33.198','16.33.201')
+          html.write_text(hs,encoding='utf-8')
+
+          test=Path('tests/regresion-endoso-tdj-201.mjs')
+          test.write_text('''import fs from "node:fs";\nimport assert from "node:assert/strict";\nconst core=fs.readFileSync("js/tdj-core-16.33.143.js","utf8");\nconst tdj=fs.readFileSync("js/tdj.js","utf8");\nconst ctx=fs.readFileSync("js/tdj-obligacion-contexto-16.33.197.js","utf8");\nassert.match(core,/saldoObligacionActual/);\nassert.match(core,/obligacionCubiertaPorPagosProtegidos/);\nassert.match(core,/motorActual\\.calcular\\(datosAjustados\\)/);\nassert.match(tdj,/v16\\.33\\.201/);\nassert.match(tdj,/tdj-core-16\\.33\\.143\\.js\\?v=16\\.33\\.201/);\nassert.doesNotMatch(ctx,/tdjEndosoAlertSilenced200/);\nconsole.log("REGRESION TDJ ENDOSO 201 OK");\n''',encoding='utf-8')
+          subprocess.run(['node','--check','js/tdj-core-16.33.143.js'],check=True)
+          subprocess.run(['node','--check','js/tdj.js'],check=True)
+          subprocess.run(['node','--check','js/tdj-obligacion-contexto-16.33.197.js'],check=True)
+          subprocess.run(['node','tests/regresion-endoso-tdj-201.mjs'],check=True)
+          PY
+      - name: Publicar corrección y retirar workflow temporal
+        run: |
+          rm -f .github/workflows/correctivo-tdj-201.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/tdj-core-16.33.143.js js/tdj.js js/tdj-obligacion-contexto-16.33.197.js titulos.html tests/regresion-endoso-tdj-201.mjs .github/workflows/correctivo-tdj-201.yml
+          git commit -m 'fix: restaurar agotamiento obligacion TDJ v16.33.201'
+          git push
