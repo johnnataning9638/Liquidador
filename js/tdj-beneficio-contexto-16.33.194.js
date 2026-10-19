@@ -2,6 +2,9 @@
 // CORRECCIÓN AISLADA: evita que obligaciones con el mismo concepto/año/período
 // sean confundidas al propagar el tipo de tasa/beneficio hacia el motor TDJ.
 // NO modifica el motor matemático histórico ni la aplicación de títulos.
+import { MotorLiquidacion } from "./motor-liquidacion.js?v=16.33.161";
+import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.161";
+
 (function(){
   "use strict";
   if(window.__tdjBeneficioContexto194Installed)return;
@@ -28,8 +31,9 @@
       }catch(_){ }
 
       // Si otra capa ya suministró el índice explícito, tiene prioridad.
-      if(Number.isInteger(Number(d.__tdjObligacionIndex))){
-        indice=Number(d.__tdjObligacionIndex);
+      const indiceExplicito=d.__tdjObligacionIndex;
+      if(indiceExplicito!==null&&indiceExplicito!==undefined&&indiceExplicito!==""&&Number.isInteger(Number(indiceExplicito))){
+        indice=Number(indiceExplicito);
       }
 
       if(indice!=null&&indice>=0){
@@ -46,12 +50,7 @@
   // El módulo 16.33.174 consultará este índice antes de intentar identificar
   // la obligación por concepto/año/período. Así, OBLIGACIÓN 2 puede ser
   // RETENCIÓN 2026 P1 igual que OBLIGACIÓN 1 sin heredar su beneficio.
-  Promise.all([
-    import("./motor-liquidacion.js?v=16.33.161"),
-    import("./motor-liquidacion-oficial.js?v=16.33.161")
-  ]).then(mods=>{
-    patch(mods[0]?.MotorLiquidacion);
-    patch(mods[1]?.MotorLiquidacionOficial);
-    window.__tdjBeneficioContexto194Ready=true;
-  }).catch(err=>console.error("TDJ BENEFICIO CONTEXTO 16.33.194",err));
+  patch(MotorLiquidacion);
+  patch(MotorLiquidacionOficial);
+  window.__tdjBeneficioContexto194Ready=true;
 })();
