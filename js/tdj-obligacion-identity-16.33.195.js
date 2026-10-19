@@ -93,7 +93,10 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
     function calcular195(datos,...rest){
       const d=datos&&typeof datos==="object"?datos:{};
       const i=resolverIndice(Clase,d);
-      if(d.__tdjObligacionIndex==null)d.__tdjObligacionIndex=i;
+      // Siempre fijamos el índice resuelto en esta llamada. Esto evita que un
+      // objeto de payload reutilizado conserve accidentalmente la obligación
+      // anterior antes de entrar al puente 16.33.174.
+      d.__tdjObligacionIndex=i;
       const card=cards()[i];
       const id=String(card?.dataset?.id||"").trim();
       if(id){
