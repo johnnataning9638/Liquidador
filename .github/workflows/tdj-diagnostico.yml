@@ -3,21 +3,23 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
 jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect TDJ core
+      - name: Inspect TDJ core and persist diagnostic
         shell: bash
         run: |
           set -e
           FILE=js/tdj-core-16.33.143.js
-          echo '=== MATCHES ==='
-          grep -nE 'INCONSISTENCIA TDJ|fechaCorteTDJ|corteObligacion|endoso|remanente|saldoOblig|aplicarTitulos' "$FILE" || true
-          echo '=== CONTEXT ENDOSO/INCONSISTENCIA ==='
-          python - <<'PY'
+          OUT=TDJ-DIAGNOSTIC.txt
+          : > "$OUT"
+          echo '=== MATCHES ===' >> "$OUT"
+          grep -nE 'INCONSISTENCIA TDJ|fechaCorteTDJ|corteObligacion|endoso|remanente|saldoOblig|aplicarTitulos' "$FILE" >> "$OUT" || true
+          echo '=== CONTEXT ===' >> "$OUT"
+          python - <<'PY' >> "$OUT"
           from pathlib import Path
           p=Path('js/tdj-core-16.33.143.js')
           s=p.read_text()
@@ -29,9 +31,14 @@ jobs:
                   i=s.find(n,pos)
                   if i<0: break
                   count+=1
-                  a=max(0,i-1800); b=min(len(s),i+3200)
+                  a=max(0,i-2200); b=min(len(s),i+4200)
                   print(f'--- {n} occurrence {count} ---')
                   print(s[a:b])
                   pos=i+len(n)
                   if count>=5: break
           PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$OUT"
+          git commit -m 'chore: persist temporary TDJ diagnostic' || true
+          git push
