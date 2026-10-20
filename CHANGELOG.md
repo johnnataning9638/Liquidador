@@ -1,5 +1,12 @@
 # Cambios
 
+## 16.33.207 - 2026-10-19
+
+- TDJ: para títulos con fecha futura sin TIM oficial parametrizada, el campo visual muestra el último porcentaje TIM conocido, claramente rotulado como REFERENCIA y con su mes de origen; nunca se presenta como porcentaje oficial de la fecha futura ni alimenta los cálculos.
+- DIAN: alerta al intentar elegir artículos 9/10 para TDJ con fecha no permitida; se mantiene conversión automática a TASA DIAN.
+- Sin cambios en motores de cálculo, proporciones, endoso ni elegibilidad de beneficios.
+
+
 ## 16.33.206 - 2026-10-19
 
 - Extensión al Liquidador DIAN de la elegibilidad temporal de títulos identificados por TDJ Nº para artículos 9 y 10 Decreto 1419.
