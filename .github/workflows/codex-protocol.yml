@@ -30,3 +30,17 @@ jobs:
         run: |
           echo "Historical .mjs tests (inventory only, not a passing claim):"
           find tests -maxdepth 1 -type f -name '*.mjs' | sort
+  known-defect-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conservation invariant (known defect; non-blocking)
+        id: conservation
+        continue-on-error: true
+        run: node tests/diagnostico-conservacion.mjs
+      - name: Record diagnostic result
+        if: always()
+        run: |
+          echo "Conservation diagnostic outcome: ${{ steps.conservation.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Known mathematical defect is tracked; this job is informational until engine correction is authorized." >> "$GITHUB_STEP_SUMMARY"
