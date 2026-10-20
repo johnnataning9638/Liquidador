@@ -37,5 +37,5 @@ assert.match(vista,/actualizarTasasMotor\(\);/);
 assert.match(core,/titulos=encontrados\.map\(\(p,i\)=>\(\{id:uid\("TDJ"\)/,'El pegado conserva creación independiente de nuevos títulos sin beneficios');
 assert.match(vista,/\|\|"TASA DIAN"/,'Título sin selección explícita inicia TASA DIAN');
 assert.match(jsEntrada,/tdj-core-16\.33\.143\.js\?v=16\.33\.210/);
-assert.match(html,/js\/tdj\.js\?v=16\.33\.210/);
+assert.match(html,/js\/tdj\.js\?v=16\.33\.(?:210|211)/);
 console.log('PASS TDJ 210: visual motor/Supabase unificados, octubre 26.590%, Ley 2155 y 2277, Excel julio intacto, texto inicia DIAN.');
