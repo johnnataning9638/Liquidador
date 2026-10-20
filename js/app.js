@@ -12,6 +12,7 @@ import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.177";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
 import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.161";
+import {esTituloDian,ajustarBeneficioTituloDian,tipoEfectivoTituloDian,filtrarReglasFechaTitulo1419} from "./tdj-fechas-dian-206.js?v=16.33.206";
 
 const $=id=>document.getElementById(id);
 const TIPOS=[
@@ -374,6 +375,11 @@ function sincronizarPagosDesdeDOM(){
     });
     const fecha=tr.querySelector(`#fechaPago-${p.id}`);
     if(fecha)p.fecha=fechaISO(fecha.value)||p.fecha||"";
+    if(ajustarBeneficioTituloDian(p)){
+      const tipo=tr.querySelector('[data-k="tipo"]');
+      if(tipo)tipo.value=p.tipo;
+      actualizarTasaVisiblePago(tr,p);
+    }
   });
 }
 
@@ -544,7 +550,7 @@ function renderCalendario(){
 
 function tasaParaPago(p){
   if(!motor||!p.fecha)return null;
-  return motor.tasaEspecial(p.tipo,p.fecha)?.tasa??null;
+  return motor.tasaEspecial(tipoEfectivoTituloDian(p),p.fecha)?.tasa??null;
 }
 function actualizarTasaVisiblePago(tr,p){
   if(!tr)return;
@@ -566,12 +572,20 @@ function renderPagos(){
         }
         else if(k==="tipo"){
           const tipoNuevo=upper(el.value);
-          if(validarTipo&&rechazarTipo1419Normal(tipoNuevo,p,el))return;
           p.tipo=tipoNuevo;
+          if(ajustarBeneficioTituloDian(p))el.value=p.tipo;
+          if(validarTipo&&rechazarTipo1419Normal(p.tipo,p,el))return;
           actualizarTasaVisiblePago(tr,p);
         }
         else{
           p[k]=upper(el.value);
+          if(k==="tdj"){
+            if(ajustarBeneficioTituloDian(p)){
+              const tipo=tr.querySelector('[data-k="tipo"]');
+              if(tipo)tipo.value=p.tipo;
+            }
+            actualizarTasaVisiblePago(tr,p);
+          }
         }
       };
       // TDJ se sincroniza en cada pulsación, no solo al perder el foco.
@@ -580,7 +594,7 @@ function renderPagos(){
       el.addEventListener("input",()=>{if(el.dataset.k!=="tipo")sincronizar();});
       el.addEventListener("change",()=>{sincronizar(el.dataset.k==="tipo");if(el.dataset.k==="valor")el.value=p.valor?dinero(p.valor):"";});
     });
-    montarFechaDual(tr,iso=>{p.fecha=iso||"";if(esTipoDecreto1419(p.tipo))rechazarTipo1419Normal(p.tipo,p,tr.querySelector('[data-k="tipo"]'));actualizarTasaVisiblePago(tr,p);});
+    montarFechaDual(tr,iso=>{p.fecha=iso||"";if(ajustarBeneficioTituloDian(p)){const select=tr.querySelector('[data-k="tipo"]');if(select)select.value=p.tipo;}if(esTipoDecreto1419(p.tipo))rechazarTipo1419Normal(p.tipo,p,tr.querySelector('[data-k="tipo"]'));actualizarTasaVisiblePago(tr,p);});
     tr.querySelector("[data-del]").addEventListener("click",()=>{pagos=pagos.filter(x=>x.id!==p.id);renderPagos();});
     tbody.appendChild(tr);
   });
@@ -1588,12 +1602,12 @@ function normalizarTipoBeneficioVigencia(v){
 function erroresTipo1419Normal(tipo,pago){
   const fechas=obligacionVencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||"");
   const esTitulo=Boolean(String(pago?.tdj||"").trim());
-  return validarSeleccion1419({
+  return filtrarReglasFechaTitulo1419(validarSeleccion1419({
     tipo,fechasVencimiento:fechas,
     fechaPresentacion:fechaISO($("fechaSancion").value||""),
     fechaPago:esTitulo?"":fechaISO(pago?.fecha||""),
     fechaTitulo:esTitulo?fechaISO(pago?.fecha||""):"",esTitulo
-  });
+  }),esTitulo);
 }
 
 function rechazarTipo1419Normal(tipo,pago,select){
@@ -1650,27 +1664,23 @@ function validarVigenciaBeneficiosUI(d){
     const art10=String(p.tipo||"").toUpperCase().includes("ART. 10 DECRETO 1419");
     let fechaBeneficioInvalida=false;
     if(esTitulo&&(art9||art10)){
-      fechaBeneficioInvalida=art9?(!fechaRegistro||fechaRegistro>="2026-08-10"):
-        (!fechaRegistro||fechaRegistro<"2026-09-17"||fechaRegistro>"2026-11-19");
-      if(fechaBeneficioInvalida){
-        const identificador=String(p.tdj||"").trim()||`TDJ ${i+1}`;
-        const fechaTexto=fechaRegistro?` (${fechaVisible(fechaRegistro)})`:"";
-        const rango=art9?"deben haberse constituido antes del 10/08/2026":"deben tener fecha entre el 17/09/2026 y el 19/11/2026";
-        errores.push(`La fecha registrada en el título ${identificador}${fechaTexto} no corresponde a la fecha admitida para ${p.tipo}. Los títulos ${rango}. Corríjala o seleccione la tasa correspondiente.`);
-      }
+      // Si el título tiene fecha excluida, el beneficio se convierte a DIAN
+      // antes de entrar al motor. Aquí se reporta como anomalía solo si un
+      // payload externo omitió la normalización previa.
+      if(ajustarBeneficioTituloDian(p))return;
     }else if(!esTitulo&&(art9||art10)&&(!fechaRegistro||fechaRegistro<"2026-09-17"||fechaRegistro>"2026-11-19")){
       const fechaTexto=fechaRegistro?` (${fechaVisible(fechaRegistro)})`:"";
       errores.push(`La fecha del pago ${i+1}${fechaTexto} está fuera del periodo admitido para ${p.tipo}: del 17/09/2026 al 19/11/2026. Corríjala o seleccione la tasa correspondiente.`);
       fechaBeneficioInvalida=true;
     }
-    errores.push(...validarSeleccion1419({
+    errores.push(...filtrarReglasFechaTitulo1419(validarSeleccion1419({
       tipo:p.tipo,
       fechasVencimiento:(d.vencimientos||[]).filter(v=>Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||""),
       fechaPresentacion:d.fechaPresentacionDeclaracion1419,
       fechaPago:esTitulo?"":p.fecha,
       fechaTitulo:esTitulo?p.fecha:"",
       esTitulo
-    }).filter(x=>!(fechaBeneficioInvalida&&(
+    }),esTitulo).filter(x=>!(fechaBeneficioInvalida&&(
       x.includes("títulos constituidos antes del 10/08/2026")
       ||x.includes("el título debe tener fecha anterior")
       ||x.includes("el título debe constituirse durante la vigencia")
