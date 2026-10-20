@@ -153,12 +153,14 @@ import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.3
     let box=td.querySelector(".tdj-tasa-visual");
     if(!box){box=document.createElement("div");box.className="tdj-tasa-visual";td.appendChild(box);}
     let tipo=upper(select?.value||"TASA DIAN");
+    let fueraDeVentana=false;
     const fila=tituloDeFila(titleId);
     const fecha=fechaISOVisual(fila?.querySelector('.fecha-campo')?.value||fila?.querySelector('.fecha-native')?.value||"");
     // Nunca sustituir el beneficio antes de que el funcionario ingrese la fecha.
     // Al tener fecha válida, no permitir que el selector visual diverja del motor y Excel.
     if(fecha&&esBeneficio1419TDJ(tipo)&&!fechaElegible1419TDJ(fecha)){
       tipo="TASA DIAN";
+      fueraDeVentana=true;
       if(select)select.value=tipo;
       const clave=claveSeleccion(titleId,index);
       seleccionVisual.set(clave,tipo);
@@ -172,7 +174,7 @@ import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.3
     }else{
       box.textContent=`TASA: ${tasa==null?"SIN DATOS":(Number(tasa)*100).toFixed(3)+"%"}`;box.classList.toggle("sin-datos",tasa==null);
     }
-    if(!box.title.includes("fuera de ventanas"))box.title=`${tipo} · FECHA TDJ ${fecha||"PENDIENTE"}`;
+    if(!fueraDeVentana)box.title=`${tipo} · FECHA TDJ ${fecha||"PENDIENTE"}`;
   }
 
   function crearSelect(titleId,index){
