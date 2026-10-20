@@ -7,5 +7,6 @@ assert.match(core,/obligacionCubiertaPorPagosProtegidos/);
 assert.match(core,/if\(detenerEnObligacion\)break/);
 assert.ok(core.indexOf("traz.push(fila)")<core.indexOf("if(detenerEnObligacion)break"),"Registrar aplicación parcial antes de detener el recorrido");
 assert.doesNotMatch(core,/obligacionCubiertaPorPagosProtegidos\)return/);
-assert.match(tdj,/v16\.33\.203/);
+const version=tdj.match(/TDJ v16\.33\.(\d+)/);
+assert.ok(version&&Number(version[1])>=203,'La versión TDJ no puede retroceder');
 console.log("REGRESION TDJ 202 OK");

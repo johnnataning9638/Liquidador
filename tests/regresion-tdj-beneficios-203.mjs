@@ -62,6 +62,27 @@ test('Cinco pagos: dos previos y tres posteriores; conservar pagos y remanente',
   assert.equal(r.totalAplicadoFinal+r.endoso,5000000);
   assert.equal(r.saldoObligacionesPDF,0);assert.ok(r.resumenObligaciones.every(x=>x.saldoFinalObligaciones===0));
 });
+test('Caso real anonimizado: dos obligaciones y dos TDJ misma fecha, artículo 9 en cuatro combinaciones',()=>{
+  const art9=decreto.TIPO_1419.ART9;
+  const o1=obligation('JUANCA-O1',1,{
+    concepto:'RETENCIÓN',anio:2026,periodo:'1',vencimientos:[{id:'J-V1',numero:1,fecha:'2026-02-17',impuesto:327837}],
+    pagos:[{id:'J-P1',numero:1,recibo:'PAGO-1',fecha:'2026-07-15',valor:80000,tipo:'TASA DIAN'},
+           {id:'J-P2',numero:2,recibo:'PAGO-2',fecha:'2026-07-21',valor:284837,tipo:'TASA DIAN'}]
+  });
+  const o2=obligation('JUANCA-O2',2,{
+    concepto:'VENTAS',anio:2026,periodo:'1',tieneSancion:'SI',valorSancion:8211000,
+    fechaSancion:'2026-08-12',beneficioSancion:'CON BENEFICIO',
+    vencimientos:[{id:'J-V2',numero:1,fecha:'2026-02-17',impuesto:23131163}]
+  });
+  const tasa={['JUANCA-O1']:art9,['JUANCA-O2']:art9};
+  const ts=[title('T1',34099163,'2026-07-29',{tasasPorObligacion:tasa}),title('T2',14794449,'2026-07-29',{tasasPorObligacion:tasa})];
+  const r=run([o1,o2],ts);
+  assert.equal(r.resumenObligaciones.length,2);
+  assert.equal(r.resumenTitulos.length,2);
+  assert.equal(r.resumenObligaciones.every(x=>x.saldo===0),true,'Con títulos suficientes no puede quedar deuda y endoso simultáneamente');
+  assert.equal(r.totalAplicadoFinal+r.endoso,48893612,'Conservación del nominal TDJ');
+  assert.ok(r.resumenTitulos.flatMap(x=>x.trazabilidad).every(x=>x.tipoTasaObligacion===art9),'Ninguna combinación TDJ puede degradar ART9 a DIAN');
+});
 test('Excel conserva matriz completa incluso para combinaciones no aplicadas',()=>{
   run([obligation('O1',1),obligation('O2',2)],[title('T1',5000000,'2026-08-09',{tasasPorObligacion:{O1:decreto.TIPO_1419.ART9,O2:'TASA DIAN'}})]);
   const rows=ctx.fixture.excel().rows;
