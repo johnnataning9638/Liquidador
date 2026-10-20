@@ -26,6 +26,7 @@ jobs:
           node tests/regresion-tasa-avisos-207.mjs
           node tests/regresion-dian-titulos-206.mjs
           node tests/regresion-tdj-ventanas-205.mjs
+          node tests/regresion-tdj-ventanas-212.mjs
           node tests/regresion-tasas-unificadas-tdj-210.mjs
           node tests/regresion-pegado-alerta-tdj-209.mjs
           node tests/regresion-aviso-tdj-208.mjs
