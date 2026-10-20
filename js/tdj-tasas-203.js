@@ -6,10 +6,10 @@ export const VENTANAS_TDJ_1419=Object.freeze([
   Object.freeze({hasta:'2026-08-09'}),
   Object.freeze({desde:'2026-09-17',hasta:'2026-11-19'})
 ]);
-export const esBeneficio1419TDJ=tipo=>/DECRETO 1419 DE 2026/.test(String(tipo||'').toUpperCase())&&/ART\\.\\s*(9|10)\\b/.test(String(tipo||'').toUpperCase());
+export const esBeneficio1419TDJ=tipo=>/DECRETO 1419 DE 2026/.test(String(tipo||'').toUpperCase())&&/ART\.\s*(9|10)\b/.test(String(tipo||'').toUpperCase());
 export function fechaElegible1419TDJ(fecha){
   const f=String(fecha||'');
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(f))return false;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f))return false;
   const fechaUtc=new Date(f+'T00:00:00Z');
   if(Number.isNaN(fechaUtc.getTime())||fechaUtc.toISOString().slice(0,10)!==f)return false;
   return VENTANAS_TDJ_1419.some(v=>(!v.desde||f>=v.desde)&&f<=v.hasta);
