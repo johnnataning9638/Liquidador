@@ -1244,9 +1244,11 @@ export class MotorLiquidacion{
        * no participan en la proporcionalidad de un pago anterior a su fecha.
        */
       const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha);
-      const baseProporcional=vencimientosExigibles.length===1
-        ?vencimientosExigibles
-        :vencimientosExigibles;
+      // RÉGIMEN SIMPLE (4-6 anticipos): MUISCA proporciona el pago
+      // sobre el capital consolidado de todas las cuotas, incluidas futuras.
+      // Los intereses siguen causándose solo en las cuotas vencidas.
+      // Para regímenes distintos a SIMPLE se conserva la regla histórica.
+      const baseProporcional=esSimplePorAnticipos?saldosVto:vencimientosExigibles;
       const impuestoExigible=baseProporcional.reduce((a,v)=>a+Math.max(0,v.saldo),0);
       const interesesExigibles=intCalc.porVto
         .filter(x=>baseProporcional.some(v=>v.id===x.id))
