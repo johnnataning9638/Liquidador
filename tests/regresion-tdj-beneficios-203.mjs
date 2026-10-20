@@ -83,6 +83,34 @@ test('Caso real anonimizado: dos obligaciones y dos TDJ misma fecha, artículo 9
   assert.equal(r.totalAplicadoFinal+r.endoso,48893612,'Conservación del nominal TDJ');
   assert.ok(r.resumenTitulos.flatMap(x=>x.trazabilidad).every(x=>x.tipoTasaObligacion===art9),'Ninguna combinación TDJ puede degradar ART9 a DIAN');
 });
+test('TDJ 208: tres obligaciones, dos pagos protegidos y dos títulos Art. 9',()=>{
+  const art9=decreto.TIPO_1419.ART9;
+  const fechaVto='2026-02-17';
+  const o1=obligation('C208-O1',1,{
+    concepto:'RETENCIÓN',anio:2026,periodo:'1',
+    vencimientos:[{id:'208-V1',numero:1,fecha:fechaVto,impuesto:30000000}],
+    pagos:[{id:'208-P1',numero:1,recibo:'4911168862099',fecha:'2026-07-15',valor:10000000,tipo:'TASA DIAN'},
+      {id:'208-P2',numero:2,recibo:'4911168865466',fecha:'2026-07-21',valor:15000000,tipo:'TASA DIAN'}]
+  });
+  const o2=obligation('C208-O2',2,{
+    concepto:'VENTAS',anio:2026,periodo:'1',
+    vencimientos:[{id:'208-V2',numero:1,fecha:fechaVto,impuesto:23131163}],
+    tieneSancion:'SI',valorSancion:8211000,fechaSancion:'2026-08-12',beneficioSancion:'SIN BENEFICIO'
+  });
+  const o3=obligation('C208-O3',3,{
+    concepto:'CONSUMO',anio:2026,periodo:'1',
+    vencimientos:[{id:'208-V3',numero:1,fecha:fechaVto,impuesto:20000000}],
+    tieneSancion:'SI',valorSancion:524000,fechaSancion:'2026-08-12',beneficioSancion:'SIN BENEFICIO'
+  });
+  const tasas={'C208-O1':art9,'C208-O2':art9,'C208-O3':art9};
+  const r=run([o1,o2,o3],[title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),title('T2',14794449,'2026-08-09',{tasasPorObligacion:tasas})]);
+  assert.equal(r.resumenObligaciones.length,3);
+  assert.equal(r.resumenTitulos.length,2);
+  assert.equal(r.totalAplicadoFinal+r.endoso,34794449);
+  assert.ok(!(r.endoso>0 && r.resumenObligaciones.some(x=>x.saldo>1)), 'No debe haber endoso con deuda aplicable');
+  assert.ok(r.resumenObligaciones[0].detalleCronologicoFinal.filter(d=>!d.pago?.esTDJ).every(d=>Number(d.aplicado?.total||0)===Number(d.pago?.valor||0)), 'Conservar los pagos reales');
+  assert.ok(r.resumenTitulos.flatMap(x=>x.trazabilidad).every(x=>x.tipoTasaObligacion===art9),'Conservar tasas Art 9 por obligación');
+});
 test('Excel conserva matriz completa incluso para combinaciones no aplicadas',()=>{
   run([obligation('O1',1),obligation('O2',2)],[title('T1',5000000,'2026-08-09',{tasasPorObligacion:{O1:decreto.TIPO_1419.ART9,O2:'TASA DIAN'}})]);
   const rows=ctx.fixture.excel().rows;
