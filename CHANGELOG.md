@@ -1,5 +1,13 @@
 # Cambios
 
+## 16.33.204 - 2026-10-19
+
+- TDJ únicamente: conservar por separado el valor nominal utilizado por el motor y el valor efectivamente aplicado de cada título.
+- Reconstruir cronológicamente el motor con los valores de origen para evitar saldo ficticio y endoso simultáneos en el caso Juanca (ART. 9, dos obligaciones y dos títulos).
+- Mantener la imputación y trazabilidad efectiva; el importe de simulación no aumenta el monto aplicado ni el endoso.
+- Regresión específica: reproducción del error de $1.337.000 y verificación de identidad de tasas, dos títulos y conservación de valor.
+
+
 ## 16.33.203 - 2026-10-19
 
 - Exclusivamente TDJ: transmitir identidad explícita y tasa por título y obligación desde la captura al cálculo y a la recuperación XLSX.
