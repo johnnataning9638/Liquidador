@@ -562,6 +562,7 @@ function actualizarTasaVisiblePago(tr,p){
 function renderPagos(){
   const tbody=$("tablaPagos").querySelector("tbody");tbody.innerHTML="";
   pagos.forEach((p,i)=>{
+    ajustarBeneficioTituloDian(p);
     const tr=document.createElement("tr"),tasa=tasaParaPago(p);
     tr.innerHTML=`<td>${i+1}</td><td><input data-k="tdj" value="${esc(p.tdj||"")}"></td><td><input data-k="recibo" value="${esc(p.recibo||"")}"></td><td>${campoFechaHtml({idText:`fechaPago-${p.id}`,idPicker:`fechaPagoPicker-${p.id}`,value:p.fecha,clase:"fecha-pago"})}</td><td><input data-k="valor" class="money" inputmode="numeric" value="${p.valor?dinero(p.valor):""}" placeholder="$ 0"></td><td><select data-k="tipo">${opcionesTipo(p.tipo)}</select></td><td>${tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%"}</td><td><input data-k="observacion" value="${esc(p.observacion||"")}"></td><td><button class="peligro" data-del="1">Eliminar</button></td>`;
     tr.querySelectorAll("[data-k]").forEach(el=>{
