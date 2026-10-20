@@ -574,7 +574,10 @@ function renderPagos(){
         else if(k==="tipo"){
           const tipoNuevo=upper(el.value);
           p.tipo=tipoNuevo;
-          if(ajustarBeneficioTituloDian(p))el.value=p.tipo;
+          if(ajustarBeneficioTituloDian(p)){
+            el.value=p.tipo;
+            if(validarTipo)mostrarAvisoFechaTituloDian(p,tipoNuevo);
+          }
           if(validarTipo&&rechazarTipo1419Normal(p.tipo,p,el))return;
           actualizarTasaVisiblePago(tr,p);
         }
@@ -1609,6 +1612,17 @@ function erroresTipo1419Normal(tipo,pago){
     fechaPago:esTitulo?"":fechaISO(pago?.fecha||""),
     fechaTitulo:esTitulo?fechaISO(pago?.fecha||""):"",esTitulo
   }),esTitulo);
+}
+
+function mostrarAvisoFechaTituloDian(pago,tipo){
+  const fecha=fechaISO(pago?.fecha||"");
+  const numero=String(pago?.tdj||"").trim();
+  if(!numero||!esTipoDecreto1419(tipo))return;
+  alert("BENEFICIO NO APLICABLE AL TÍTULO JUDICIAL\n\n"+
+    "El TDJ "+numero+" constituido el "+(fecha?fechaVisible(fecha):"FECHA NO REGISTRADA")+
+    " no cumple los períodos permitidos para los artículos 9 y 10 del Decreto 1419 de 2026.\n\n"+
+    "Fechas permitidas: hasta el 09/08/2026, o del 17/09/2026 al 19/11/2026 (inclusive).\n\n"+
+    "Se ha seleccionado automáticamente TASA DIAN. Compruebe el porcentaje oficial correspondiente a la fecha.");
 }
 
 function rechazarTipo1419Normal(tipo,pago,select){
