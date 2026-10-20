@@ -961,6 +961,41 @@ function observacionesBeneficio1419ComoLista(valor){
   return [];
 }
 
+// Corrección exclusiva del motor instanciado en TDJ. El beneficio del artículo 9
+// reduce la sanción ANTES de calcular proporción: usar el saldo reducido real
+// (no la sanción nominal antigua) cuando el TDJ antecede a fecha de sanción.
+function ajustarBaseProporcionalTDJ208(instancia){
+  if(!instancia || instancia.__tdjBaseSancion208)return;
+  const original=instancia.aplicarProporcionalidad;
+  instancia.aplicarProporcionalidad=function(valor,deuda){
+    const ctx=this._tdjSancionContext;
+    const pago=ctx?.proporcionalidadPagos?.[ctx.proporcionalidadIndex||0];
+    const art9=String(pago?.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419");
+    const esTitulo=Boolean(pago?.esTDJ||String(pago?.tdj||"").trim());
+    const esPrivada=String(ctx?.datos?.tipoLiquidacion||"").toUpperCase()==="PRIVADA";
+    const sinSancionHabilitada=Number(deuda?.sancion||0)<=0;
+    if(!this._art9Prepass&&ctx&&esPrivada&&esTitulo&&art9&&sinSancionHabilitada
+       &&Number(ctx.sancionSaldoInicial||0)>0){
+      const previo=Number(ctx.sancionSaldoInicial||0);
+      if(ctx.sancionTDJEfectiva208==null){
+        // El redondeo a miles y la mínima se calculan igual que en el motor.
+        const minima=Math.max(0,Number(this.sancionMinima(this.anioSancionParaMinima(ctx.datos,true))||0));
+        ctx.sancionTDJEfectiva208=Math.min(previo,Math.max(Math.round(previo*0.15/1000)*1000,minima));
+      }
+      ctx.sancionSaldoInicial=ctx.sancionTDJEfectiva208;
+      try{
+        const r=original.call(this,valor,deuda);
+        const abonado=Math.max(0,Number(r?.sancion||0));
+        ctx.sancionTDJEfectiva208=Math.max(0,ctx.sancionTDJEfectiva208-abonado);
+        ctx.sancionSaldoInicial=Math.max(0,previo-abonado);
+        return r;
+      }finally{ctx.sancionSaldoInicial=Math.max(0,Number(ctx.sancionSaldoInicial||0));}
+    }
+    return original.call(this,valor,deuda);
+  };
+  instancia.__tdjBaseSancion208=true;
+}
+
 function aplicarTitulos(observacionesBeneficio1419=[]){
   try{
     // Los listeners de botones no deben pasar el MouseEvent como parámetro.
@@ -977,6 +1012,8 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     validarConfiguracionAntesCalcularTDJ();
     validarDatos();
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
+    ajustarBaseProporcionalTDJ208(motor);
+    ajustarBaseProporcionalTDJ208(motorOficial);
 
     // PRIMERO: liquidación normal de cada obligación, exactamente con los
     // pagos registrados para esa obligación. Esta liquidación queda guardada
