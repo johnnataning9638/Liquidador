@@ -1,9 +1,9 @@
 import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.210";
 instalarPegadoUnicoTitulosTDJ();
-// TDJ v16.33.210 — navegación TAB + tasa individual + restricciones + secuencia/reconciliación + cierre PDF + recuperación de beneficios Excel + identidad estable por obligación + resolución robusta de contexto + remanente antes de endoso + silencio de alerta falsa de endoso.
+// TDJ v16.33.212 — navegación TAB + tasa individual + restricciones + secuencia/reconciliación + cierre PDF + recuperación de beneficios Excel + identidad estable por obligación + resolución robusta de contexto + remanente antes de endoso + silencio de alerta falsa de endoso.
 // Las capas de secuencia se cargan de forma estática para eliminar la carrera
 // de módulos que podía dejar la trazabilidad en un estado diferente al PDF.
-import "./tdj-tasa-bridge-16.33.174.js?v=16.33.210";
+import "./tdj-tasa-bridge-16.33.174.js?v=16.33.212";
 import "./tdj-secuencia-guard-16.33.185.js?v=16.33.185";
 import "./tdj-pdf-cierre-16.33.189.js?v=16.33.210";
 import "./tdj-import-beneficio-16.33.192.js?v=16.33.210";
