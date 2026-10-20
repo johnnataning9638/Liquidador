@@ -127,6 +127,14 @@ test('TDJ 208: tres obligaciones, dos pagos protegidos y dos títulos Art. 9',()
   assert.equal(rr.endoso,0,'Config real: no endosar mientras haya deuda');
   assert.ok(rr.resumenObligaciones[0].detalleCronologicoFinal.filter(d=>!d.pago?.esTDJ).every(d=>Number(d.aplicado?.total||0)===Number(d.pago?.valor||0)),'Config real: pagos normales completos');
   console.log('TDJ 208 CFG REAL:',JSON.stringify({saldos:rr.resumenObligaciones.map(x=>x.saldo),titulos:rr.resumenTitulos.map(x=>({excedente:x.excedente,aplicado:x.trazabilidad.map(a=>({o:a.obligacionNumero,monto:a.aplicado}))})),endoso:rr.endoso}));
+  const mixtos=[title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T2',14794449,'2026-08-09',{tasasPorObligacion:{'C208-O1':art9,'C208-O2':'TASA DIAN','C208-O3':'TASA DIAN'}})];
+  const mixta=run([o1,o2,o3],mixtos,cfgReal);
+  assert.equal(mixta.totalAplicadoFinal+mixta.endoso,34794449,'Mixta Art 9 + DIAN conserva el nominal');
+  assert.equal(mixta.endoso,0,'Mixta Art 9 + DIAN nunca endosa con deuda');
+  assert.ok(mixta.resumenObligaciones[2].totalTDJ>0,'Mixta Art 9 + DIAN continúa hacia la tercera obligación');
+  console.log('TDJ 208 MIXTO:',JSON.stringify({saldos:mixta.resumenObligaciones.map(x=>x.saldo),endoso:mixta.endoso}));
+
 
 });
 test('Excel conserva matriz completa incluso para combinaciones no aplicadas',()=>{
