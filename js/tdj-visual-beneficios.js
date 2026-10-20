@@ -205,9 +205,19 @@ import {referenciaTimTDJ} from './tdj-tasa-vista-207.js?v=16.33.207';
       const tipo=upper(select.value||"TASA DIAN")||"TASA DIAN";
       seleccionVisual.set(claveSeleccion(titleId,index),tipo);
       actualizarMapaGlobal(titleId,index,tipo);
+      const fecha=fechaISOVisual(tituloDeFila(titleId)?.querySelector('.fecha-campo')?.value||tituloDeFila(titleId)?.querySelector('.fecha-native')?.value||"");
+      const rechazado=Boolean(fecha&&esBeneficio1419TDJ(tipo)&&!fechaElegible1419TDJ(fecha));
       mostrarTasa(td,select,titleId,index);
+      if(rechazado){
+        const numero=obtenerTDJDeFila(titleId)||"SIN NÚMERO";
+        window.alert("BENEFICIO NO APLICABLE AL TÍTULO JUDICIAL\n\n"+
+          "El TDJ "+numero+" constituido el "+fecha.split("-").reverse().join("/")+
+          " no cumple los períodos permitidos para los artículos 9 y 10 del Decreto 1419 de 2026.\n\n"+
+          "Fechas permitidas: hasta el 09/08/2026, o del 17/09/2026 al 19/11/2026 (inclusive).\n\n"+
+          "Se ha seleccionado automáticamente TASA DIAN. Compruebe el porcentaje oficial correspondiente a la fecha.");
+      }
       window.__tdjRateSelectionVersion=(Number(window.__tdjRateSelectionVersion||0)+1);
-      window.dispatchEvent(new CustomEvent("tdj-tasa-selection-changed",{detail:{titleId,index,tipo}}));
+      window.dispatchEvent(new CustomEvent("tdj-tasa-selection-changed",{detail:{titleId,index,tipo:upper(select.value||"TASA DIAN")}}));
     });
     td.appendChild(select);
     mostrarTasa(td,select,titleId,index);

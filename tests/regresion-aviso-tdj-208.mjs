@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {esBeneficio1419TDJ,fechaElegible1419TDJ} from '../js/tdj-tasas-203.js';
+const visual=fs.readFileSync('js/tdj-visual-beneficios.js','utf8');
+const core=fs.readFileSync('js/tdj-core-16.33.143.js','utf8');
+assert.match(visual,/BENEFICIO NO APLICABLE AL TÍTULO JUDICIAL/);
+assert.match(visual,/El TDJ /);
+assert.match(visual,/const rechazado=Boolean\(fecha&&esBeneficio1419TDJ\(tipo\)&&!fechaElegible1419TDJ\(fecha\)\)/);
+assert.match(visual,/window\.alert\(/);
+assert.match(visual,/Se ha seleccionado automáticamente TASA DIAN/);
+assert.match(visual,/hasta el 09\/08\/2026/);
+assert.match(visual,/del 17\/09\/2026 al 19\/11\/2026/);
+assert.match(core,/ajustarBaseProporcionalTDJ208\(motor\)/);
+assert.match(core,/sancionTDJEfectiva208/);
+assert.equal(esBeneficio1419TDJ('ART. 9 DECRETO 1419 DE 2026 - TRIBUTARIO'),true);
+assert.equal(fechaElegible1419TDJ('2026-08-09'),true);
+assert.equal(fechaElegible1419TDJ('2026-08-10'),false);
+console.log('PASS TDJ 208: aviso explicativo equivalente DIAN y protección de proporcionalidad con sanción efectiva.');

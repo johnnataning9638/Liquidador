@@ -35,7 +35,7 @@ const obligation=(id,numero,extra={})=>({id,numero,concepto:'RENTA',anio:2025,pe
 const title=(id,valor,fecha='2026-01-01',extra={})=>({id,numero:Number(id.slice(1)),tdj:'99900000000'+id.slice(1),valor,fecha,...extra});
 let passed=0;
 function test(name,fn){errors.length=0;try{fn();console.log('PASS',name);passed++;}catch(e){console.error('FAIL',name,e.message,errors);if(ctx.debug203)console.error(JSON.stringify(ctx.debug203.resumenObligaciones.map(x=>({id:x.obligacion.id,saldo:x.saldo,apps:x.aplicaciones.map(a=>({t:a.titulo,ap:a.aplicado,tipo:a.tipoTasaObligacion})),detalle:x.estadoFinal?.detalle.map(d=>({p:d.pago.id,valor:d.pago.valor,tipo:d.tipoAplicado,ap:d.aplicado,total:d.saldo.total}))})),null,2));process.exitCode=1;}}
-function run(os,ts){const r=ctx.fixture.run(structuredClone(os),structuredClone(ts),config);assert.ok(r,errors.join('\n'));return r;}
+function run(os,ts,cfg=config){const r=ctx.fixture.run(structuredClone(os),structuredClone(ts),cfg);assert.ok(r,errors.join('\n'));return r;}
 test('Dos títulos agotan primera obligación y trasladan remanente a segunda',()=>{
   const r=run([obligation('O1',1),obligation('O2',2)],[title('T1',600000),title('T2',1900000)]);
   assert.equal(r.endoso,500000);assert.equal(r.resumenTitulos[0].trazabilidad[0].aplicado,600000);
@@ -82,6 +82,77 @@ test('Caso real anonimizado: dos obligaciones y dos TDJ misma fecha, artículo 9
   assert.equal(r.resumenObligaciones.every(x=>x.saldo===0),true,'Con títulos suficientes no puede quedar deuda y endoso simultáneamente');
   assert.equal(r.totalAplicadoFinal+r.endoso,48893612,'Conservación del nominal TDJ');
   assert.ok(r.resumenTitulos.flatMap(x=>x.trazabilidad).every(x=>x.tipoTasaObligacion===art9),'Ninguna combinación TDJ puede degradar ART9 a DIAN');
+});
+test('TDJ 208: tres obligaciones, dos pagos protegidos y dos títulos Art. 9',()=>{
+  const art9=decreto.TIPO_1419.ART9;
+  const fechaVto='2026-02-17';
+  const o1=obligation('C208-O1',1,{
+    concepto:'RETENCIÓN',anio:2026,periodo:'1',
+    vencimientos:[{id:'208-V1',numero:1,fecha:fechaVto,impuesto:30000000}],
+    pagos:[{id:'208-P1',numero:1,recibo:'4911168862099',fecha:'2026-07-15',valor:10000000,tipo:'TASA DIAN'},
+      {id:'208-P2',numero:2,recibo:'4911168865466',fecha:'2026-07-21',valor:15000000,tipo:'TASA DIAN'}]
+  });
+  const o2=obligation('C208-O2',2,{
+    concepto:'VENTAS',anio:2026,periodo:'1',
+    vencimientos:[{id:'208-V2',numero:1,fecha:fechaVto,impuesto:23131163}],
+    tieneSancion:'SI',valorSancion:8211000,fechaSancion:'2026-08-12',beneficioSancion:'SIN BENEFICIO'
+  });
+  const o3=obligation('C208-O3',3,{
+    concepto:'CONSUMO',anio:2026,periodo:'1',
+    vencimientos:[{id:'208-V3',numero:1,fecha:fechaVto,impuesto:20000000}],
+    tieneSancion:'SI',valorSancion:524000,fechaSancion:'2026-08-12',beneficioSancion:'SIN BENEFICIO'
+  });
+  const tasas={'C208-O1':art9,'C208-O2':art9,'C208-O3':art9};
+  const r=run([o1,o2,o3],[title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),title('T2',14794449,'2026-08-09',{tasasPorObligacion:tasas})]);
+  assert.equal(r.resumenObligaciones.length,3);
+  assert.equal(r.resumenTitulos.length,2);
+  assert.equal(r.totalAplicadoFinal+r.endoso,34794449);
+  assert.ok(!(r.endoso>0 && r.resumenObligaciones.some(x=>x.saldo>1)), 'No debe haber endoso con deuda aplicable');
+  assert.ok(r.resumenObligaciones[0].detalleCronologicoFinal.filter(d=>!d.pago?.esTDJ).every(d=>Number(d.aplicado?.total||0)===Number(d.pago?.valor||0)), 'Conservar los pagos reales');
+  assert.ok(r.resumenTitulos.flatMap(x=>x.trazabilidad).every(x=>x.tipoTasaObligacion===art9),'Conservar tasas Art 9 por obligación');
+  assert.equal(r.endoso,0,'Con tres obligaciones pendientes ningún título se puede endosar');
+  assert.ok(r.resumenObligaciones[2].totalTDJ>0,'Luego de imputar O1 y O2, un remanente debe continuar a O3');
+  assert.ok(r.resumenTitulos.every(x=>Number(x.excedente||0)===0),'No mantener remanentes TDJ cuando hay deuda');
+  const cfgReal={
+    uvt:JSON.parse(fs.readFileSync('datos/uvt.json','utf8')),
+    ipc:JSON.parse(fs.readFileSync('datos/ipc.json','utf8')),
+    intereses:JSON.parse(fs.readFileSync('datos/tasas-moratorias.json','utf8')),
+    beneficios:JSON.parse(fs.readFileSync('datos/beneficios.json','utf8')),
+    sanciones:JSON.parse(fs.readFileSync('datos/sanciones.json','utf8')),
+    reglasObligaciones:JSON.parse(fs.readFileSync('datos/reglas-obligaciones.json','utf8'))
+  };
+  cfgReal.tasasMoratorias=cfgReal.intereses;
+  const rr=run([o1,o2,o3],[title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),title('T2',14794449,'2026-08-09',{tasasPorObligacion:tasas})],cfgReal);
+  assert.equal(rr.totalAplicadoFinal+rr.endoso,34794449,'Conservación de títulos con tasas y UVT reales');
+  assert.equal(rr.endoso,0,'Config real: no endosar mientras haya deuda');
+  assert.ok(rr.resumenObligaciones[0].detalleCronologicoFinal.filter(d=>!d.pago?.esTDJ).every(d=>Number(d.aplicado?.total||0)===Number(d.pago?.valor||0)),'Config real: pagos normales completos');
+  console.log('TDJ 208 CFG REAL:',JSON.stringify({saldos:rr.resumenObligaciones.map(x=>x.saldo),titulos:rr.resumenTitulos.map(x=>({excedente:x.excedente,aplicado:x.trazabilidad.map(a=>({o:a.obligacionNumero,monto:a.aplicado}))})),endoso:rr.endoso}));
+  const mixtos=[title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T2',14794449,'2026-08-09',{tasasPorObligacion:{'C208-O1':art9,'C208-O2':'TASA DIAN','C208-O3':'TASA DIAN'}})];
+  const mixta=run([o1,o2,o3],mixtos,cfgReal);
+  assert.equal(mixta.totalAplicadoFinal+mixta.endoso,34794449,'Mixta Art 9 + DIAN conserva el nominal');
+  assert.equal(mixta.endoso,0,'Mixta Art 9 + DIAN nunca endosa con deuda');
+  assert.ok(mixta.resumenObligaciones[2].totalTDJ>0,'Mixta Art 9 + DIAN continúa hacia la tercera obligación');
+  console.log('TDJ 208 MIXTO:',JSON.stringify({saldos:mixta.resumenObligaciones.map(x=>x.saldo),endoso:mixta.endoso}));
+  const mismaFecha=run([o1,o2,o3],[
+    title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T2',14794449,'2026-07-18',{tasasPorObligacion:tasas})
+  ],cfgReal);
+  assert.equal(mismaFecha.totalAplicadoFinal+mismaFecha.endoso,34794449,'Títulos mismo día conservan nominal');
+  assert.equal(mismaFecha.endoso,0,'Títulos misma fecha no quedan sobrantes con deuda');
+  assert.ok(mismaFecha.resumenObligaciones[2].totalTDJ>0,'Títulos misma fecha continúan a O3');
+  const cuatro=run([o1,o2,o3],[
+    title('T1',10000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T2',10000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T3',10000000,'2026-08-09',{tasasPorObligacion:tasas}),
+    title('T4',4794449,'2026-08-09',{tasasPorObligacion:tasas})
+  ],cfgReal);
+  assert.equal(cuatro.totalAplicadoFinal+cuatro.endoso,34794449,'Cuatro títulos conservan nominal');
+  assert.equal(cuatro.endoso,0,'Cuatro títulos misma fecha con deuda no se endosan');
+  assert.ok(cuatro.resumenObligaciones[2].totalTDJ>0,'Cuatro títulos trasladan remanente a O3');
+
+
+
 });
 test('Excel conserva matriz completa incluso para combinaciones no aplicadas',()=>{
   run([obligation('O1',1),obligation('O2',2)],[title('T1',5000000,'2026-08-09',{tasasPorObligacion:{O1:decreto.TIPO_1419.ART9,O2:'TASA DIAN'}})]);
