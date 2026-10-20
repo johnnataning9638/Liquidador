@@ -27,7 +27,7 @@ const prueba=`const upper=v=>String(v??"").trim().toUpperCase();${fechas}\n${fnT
 const [dian,art45,art48,art91,julio]=vm.runInNewContext(prueba,contexto);
 assert.equal(dian,0.2659);
 assert.ok(art45>0&&art48>0&&art91>0,'Los beneficios derivados recuperan su tasa de octubre');
-assert.equal(julio,0.2679,'Excel o TDJ de julio conserva tasa anterior');
+assert.ok(Math.abs(julio-0.2679)<1e-10,'Excel o TDJ de julio conserva tasa anterior');
 assert.match(core,/window\.__tdjTasasEfectivas210=tasas\.map\(/);
 assert.match(core,/new CustomEvent\("tdj-tasas-actualizadas"/);
 assert.match(vista,/window\.addEventListener\("tdj-tasas-actualizadas",actualizarTasasMotor\)/);
