@@ -4,8 +4,8 @@ const guard=fs.readFileSync(new URL('../js/tdj-secuencia-guard-16.33.176.js',imp
 const tdj=fs.readFileSync(new URL('../js/tdj.js',import.meta.url),'utf8');
 const core=fs.readFileSync(new URL('../js/tdj-core-16.33.143.js',import.meta.url),'utf8');
 assert.match(guard,/const sinActual=/);assert.match(guard,/valor:0/);assert.match(guard,/normalesCompletamenteAplicados/);assert.match(guard,/saldo<=1000/);assert.match(guard,/const corregidos=/);
-assert.match(tdj,/import\s+"\.\/tdj-tasa-bridge-16\.33\.174\.js\?v=16\.33\.203"/);
+assert.match(tdj,/import\s+"\.\/tdj-tasa-bridge-16\.33\.174\.js\?v=16\.33\.204"/);
 assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.185\.js\?v=16\.33\.185"/);
 assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.176\.js/);assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
-assert.match(tdj,/tdj-core-16\.33\.143\.js/);assert.match(tdj,/tdj-core-16\.33\.143\.js\?v=16\.33\.203/);assert.ok(core.length>200000,'El core protegido debe permanecer presente y no sustituirse por una versión reducida.');
+assert.match(tdj,/tdj-core-16\.33\.143\.js/);assert.match(tdj,/tdj-core-16\.33\.143\.js\?v=16\.33\.204/);assert.ok(core.length>200000,'El core protegido debe permanecer presente y no sustituirse por una versión reducida.');
 console.log('REGRESION TDJ 16.33.176: OK — compatibilidad con guardia vigente 185');
