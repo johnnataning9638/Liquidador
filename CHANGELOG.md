@@ -1,5 +1,13 @@
 # Cambios
 
+## 16.33.210 - 2026-10-20
+
+- Exclusivamente TDJ: la tabla visual de tasas de cada título/obligación usa la misma información efectiva del motor, inicialmente JSON local y después las tasas sincronizadas desde Supabase.
+- Se elimina el fetch independiente del JSON en el componente visual, origen de porcentajes desactualizados con títulos de octubre y beneficios derivados.
+- Al importar títulos pegados se mantiene por defecto TASA DIAN en todas las obligaciones y el funcionario puede elegir individualmente otro tratamiento; la importación de Excel recupera las selecciones existentes.
+- Si faltan tasas realmente, se conserva la advertencia de dato no parametrizado sin fabricar porcentajes. No se alteran motores matemáticos, pagos, endoso ni exportaciones.
+
+
 ## 16.33.209 - 2026-10-19
 
 - TDJ: presentar mensaje idéntico al aviso del Liquidador DIAN cuando se intenten artículos 9 o 10 sobre títulos con fecha no permitida, tanto al cambiar el beneficio como al editar la fecha.

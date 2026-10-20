@@ -379,7 +379,16 @@ import {referenciaTimTDJ} from './tdj-tasa-vista-207.js?v=16.33.207';
       if(e.target?.matches?.('#tablaTitulos .fecha-campo'))requestAnimationFrame(refrescarTasasVisuales);
     },true);
     window.addEventListener("tdj-tasa-selection-changed",()=>refrescarTasasVisuales());
-    fetch("datos/tasas-moratorias.json",{cache:"no-store"}).then(r=>r.json()).then(data=>{tasasMoratorias=Array.isArray(data)?data:[];refrescarTasasVisuales();}).catch(()=>{});
+    // La interfaz debe reflejar exactamente la tabla activa del motor TDJ,
+    // sea la local o la actualizada desde Supabase. No cargar otra copia JSON.
+    const actualizarTasasMotor=event=>{
+      const tabla=event?.detail?.tasas||window.__tdjTasasEfectivas210;
+      if(!Array.isArray(tabla))return;
+      tasasMoratorias=tabla;
+      refrescarTasasVisuales();
+    };
+    window.addEventListener("tdj-tasas-actualizadas",actualizarTasasMotor);
+    actualizarTasasMotor();
     // v203: el core transmite identidad y tasas explícitas; sin inferencia por orden de simulación.
   }
 
