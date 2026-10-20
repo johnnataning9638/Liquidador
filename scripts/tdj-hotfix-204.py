@@ -19,6 +19,8 @@ changes = [
 ]
 for before, after in changes:
     n = s.count(before)
+    if n == 0 and s.count(after) == 1:
+        continue
     if n != 1:
         raise RuntimeError(f"Parche detenido: se esperaban 1 ocurrencia y existen {n}: {before}")
     s = s.replace(before, after)
