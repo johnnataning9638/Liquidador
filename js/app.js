@@ -1627,6 +1627,13 @@ function mostrarAvisoFechaTituloDian(pago,tipo){
 
 function rechazarTipo1419Normal(tipo,pago,select){
   if(!esTipoDecreto1419(tipo))return false;
+  const fecha=fechaISO(pago?.fecha||"");
+  if(!String(pago?.tdj||"").trim() && fecha && (fecha<"2026-09-17"||fecha>"2026-11-19")){
+    pago.tipo="TASA DIAN";
+    if(select)select.value=pago.tipo;
+    alert("BENEFICIO NO APLICABLE AL PAGO\n\nEl pago del "+fechaVisible(fecha)+" está fuera del periodo permitido para los artículos 9 y 10 del Decreto 1419 de 2026.\n\nFechas permitidas: 17/09/2026 al 19/11/2026 (inclusive).\n\nSe ha seleccionado automáticamente TASA DIAN. El pago se seguirá imputando normalmente.");
+    return true;
+  }
   const errores=erroresTipo1419Normal(tipo,pago);
   if(!errores.length)return false;
   if(select)select.value=tipo;
@@ -1731,6 +1738,18 @@ function enfocarCampoError(selector){
 function calcular(){
   try{
     let d=leerFormulario();
+    // Protección de importaciones y estados restaurados: no conservar beneficios 1419 en pagos fuera de vigencia.
+    let huboAjustePago1419=false;
+    for(const p of d.pagos||[]){
+      const f=fechaISO(p.fecha||"");
+      if(!String(p.tdj||"").trim()&&esTipoDecreto1419(p.tipo)&&f&&(f<"2026-09-17"||f>"2026-11-19")){
+        p.tipo="TASA DIAN";
+        const original=pagos.find(x=>x.id===p.id);
+        if(original)original.tipo="TASA DIAN";
+        huboAjustePago1419=true;
+      }
+    }
+    if(huboAjustePago1419){renderPagos();alert("BENEFICIO NO APLICABLE AL PAGO: los pagos fuera del 17/09/2026 al 19/11/2026 se liquidarán con TASA DIAN y conservarán su imputación.");}
     // Tipo de liquidación solo es obligatorio cuando la obligación tiene sanción,
     // porque únicamente en ese escenario se requiere escoger el tratamiento
     // PRIVADA/OFICIAL para la actualización de la sanción.
