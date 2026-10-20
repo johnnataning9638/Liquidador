@@ -1,4 +1,5 @@
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
+import {referenciaTimTDJ} from './tdj-tasa-vista-207.js?v=16.33.207';
 // TDJ v16.33.205 — TASAS INDIVIDUALES POR TÍTULO Y OBLIGACIÓN.
 // La columna OBLIGACIÓN conserva su función exclusivamente descriptiva.
 // La selección TIPO DE TASA/TASA se aplica ahora por combinación TDJ × OBLIGACIÓN.
@@ -169,6 +170,20 @@ import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.3
       box.title="TDJ fuera de ventanas Decreto 1419: hasta 09/08/2026 o 17/09/2026–19/11/2026. Se aplica TASA DIAN.";
     }
     const tasa=tasaPorFechaLocal(fecha,tipo);
+    // Solo referencia visual, nunca interés oficial inventado para meses no parametrizados.
+    if(tasa==null && tipo==="TASA DIAN" && fecha){
+      const ultima=referenciaTimTDJ(fecha,tasasMoratorias);
+      if(ultima){
+        box.textContent="ÚLTIMA TIM: "+(ultima.tasa*100).toFixed(3)+"% · "+ultima.periodo+" (REFERENCIA)";
+        box.classList.add("sin-datos");
+        box.title="La TIM de "+fecha.slice(0,7)+" no está parametrizada. Este porcentaje es solo la última tasa histórica disponible ("+ultima.periodo+"), NO la tasa oficial del título. No se utiliza en el cálculo.";
+        return;
+      }
+      box.textContent="TASA OFICIAL PENDIENTE";
+      box.classList.add("sin-datos");
+      box.title="No hay TIM oficial parametrizada para "+fecha.slice(0,7)+". No se puede presentar un porcentaje como vigente.";
+      return;
+    }
     if(tasa==null && !["ART. 9 DECRETO 1419 DE 2026 - TRIBUTARIO","ART. 10 DECRETO 1419 DE 2026 - OMISAS TRIBUTARIAS","ART. 10 DECRETO 1419 DE 2026 - CORRECCIONES TRIBUTARIAS","ART. 20 DECRETO 1474 DE 2025","ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION","ART. 3 DECRETO 0240 DE 2026","ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECCION"].includes(tipo)){
       box.textContent="TASA: SIN DATOS";box.classList.add("sin-datos");
     }else{

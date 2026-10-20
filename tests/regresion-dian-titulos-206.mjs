@@ -25,5 +25,5 @@ assert.match(app,/if\(ajustarBeneficioTituloDian\(p\)\)/);
 assert.match(app,/motor\.tasaEspecial\(tipoEfectivoTituloDian\(p\),p\.fecha\)/);
 assert.match(app,/filtrarReglasFechaTitulo1419\(validarSeleccion1419\(/);
 const html=fs.readFileSync('liquidacion.html','utf8');
-assert.match(html,/js\/app\.js\?v=16\.33\.206/);
+assert.ok(html.includes('js/app.js?v=16.33.207'), 'La página DIAN debe cargar la versión 207');
 console.log('PASS DIAN 206',count,'combinaciones de límites, pagos normales intactos, motor/Excel/UI sincronizados.');
