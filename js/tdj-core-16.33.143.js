@@ -1,4 +1,4 @@
-import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ} from "./tdj-tasas-203.js?v=16.33.203";
+import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
@@ -293,12 +293,20 @@ function ordenarTitulosCronologicamente(){
 
 function validarTipo1419TDJ(tipo,o,pago,{esTitulo=false}={}){
   const fechas=(o?.vencimientos||[]).filter(v=>v.fecha&&Number(v.impuesto)>0).map(v=>fechaISO(v.fecha)||"");
-  return validarSeleccion1419({
+  const errores=validarSeleccion1419({
     tipo,fechasVencimiento:fechas,
     fechaPresentacion:o?.fechaSancion||"",
     fechaPago:esTitulo?"":pago?.fecha||"",
     fechaTitulo:esTitulo?pago?.fecha||"":"",esTitulo
   });
+  if(!esTitulo)return errores; // Las reglas de pagos normales permanecen iguales.
+  // La norma temporal de constitución del título se gestiona SOLO en TDJ.
+  // Conservar las restantes validaciones de requisitos de la obligación.
+  const requisitos=errores.filter(e=>!/(título debe|artículo 9 admite títulos|registre la fecha de constitución del título)/i.test(e));
+  if(!fechaElegible1419TDJ(pago?.fecha)){
+    requisitos.push("Para artículos 9 y 10, la fecha de constitución del TDJ debe ser hasta el 09/08/2026 o entre el 17/09/2026 y el 19/11/2026, ambos inclusive.");
+  }
+  return requisitos;
 }
 
 function rechazarTipo1419TDJ(tipo,pago,select,o,{esTitulo=false}={}){
@@ -1052,7 +1060,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           ?validarTipo1419TDJ(tipoTasaObligacion,o,t,{esTitulo:true})
           :[];
         if(elegibilidadTasaTitulo.length){
-          const aviso=`OBLIGACIÓN ${o.numero} — ${tipoTasaObligacion}: NO CUMPLE LAS CONDICIONES PARA EL TDJ ${t.tdj||t.numero} (${fechaVisible(t.fecha)}). ${elegibilidadTasaTitulo.join(" ")} La liquidación se mantiene con la tasa seleccionada por el funcionario; no se modifica automáticamente.`;
+          const aviso=`OBLIGACIÓN ${o.numero} — ${tipoTasaObligacion}: NO CUMPLE OTRAS CONDICIONES PARA EL TDJ ${t.tdj||t.numero} (${fechaVisible(t.fecha)}). ${elegibilidadTasaTitulo.join(" ")} Verifique los requisitos de la obligación.`;
           observacionesBeneficio1419.push(aviso);
         }
         const esTDJMinimoActual=Number.isInteger(Number(pagoActual.valor)) && Number(pagoActual.valor)>0 && Number(pagoActual.valor)<=1000;
