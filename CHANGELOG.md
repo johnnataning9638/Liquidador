@@ -1,5 +1,13 @@
 # Cambios
 
+## 16.33.209 - 2026-10-19
+
+- TDJ: presentar mensaje idéntico al aviso del Liquidador DIAN cuando se intenten artículos 9 o 10 sobre títulos con fecha no permitida, tanto al cambiar el beneficio como al editar la fecha.
+- TDJ: proteger exclusivamente el campo «PEGUE DATOS DE TDJ / TÍTULOS» frente a eventos de pegado duplicados; conservar exactamente los registros y respetar texto/cursor seleccionados.
+- Importadores normales/IA, motores matemáticos, pagos, beneficios y endosos sin alteraciones funcionales.
+- Regresiones automáticas del cuadro de pegado (cinco títulos, dobles eventos, pegado legítimo repetido, aislamiento de otros campos) y del mensaje.
+
+
 ## 16.33.208 - 2026-10-19
 
 - TDJ: homologación del mensaje explicativo cuando se seleccionan los artículos 9 o 10 con fecha de constitución no autorizada. Continúa la selección automática TASA DIAN.
