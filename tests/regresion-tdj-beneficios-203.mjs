@@ -193,6 +193,31 @@ test('Tercer título conserva identidad con fechas iguales y recálculo independ
   assert.equal(a.endoso,500000);assert.equal(a.endoso,b.endoso);
   assert.equal(a.resumenTitulos.length,3);assert.equal(a.totalAplicadoFinal,2000000);
 });
+test('RST: seis anticipos, 2 pagos reales, base global frente a formularios 1079',()=>{
+  const real={
+    uvt:JSON.parse(fs.readFileSync('datos/uvt.json','utf8')),
+    ipc:JSON.parse(fs.readFileSync('datos/ipc.json','utf8')),
+    intereses:JSON.parse(fs.readFileSync('datos/tasas-moratorias.json','utf8')),
+    beneficios:JSON.parse(fs.readFileSync('datos/beneficios.json','utf8')),
+    sanciones:JSON.parse(fs.readFileSync('datos/sanciones.json','utf8')),
+    reglasObligaciones:JSON.parse(fs.readFileSync('datos/reglas-obligaciones.json','utf8'))
+  };
+  real.tasasMoratorias=real.intereses;
+  const vencimientos=[['2025-05-26',2298000],['2025-06-13',2334000],['2025-07-11',3436000],['2025-09-11',2440000],['2025-11-14',3071000],['2026-01-15',720000]].map(([fecha,impuesto],i)=>({id:'RST-V'+i,numero:i+1,fecha,impuesto}));
+  const pagos=[{id:'RST-P1',fecha:'2025-09-08',valor:2450000,tipo:'TASA DIAN'},{id:'RST-P2',fecha:'2025-12-30',valor:2628000,tipo:'TASA DIAN'}];
+  const o=obligation('RST-O1',1,{concepto:'SIMPLE',anio:2025,periodo:'1',vencimientos,pagos});
+  const m=new MotorLiquidacion(real);
+  const d={...o,fechaCorte:'2025-12-30'};
+  const resultado=m.calcular(d);
+  const detalles=resultado.detalle.filter(x=>Number(x.pago?.valor)>0);
+  assert.equal(detalles.length,2);
+  const x=detalles.map(z=>({impuesto:z.aplicado.impuesto,intereses:z.aplicado.intereses}));
+  console.log('RST SIMULACIÓN PAGOS:',JSON.stringify(x));
+  assert.equal(x[0].impuesto,2382000,'RST pago 1: capital consolidado DIAN');
+  assert.equal(x[0].intereses,68000,'RST pago 1: interés formulario 1079');
+  assert.equal(x[1].impuesto+x[1].intereses,2628000,'RST pago 2 completo');
+  assert.ok(Math.abs(x[1].intereses-188000)<=2000,'RST pago 2: diferencia de intereses dentro de tolerancia de auditoría, no de aceptación exacta');
+});
 // Validar el XLSX real construido por la aplicación (sin librería de autoría alternativa).
 run([obligation('O1',1),obligation('O2',2)],[title('T1',5000000,'2026-08-09',{tasasPorObligacion:{O1:decreto.TIPO_1419.ART9,O2:'TASA DIAN'}})]);
 const blob=ctx.fixture.export();assert.ok(blob?.size>5000);
