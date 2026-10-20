@@ -7,34 +7,9 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  tdj-hotfix-experimental:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/audit/tdj-art9-juanca-204'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: audit/tdj-art9-juanca-204
-          persist-credentials: true
-      - name: Aplicar parche aislado
-        run: python3 scripts/tdj-hotfix-204.py
-      - name: Comprobar sintaxis y regresión del caso reportado
-        run: |
-          node --check js/tdj-core-16.33.143.js
-          node tests/regresion-tdj-beneficios-203.mjs
-          node tests/regresion-endoso-tdj-202.mjs
-          node tests/regresion-secuencia-tdj-129.mjs
-      - name: Incorporar solo si pasan pruebas en rama de auditoría
-        run: |
-          if git diff --quiet -- js/tdj-core-16.33.143.js; then exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/tdj-core-16.33.143.js
-          git commit -m 'fix(tdj): preservar valores del motor en recálculo v16.33.204'
-          git push origin HEAD:audit/tdj-art9-juanca-204
-
   syntax-and-integrity:
     runs-on: ubuntu-latest
     steps:
