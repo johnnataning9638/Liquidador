@@ -1,5 +1,13 @@
 # Cambios
 
+## 16.33.205 - 2026-10-19
+
+- Exclusivamente TDJ: artículos 9 y 10 elegibles por constitución hasta 09/08/2026 (inclusive) o entre 17/09/2026 y 19/11/2026 (inclusive).
+- TDJ del 10/08/2026 al 16/09/2026, o posteriores al 19/11/2026: aplicación TASA DIAN; los requisitos restantes siguen evaluándose por obligación.
+- Sin alteraciones de cálculos compartidos DIAN, imputación cronológica, pago, sanción o endoso.
+- Validaciones automáticas de límites, recuperación Excel y continuidad de casos históricos TDJ.
+
+
 ## 16.33.204 - 2026-10-19
 
 - TDJ únicamente: conservar por separado el valor nominal utilizado por el motor y el valor efectivamente aplicado de cada título.
