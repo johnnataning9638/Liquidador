@@ -9,8 +9,24 @@ permissions:
 jobs:
   protocol:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate agent instructions and skills
+      - name: Install YAML validator
+        run: python3 -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+      - name: Validate strict YAML and agent instructions
         run: python3 tests/test_codex_protocol.py
+      - name: JavaScript syntax check (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          find js -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do
+            node --check "$file"
+          done
+      - name: Existing mathematical regression
+        run: node tests/regresion-matematica.mjs
+      - name: Inventory historical regression tests
+        shell: bash
+        run: |
+          echo "Historical .mjs tests (inventory only, not a passing claim):"
+          find tests -maxdepth 1 -type f -name '*.mjs' | sort
