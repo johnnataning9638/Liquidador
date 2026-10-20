@@ -1201,7 +1201,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           tituloId:t.id,titulo:t.tdj||`TDJ ${t.numero}`,fecha:t.fecha,
           obligacionId:o.id,obligacionNumero:o.numero,
           obligacion:`${upper(o.concepto)} ${o.anio}${o.periodo?` · P${o.periodo}`:""}`,
-          valorAntes:disponible,aplicado,saldoTitulo:excedente,saldoObligacion:saldoDespues,
+          valorAntes:disponible,valorCalculoMotorTDJ:Number(pagoActual.valor),aplicado,saldoTitulo:excedente,saldoObligacion:saldoDespues,
           aplicadoImpuesto:Number(ultimo?.aplicado?.impuesto||0),
           aplicadoIntereses:Number(ultimo?.aplicado?.intereses||0),
           aplicadoSancion:sancionAplicar,
@@ -1238,7 +1238,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         if(aplicado>0){
           // El siguiente título verá este pago como antecedente y calculará
           // nuevamente la deuda a su propia fecha.
-          prevTitlePayments.get(o.id).push({...pagoActual,valor:aplicado});
+          prevTitlePayments.get(o.id).push({...pagoActual,valor:Number(pagoActual.valor)});
         }
         if(detenerEnObligacion)break;
       }
@@ -1263,7 +1263,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           id:x.pagoId||uid("APTDJFINAL"),
           numero:999999,
           fecha:x.fecha,
-          valor:Math.max(0,Number(x.aplicado||0)),
+          valor:Math.max(0,Number(x.valorCalculoMotorTDJ??x.aplicado??0)),
           tipo:x.tipoTasaObligacion||upper(o.tipoTasa||"TASA DIAN"),
           observacion:upper(x.titulo||""),
           tdj:x.titulo||("TDJ "+(i+1)),
