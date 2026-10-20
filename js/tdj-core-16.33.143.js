@@ -974,8 +974,9 @@ function ajustarBaseProporcionalTDJ208(instancia){
     const esTitulo=Boolean(pago?.esTDJ||String(pago?.tdj||"").trim());
     const esPrivada=String(ctx?.datos?.tipoLiquidacion||"").toUpperCase()==="PRIVADA";
     const sinSancionHabilitada=Number(deuda?.sancion||0)<=0;
-    if(!this._art9Prepass&&ctx&&esPrivada&&esTitulo&&art9&&sinSancionHabilitada
-       &&Number(ctx.sancionSaldoInicial||0)>0){
+    if(!this._art9Prepass&&ctx&&esPrivada&&sinSancionHabilitada
+       &&((esTitulo&&art9&&Number(ctx.sancionSaldoInicial||0)>0)
+         ||ctx.sancionTDJEfectiva208!=null)){
       const previo=Number(ctx.sancionSaldoInicial||0);
       if(ctx.sancionTDJEfectiva208==null){
         // El redondeo a miles y la mínima se calculan igual que en el motor.
