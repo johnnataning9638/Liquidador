@@ -134,6 +134,23 @@ test('TDJ 208: tres obligaciones, dos pagos protegidos y dos títulos Art. 9',()
   assert.equal(mixta.endoso,0,'Mixta Art 9 + DIAN nunca endosa con deuda');
   assert.ok(mixta.resumenObligaciones[2].totalTDJ>0,'Mixta Art 9 + DIAN continúa hacia la tercera obligación');
   console.log('TDJ 208 MIXTO:',JSON.stringify({saldos:mixta.resumenObligaciones.map(x=>x.saldo),endoso:mixta.endoso}));
+  const mismaFecha=run([o1,o2,o3],[
+    title('T1',20000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T2',14794449,'2026-07-18',{tasasPorObligacion:tasas})
+  ],cfgReal);
+  assert.equal(mismaFecha.totalAplicadoFinal+mismaFecha.endoso,34794449,'Títulos mismo día conservan nominal');
+  assert.equal(mismaFecha.endoso,0,'Títulos misma fecha no quedan sobrantes con deuda');
+  assert.ok(mismaFecha.resumenObligaciones[2].totalTDJ>0,'Títulos misma fecha continúan a O3');
+  const cuatro=run([o1,o2,o3],[
+    title('T1',10000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T2',10000000,'2026-07-18',{tasasPorObligacion:tasas}),
+    title('T3',10000000,'2026-08-09',{tasasPorObligacion:tasas}),
+    title('T4',4794449,'2026-08-09',{tasasPorObligacion:tasas})
+  ],cfgReal);
+  assert.equal(cuatro.totalAplicadoFinal+cuatro.endoso,34794449,'Cuatro títulos conservan nominal');
+  assert.equal(cuatro.endoso,0,'Cuatro títulos misma fecha con deuda no se endosan');
+  assert.ok(cuatro.resumenObligaciones[2].totalTDJ>0,'Cuatro títulos trasladan remanente a O3');
+
 
 
 });
