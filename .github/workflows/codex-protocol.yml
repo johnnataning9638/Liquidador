@@ -1,0 +1,16 @@
+name: Codex protocol validation
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate agent instructions and skills
+        run: python3 tests/test_codex_protocol.py
