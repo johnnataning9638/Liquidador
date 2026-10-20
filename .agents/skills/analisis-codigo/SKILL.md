@@ -1,6 +1,6 @@
 ---
 name: analisis-codigo
-description: Investigar la causa raíz antes de editar: inspeccionar implementación, configuración, historial, datos de entrada, rutas de ejecución y dependencias. Reproducir el problema y documentar hipótesis verificadas, impacto y casos límite.
+description: "Investigar la causa raíz antes de editar: inspeccionar implementación, configuración, historial, datos de entrada, rutas de ejecución y dependencias. Reproducir el problema y documentar hipótesis verificadas, impacto y casos límite."
 ---
 # analisis-codigo
 Investigar la causa raíz antes de editar: inspeccionar implementación, configuración, historial, datos de entrada, rutas de ejecución y dependencias. Reproducir el problema y documentar hipótesis verificadas, impacto y casos límite.
