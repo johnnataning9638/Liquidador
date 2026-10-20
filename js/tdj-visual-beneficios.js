@@ -1,4 +1,5 @@
-// TDJ v16.33.167 — TASAS INDIVIDUALES POR TÍTULO Y OBLIGACIÓN.
+import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
+// TDJ v16.33.205 — TASAS INDIVIDUALES POR TÍTULO Y OBLIGACIÓN.
 // La columna OBLIGACIÓN conserva su función exclusivamente descriptiva.
 // La selección TIPO DE TASA/TASA se aplica ahora por combinación TDJ × OBLIGACIÓN.
 (function(){
@@ -151,15 +152,27 @@
   function mostrarTasa(td,select,titleId,index){
     let box=td.querySelector(".tdj-tasa-visual");
     if(!box){box=document.createElement("div");box.className="tdj-tasa-visual";td.appendChild(box);}
-    const tipo=upper(select?.value||"TASA DIAN");
-    const fecha=fechaISOVisual(tituloDeFila(titleId)?.querySelector('.fecha-campo')?.value||"");
+    let tipo=upper(select?.value||"TASA DIAN");
+    const fila=tituloDeFila(titleId);
+    const fecha=fechaISOVisual(fila?.querySelector('.fecha-campo')?.value||fila?.querySelector('.fecha-native')?.value||"");
+    // Nunca sustituir el beneficio antes de que el funcionario ingrese la fecha.
+    // Al tener fecha válida, no permitir que el selector visual diverja del motor y Excel.
+    if(fecha&&esBeneficio1419TDJ(tipo)&&!fechaElegible1419TDJ(fecha)){
+      tipo="TASA DIAN";
+      if(select)select.value=tipo;
+      const clave=claveSeleccion(titleId,index);
+      seleccionVisual.set(clave,tipo);
+      window.__tdjTiposCanonicos203?.set(clave,tipo);
+      actualizarMapaGlobal(titleId,index,tipo);
+      box.title="TDJ fuera de ventanas Decreto 1419: hasta 09/08/2026 o 17/09/2026–19/11/2026. Se aplica TASA DIAN.";
+    }
     const tasa=tasaPorFechaLocal(fecha,tipo);
     if(tasa==null && !["ART. 9 DECRETO 1419 DE 2026 - TRIBUTARIO","ART. 10 DECRETO 1419 DE 2026 - OMISAS TRIBUTARIAS","ART. 10 DECRETO 1419 DE 2026 - CORRECCIONES TRIBUTARIAS","ART. 20 DECRETO 1474 DE 2025","ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION","ART. 3 DECRETO 0240 DE 2026","ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECCION"].includes(tipo)){
       box.textContent="TASA: SIN DATOS";box.classList.add("sin-datos");
     }else{
       box.textContent=`TASA: ${tasa==null?"SIN DATOS":(Number(tasa)*100).toFixed(3)+"%"}`;box.classList.toggle("sin-datos",tasa==null);
     }
-    box.title=`${tipo} · FECHA TDJ ${fecha||"PENDIENTE"}`;
+    if(!box.title.includes("fuera de ventanas"))box.title=`${tipo} · FECHA TDJ ${fecha||"PENDIENTE"}`;
   }
 
   function crearSelect(titleId,index){
@@ -317,6 +330,9 @@
       if(e.target?.closest?.("#listaObligaciones")){ultimaFirma="";repintar();}
       if(e.target?.matches?.('#tablaTitulos [data-t="tdj"]')){
         const tr=e.target.closest("tr");if(tr)sincronizarTDJSeleccion(tr.dataset.tituloId||"");
+      }
+      if(e.target?.matches?.('#tablaTitulos .fecha-campo, #tablaTitulos .fecha-native')){
+        requestAnimationFrame(refrescarTasasVisuales);
       }
     },true);
     document.addEventListener("input",e=>{
