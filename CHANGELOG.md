@@ -1,5 +1,14 @@
 # Cambios
 
+## 16.33.206 - 2026-10-19
+
+- Extensión al Liquidador DIAN de la elegibilidad temporal de títulos identificados por TDJ Nº para artículos 9 y 10 Decreto 1419.
+- Se reutilizan ventanas TDJ: hasta 09/08/2026 inclusive y del 17/09/2026 al 19/11/2026 inclusive.
+- Fechas no elegibles convierten selección del título a TASA DIAN, reflejada en la UI y cálculo/exportación.
+- Pagos ordinarios sin TDJ permanecen sujetos a sus reglas vigentes, independientes de esta actualización.
+- Sin cambios en motores matemáticos compartidos ni reglas de proporcionalidad y endoso.
+
+
 ## 16.33.205 - 2026-10-19
 
 - Exclusivamente TDJ: artículos 9 y 10 elegibles por constitución hasta 09/08/2026 (inclusive) o entre 17/09/2026 y 19/11/2026 (inclusive).
