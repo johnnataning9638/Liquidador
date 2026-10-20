@@ -39,7 +39,7 @@
       const totalRow=[...tabla.querySelectorAll("tbody tr")].find(tr=>clean(tr.children[0]?.textContent).toUpperCase()==="TOTALES");
       if(totalRow)saldoTotal=money(totalRow.children[3]?.textContent);
     }
-    const intereses=money(article.querySelector(".pdf-intereses tfoot tr:last-child td:last-child")?.textContent);
+    const intereses=money(article.querySelector(".pdf-intereses tfoot tr:last-child > :last-child")?.textContent);
     const valorPago=money(article.querySelector(".pdf-pago-titulo")?.textContent?.split("→").pop());
     const fecha=cellValue(article,"FECHA PREVISTA DE PAGO");
     const recibo=cellValue(article,"RECIBO DE PAGO");

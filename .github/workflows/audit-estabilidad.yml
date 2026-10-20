@@ -23,6 +23,8 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
+          node tests/regresion-tdj-beneficios-203.mjs
+          node tests/regresion-endoso-tdj-202.mjs
           node tests/regresion-exportacion-excel-161.mjs
           node tests/regresion-secuencia-tdj-129.mjs
           node tests/regresion-prioridad-pagos-tdj-130.mjs

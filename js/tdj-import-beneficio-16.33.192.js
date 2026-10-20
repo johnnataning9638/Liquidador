@@ -127,6 +127,7 @@ import {leerXlsxPrimeraHoja,norm as normImportacionTDJ} from "./importador-excel
     if(!file||!/\.xlsx$/i.test(file.name||""))return;
     try{
       const rows=await leerXlsxPrimeraHoja(file);
+      if(rows.some(r=>r?.[0]==="TASA TDJ"))return; // v203: recuperación canónica del core, sin sobrescritura legacy.
       const mapa=extraerMapaBeneficios(rows);
       if(mapa.especificos.size||mapa.globales.size)aplicarCuandoLista(mapa);
     }catch(err){

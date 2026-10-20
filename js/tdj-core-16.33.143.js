@@ -1,3 +1,4 @@
+import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ} from "./tdj-tasas-203.js?v=16.33.203";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
@@ -7,7 +8,7 @@ import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.16
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.161";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
-import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./prioridad-tdj-v132.js?v=16.33.161";
+import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./tdj-prioridad-203.js?v=16.33.203";
 import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.161";
 
 const $=id=>document.getElementById(id);
@@ -825,6 +826,16 @@ function validarDatos(){
       if(Number.isFinite(v))t.valor=v;
     }
     if(obs)t.observacion=upper(obs.value||"");
+    t.tasasPorObligacion={...t.tasasPorObligacion};
+    [...tr.querySelectorAll('.tdj-beneficio-visual select')].forEach((select,oi)=>{
+      const o=obligaciones[oi];
+      if(o)t.tasasPorObligacion[o.id]=upper(select.value||'TASA DIAN');
+    });
+    if(!window.__tdjTiposCanonicos203)window.__tdjTiposCanonicos203=new Map();
+    for(const o of obligaciones){
+      window.__tdjTiposCanonicos203.set(claveTasaTDJ(t.id,o.id),tipoTasaTDJ(t,o));
+    }
+
     // La fecha visible es la fuente de verdad para el cálculo. En algunos
     // navegadores el input type=date puede conservar un valor parcial o
     // desactualizado cuando el usuario escribió directamente DD/MM/AAAA.
@@ -855,7 +866,7 @@ function conceptoMotor(concepto){
 }
 function datosMotor(o,pagos,fechaCorte,opciones={}){
   const fechaSancion=o.fechaSancion||o.vencimientos[0]?.fecha||"";
-  return {nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:upper($("razonGlobal").value),anio:Number(o.anio),concepto:conceptoMotor(o.concepto),periodo:o.periodo,tipoLiquidacion:upper(o.tipoLiquidacion||"PRIVADA"),fechaAutoAdmisorio:o.fechaAutoAdmisorio||"",fechaProvidenciaDefinitiva:o.fechaProvidenciaDefinitiva||"",fechaCorte:fechaCorte||hoyISO(),vencimientos:o.vencimientos,tieneSancion:o.tieneSancion,valorSancion:Number(o.valorSancion||0),fechaSancion,fechaPresentacionDeclaracion1419:fechaSancion,beneficioSancion:o.beneficioSancion||"",beneficioTributario:o.beneficioTributario||"NINGUNO",permitirBeneficioFueraVigencia:Boolean(opciones.permitirBeneficioFueraVigencia),pagos};
+  return {__tdjContextoExplicito203:true,obligacionId:o.id,__tdjObligacionId:o.id,__tdjObligacionIndex:obligaciones.findIndex(x=>x.id===o.id),nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:upper($("razonGlobal").value),anio:Number(o.anio),concepto:conceptoMotor(o.concepto),periodo:o.periodo,tipoLiquidacion:upper(o.tipoLiquidacion||"PRIVADA"),fechaAutoAdmisorio:o.fechaAutoAdmisorio||"",fechaProvidenciaDefinitiva:o.fechaProvidenciaDefinitiva||"",fechaCorte:fechaCorte||hoyISO(),vencimientos:o.vencimientos,tieneSancion:o.tieneSancion,valorSancion:Number(o.valorSancion||0),fechaSancion,fechaPresentacionDeclaracion1419:fechaSancion,beneficioSancion:o.beneficioSancion||"",beneficioTributario:o.beneficioTributario||"NINGUNO",permitirBeneficioFueraVigencia:Boolean(opciones.permitirBeneficioFueraVigencia),pagos};
 }
 function motorParaObligacion(o){
   return upper(o?.tipoLiquidacion||"PRIVADA")==="OFICIAL" && motorOficial ? motorOficial : motor;
@@ -913,6 +924,16 @@ function sincronizarTitulosVisiblesTDJ(actualizarUI=true){
     if(tdj)t.tdj=upper(tdj.value||"");
     if(valor)t.valor=truncarValorEntero(numeroDesdeTexto(valor.value));
     if(obs)t.observacion=upper(obs.value||"");
+    t.tasasPorObligacion={...t.tasasPorObligacion};
+    [...tr.querySelectorAll('.tdj-beneficio-visual select')].forEach((select,oi)=>{
+      const o=obligaciones[oi];
+      if(o)t.tasasPorObligacion[o.id]=upper(select.value||'TASA DIAN');
+    });
+    if(!window.__tdjTiposCanonicos203)window.__tdjTiposCanonicos203=new Map();
+    for(const o of obligaciones){
+      window.__tdjTiposCanonicos203.set(claveTasaTDJ(t.id,o.id),tipoTasaTDJ(t,o));
+    }
+
     const f=fechaISO(fechaText?.value||"")||fechaISO(fechaPicker?.value||"")||fechaISO(t.fecha||"");
     if(f)t.fecha=f;
   });
@@ -998,11 +1019,11 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         // a esta misma obligación. Así, si hacen falta 2, 3 o 4 títulos, cada
         // nuevo título se convierte en un nuevo pago fechado en su propia fecha.
         const anteriores=prevTitlePayments.get(o.id)||[];
-        const tipoTasaObligacion=upper(o.tipoTasa||"TASA DIAN");
+        const tipoTasaObligacion=tipoTasaTDJ(t,o);
         const pagoActual={
           id:uid("APTDJ"),numero:999999,fecha:t.fecha,valor:truncarValorEntero(disponible),
           tipo:tipoTasaObligacion,observacion:upper(t.observacion||""),
-          tdj:t.tdj||`TDJ ${t.numero}`,esTDJ:true,ordenInterno:1,
+          tdj:t.tdj||`TDJ ${t.numero}`,tituloId:t.id,esTDJ:true,ordenInterno:1,
           tipoTasaObligacion
         };
         const motorActual=motorParaObligacion(o);
@@ -1085,9 +1106,9 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         let obligacionCubiertaPorPagosProtegidos=false;
         try{
           const estadoConPagosProtegidos=motorActual.calcular(datosAjustados);
-          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=0.5;
+          obligacionCubiertaPorPagosProtegidos=Number(estadoConPagosProtegidos?.total||0)<=1000;
         }catch{}
-        if(saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos)break;
+        const detenerEnObligacion=saldoObligacionActual>0.5 && !obligacionCubiertaPorPagosProtegidos;
 
         // Si esta obligación ya está totalmente cubierta (o el título todavía
         // no puede imputarse a ella), no generamos una fila ficticia. El título
@@ -1219,6 +1240,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
           // nuevamente la deuda a su propia fecha.
           prevTitlePayments.get(o.id).push({...pagoActual,valor:aplicado});
         }
+        if(detenerEnObligacion)break;
       }
 
       // Si después de recorrer las obligaciones todavía queda saldo, este
@@ -1288,7 +1310,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // directamente su saldo final de obligación para el soporte; en TDJ el
     // cierre controlado puede llevar internamente x.saldo a cero, pero ese
     // ajuste no debe ocultar en el PDF la deuda que seguía pendiente.
-    const saldoObligacionesPDF=resumenObligaciones.reduce((a,x)=>
+    let saldoObligacionesPDF=resumenObligaciones.reduce((a,x)=>
       a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);
     const remanenteTitulos=resumenTitulos.reduce((a,x)=>a+Math.max(0,Number(x.excedente||0)),0);
 
@@ -1319,6 +1341,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         const componente=Number(estadoFinal.intereses||0)>0?"INTERESES":(Number(estadoFinal.sancion||0)>0?"SANCIÓN":"IMPUESTO");
         const anteriorSaldo=Number(x.saldo||0);
         x.saldo=Math.max(0,anteriorSaldo-aplicadoCierre);
+        x.saldoFinalObligaciones=Math.min(Number(x.saldoFinalObligaciones||0),x.saldo);
         x.ajusteCierreRemanente=Number(x.ajusteCierreRemanente||0)+aplicadoCierre;
         tituloDestino.excedente=Math.max(0,Number(tituloDestino.excedente||0)-aplicadoCierre);
         tituloDestino.ajusteCierreRemanente=Number(tituloDestino.ajusteCierreRemanente||0)+aplicadoCierre;
@@ -1337,6 +1360,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
         });
       }
       saldoPendienteObligaciones=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldo||0)),0);
+      saldoObligacionesPDF=resumenObligaciones.reduce((a,x)=>a+Math.max(0,Number(x.saldoFinalObligaciones||0)),0);
     }
 
     const hayBeneficio1419=obligaciones.some(o=>esTipoDecreto1419(o.tipoTasa))
@@ -1379,6 +1403,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     activarTab("titulos");
     setTimeout(()=>document.getElementById("resultadoTDJ")?.scrollIntoView({behavior:"smooth",block:"start"}),50);
   }catch(e){
+    resultado=null;resultadoDesactualizado=true;$("resultadoTDJ").hidden=true;
     console.error(e);
     alert(e.message||"No fue posible realizar la aplicación de títulos.");enfocarCampoErrorTDJ(e.focusTarget,e.tabTarget);
   }
@@ -1666,6 +1691,9 @@ function construirFilasExcelTDJ(){
   push(["TÍTULOS TDJ","Nº","TDJ","FECHA","VALOR","OBSERVACIÓN"],{header:true});
   [...titulos].sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.numero||0)-Number(b.numero||0)).forEach((t,i)=>push(["",i+1,t.tdj||"",t.fecha||"",truncarValorEntero(t.valor||0),upper(t.observacion||"")],{money:[5]}));
   push([]);
+  push(["TASAS TDJ POR OBLIGACIÓN"],{title:true});
+  push(["REGISTRO","Nº TDJ","TDJ","OBLIGACIÓN","ID OBLIGACIÓN","TIPO","TASA"],{header:true});
+  filasTasasTDJ(titulos,obligaciones,(tipo,fecha)=>tasaParaPagoTDJ({tipo,fecha})).forEach(r=>push(r,{percent:[7]}));
   push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
   push([]);
   push(["TÍTULOS / TDJ — CONTROL FINAL"],{title:true});push(["Nº","TDJ","FECHA","VALOR ORIGINAL","OBSERVACIÓN","APLICADO","SOBRANTE / ENDOSO"],{header:true});
@@ -2755,6 +2783,8 @@ async function importarExcelTDJ(){
       nuevas.forEach(o=>{o.tipoLiquidacion="PRIVADA";o.fechaAutoAdmisorio="";o.fechaProvidenciaDefinitiva="";});
       obligaciones=nuevas.length?nuevas:[nuevaObligacion(1)];
       titulos=nuevosTitulos.length?nuevosTitulos:[];
+      recuperarTasasTDJ(rows,titulos,obligaciones);
+      window.__tdjTiposCanonicos203=new Map(titulos.flatMap(t=>obligaciones.map(o=>[claveTasaTDJ(t.id,o.id),tipoTasaTDJ(t,o)])));
       resultado=null;
       $("resultadoTDJ").hidden=true;
       renderObligaciones();renderTitulos();actualizarSelectoresImportacion();
