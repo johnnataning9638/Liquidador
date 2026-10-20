@@ -6,6 +6,7 @@
 // CAPA AISLADA: NO MODIFICA EL MOTOR HISTÓRICO NI TDJ-CORE.
 import { MotorLiquidacion } from "./motor-liquidacion.js?v=16.33.161";
 import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.161";
+import {numeroDesdeTexto} from "./utilidades.js?v=16.33.161";
 import { validarSeleccion1419 } from "./decreto-1419.js?v=16.33.161";
 
 (function(){
@@ -14,7 +15,7 @@ import { validarSeleccion1419 } from "./decreto-1419.js?v=16.33.161";
   window.__tdjTasaBridge174Installed=true;
   const UPPER=v=>String(v??"").trim().toUpperCase();
   const ISO=v=>{const s=String(v??"").trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;const m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);if(!m)return "";let y=m[3];if(y.length===2)y=Number(y)>=70?`19${y}`:`20${y}`;return `${y}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;};
-  const NUM=v=>{const n=Number(String(v??"").replace(/[^0-9.-]/g,""));return Number.isFinite(n)?n:0;};
+  const NUM=v=>{const n=typeof v==="number"?v:numeroDesdeTexto(v);return Number.isFinite(n)?n:0;};
   const VAL=el=>String(el?.value??el?.getAttribute?.("data-value")??el?.getAttribute?.("value")??"").trim();
   const filas=()=>[...document.querySelectorAll("#tablaTitulos tbody tr")];
   const fila=id=>filas().find(tr=>tr.dataset.tituloId===String(id||""))||null;

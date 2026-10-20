@@ -107,6 +107,11 @@ import { MotorLiquidacionOficial } from "./motor-liquidacion-oficial.js?v=16.33.
   function resolver(Clase,d){
     const cs=cards();
     if(!cs.length)return 0;
+    if(d?.__tdjContextoExplicito203===true){
+      const i=indicePorId(d.obligacionId);
+      if(i<0)throw new Error("La obligación del cálculo TDJ ya no existe en la captura.");
+      return i;
+    }
 
     // Solo confiamos en una identidad explícita si además coincide con los
     // datos de la obligación. Esto evita arrastrar IDs de un payload reutilizado.

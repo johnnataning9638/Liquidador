@@ -89,7 +89,7 @@
     if(cell)cell.classList.add("tdj-observacion-legacy");
   }
 
-  function claveSeleccion(titleId,index){return `${titleId}|${index}`;}
+  function claveSeleccion(titleId,index){return `${titleId}|${obtenerObligaciones()[index]?.dataset.id||index}`;}
   function tituloDeFila(titleId){return document.querySelector(`#tablaTitulos tbody tr[data-titulo-id="${CSS.escape(titleId)}"]`);}
   function obtenerTDJDeFila(titleId){return String(tituloDeFila(titleId)?.querySelector('[data-t="tdj"]')?.value||"").trim();}
 
@@ -101,7 +101,7 @@
 
   function obtenerTipo(titleId,index){
     const key=claveSeleccion(titleId,index);
-    const tipo=upper(seleccionVisual.get(key)||"TASA DIAN")||"TASA DIAN";
+    const tipo=upper(seleccionVisual.get(key)||window.__tdjTiposCanonicos203?.get(key)||"TASA DIAN")||"TASA DIAN";
     seleccionVisual.set(key,tipo);
     actualizarMapaGlobal(titleId,index,tipo);
     return tipo;
@@ -327,7 +327,7 @@
     },true);
     window.addEventListener("tdj-tasa-selection-changed",()=>refrescarTasasVisuales());
     fetch("datos/tasas-moratorias.json",{cache:"no-store"}).then(r=>r.json()).then(data=>{tasasMoratorias=Array.isArray(data)?data:[];refrescarTasasVisuales();}).catch(()=>{});
-    iniciarMotorPuente();
+    // v203: el core transmite identidad y tasas explícitas; sin inferencia por orden de simulación.
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar,{once:true});
