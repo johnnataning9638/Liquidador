@@ -196,10 +196,10 @@ import {referenciaTimTDJ} from './tdj-tasa-vista-207.js?v=16.33.207';
   function avisoBeneficioInvalidoTDJ(titleId,fecha){
     const numero=obtenerTDJDeFila(titleId)||"SIN NÚMERO";
     const visible=fecha?fecha.split("-").reverse().join("/"):"FECHA NO REGISTRADA";
-    window.alert("BENEFICIO NO APLICABLE AL TÍTULO JUDICIAL\\n\\n"+
+    window.alert("BENEFICIO NO APLICABLE AL TÍTULO JUDICIAL\n\n"+
       "El TDJ "+numero+" constituido el "+visible+
-      " no cumple los períodos permitidos para los artículos 9 y 10 del Decreto 1419 de 2026.\\n\\n"+
-      "Fechas permitidas: hasta el 09/08/2026, o del 17/09/2026 al 19/11/2026 (inclusive).\\n\\n"+
+      " no cumple los períodos permitidos para los artículos 9 y 10 del Decreto 1419 de 2026.\n\n"+
+      "Fechas permitidas: hasta el 09/08/2026, o del 17/09/2026 al 19/11/2026 (inclusive).\n\n"+
       "Se ha seleccionado automáticamente TASA DIAN. Compruebe el porcentaje oficial correspondiente a la fecha.");
   }
 
