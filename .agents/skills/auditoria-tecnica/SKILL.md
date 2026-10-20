@@ -1,6 +1,6 @@
 ---
 name: auditoria-tecnica
-description: Auditar después de cada cambio: regresiones, validación de entradas, seguridad, manejo de errores, dependencias, integridad, rendimiento y cálculos. Clasificar hallazgos por gravedad y distinguir evidencia de sospechas.
+description: "Auditar después de cada cambio: regresiones, validación de entradas, seguridad, manejo de errores, dependencias, integridad, rendimiento y cálculos. Clasificar hallazgos por gravedad y distinguir evidencia de sospechas."
 ---
 # auditoria-tecnica
 Auditar después de cada cambio: regresiones, validación de entradas, seguridad, manejo de errores, dependencias, integridad, rendimiento y cálculos. Clasificar hallazgos por gravedad y distinguir evidencia de sospechas.
