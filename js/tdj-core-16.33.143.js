@@ -315,6 +315,14 @@ function validarTipo1419TDJ(tipo,o,pago,{esTitulo=false}={}){
 
 function rechazarTipo1419TDJ(tipo,pago,select,o,{esTitulo=false}={}){
   if(!esTipoDecreto1419(tipo))return false;
+  const fecha=fechaISO(pago?.fecha||"");
+  if(!esTitulo&&fecha&&(fecha<"2026-09-17"||fecha>"2026-11-19")){
+    pago.tipo="TASA DIAN";
+    if(select)select.value=pago.tipo;
+    invalidarResultadoTDJ();
+    alert("BENEFICIO NO APLICABLE AL PAGO\n\nEl pago del "+fechaVisible(fecha)+" no cumple el periodo permitido para los artículos 9 y 10 del Decreto 1419 de 2026.\n\nFechas permitidas: 17/09/2026 al 19/11/2026 (inclusive).\n\nSe ha seleccionado automáticamente TASA DIAN. El pago se seguirá imputando normalmente.");
+    return true;
+  }
   const errores=validarTipo1419TDJ(tipo,o,pago,{esTitulo});
   if(!errores.length)return false;
   if(select)select.value=tipo;
@@ -808,6 +816,16 @@ function validarDatos(){
     if(o.tieneSancion==="SI"&&!Number(o.valorSancion||0)){const e=new Error(`OBLIGACIÓN ${o.numero}: indique el valor de la sanción.`);e.focusTarget=`#listaObligaciones [data-k="valorSancion"]`;throw e;}
     o.pagos=o.pagos.filter(p=>p.fecha&&(Number(p.valor)>0||esFechaCorteTDJ(p))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));
     ordenarPagosCronologicamente(o);
+    // Validación defensiva frente a pagos importados o restaurados fuera de vigencia.
+    let pagosReclasificados1419=0;
+    for(const p of o.pagos){
+      const f=fechaISO(p.fecha||"");
+      if(esTipoDecreto1419(p.tipo)&&f&&(f<"2026-09-17"||f>"2026-11-19")){
+        p.tipo="TASA DIAN";
+        pagosReclasificados1419++;
+      }
+    }
+    if(pagosReclasificados1419){renderPagos();alert(`BENEFICIO NO APLICABLE AL PAGO: ${pagosReclasificados1419} pago(s) de la obligación ${o.numero} fuera del 17/09/2026 al 19/11/2026 se imputarán con TASA DIAN.`);}
     for(const [i,p] of o.pagos.entries()){
       if(!esTipoDecreto1419(p.tipo))continue;
       const errores=validarTipo1419TDJ(p.tipo,o,p);
