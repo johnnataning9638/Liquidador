@@ -1,5 +1,14 @@
 # Cambios
 
+## 16.33.208 - 2026-10-19
+
+- TDJ: homologación del mensaje explicativo cuando se seleccionan los artículos 9 o 10 con fecha de constitución no autorizada. Continúa la selección automática TASA DIAN.
+- TDJ: corrección aislada del cálculo proporcional sobre sanción reducida por artículo 9 cuando los títulos preceden a la fecha de sanción: el motor TDJ debe considerar el saldo efectivo reducido y no una sanción nominal antigua al asignar un título.
+- TDJ: preservar íntegros los pagos normales, imputar sucesivamente los títulos en las obligaciones registradas, evitar remanentes ficticios con deuda y mantener conservación nominal del título.
+- Pruebas reproducibles: tres obligaciones, pagos intercalados, dos títulos de fechas diferentes/iguales, cuatro títulos y tratamientos mixtos artículo 9 / TASA DIAN con parámetros TIM/UVT reales.
+- Motores matemáticos compartidos, módulo DIAN y reglas de beneficios/fechas sin modificaciones.
+
+
 ## 16.33.207 - 2026-10-19
 
 - TDJ: para títulos con fecha futura sin TIM oficial parametrizada, el campo visual muestra el último porcentaje TIM conocido, claramente rotulado como REFERENCIA y con su mes de origen; nunca se presenta como porcentaje oficial de la fecha futura ni alimenta los cálculos.
