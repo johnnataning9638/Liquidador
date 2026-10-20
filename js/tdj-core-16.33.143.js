@@ -197,6 +197,10 @@ function reconstruirMotor(){
   const cfg={uvt,intereses:tasas,ipc,tasasMoratorias:tasas,beneficios:window.__tdjBeneficios||[],sanciones:window.__tdjSanciones||[],reglasObligaciones:window.__tdjReglas||[]};
   motor=new MotorLiquidacion(cfg);
   motorOficial=new MotorLiquidacionOficial(cfg);
+  // Una sola tabla de tasas para motor y visualización de TDJ.
+  // Se emite tanto al cargar el JSON local como después de sincronizar Supabase.
+  window.__tdjTasasEfectivas210=tasas.map(fila=>({...fila,tasas:{...(fila.tasas||{})}}));
+  window.dispatchEvent(new CustomEvent("tdj-tasas-actualizadas",{detail:{tasas:window.__tdjTasasEfectivas210}}));
 }
 function conTiempoLimite(promise,ms=6000){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("TIMEOUT")),ms))]);}
 async function cargarSupabase(){
