@@ -2258,6 +2258,8 @@ async function exportarPdfTDJ(){
     const bloquesExcedentesFinal=[];
     const hayTitulosRegistrados=titulos.some(t=>fechaISO(t.fecha)&&Number(t.valor)>0);
     const hayExcedentesPago=bloquesExcedentesFinal.length>0;
+    // v16.33.215: alcance exclusivo SIMPLE (4 a 6 anticipos/cuotas).
+    const esRegimenSimplePDF=resultado.resumenObligaciones.some(x=>{const n=(x.obligacion?.vencimientos||[]).filter(v=>v?.fecha).length;return n>=4&&n<=6;});
 
     // Debe declararse antes de cualquier uso en el exportador PDF.
     // Evita TDZ: Cannot access 'hayTitulosRegistrados' before initialization.
@@ -2273,7 +2275,7 @@ async function exportarPdfTDJ(){
 
     // PÁGINA INICIAL: solo se incluye cuando existe al menos un título aplicado.
     const hayTitulosAplicados=totalAplicado>0;
-    if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE TÍTULOS / TDJ — SOPORTE COMPLETO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>NIT</b><strong>${escPdf($("nitGlobal")?.value||"")}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ($("nitGlobal")?.value||""))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(upper($("razonGlobal")?.value||""))}</strong></div><div class="pdf-dato"><b>TIPO</b><strong>PRIVADA</strong></div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO OBLIGACIONES</b><strong>${dinero(saldoPendientePDF)}</strong></div><div><b>ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>SECUENCIA DE APLICACIÓN</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>OBLIGACIÓN</th><th>DISPONIBLE</th><th>APLICADO</th><th>SALDO TDJ</th></tr></thead><tbody>${resultado.resumenTitulos.flatMap(x=>x.trazabilidad.length?x.trazabilidad.map(a=>`<tr><td>${escPdf(a.titulo)}</td><td>${escPdf(fechaVisible(a.fecha))}</td><td>${escPdf(a.obligacion)}</td><td>${dinero(a.valorAntes)}</td><td>${dinero(a.aplicado)}</td><td>${dinero(a.saldoTitulo)}</td></tr>`):[`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>ENDOSO</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(0)}</td><td>${dinero(x.excedente)}</td></tr>`]).join("")}</tbody></table></section></article></section>`);
+    if((hayTitulosRegistrados || hayExcedentesPago) && !esRegimenSimplePDF)    paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE TÍTULOS / TDJ — SOPORTE COMPLETO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>NIT</b><strong>${escPdf($("nitGlobal")?.value||"")}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ($("nitGlobal")?.value||""))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(upper($("razonGlobal")?.value||""))}</strong></div><div class="pdf-dato"><b>TIPO</b><strong>PRIVADA</strong></div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO OBLIGACIONES</b><strong>${dinero(saldoPendientePDF)}</strong></div><div><b>ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div><section class="pdf-bloque"><h2>SECUENCIA DE APLICACIÓN</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>OBLIGACIÓN</th><th>DISPONIBLE</th><th>APLICADO</th><th>SALDO TDJ</th></tr></thead><tbody>${resultado.resumenTitulos.flatMap(x=>x.trazabilidad.length?x.trazabilidad.map(a=>`<tr><td>${escPdf(a.titulo)}</td><td>${escPdf(fechaVisible(a.fecha))}</td><td>${escPdf(a.obligacion)}</td><td>${dinero(a.valorAntes)}</td><td>${dinero(a.aplicado)}</td><td>${dinero(a.saldoTitulo)}</td></tr>`):[`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>ENDOSO</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(0)}</td><td>${dinero(x.excedente)}</td></tr>`]).join("")}</tbody></table></section></article></section>`);
 
     // ORDEN CRONOLÓGICO POR OBLIGACIÓN:
     // El PDF debe mostrar exactamente la secuencia en que el motor aplicó
@@ -2317,7 +2319,47 @@ async function exportarPdfTDJ(){
     
     const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
     const endRows=resultado.resumenTitulos.filter(x=>Number(x.excedente||0)>0).map(x=>`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td></tr>`).join("")||`<tr><td colspan="5">NO HAY TÍTULOS SOBRANTES.</td></tr>`;
-    if(hayTitulosRegistrados || hayExcedentesPago)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(saldoPendientePDF)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div>${bloquesExcedentesFinal.join("")}<section class="pdf-bloque"><h2>TÍTULOS PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${endRows}</tbody><tfoot><tr><th colspan="3">TOTAL ENDOSO</th><th>${dinero(resultado.endoso)}</th><th>ENDOSO</th></tr></tfoot></table></section>${observacionesBeneficio1419}<div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article></section>`);
+    if((hayTitulosRegistrados || hayExcedentesPago) && !esRegimenSimplePDF)    paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen"><article class="pdf-liquidacion"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">RESUMEN FINAL — TÍTULOS Y ENDOSO</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-resumen-grid"><div><b>TOTAL TÍTULOS</b><strong>${dinero(totalTitulos)}</strong></div><div><b>TOTAL APLICADO</b><strong>${dinero(totalAplicado)}</strong></div><div><b>SALDO FINAL OBLIGACIONES</b><strong>${dinero(saldoPendientePDF)}</strong></div><div><b>TOTAL ENDOSO</b><strong>${dinero(resultado.endoso)}</strong></div></div>${bloquesExcedentesFinal.join("")}<section class="pdf-bloque"><h2>TÍTULOS PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>SOBRANTE</th><th>DESTINO</th></tr></thead><tbody>${endRows}</tbody><tfoot><tr><th colspan="3">TOTAL ENDOSO</th><th>${dinero(resultado.endoso)}</th><th>ENDOSO</th></tr></tfoot></table></section>${observacionesBeneficio1419}<div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article></section>`);
+
+    // v16.33.215: cierre NATIVO del PDF del RÉGIMEN SIMPLE.
+    // Se construye antes de abrir/imprimir la ventana: garantiza que aparezca
+    // tanto en vista previa como en PDF, sin depender de interceptores window.open.
+    if(esRegimenSimplePDF){
+      const cleanNumber=v=>Math.max(0,Math.round(Number(v)||0));
+      const pagosFinales=[]; const pagosVistos=new Set();
+      let totalIntereses=0;
+      const ultimos=[];
+      resultado.resumenObligaciones.forEach(x=>{
+        const detalles=Array.isArray(x.detalleCronologicoFinal)?x.detalleCronologicoFinal:[];
+        if(detalles.length)ultimos.push(detalles[detalles.length-1]);
+        detalles.forEach(d=>{
+          const pago=d.pago||{};
+          if(!pago.esTDJ&&!String(pago.tdj||"").trim()&&Number(pago.valor)>0){
+            const key=[String(pago.recibo||pago.id||""),fechaISO(pago.fecha),Math.round(Number(pago.valor)||0)].join("|");
+            if(!pagosVistos.has(key)){pagosVistos.add(key);pagosFinales.push({recibo:String(pago.recibo||""),fecha:pago.fecha,valor:cleanNumber(pago.valor),excedente:cleanNumber(d.excedente??d.aplicado?.excedente)});}
+          }
+          totalIntereses+=cleanNumber(d.interesesGenerados??d.totalIntereses??0);
+        });
+      });
+      const totalExcedentePagos=pagosFinales.reduce((v,p)=>v+p.excedente,0);
+      const endoso=cleanNumber(resultado.endoso);
+      const sancionFinal=ultimos.reduce((v,d)=>v+cleanNumber(d.saldo?.sancion),0);
+      const encabezado=(titulo)=>`<div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">${titulo}</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>`;
+      const cuadrito=(label,value)=>`<div><b>${label}</b><strong>${dinero(value)}</strong></div>`;
+      paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen pdf-resumen-simple-directo"><article class="pdf-liquidacion pdf-resumen-final">${encabezado("RESUMEN FINAL DE LA LIQUIDACIÓN")}<div class="pdf-resumen-grid">
+        ${cuadrito("SALDO TOTAL FINAL",saldoPendientePDF)}${cuadrito("EXCEDENTE TOTAL",totalExcedentePagos+endoso)}${cuadrito("SANCIÓN FINAL",sancionFinal)}
+        ${cuadrito("INTERESES GENERADOS EN LOS PAGOS",totalIntereses)}${cuadrito("EXCEDENTES DE PAGOS",totalExcedentePagos)}${cuadrito("TOTAL PARA ENDOSAR TDJ",endoso)}
+      </div><div class="pdf-nota">La liquidación adjunta no exime al contribuyente de verificar los valores determinados.</div></article></section>`);
+      const filasPagos=pagosFinales.map((p,i)=>`<tr><td>PAGO ${i+1}</td><td>${escPdf(p.recibo||"—")}</td><td>${escPdf(fechaVisible(p.fecha))}</td><td>${dinero(p.valor)}</td><td>${dinero(p.excedente)}</td></tr>`).join("")||'<tr><td colspan="5">NO SE REGISTRARON PAGOS.</td></tr>';
+      paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen pdf-resumen-simple-directo"><article class="pdf-liquidacion pdf-resumen-final">${encabezado("CONSOLIDACIÓN FINAL DE EXCEDENTES DE PAGOS")}<section class="pdf-bloque"><h2>EXCEDENTES POR PAGO</h2><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${filasPagos}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES</th><th>${dinero(totalExcedentePagos)}</th></tr></tfoot></table></section><div class="pdf-excedente-final"><b>TOTAL EXCEDENTES DE PAGOS: ${dinero(totalExcedentePagos)}</b></div></article></section>`);
+      if(hayTitulosRegistrados){
+        const filasTDJ=(resultado.resumenTitulos||[]).map((x,i)=>{
+          const t=x.titulo||{},original=cleanNumber(t.valor),sobrante=cleanNumber(x.excedente),aplicado=Math.max(0,original-sobrante);
+          return `<tr><td>${escPdf(t.tdj||String(t.numero||"TDJ "+(i+1)))}</td><td>${escPdf(fechaVisible(t.fecha))}</td><td>${dinero(original)}</td><td>${dinero(aplicado)}</td><td>${dinero(sobrante)}</td></tr>`;
+        }).join("")||'<tr><td colspan="5">NO SE REGISTRARON TÍTULOS.</td></tr>';
+        paginas.push(`<section class="pdf-hoja pdf-hoja-final-resumen pdf-resumen-simple-directo"><article class="pdf-liquidacion pdf-resumen-final">${encabezado("CONSOLIDACIÓN FINAL DE EXCEDENTES DE TÍTULOS TDJ")}<section class="pdf-bloque"><h2>TÍTULOS Y VALORES PARA ENDOSO</h2><table><thead><tr><th>TDJ</th><th>FECHA</th><th>VALOR ORIGINAL</th><th>APLICADO</th><th>EXCEDENTE</th></tr></thead><tbody>${filasTDJ}</tbody><tfoot><tr><th colspan="4">TOTAL PARA ENDOSAR</th><th>${dinero(endoso)}</th></tr></tfoot></table></section><div class="pdf-excedente-final"><b>TOTAL PARA ENDOSAR: ${dinero(endoso)}</b></div></article></section>`);
+      }
+    }
 
     const css=`  @page{size:A4 portrait;margin:22mm}
   *{box-sizing:border-box}
