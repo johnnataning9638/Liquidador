@@ -5,7 +5,7 @@ instalarPegadoUnicoTitulosTDJ();
 // de módulos que podía dejar la trazabilidad en un estado diferente al PDF.
 import "./tdj-tasa-bridge-16.33.174.js?v=16.33.212";
 import "./tdj-secuencia-guard-16.33.185.js?v=16.33.185";
-import "./tdj-pdf-cierre-16.33.189.js?v=16.33.214";
+import "./tdj-pdf-cierre-16.33.189.js?v=16.33.215";
 import "./tdj-import-beneficio-16.33.192.js?v=16.33.210";
 import "./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.193";
 import "./tdj-beneficio-contexto-16.33.194.js?v=16.33.194";
