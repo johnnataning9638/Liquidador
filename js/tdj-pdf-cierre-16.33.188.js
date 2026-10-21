@@ -161,7 +161,12 @@
       if(seen.has(key))return; seen.add(key);
       pagos.push(x);
     });
-    if(!pagos.length)return null;
+    // Régimen SIMPLE y ordinario: mostrar siempre la consolidación de pagos, incluso sin excedentes.
+    // Si no hay pagos, informar explícitamente que no existen movimientos, sin inventar importes.
+    if(!pagos.length){
+      const body=`<div class="pdf-excedentes-finales"><h3>EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody><tr><td colspan="5">NO SE REGISTRARON PAGOS.</td></tr></tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES</th><th>${moneyFmt(0)}</th></tr></tfoot></table></div><div class="pdf-excedente-final"><b>TOTAL EXCEDENTES:</b> <span>${moneyFmt(0)}</span></div>`;
+      return sectionPage(doc,"CONSOLIDACIÓN FINAL DE EXCEDENTES DE PAGOS",body);
+    }
     const rows=pagos.map((x,i)=>`<tr><td>PAGO ${i+1}</td><td>${esc(x.recibo||"—")}</td><td>${esc(dateText(x.fecha))}</td><td>${moneyFmt(x.valorPago)}</td><td>${moneyFmt(x.excedentePago)}</td></tr>`).join("");
     const total=pagos.reduce((s,x)=>s+x.excedentePago,0);
     const body=`<div class="pdf-excedentes-finales"><h3>EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES</th><th>${moneyFmt(total)}</th></tr></table></div><div class="pdf-excedente-final"><b>TOTAL EXCEDENTES:</b> <span>${moneyFmt(total)}</span></div><div class="pdf-nota">Nota: el excedente corresponde al valor de cada pago que no fue aplicado a la obligación liquidada.</div>`;
@@ -235,7 +240,7 @@
           const realDoc=real.document;
           const docProxy=new Proxy(realDoc,{
             get(target,prop){
-              if(prop==="write")return html=>target.write.call(target,reorganizar(html));
+              if(prop==="write")return html=>{try{return target.write.call(target,reorganizar(html));}finally{restaurar();}};
               const value=Reflect.get(target,prop,target);
               return typeof value==="function"?value.bind(target):value;
             }
@@ -254,7 +259,9 @@
         }
       }
       window.open=openInterceptado;
-      setTimeout(restaurar,3000);
+      // La exportación es asíncrona: un cálculo previo puede tardar más de 3 s.
+      // Mantener la intercepción hasta que el PDF escriba su HTML o hasta 30 s.
+      setTimeout(restaurar,30000);
     },true);
   }
 
