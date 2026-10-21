@@ -703,7 +703,7 @@ function pintarInforme(r){
   $("rTasa").textContent=u?.tasaVisible==null?"—":Number(u.tasaVisible).toFixed(3)+"%";
   ["Impuesto","Intereses","Sancion"].forEach((x,j)=>{const k=["impuesto","intereses","sancion"][j];$("rDeuda"+x).textContent=dinero(d[k]);$("rProp"+x).textContent=dinero(p[k]);$("rSaldo"+x).textContent=dinero(s[k]);});
   const totalDeuda=d.impuesto+d.intereses+d.sancion,totalAplicado=p.total,totalSaldo=s.impuesto+s.intereses+s.sancion;
-  $("rDeudaTotal").textContent=dinero(totalDeuda);$("rPropTotal").textContent=dinero(totalAplicado);$("rSaldoTotal").textContent=dinero(totalSaldo);$("rSaldoTotalFooter").textContent=dinero(totalSaldo);
+  $("rDeudaTotal").textContent=dinero(totalDeuda);$("rPropTotal").textContent=dinero(totalAplicado);if($("rSaldoImpuestoIndicador"))$("rSaldoImpuestoIndicador").textContent=dinero(s.impuesto);if($("rSaldoSancionIndicador"))$("rSaldoSancionIndicador").textContent=dinero(s.sancion);$("rSaldoTotalFooter").textContent=dinero(totalSaldo);
   const excedente=Number(r.excedente||0);
   const excedenteBox=$("rExcedenteBox");
   if(excedenteBox){excedenteBox.hidden=excedente<=0;if($("rExcedente"))$("rExcedente").textContent=dinero(excedente);}
