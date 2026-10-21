@@ -190,6 +190,8 @@
     try{
       const parser=new DOMParser();
       const doc=parser.parseFromString(String(html||""),"text/html");
+      // v16.33.215: SIMPLE ya trae su cierre nativo; no duplicar secciones.
+      if(doc.querySelector(".pdf-resumen-simple-directo"))return html;
       const main=doc.querySelector("main.pdf-soporte");
       if(!main)return html;
       const paginas=[...main.children].filter(el=>el.matches?.("section.pdf-hoja"));
