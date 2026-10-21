@@ -1486,6 +1486,19 @@ function pintarResultado(r){
   // únicamente IMPUESTO + SANCIÓN pendientes. Los intereses se determinan
   // en la fecha efectiva del pago/aplicación y no se arrastran como saldo final.
   const totalSaldo=Math.max(0,saldoCierre);
+  // Indicadores visuales del saldo final, sin alterar liquidación ni endoso.
+  const saldosTDJ=(r.resumenObligaciones||[]).reduce((a,x)=>{
+    const e=x.estadoFinal||x.liquidacionBase||{};
+    const impuesto=Math.max(0,Number(e.impuesto||0));
+    const sancion=Math.max(0,Number(e.sancion||0));
+    const final=Math.max(0,Number(x.saldoFinalObligaciones??(impuesto+sancion)));
+    const sancionFinal=Math.min(sancion,final);
+    const impuestoFinal=Math.max(0,final-sancionFinal);
+    a.impuesto+=impuestoFinal;a.sancion+=sancionFinal;
+    return a;
+  },{impuesto:0,sancion:0});
+  if($("resSaldoImpuesto"))$("resSaldoImpuesto").textContent=dinero(saldosTDJ.impuesto);
+  if($("resSaldoSancion"))$("resSaldoSancion").textContent=dinero(saldosTDJ.sancion);
   if($("resTotalTitulos"))$("resTotalTitulos").textContent=dinero(totalTitulos);if($("resAplicado"))$("resAplicado").textContent=dinero(totalAplicado);if($("resEndoso"))$("resEndoso").textContent=dinero(r.endoso);if($("resSaldo"))$("resSaldo").textContent=dinero(totalSaldo);
   const otbody=$("tablaResultadoObligaciones")?.querySelector("tbody");
   if(otbody){
