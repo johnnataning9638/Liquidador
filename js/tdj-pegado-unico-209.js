@@ -1,33 +1,27 @@
-// TDJ 209: el cuadro de PEGAR conserva el contenido exacto del portapapeles.
-// No modifica los importadores ni las filas ya registradas.
-const ultimosPegados=new WeakMap();
-export function procesarPegadoTitulosTDJ(evento,ahora=Date.now()){
+// v16.33.219: aislamiento absoluto del pegado en el área de importación TDJ.
+// El texto del portapapeles se refleja UNA sola vez, sin transformaciones
+// ni multiplicación por la cantidad de obligaciones existentes.
+export function procesarPegadoTitulosTDJ(evento){
   const el=evento?.target;
   if(!el||el.id!=="importarTitulosTexto")return false;
   const clip=evento.clipboardData?.getData("text/plain");
   if(typeof clip!=="string")return false;
   evento.preventDefault();
-  evento.stopImmediatePropagation?.();
-  evento.stopPropagation?.();
-  const previo=ultimosPegados.get(el);
-  // Algunos entornos emiten dos eventos del MISMO pegado en el mismo instante.
-  if(previo&&previo.texto===clip&&ahora-previo.instante<1000)return true;
-  // El recuadro de importación representa UN solo portapapeles, no una fila
-  // por obligación. Si ya contiene ese mismo bloque, sustituirlo, no repetirlo.
-  // Un bloque distinto sí puede pegarse una vez adicional.
-  const actual=String(el.value||"");
-  const ini=Number.isInteger(el.selectionStart)?el.selectionStart:actual.length;
-  const fin=Number.isInteger(el.selectionEnd)?el.selectionEnd:ini;
-  if(actual.trim()===clip.trim())return true;
-  el.value=actual.slice(0,ini)+clip+actual.slice(fin);
-  const cursor=ini+clip.length;
-  if(typeof el.setSelectionRange==="function")el.setSelectionRange(cursor,cursor);
-  ultimosPegados.set(el,{texto:clip,instante:ahora});
-  el.dispatchEvent?.(new Event("input",{bubbles:true,inputType:"insertFromPaste"}));
+  evento.stopImmediatePropagation();
+  evento.stopPropagation();
+  // La importación es incremental; el cuadro de texto es exclusivamente
+  // una vista previa del último bloque pegado, NO un acumulador de pegados.
+  el.value=clip;
+  const fin=clip.length;
+  if(typeof el.setSelectionRange==="function")el.setSelectionRange(fin,fin);
   return true;
 }
 export function instalarPegadoUnicoTitulosTDJ(documento=globalThis.document){
-  if(!documento||documento.__tdjPegadoUnico209)return;
-  documento.__tdjPegadoUnico209=true;
-  documento.addEventListener("paste",procesarPegadoTitulosTDJ,true);
+  if(!documento||documento.defaultView?.__tdjPegadoUnico219)return;
+  const ventana=documento.defaultView;
+  if(!ventana)return;
+  ventana.__tdjPegadoUnico219=true;
+  // Capturar ANTES del documento, área u otros handlers registrados
+  // por obligación. Impide transformaciones de valores y repeticiones.
+  ventana.addEventListener("paste",procesarPegadoTitulosTDJ,true);
 }
