@@ -2188,7 +2188,21 @@ async function importarExcelNormal(){
       const tasaPrimeraObligacion=upper(ixTasa>=0?datRec[ixTasa]||"TASA DIAN":"TASA DIAN");
       const ixBenef=cabRec.findIndex(x=>x==="BENEFICIO TRIBUTARIO");
       if(ixBenef>=0&&$("beneficioTributario"))$("beneficioTributario").value=upper(datRec[ixBenef]||"NINGUNO");
-      for(const t of titulos)t.tipo=tasaPrimeraObligacion;
+      // Tasas por título: el exportador TDJ las almacena POR OBLIGACIÓN.
+      // Solo importamos la columna OBLIGACIÓN=1, aunque haya registros para
+      // las obligaciones 2, 3...; cada título conserva su tasa de la primera.
+      const tasaPorTituloPrimera=new Map();
+      const idxTasas=rows.findIndex(r=>normExcel(r?.[0])==="REGISTRO"&&normExcel(r?.[3])==="OBLIGACION"&&normExcel(r?.[5])==="TIPO");
+      if(idxTasas>=0){
+        for(let j=idxTasas+1;j<rows.length;j++){
+          const row=rows[j]||[];
+          if(normExcel(row[0])!=="TASA TDJ")break;
+          if(Number(row[3])!==1)continue;
+          const n=String(row[2]??"").replace(/\D/g,"");
+          if(n)tasaPorTituloPrimera.set(n,upper(row[5]||tasaPrimeraObligacion));
+        }
+      }
+      for(const t of titulos)t.tipo=tasaPorTituloPrimera.get(t.tdj)||tasaPrimeraObligacion;
       for(const t of titulos)pagosImport.push({id:crypto.randomUUID(),tdj:t.tdj,recibo:"",fecha:t.fecha,valor:truncarValorEntero(t.valor),tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});
       if(get("TIPO DE LIQUIDACIÓN")&&$("tipoLiquidacion"))$("tipoLiquidacion").value=upper(get("TIPO DE LIQUIDACIÓN")).includes("OFICIAL")?"OFICIAL":"PRIVADA";
       if(venc.length)obligacionVencimientos=venc;
