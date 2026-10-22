@@ -11,7 +11,7 @@ export function procesarPegadoTitulosTDJ(evento,ahora=Date.now()){
   evento.stopPropagation?.();
   const previo=ultimosPegados.get(el);
   // Algunos entornos emiten dos eventos del MISMO pegado en el mismo instante.
-  if(previo&&previo.texto===clip&&ahora-previo.instante<120)return true;
+  if(previo&&previo.texto===clip&&ahora-previo.instante<1000)return true;
   const ini=Number.isInteger(el.selectionStart)?el.selectionStart:el.value.length;
   const fin=Number.isInteger(el.selectionEnd)?el.selectionEnd:ini;
   const viejo=String(el.value||"");
