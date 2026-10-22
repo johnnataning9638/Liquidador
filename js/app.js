@@ -2143,39 +2143,57 @@ async function importarExcelNormal(){
       const pagosImport=[];if(ph>=0){const phRow=seg[ph]||[];const obsIdx=phRow.findIndex(c=>normExcel(c)==="OBSERVACION");for(let i=ph+1;i<seg.length;i++){const r=seg[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION)/.test(srow))break;const f=fechaExcel(r[2]),val=truncarValorEntero(numExcel(r[3]));if(f||val>0)pagosImport.push({id:crypto.randomUUID(),tdj:"",recibo:upper(r[1]||""),fecha:f||"",valor:val,tipo:upper(r[4]||"TASA DIAN"),observacion:upper(obsIdx>=0?r[obsIdx]:"")});}}
       // Los títulos/TDJ son globales en el Excel TDJ. En el Liquidador normal
       // entran como pagos dentro de la misma hoja de pagos.
-      // TDJ -> DIAN: leer exclusivamente el inventario de títulos REGISTRADOS
-      // (no control de aplicación, pagos, endosos ni saldos parciales).
+      // v16.33.220 — LEER INVENTARIO ORIGINAL DE TDJ, NUNCA APLICACIONES.
+      // El XLSX real contiene: "TÍTULOS / TDJ — TÍTULOS REGISTRADOS",
+      // luego Nº, TDJ, FECHA, VALOR; en RECUPERACIÓN COMPLETA:
+      // "TÍTULOS TDJ", Nº, TDJ, FECHA, VALOR, OBSERVACIÓN.
       const titulos=[];
       const clavesTitulos=new Set();
-      const nrow=r=>(r||[]).map(normExcel);
-      const cabeceraTitulo=(r)=>{
-        const h=nrow(r);
-        const t=h.findIndex(x=>["TDJ","TDJ Nº","TITULO","TITULO Nº"].includes(x));
-        const f=h.findIndex(x=>["FECHA","FECHA TDJ"].includes(x));
-        const v=h.findIndex(x=>["VALOR","VALOR TDJ","VALOR ORIGINAL"].includes(x));
-        return t>=0&&f>=0&&v>=0?{t,f,v,o:h.findIndex(x=>x==="OBSERVACION")}:null;
+      const normalizarEtiqueta=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+      const agregarTitulo=(tdjRaw,fechaRaw,valorRaw,obsRaw="")=>{
+        const tdj=String(tdjRaw??"").trim().replace(/[^0-9]/g,"");
+        const fecha=fechaExcel(fechaRaw);
+        const valor=truncarValorEntero(numExcel(valorRaw));
+        if(!tdj||!fecha||valor<=0)return;
+        const key=tdj+"|"+fecha+"|"+valor;
+        if(clavesTitulos.has(key))return;
+        clavesTitulos.add(key);
+        titulos.push({tdj,fecha,valor,observacion:upper(obsRaw||"")});
       };
-      // Prioridad: tabla canónica del exportador TDJ. Respaldo: sección de
-      // recuperación completa "TÍTULOS TDJ" del mismo archivo.
-      const localizar=(re)=>rows.findIndex(r=>re.test(normExcel((r||[]).filter(Boolean).join(" "))));
-      let bloque=localizar(/^TITULOS\s*\/\s*TDJ\s*[-—]\s*TITULOS REGISTRADOS/);
-      if(bloque<0)bloque=localizar(/^TITULOS TDJ(?:\s*\||$)/);
-      if(bloque>=0){
-        let cab=null,desde=bloque+1;
-        if(/^TITULOS TDJ/.test(normExcel((rows[bloque]||[])[0])))cab=cabeceraTitulo(rows[bloque]);
-        if(!cab){for(let j=bloque+1;j<Math.min(rows.length,bloque+5);j++){cab=cabeceraTitulo(rows[j]);if(cab){desde=j+1;break;}}}
-        if(cab){
-          for(let j=desde;j<rows.length;j++){
-            const row=rows[j]||[],norm=normExcel(row.filter(Boolean).join(" | "));
-            if(!norm||/^(TITULOS \/ TDJ|FIN RECUPERACION|TOTAL ENDOSO|RESUMEN FINAL|RECUPERACION COMPLETA|OBLIGACION \d+)/.test(norm))break;
-            const tdj=String(row[cab.t]??"").replace(/\D/g,"");
-            const fecha=fechaExcel(row[cab.f]);
-            const valor=truncarValorEntero(numExcel(row[cab.v]));
-            if(!tdj||!fecha||valor<=0)continue;
-            const key=tdj+"|"+fecha+"|"+valor;
-            if(clavesTitulos.has(key))continue;
-            clavesTitulos.add(key);
-            titulos.push({tdj,fecha,valor,observacion:upper(cab.o>=0?row[cab.o]||"":"")});
+      let seccionEncontrada=false;
+      for(let i=0;i<rows.length;i++){
+        const row=rows[i]||[];
+        const primera=normalizarEtiqueta(row[0]);
+        const esSeccion=primera.includes("TITULOS / TDJ")&&primera.includes("TITULOS REGISTRADOS");
+        const esRespaldo=primera==="TITULOS TDJ";
+        if(!esSeccion&&!esRespaldo)continue;
+        let headerIndex=esRespaldo?i:i+1;
+        const h=(rows[headerIndex]||[]).map(normalizarEtiqueta);
+        if(!h.includes("TDJ")||!h.includes("FECHA")||!h.includes("VALOR")){
+          headerIndex=i+1;
+        }
+        const header=(rows[headerIndex]||[]).map(normalizarEtiqueta);
+        const ixT=header.indexOf("TDJ"),ixF=header.indexOf("FECHA"),ixV=header.indexOf("VALOR");
+        const ixO=header.indexOf("OBSERVACION");
+        if(ixT<0||ixF<0||ixV<0)continue;
+        seccionEncontrada=true;
+        for(let k=headerIndex+1;k<rows.length;k++){
+          const fila=rows[k]||[];
+          if(!fila.some(v=>v!==null&&v!==undefined&&String(v).trim()!==""))break;
+          const marcador=normalizarEtiqueta(fila[0]);
+          if(marcador.startsWith("RECUPERACION COMPLETA")||marcador.startsWith("FIN RECUPERACION")||marcador.startsWith("TITULOS / TDJ")||marcador.startsWith("TOTAL ENDOSO"))break;
+          agregarTitulo(fila[ixT],fila[ixF],fila[ixV],ixO>=0?fila[ixO]:"");
+        }
+        if(titulos.length)break;
+      }
+      if(!seccionEncontrada||!titulos.length){
+        // Último respaldo: CONTROL FINAL usa VALOR ORIGINAL, no APLICADO.
+        const ix=rows.findIndex(row=>normalizarEtiqueta(row?.[0]).includes("TITULOS / TDJ")&&normalizarEtiqueta(row?.[0]).includes("CONTROL FINAL"));
+        if(ix>=0){
+          for(let k=ix+2;k<rows.length;k++){
+            const f=rows[k]||[];
+            if(!f[1]||!f[2])break;
+            agregarTitulo(f[1],f[2],f[3],f[4]);
           }
         }
       }
