@@ -93,8 +93,18 @@ async function corregirImportacionRecovery(file){
   try{
     const rows=await leerXlsxPrimeraHoja(file),recovery=indiceFilaRecovery(rows,s=>s.includes("RECUPERACION COMPLETA")||s.includes("RECUPERACIÓN COMPLETA"));if(recovery<0)return null;
     const pagosHeader=indiceFilaRecovery(rows,s=>s.startsWith("PAGOS | Nº | TDJ Nº | RECIBO Nº | FECHA | VALOR | TIPO | OBSERVACION"),recovery+1);
-    const titulosHeader=indiceFilaRecovery(rows,s=>s.startsWith("TITULOS TDJ | Nº | TDJ | FECHA | VALOR | TIPO | OBSERVACION"),recovery+1);
-    const pagosRecovery=leerSeccionPagosRecovery(rows,pagosHeader),titulosRecovery=leerTitulosRecovery(rows,titulosHeader);if(!pagosRecovery.length&&!titulosRecovery.length)return null;
+    // En los XLSX TDJ el encabezado canónico NO incluye columna TIPO:
+    // "TÍTULOS TDJ | Nº | TDJ | FECHA | VALOR | OBSERVACIÓN".
+    const titulosHeader=indiceFilaRecovery(rows,s=>/^TITULOS TDJ\s*\|\s*Nº\s*\|\s*TDJ\s*\|\s*FECHA\s*\|\s*VALOR(?:\s*\||$)/.test(s),recovery+1);
+    const pagosRecovery=leerSeccionPagosRecovery(rows,pagosHeader);
+    let titulosRecovery=leerTitulosRecovery(rows,titulosHeader);
+    // Respaldo independiente de RECUPERACIÓN COMPLETA: tabla original.
+    if(!titulosRecovery.length){
+      const seccion=indiceFilaRecovery(rows,s=>s.includes("TITULOS / TDJ - TITULOS REGISTRADOS"));
+      const encabezado=seccion>=0?seccion+1:-1;
+      if(encabezado>=0)titulosRecovery=leerTitulosRecovery(rows,encabezado);
+    }
+    if(!pagosRecovery.length&&!titulosRecovery.length)return null;
     const pagosNormales=pagosRecovery.filter(p=>!String(p.tdj||"").trim());
     const titulos=titulosRecovery.length;
     const registrosFinales=fusionarRecoveryPagos(pagosRecovery,titulosRecovery);
