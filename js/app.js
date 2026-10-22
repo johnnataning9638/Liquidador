@@ -2119,7 +2119,16 @@ async function importarExcelNormal(){
     const rows=await leerXlsxPrimeraHoja(file);const meta=leerMetaExcel(rows);
     const get=k=>meta[normExcel(k)];
     const tituloLibro=normExcel(rows.find(r=>r.some(c=>normExcel(c).includes("LIQUIDADOR")))?.filter(Boolean).join(" ")||"");
-    const esTDJ=/TITULOS\s*\/\s*TDJ/.test(tituloLibro)||rows.some(r=>/TITULOS\s*\/\s*TDJ\s*[—-]\s*CONTROL FINAL/.test(normExcel(r.filter(Boolean).join(" "))));
+    const normalizarTDJExcel=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+    // Identificar TDJ mediante señales reales del Excel exportado. El título
+    // puede contener acentos y el normalizador general no los elimina.
+    const esTDJ=rows.some(r=>{
+      const primera=normalizarTDJExcel(r?.[0]);
+      return primera.includes("LIQUIDACION DE TITULOS / TDJ")
+        ||(primera.includes("TITULOS / TDJ")&&primera.includes("TITULOS REGISTRADOS"))
+        ||(primera.includes("TITULOS / TDJ")&&primera.includes("CONTROL FINAL"))
+        ||(primera==="FORMATO"&&String(r?.[1]??"").trim()==="TDJ_RECOVERY_V1");
+    });
 
     if(esTDJ){
       // IMPORTACIÓN CRUZADA: un Excel generado por TDJ puede reconstruir el
