@@ -2136,28 +2136,53 @@ async function importarExcelNormal(){
       const end=marcas.length>1?marcas[1]:rows.length;
       const seg=start>=0?rows.slice(start+1,end):rows;
       const info=seg.findIndex(r=>normExcel(r?.[0])==="CONCEPTO");
-      if(info>=0){const v=seg[info+1]||[];if(v[0])$("concepto").value=upper(v[0]);if(v[1])$("anio").value=String(v[1]).replace(/\D/g,"");if(v[2]!=null)$("periodo").value=String(v[2]);if(v[3])$("tieneSancion").value=upper(v[3]).startsWith("SI")?"SI":"NO";if(v[4]!=null)$("valorSancion").value=dinero(truncarValorEntero(numExcel(v[4])));if(v[5])$("beneficioSancion").value=upper(v[5]);if(v[6])establecerFechaCampoExcel("fechaSancion",v[6]);if(v[7]&&$("beneficioTributario"))$("beneficioTributario").value=upper(v[7]);}
+      if(info>=0){const v=seg[info+1]||[];if(v[0])$("concepto").value=upper(v[0]);if(v[1])$("anio").value=String(v[1]).replace(/\D/g,"");if(v[2]!=null)$("periodo").value=String(v[2]);if(v[3])$("tieneSancion").value=upper(v[3]).startsWith("SI")?"SI":"NO";if(v[4]!=null)$("valorSancion").value=dinero(truncarValorEntero(numExcel(v[4])));if(v[5])$("beneficioSancion").value=upper(v[5]);if(v[6])establecerFechaCampoExcel("fechaSancion",v[6]);if(v[7]&&$("beneficioTributario"))$("beneficioTributario").value=upper(v[7]);if(v[8]&&$("tipoTasa"))$("tipoTasa").value=upper(v[8]);}
       const vh=seg.findIndex(r=>normExcel(r?.[0])==="Nº"&&normExcel(r?.[2])==="FECHA VENCIMIENTO"&&normExcel(r?.[3])==="IMPUESTO DECLARADO");
       const venc=[];if(vh>=0){for(let i=vh+1;i<seg.length;i++){const r=seg[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(PAGOS REGISTRADOS|IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION)/.test(srow))break;const f=fechaExcel(r[2]),imp=truncarValorEntero(numExcel(r[3]));if(f&&imp>0)venc.push({id:`VTO-IMP-${i}`,numero:Number(r[0])||venc.length+1,periodo:r[1]??venc.length+1,fecha:f,impuesto:imp});}}
       const ph=seg.findIndex(r=>normExcel(r?.[0])==="Nº"&&normExcel(r?.[1])==="RECIBO"&&normExcel(r?.[2])==="FECHA"&&normExcel(r?.[3])==="VALOR"&&normExcel(r?.[4])==="TIPO");
       const pagosImport=[];if(ph>=0){const phRow=seg[ph]||[];const obsIdx=phRow.findIndex(c=>normExcel(c)==="OBSERVACION");for(let i=ph+1;i<seg.length;i++){const r=seg[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION)/.test(srow))break;const f=fechaExcel(r[2]),val=truncarValorEntero(numExcel(r[3]));if(f||val>0)pagosImport.push({id:crypto.randomUUID(),tdj:"",recibo:upper(r[1]||""),fecha:f||"",valor:val,tipo:upper(r[4]||"TASA DIAN"),observacion:upper(obsIdx>=0?r[obsIdx]:"")});}}
       // Los títulos/TDJ son globales en el Excel TDJ. En el Liquidador normal
       // entran como pagos dentro de la misma hoja de pagos.
-      const buscarTitulosSeccion=(patron)=>{
-        const th=rows.findIndex(r=>patron.test(normExcel(r.filter(Boolean).join(" "))));
-        if(th<0)return [];
-        const hh=buscarHeaderExcel(rows.slice(th+1),["Nº","TDJ","FECHA",patternVal]);
-        if(hh<0)return [];
-        const abs=th+1+hh,hrow=rows[abs]||[],nh=hrow.map(normExcel);
-        const ixN=nh.findIndex(x=>x==="Nº"||x==="NO"||x==="N"),ixT=nh.findIndex(x=>x==="TDJ"),ixF=nh.findIndex(x=>x==="FECHA"),ixV=nh.findIndex(x=>x==="VALOR ORIGINAL"||x==="VALOR"),ixTipo=nh.findIndex(x=>x==="TIPO"),ixObs=nh.findIndex(x=>x==="OBSERVACION");
-        const out=[];
-        for(let i=abs+1;i<rows.length;i++){const r=rows[i]||[],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow||/^TOTAL ENDOSO/.test(srow)||/^FIN RECUPERACION COMPLETA/.test(srow))break;const f=fechaExcel(ixF>=0?r[ixF]:""),val=truncarValorEntero(numExcel(ixV>=0?r[ixV]:""));if(f&&val>=0&&(ixT>=0?r[ixT]:"")||val>0)out.push({tdj:upper(ixT>=0?r[ixT]||"":""),fecha:f,valor:val,tipo:upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),observacion:upper(ixObs>=0?r[ixObs]||"":"")});}
-        return out;
+      // TDJ -> DIAN: leer exclusivamente el inventario de títulos REGISTRADOS
+      // (no control de aplicación, pagos, endosos ni saldos parciales).
+      const titulos=[];
+      const clavesTitulos=new Set();
+      const nrow=r=>(r||[]).map(normExcel);
+      const cabeceraTitulo=(r)=>{
+        const h=nrow(r);
+        const t=h.findIndex(x=>["TDJ","TDJ Nº","TITULO","TITULO Nº"].includes(x));
+        const f=h.findIndex(x=>["FECHA","FECHA TDJ"].includes(x));
+        const v=h.findIndex(x=>["VALOR","VALOR TDJ","VALOR ORIGINAL"].includes(x));
+        return t>=0&&f>=0&&v>=0?{t,f,v,o:h.findIndex(x=>x==="OBSERVACION")}:null;
       };
-      let patternVal="VALOR ORIGINAL";
-      let titulos=buscarTitulosSeccion(/^TITULOS\s*\/\s*TDJ\s*-?\s*CONTROL FINAL/);
-      if(!titulos.length){patternVal="VALOR";titulos=buscarTitulosSeccion(/^TITULOS\s*\/\s*TDJ\s*-?\s*TITULOS REGISTRADOS/);}
-
+      // Prioridad: tabla canónica del exportador TDJ. Respaldo: sección de
+      // recuperación completa "TÍTULOS TDJ" del mismo archivo.
+      const localizar=(re)=>rows.findIndex(r=>re.test(normExcel((r||[]).filter(Boolean).join(" "))));
+      let bloque=localizar(/^TITULOS\\s*\\/\\s*TDJ\\s*[-—]\\s*TITULOS REGISTRADOS/);
+      if(bloque<0)bloque=localizar(/^TITULOS TDJ(?:\\s*\\||$)/);
+      if(bloque>=0){
+        let cab=null,desde=bloque+1;
+        if(/^TITULOS TDJ/.test(normExcel((rows[bloque]||[])[0])))cab=cabeceraTitulo(rows[bloque]);
+        if(!cab){for(let j=bloque+1;j<Math.min(rows.length,bloque+5);j++){cab=cabeceraTitulo(rows[j]);if(cab){desde=j+1;break;}}}
+        if(cab){
+          for(let j=desde;j<rows.length;j++){
+            const row=rows[j]||[],norm=normExcel(row.filter(Boolean).join(" | "));
+            if(!norm||/^(TITULOS \\/ TDJ|FIN RECUPERACION|TOTAL ENDOSO|RESUMEN FINAL|RECUPERACION COMPLETA|OBLIGACION \\d+)/.test(norm))break;
+            const tdj=String(row[cab.t]??"").replace(/\\D/g,"");
+            const fecha=fechaExcel(row[cab.f]);
+            const valor=truncarValorEntero(numExcel(row[cab.v]));
+            if(!tdj||!fecha||valor<=0)continue;
+            const key=tdj+"|"+fecha+"|"+valor;
+            if(clavesTitulos.has(key))continue;
+            clavesTitulos.add(key);
+            titulos.push({tdj,fecha,valor,observacion:upper(cab.o>=0?row[cab.o]||"":"")});
+          }
+        }
+      }
+      // En DIAN todos los TDJ registrados ingresan sin duplicar registros.
+      // La tasa/beneficio proviene exclusivamente de la obligación 1.
+      const tasaPrimeraObligacion=upper((seg.find(r=>normExcel(r?.[0])==="TIPO TASA")||[])[1]||"TASA DIAN");
+      for(const t of titulos)t.tipo=tasaPrimeraObligacion;
       for(const t of titulos)pagosImport.push({id:crypto.randomUUID(),tdj:t.tdj,recibo:"",fecha:t.fecha,valor:truncarValorEntero(t.valor),tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});
       if(get("TIPO DE LIQUIDACIÓN")&&$("tipoLiquidacion"))$("tipoLiquidacion").value=upper(get("TIPO DE LIQUIDACIÓN")).includes("OFICIAL")?"OFICIAL":"PRIVADA";
       if(venc.length)obligacionVencimientos=venc;
