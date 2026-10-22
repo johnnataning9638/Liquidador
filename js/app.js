@@ -2181,7 +2181,13 @@ async function importarExcelNormal(){
       }
       // En DIAN todos los TDJ registrados ingresan sin duplicar registros.
       // La tasa/beneficio proviene exclusivamente de la obligación 1.
-      const tasaPrimeraObligacion=upper((seg.find(r=>normExcel(r?.[0])==="TIPO TASA")||[])[1]||"TASA DIAN");
+      const ixRecuperacion=rows.findIndex(r=>normExcel(r?.[0])==="DATOS OBLIGACION"&&normExcel(r?.[1])==="CONCEPTO");
+      const cabRec=ixRecuperacion>=0?(rows[ixRecuperacion]||[]).map(normExcel):[];
+      const datRec=ixRecuperacion>=0?(rows[ixRecuperacion+1]||[]):[];
+      const ixTasa=cabRec.findIndex(x=>x==="TIPO DE TASA"||x==="TIPO TASA");
+      const tasaPrimeraObligacion=upper(ixTasa>=0?datRec[ixTasa]||"TASA DIAN":"TASA DIAN");
+      const ixBenef=cabRec.findIndex(x=>x==="BENEFICIO TRIBUTARIO");
+      if(ixBenef>=0&&$("beneficioTributario"))$("beneficioTributario").value=upper(datRec[ixBenef]||"NINGUNO");
       for(const t of titulos)t.tipo=tasaPrimeraObligacion;
       for(const t of titulos)pagosImport.push({id:crypto.randomUUID(),tdj:t.tdj,recibo:"",fecha:t.fecha,valor:truncarValorEntero(t.valor),tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});
       if(get("TIPO DE LIQUIDACIÓN")&&$("tipoLiquidacion"))$("tipoLiquidacion").value=upper(get("TIPO DE LIQUIDACIÓN")).includes("OFICIAL")?"OFICIAL":"PRIVADA";
