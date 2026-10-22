@@ -3101,7 +3101,7 @@ function importarTitulos(){
   const text=$("importarTitulosTexto").value.trim();
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
-    const encontrados=extraerRegistrosTDJTexto(text);
+    const encontrados=importarTitulosTDJNuevo(text);
     if(!encontrados.length)throw new Error("No se encontraron registros TDJ válidos. El documento fuente debe tener entre 10 y 15 dígitos, además de fecha y valor.");
     titulos=encontrados.map((p,i)=>({id:uid("TDJ"),numero:i+1,tdj:p.tdj,fecha:fechaISO(p.fecha)||"",valor:truncarValorEntero(p.valor),observacion:"",_orden:Date.now()+i}));
     ordenarTitulosCronologicamente();
@@ -3118,7 +3118,7 @@ async function importarTitulosIA(){
   if(!text)return alert("Pegue primero los datos de los títulos.");
   try{
     setStatus("IA DIAN — VALIDANDO TÍTULOS...","loading");
-    let encontrados=extraerRegistrosTDJTexto(text);
+    let encontrados=importarTitulosTDJNuevo(text);
     let ai=null;
     if(!encontrados.length){
       ai=await interpretarPagosConIA(text);
