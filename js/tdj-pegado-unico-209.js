@@ -12,10 +12,14 @@ export function procesarPegadoTitulosTDJ(evento,ahora=Date.now()){
   const previo=ultimosPegados.get(el);
   // Algunos entornos emiten dos eventos del MISMO pegado en el mismo instante.
   if(previo&&previo.texto===clip&&ahora-previo.instante<1000)return true;
-  const ini=Number.isInteger(el.selectionStart)?el.selectionStart:el.value.length;
+  // El recuadro de importación representa UN solo portapapeles, no una fila
+  // por obligación. Si ya contiene ese mismo bloque, sustituirlo, no repetirlo.
+  // Un bloque distinto sí puede pegarse una vez adicional.
+  const actual=String(el.value||"");
+  const ini=Number.isInteger(el.selectionStart)?el.selectionStart:actual.length;
   const fin=Number.isInteger(el.selectionEnd)?el.selectionEnd:ini;
-  const viejo=String(el.value||"");
-  el.value=viejo.slice(0,ini)+clip+viejo.slice(fin);
+  if(actual.trim()===clip.trim())return true;
+  el.value=actual.slice(0,ini)+clip+actual.slice(fin);
   const cursor=ini+clip.length;
   if(typeof el.setSelectionRange==="function")el.setSelectionRange(cursor,cursor);
   ultimosPegados.set(el,{texto:clip,instante:ahora});
