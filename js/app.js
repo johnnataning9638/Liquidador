@@ -2158,8 +2158,8 @@ async function importarExcelNormal(){
       // Prioridad: tabla canónica del exportador TDJ. Respaldo: sección de
       // recuperación completa "TÍTULOS TDJ" del mismo archivo.
       const localizar=(re)=>rows.findIndex(r=>re.test(normExcel((r||[]).filter(Boolean).join(" "))));
-      let bloque=localizar(/^TITULOS\\s*\\/\\s*TDJ\\s*[-—]\\s*TITULOS REGISTRADOS/);
-      if(bloque<0)bloque=localizar(/^TITULOS TDJ(?:\\s*\\||$)/);
+      let bloque=localizar(/^TITULOS\s*\/\s*TDJ\s*[-—]\s*TITULOS REGISTRADOS/);
+      if(bloque<0)bloque=localizar(/^TITULOS TDJ(?:\s*\||$)/);
       if(bloque>=0){
         let cab=null,desde=bloque+1;
         if(/^TITULOS TDJ/.test(normExcel((rows[bloque]||[])[0])))cab=cabeceraTitulo(rows[bloque]);
@@ -2167,8 +2167,8 @@ async function importarExcelNormal(){
         if(cab){
           for(let j=desde;j<rows.length;j++){
             const row=rows[j]||[],norm=normExcel(row.filter(Boolean).join(" | "));
-            if(!norm||/^(TITULOS \\/ TDJ|FIN RECUPERACION|TOTAL ENDOSO|RESUMEN FINAL|RECUPERACION COMPLETA|OBLIGACION \\d+)/.test(norm))break;
-            const tdj=String(row[cab.t]??"").replace(/\\D/g,"");
+            if(!norm||/^(TITULOS \/ TDJ|FIN RECUPERACION|TOTAL ENDOSO|RESUMEN FINAL|RECUPERACION COMPLETA|OBLIGACION \d+)/.test(norm))break;
+            const tdj=String(row[cab.t]??"").replace(/\D/g,"");
             const fecha=fechaExcel(row[cab.f]);
             const valor=truncarValorEntero(numExcel(row[cab.v]));
             if(!tdj||!fecha||valor<=0)continue;
