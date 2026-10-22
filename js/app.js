@@ -2197,6 +2197,7 @@ async function importarExcelNormal(){
           }
         }
       }
+      if(!titulos.length)throw new Error("No se reconocieron títulos en el Excel TDJ. Se cancela la importación para evitar perderlos.");
       // En DIAN todos los TDJ registrados ingresan sin duplicar registros.
       // La tasa/beneficio proviene exclusivamente de la obligación 1.
       const ixRecuperacion=rows.findIndex(r=>normExcel(r?.[0])==="DATOS OBLIGACION"&&normExcel(r?.[1])==="CONCEPTO");
