@@ -1901,7 +1901,7 @@ async function limpiar(){
   // habilitarSancion() libera inmediatamente los campos de captura.
   if($("sancionMinima"))$("sancionMinima").value="";
   renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("resultadoAuditoria").innerHTML="";$("detalleCalculo").innerHTML="";
-  ["rSaldoImpuestoIndicador","rSaldoSancionIndicador","rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotal","rSaldoTotalFooter"].forEach(id=>$(id).textContent=dinero(0));
+  ["rSaldoImpuestoIndicador","rSaldoSancionIndicador","rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotalFooter"].forEach(id=>{const el=$(id);if(el)el.textContent=dinero(0);});
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
   if($("rExcedenteBox")){$("rExcedenteBox").hidden=true;$("rExcedente").textContent=dinero(0);}
   limpiando=false;
