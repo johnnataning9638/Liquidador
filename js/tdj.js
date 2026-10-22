@@ -71,6 +71,6 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.217");
+import("./tdj-core-16.33.143.js?v=16.33.218");
 // Capa visual TDJ × OBLIGACIÓN.
 import("./tdj-visual-beneficios.js?v=16.33.210");
