@@ -412,10 +412,21 @@ export class MotorLiquidacion{
         nota:"ART. 93 Ley 2277 seleccionado: 40% del interés y 40% de la sanción"};
     }
     if(es("LEY 2155") && es("ART. 45")){
-      const tasa=tim==null?null:redondear4(((Number(tim)+0.02)/1.5)*0.20);
+      // Art. 45: tabla anualizada al 20% del IBC, dos decimales EXACTOS
+      // aportados por el usuario. Se consulta por FECHA DE PAGO, conforme
+      // al Oficio DIAN 913636/2021, no por la TIM ni por el IPC.
+      const reducidas2021=[3.51,3.48,3.46,3.44,3.44,3.44,3.45,3.44,3.42,3.45,3.49];
+      const f=String(fechaPago||"").slice(0,10);
+      const mes=Number(f.slice(5,7));
+      const valido=/^2021-\d{2}-\d{2}$/.test(f)&&mes>=2&&mes<=12;
+      const tasa=valido?reducidas2021[mes-2]/100:null;
+      const ibc=valido?Math.round(tasa*50000)/100:null;
       return {tasa,factor:1,tasaFija:tasa,beneficio,
+        requiereDato:!valido,ibcOriginal:ibc,reduccionIBC:80,
         factorSancion:0.20,reduceSancion:true,
-        nota:"ART. 45 Ley 2155 seleccionado: 20% de la tasa derivada (TIM + 2%) / 1,5 y 20% de la sanción"};
+        nota:valido
+          ?`ART. 45 Ley 2155/2021 · IBC de referencia aproximado ${ibc.toFixed(2)}% EA · porcentaje aplicado 20% (reducción 80%) · tasa final ${(tasa*100).toFixed(2)}% EA · pago ${f}`
+          :"ART. 45 Ley 2155/2021: falta IBC reducido para la fecha de pago; NO se reemplaza por tasa DIAN"};
     }
     if(es("ART. 48 LEY 2155") || es("DECRETO 688 DE 2020")){
       const tasa=tim==null?null:redondear4((Number(tim)+0.02)/1.5);
