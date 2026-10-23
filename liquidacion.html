@@ -184,8 +184,59 @@
 
 
 </main>
-<footer>Liquidador — versión 16.33.227, con TIM e IPC centralizados y alertas informativas</footer>
-<script type="module" src="js/app.js?v=16.33.227"></script>
+<footer>Liquidador — versión 16.33.228, con TIM e IPC centralizados y alertas informativas</footer>
+<script>
+// DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
+(function(){
+  function depurarPagos(texto){
+    const lineas=String(texto||"").replace(/\r/g,"").split("\n");
+    const vistos=new Set(); let tituloVisto=false, eliminados=0;
+    const salida=[];
+    for(const linea of lineas){
+      const t=linea.trim().replace(/\s+/g," ");
+      if(/^RECIBO\s+FECHA\s+VALOR$/i.test(t)){
+        if(tituloVisto){eliminados++;continue;}
+        tituloVisto=true;salida.push(linea);continue;
+      }
+      // Solo reconocer filas inequívocas, sin alterar otros formatos de importación.
+      const m=t.match(/^(4\d{12,})\s+(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\s+\$?\s*([0-9.,]+)$/);
+      if(m){
+        const clave=m[1]+"|"+m[2].replace(/\//g,"-")+"|"+m[3].replace(/\D/g,"");
+        if(vistos.has(clave)){eliminados++;continue;}
+        vistos.add(clave);
+      }
+      salida.push(linea);
+    }
+    return {texto:salida.join("\n"),eliminados};
+  }
+  function instalar(){
+    const campo=document.getElementById("pegarDatos");
+    if(!campo||campo.dataset.dianAntiduplicados==="1")return;
+    campo.dataset.dianAntiduplicados="1";
+    let activo=false;
+    function sanear(){
+      if(activo)return;
+      const antes=campo.value;
+      const resultado=depurarPagos(antes);
+      if(!resultado.eliminados)return;
+      activo=true;
+      const cursor=campo.selectionStart;
+      campo.value=resultado.texto;
+      try{campo.setSelectionRange(Math.min(cursor,campo.value.length),Math.min(cursor,campo.value.length));}catch(_){}
+      activo=false;
+    }
+    // Captura el pegado normal, Ctrl+V, el menú contextual y otros medios.
+    campo.addEventListener("input",sanear);
+    campo.addEventListener("paste",()=>setTimeout(sanear,0));
+    const boton=document.getElementById("btnProcesarPegado");
+    boton?.addEventListener("click",sanear,true);
+    window.depurarPagosDIAN=depurarPagos; // permite prueba diagnóstica desde consola.
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",instalar,{once:true});
+  else instalar();
+})();
+</script>
+<script type="module" src="js/app.js?v=16.33.228"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
