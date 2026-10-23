@@ -2009,7 +2009,7 @@ function aplicarImportacionPagosSolo(obj){
     agregados++;
   }
   renderPagos();
-  actualizarEstadoIndicador("listo",`Parámetros cargados · Importación aplicada: ${obj.pagos?.length||0} pago(s)`);
+  actualizarEstadoIndicador("listo",`Parámetros cargados · Importación aplicada: ${agregados} pago(s) nuevo(s); ${((obj.pagos||[]).length-agregados)} duplicado(s) omitido(s)`);
 }
 
 function aplicarImportacionObligacion(obj){
