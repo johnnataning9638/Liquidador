@@ -2374,6 +2374,40 @@ function configurarBase(){
   $("btnActualizarTasaDian").addEventListener("click",actualizarDesdeDIAN);
   $("btnIniciarAdmin")?.addEventListener("click",iniciarSesionAdmin);
   $("btnCerrarAdmin")?.addEventListener("click",cerrarSesionAdmin);
+  // Evita que un pegado incorpore varias veces el mismo bloque de pagos.
+  // Se normaliza únicamente el texto PEGADO, no los datos escritos manualmente.
+  // Identificamos filas completas por recibo/TDJ + fecha + valor; preservamos el
+  // primer encabezado y todas las filas diferentes en su orden original.
+  $("pegarDatos")?.addEventListener("paste",e=>{
+    const texto=e.clipboardData?.getData("text/plain");
+    if(!texto)return;
+    const filas=texto.replace(/\r/g,"").split("\n");
+    const vistas=new Set();
+    let cabeceraVista=false, omitidas=0;
+    const normalizadas=[];
+    for(const fila of filas){
+      const limpia=fila.trim();
+      if(!limpia){normalizadas.push(fila);continue;}
+      if(/^RECIBO\s+FECHA\s+VALOR\s*$/i.test(limpia)){
+        if(cabeceraVista){omitidas++;continue;}
+        cabeceraVista=true;normalizadas.push(fila);continue;
+      }
+      const match=limpia.match(/^(4\d{12,})\s+(\d{4}[-/]\d{2}[-/]\d{2}|\d{2}[-/]\d{2}[-/]\d{4})\s+\$?\s*([\d.,]+)\s*$/);
+      if(match){
+        const clave=match[1]+"|"+match[2]+"|"+match[3].replace(/[^\d]/g,"");
+        if(vistas.has(clave)){omitidas++;continue;}
+        vistas.add(clave);
+      }
+      normalizadas.push(fila);
+    }
+    if(!omitidas)return;
+    e.preventDefault();
+    const campo=e.currentTarget;
+    const inicio=campo.selectionStart,fin=campo.selectionEnd;
+    const insercion=normalizadas.join("\n");
+    campo.setRangeText(insercion,inicio,fin,"end");
+    campo.dispatchEvent(new Event("input",{bubbles:true}));
+  });
   $("btnProcesarPegado").addEventListener("click",()=>{try{ocultarFeedbackIA();aplicarImportacionPagosSolo(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
   $("btnProcesarPegadoIA")?.addEventListener("click",async()=>{
     const text=$("pegarDatos").value;
