@@ -2,7 +2,7 @@ import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.161";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.231";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
