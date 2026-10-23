@@ -12,6 +12,7 @@ import {ajustarTDJParaPagosPosteriores,ordenarMovimientosCronologicos} from "./t
 import {extraerRegistrosTDJTexto, esDocumentoFuenteTDJ} from "./tdj-importador.js?v=16.33.161";
 
 const $=id=>document.getElementById(id);
+const tasaPdfArt45=(x,valor)=>Number(valor).toFixed(String(x?.tipoAplicado||"").includes("ART. 45 LEY 2155")?2:3)+"%";
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const upper=v=>String(v??"").trim().toUpperCase();
 const upperPreserveSpaces=v=>String(v??"").toUpperCase();
@@ -1855,12 +1856,12 @@ function tablaInteresesTDJ(detalle,pagoFecha,contexto={}){
   const esTDJMinimo=esTDJMinimoDetalle(detalle,contexto);
   const filas=(detalle?.interesesPorCuota||[]).filter(t=>Number(t.capitalBase||0)>0||Number(t.interes||0));
   if(!filas.length && esTDJMinimo){
-    const tasa=detalle?.tasaVisible==null?"—":(Number(detalle.tasaVisible)).toFixed(3)+"%";
+    const tasa=detalle?.tasaVisible==null?"—":tasaPdfArt45(detalle,detalle.tasaVisible);
     const aplicado=Number(detalle?.aplicado?.intereses||valorTDJ||0);
     return `<section class="pdf-intereses pdf-tdj-minimo"><h3>CÁLCULO / IMPUTACIÓN ESPECIAL TDJ ≤ $1.000</h3><table><thead><tr><th>CONCEPTO</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA TDJ</th><th>DÍAS</th><th>TASA</th><th>VALOR</th></tr></thead><tbody><tr><td>IMPUTACIÓN EXCLUSIVA A INTERESES</td><td>${dinero(0)}</td><td>—</td><td>${escPdf(fechaVisible(detalle?.pago?.fecha||pagoFecha||""))}</td><td>0</td><td>${tasa}</td><td>${dinero(aplicado)}</td></tr></tbody><tfoot><tr><th colspan="6">TOTAL IMPUTADO A INTERESES</th><th>${dinero(aplicado)}</th></tr></tfoot></table><div class="pdf-regla-tdj-minimo"><b>REGLA ESPECIAL:</b> TODO TDJ ENTERO MAYOR QUE $0 Y MENOR O IGUAL A $1.000 SE IMPUTA EXCLUSIVAMENTE A INTERESES.</div></section>`;
   }
   if(!filas.length)return "";
-  const rows=filas.map(t=>`<tr><td>${escPdf(t.cuota??"")}</td><td>${dinero(t.capitalBase||0)}</td><td>${escPdf(fechaVisible(t.fechaVencimiento||""))}</td><td>${escPdf(fechaVisible(t.fechaPago||pagoFecha||""))}</td><td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes||0)}</td></tr>`).join("");
+  const rows=filas.map(t=>`<tr><td>${escPdf(t.cuota??"")}</td><td>${dinero(t.capitalBase||0)}</td><td>${escPdf(fechaVisible(t.fechaVencimiento||""))}</td><td>${escPdf(fechaVisible(t.fechaPago||pagoFecha||""))}</td><td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":tasaPdfArt45(x,Number(t.tasa)*100)}</td><td>${dinero(t.interes||0)}</td></tr>`).join("");
   const total=filas.reduce((a,t)=>a+Number(t.interes||0),0);
   const regla=esTDJMinimo?`<div class="pdf-regla-tdj-minimo"><b>REGLA ESPECIAL TDJ ≤ $1.000:</b> EL TÍTULO DE ${dinero(valorTDJ)} SE IMPUTA EXCLUSIVAMENTE A INTERESES. <b>APLICADO A INTERESES: ${dinero(detalle?.aplicado?.intereses||0)}</b>.</div>`:"";
   return `<section class="pdf-intereses"><h3>CÁLCULO DE INTERESES POR CUOTA</h3><table><thead><tr><th>CUOTA</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA PAGO / TDJ</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES CALCULADOS</th><th>${dinero(total)}</th></tr></tfoot></table>${regla}</section>`;
@@ -1889,7 +1890,7 @@ function bloqueSoporteTDJMinimoDesdeAplicacion(a,detalle,o){
   const aplicadoImpuesto=Number(a?.aplicadoImpuesto??detalle?.aplicado?.impuesto??0);
   const aplicadoSancion=Number(a?.aplicadoSancion??detalle?.aplicado?.sancion??0);
   const aplicadoTotal=Number(a?.aplicado??detalle?.aplicado?.total??(aplicadoIntereses+aplicadoImpuesto+aplicadoSancion));
-  const tasa=detalle?.tasaVisible==null?"—":(Number(detalle.tasaVisible)).toFixed(3)+"%";
+  const tasa=detalle?.tasaVisible==null?"—":tasaPdfArt45(detalle,detalle.tasaVisible);
   const fecha=fechaVisible(a?.fecha||detalle?.pago?.fecha||"");
   const destino=aplicadoIntereses>0?"INTERESES":(aplicadoSancion>0?"SANCIÓN":(aplicadoImpuesto>0?"IMPUESTO":"SIN DEUDA APLICABLE"));
   const vtos=(detalle?.aplicacionesVto||[]).filter(v=>Number(v?.aplicado||0)>0||Number(v?.aplicadoIntereses||0)>0||Number(v?.aplicadoSancion||0)>0);
@@ -2010,8 +2011,8 @@ function tablaInteresesPdfTDJ(x,r){
     if(totalCorte>0){const bases=filas.map(capitalFila);const baseTotal=bases.reduce((s,v)=>s+Math.max(0,v),0);if(filas.length===1)interesesCalculados[0]=totalCorte;else if(baseTotal>0)filas.forEach((_,i)=>{interesesCalculados[i]=totalCorte*(Math.max(0,bases[i])/baseTotal);});}
   }
   let rows="";
-  if(filas.length){rows=filas.map((t,i)=>{const vtoRef=(r?.vencimientos||[]).find(v=>v?.id===t?.vto)||null;const cuota=t?.cuota??t?.vto??vtoRef?.numero??(i+1);const capital=capitalFila(t);const fechaVto=t?.fechaVencimiento||vtoRef?.fecha||"";const fechaPago=t?.fechaPago||p.fecha||(esCorteInformativo?r?.fechaCorte||"":"");const dias=Number(t?.dias||0);const tasa=t?.tasa!=null?((Number(t.tasa)*100).toFixed(3)+"%"):(x?.tasaVisible!=null?Number(x.tasaVisible).toFixed(3)+"%":"—");const interes=Number(interesesCalculados[i]||0);return `<tr><td>${escPdf(cuota)}</td><td>${dinero(capital)}</td><td>${escPdf(fechaVisible(fechaVto))}</td><td>${escPdf(fechaVisible(fechaPago))}</td><td>${dias}</td><td>${tasa}</td><td>${dinero(interes)}</td></tr>`;}).join("");}
-  else{rows=(r?.vencimientos||[]).map(v=>`<tr><td>${escPdf(v?.numero||"")}</td><td>${dinero(0)}</td><td>${escPdf(fechaVisible(v?.fecha||""))}</td><td>${escPdf(fechaVisible(p.fecha||""))}</td><td>0</td><td>${x?.tasaVisible==null?"—":Number(x.tasaVisible).toFixed(3)+"%"}</td><td>${dinero(0)}</td></tr>`).join("");}
+  if(filas.length){rows=filas.map((t,i)=>{const vtoRef=(r?.vencimientos||[]).find(v=>v?.id===t?.vto)||null;const cuota=t?.cuota??t?.vto??vtoRef?.numero??(i+1);const capital=capitalFila(t);const fechaVto=t?.fechaVencimiento||vtoRef?.fecha||"";const fechaPago=t?.fechaPago||p.fecha||(esCorteInformativo?r?.fechaCorte||"":"");const dias=Number(t?.dias||0);const tasa=t?.tasa!=null?(tasaPdfArt45(x,Number(t.tasa)*100)):(x?.tasaVisible!=null?tasaPdfArt45(x,x.tasaVisible):"—");const interes=Number(interesesCalculados[i]||0);return `<tr><td>${escPdf(cuota)}</td><td>${dinero(capital)}</td><td>${escPdf(fechaVisible(fechaVto))}</td><td>${escPdf(fechaVisible(fechaPago))}</td><td>${dias}</td><td>${tasa}</td><td>${dinero(interes)}</td></tr>`;}).join("");}
+  else{rows=(r?.vencimientos||[]).map(v=>`<tr><td>${escPdf(v?.numero||"")}</td><td>${dinero(0)}</td><td>${escPdf(fechaVisible(v?.fecha||""))}</td><td>${escPdf(fechaVisible(p.fecha||""))}</td><td>0</td><td>${x?.tasaVisible==null?"—":tasaPdfArt45(x,x.tasaVisible)}</td><td>${dinero(0)}</td></tr>`).join("");}
   const total=filas.length?interesesCalculados.reduce((s,v)=>s+Number(v||0),0):(esCorteInformativo?Number(r?.intereses||x?.interesLiquidado||x?.interesGenerado||0):Number(x?.interesGenerado||0));
   return `<div class="pdf-intereses"><h3>CÁLCULO DE INTERESES POR CUOTA</h3><table><thead><tr><th>CUOTA</th><th>CAPITAL BASE</th><th>FECHA VENCIMIENTO</th><th>FECHA PAGO / TDJ</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES DEL PAGO</th><th>${dinero(total)}</th></tr></tfoot></table></div>`;
 }
@@ -2036,7 +2037,7 @@ function bloqueSuspensionInteresesPdfTDJ(x,d,i){
   </div>`;
   const rows=detalles.map(t=>`<tr>
     <td>${escPdf(t.tramo)}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${escPdf(fechaVisible(t.hasta))}</td>
-    <td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":(Number(t.tasa)*100).toFixed(3)+"%"}</td><td>${dinero(t.interes||0)}</td><td>${escPdf(t.estado)}</td>
+    <td>${Number(t.dias||0)}</td><td>${t.tasa==null?"—":tasaPdfArt45(x,Number(t.tasa)*100)}</td><td>${dinero(t.interes||0)}</td><td>${escPdf(t.estado)}</td>
   </tr>`).join("");
   const total=detalles.reduce((a,t)=>a+Number(t.interes||0),0);
   return `<div class="pdf-suspension-intereses"><h3>DESGLOSE DE INTERESES — LIQUIDACIÓN OFICIAL — ART. 634 PARÁGRAFO 2 E.T. — PAGO ${Number(i)+1}</h3><div class="pdf-suspension-descripcion">${escPdf(nota)} Los intereses se causan hasta el cumplimiento de los dos años; desde el día siguiente se suspende su causación hasta la ejecutoria de la providencia definitiva y, cuando corresponde, se reanudan desde dicha ejecutoria hasta el pago.</div>${resumen}<table><thead><tr><th>FASE</th><th>DESDE</th><th>HASTA</th><th>DÍAS</th><th>TASA</th><th>VALOR INTERÉS</th><th>ESTADO</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL INTERESES CAUSADOS DEL PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table></div>`;
@@ -2097,7 +2098,7 @@ function bloqueDetallePagoDIANTDJ(x,i,d,r){
       ? {etiqueta:"TDJ",valor:tdj}
       : {etiqueta:"RECIBO DE PAGO",valor:""};
   return `<article class="pdf-liquidacion pdf-detalle-dian"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>DETALLE DEL PAGO</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>
-  <div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"")}</strong></div><div class="pdf-dato"><b>FECHA DE PRESENTACIÓN/SANCIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>TASA A APLICAR</b><strong class="pdf-tasa">${x.tasaVisible==null?"—":Number(x.tasaVisible).toFixed(3)+"%"}</strong></div></div>
+  <div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"")}</strong></div><div class="pdf-dato"><b>FECHA DE PRESENTACIÓN/SANCIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>TASA A APLICAR</b><strong class="pdf-tasa">${x.tasaVisible==null?"—":tasaPdfArt45(x,x.tasaVisible)}</strong></div></div>
   <div class="pdf-obligacion"><div class="pdf-fila"><div class="pdf-celda"><b>VALOR IMPUESTO / DEUDA</b><strong>${dinero(impuestoBase)}</strong></div><div class="pdf-celda"><b>FECHA VENCIMIENTO</b><strong>${escPdf(fechaVisible(vtoPrincipal.fecha||r.vencimientos[0]?.fecha||""))}</strong></div><div class="pdf-celda"><b>FECHA PREVISTA DE PAGO</b><strong>${escPdf(fechaVisible(x.pago.fecha))}</strong></div><div class="pdf-celda"><b>¿TIENE SANCIÓN?</b><strong>${escPdf(d.tieneSancion)}</strong></div></div><div class="pdf-fila"><div class="pdf-celda"><b>${identificadorPago.etiqueta}</b><strong>${escPdf(identificadorPago.valor)}</strong></div><div class="pdf-celda pdf-observaciones" style="grid-column:span 3"><b>OBSERVACIONES</b><strong>${escPdf(x.pago.observacion||`PAGO N°${i+1} — ${x.pago.tipo||"TASA DIAN"}`)}</strong></div></div></div>
   <div class="pdf-beneficio"><b>TIPO DE TASA/BENEFICIO:</b> ${escPdf(x.tipoAplicado||"TASA DIAN")} · ${escPdf(x.notaBeneficio||"TASA DIAN ordinaria")}</div>
   ${tablaInteresesPdfTDJ(x,r)}
