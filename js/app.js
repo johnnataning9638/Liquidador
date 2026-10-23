@@ -1170,6 +1170,10 @@ function exportarExcel(){
     push([]);
     push(["SALDO TOTAL",r.total||0,"EXCEDENTE",r.excedente||0,"ÚLTIMO PAGO",r.ultimo?.pago?.fecha||"","TASA ÚLTIMO PAGO",r.ultimo?.tasaVisible??""],{money:[2,4],percent:[8]});
     push(["TIPOS DE TASA/BENEFICIO APLICADOS",(r.beneficiosAplicados||[]).join(" | ")||"TASA DIAN"]);
+    (r.detalle||[]).filter(x=>String(x.tipoAplicado||"").includes("ART. 45 LEY 2155")).forEach(x=>{
+      const esp=motor?.tasaEspecial(x.tipoAplicado,x.pago?.fecha);
+      push(["ART. 45 LEY 2155 — FECHA PAGO",x.pago?.fecha||"","IBC REFERENCIA APROX. EA",esp?.ibcOriginal==null?"":esp.ibcOriginal.toFixed(2)+"%","REDUCCIÓN IBC","80%","TASA FINAL",esp?.tasa==null?"NO DISPONIBLE":(esp.tasa*100).toFixed(2)+"%"]);
+    });
     push(["CRITERIO","La liquidación utiliza exactamente el tipo seleccionado en cada pago; no se valida elegibilidad jurídica."]);
     (r.observacionesBeneficio1419||[]).forEach(t=>push(["OBSERVACIÓN — BENEFICIO DECRETO 1419",t],{title:true}));
     push([]);
