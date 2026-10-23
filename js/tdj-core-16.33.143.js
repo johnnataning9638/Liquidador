@@ -1705,6 +1705,10 @@ function construirFilasExcelTDJ(){
       const d=detallePDFDesdeAplicacionTDJ(a,o);
       push([`DETALLE TDJ ${a.titulo} — APLICACIÓN ${j+1}`],{title:true});
       push(["DOCUMENTO","FECHA","VALOR DEL TÍTULO","TIPO","TASA"],{header:true});push([a.titulo,a.fecha,a.valorAntes||0,d?.tipoAplicado||"TASA DIAN",d?.tasaVisible??""],{money:[3],percent:[5]});
+      if(String(d?.tipoAplicado||"").includes("ART. 45 LEY 2155")){
+        const esp=motor?.tasaEspecial(d.tipoAplicado,a.fecha);
+        push(["ART. 45 LEY 2155","FECHA TDJ",a.fecha,"IBC REFERENCIA APROX. EA",esp?.ibcOriginal==null?"":esp.ibcOriginal.toFixed(2)+"%","REDUCCIÓN IBC","80%","TASA FINAL",esp?.tasa==null?"NO DISPONIBLE":(esp.tasa*100).toFixed(2)+"%"]);
+      }
       push(["DEUDA ANTES DEL TDJ","IMPUESTO","INTERESES","SANCIÓN","TOTAL DEUDA"],{header:true});push(["",d?.deudaAntes?.impuesto||0,d?.deudaAntes?.intereses||0,d?.deudaAntes?.sancion||0,(Number(d?.deudaAntes?.impuesto||0)+Number(d?.deudaAntes?.intereses||0)+Number(d?.deudaAntes?.sancion||0))],{money:[2,3,4,5]});
       push(["APLICACIÓN DEL TDJ","IMPUESTO","INTERESES","SANCIÓN","TOTAL","EXCEDENTE"],{header:true});push(["",d?.aplicado?.impuesto||0,d?.aplicado?.intereses||0,d?.aplicado?.sancion||0,d?.aplicado?.total||0,a.saldoTitulo||0],{money:[2,3,4,5,6]});
       push(["SALDOS DESPUÉS DEL TDJ","IMPUESTO","INTERESES","SANCIÓN","TOTAL"],{header:true});push(["",d?.saldo?.impuesto||0,d?.saldo?.intereses||0,d?.saldo?.sancion||0,d?.saldo?.total||0],{money:[2,3,4,5]});
