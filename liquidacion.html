@@ -184,7 +184,7 @@
 
 
 </main>
-<footer>Liquidador — versión 16.33.229, con TIM e IPC centralizados y alertas informativas</footer>
+<footer>Liquidador — versión 16.33.230, con TIM e IPC centralizados y alertas informativas</footer>
 <script>
 // DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
 (function(){
@@ -236,7 +236,35 @@
   else instalar();
 })();
 </script>
-<script type="module" src="js/app.js?v=16.33.229"></script>
+<script>
+// DIAN 16.33.230: total visible de SALDO, independiente del motor de liquidación.
+(function(){
+  const ids=["rSaldoImpuesto","rSaldoIntereses","rSaldoSancion"];
+  function cantidad(id){
+    const texto=document.getElementById(id)?.textContent||"";
+    const n=Number(texto.replace(/[^0-9-]/g,""));
+    return Number.isFinite(n)?n:0;
+  }
+  function sincronizarTotal(){
+    const celda=document.getElementById("rSaldoTotalFooter");
+    if(!celda)return;
+    const total=ids.reduce((s,id)=>s+cantidad(id),0);
+    const nuevo="$ "+new Intl.NumberFormat("es-CO",{maximumFractionDigits:0}).format(total);
+    if(celda.textContent!==nuevo)celda.textContent=nuevo;
+  }
+  function iniciar(){
+    const celdas=ids.map(id=>document.getElementById(id));
+    if(celdas.some(c=>!c))return;
+    const observador=new MutationObserver(sincronizarTotal);
+    for(const celda of celdas)observador.observe(celda,{childList:true,characterData:true,subtree:true});
+    // Solo observa la columna SALDO; no interviene en cálculos, pagos o TDJ.
+    sincronizarTotal();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar,{once:true});
+  else iniciar();
+})();
+</script>
+<script type="module" src="js/app.js?v=16.33.230"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
