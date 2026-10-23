@@ -702,7 +702,10 @@ function pintarInforme(r){
   $("rFechaPago").textContent=r?.fechaCorte?fechaVisible(r.fechaCorte):(u?.pago?.fecha?fechaVisible(u.pago.fecha):"—");
   $("rTasa").textContent=u?.tasaVisible==null?"—":Number(u.tasaVisible).toFixed(3)+"%";
   ["Impuesto","Intereses","Sancion"].forEach((x,j)=>{const k=["impuesto","intereses","sancion"][j];$("rDeuda"+x).textContent=dinero(d[k]);$("rProp"+x).textContent=dinero(p[k]);$("rSaldo"+x).textContent=dinero(s[k]);});
-  const totalDeuda=d.impuesto+d.intereses+d.sancion,totalAplicado=p.total,totalSaldo=s.impuesto+s.intereses+s.sancion;
+  const totalDeuda=d.impuesto+d.intereses+d.sancion,totalAplicado=p.total;
+  // TOTAL SALDO: suma los tres valores efectivamente mostrados en esta columna.
+  const valorSaldo=id=>Number((document.getElementById(id)?.textContent||'').replace(/[^0-9-]/g,''))||0;
+  const totalSaldo=valorSaldo('rSaldoImpuesto')+valorSaldo('rSaldoIntereses')+valorSaldo('rSaldoSancion');
   $("rDeudaTotal").textContent=dinero(totalDeuda);$("rPropTotal").textContent=dinero(totalAplicado);if($("rSaldoImpuestoIndicador"))$("rSaldoImpuestoIndicador").textContent=dinero(s.impuesto);if($("rSaldoSancionIndicador"))$("rSaldoSancionIndicador").textContent=dinero(s.sancion);$("rSaldoTotalFooter").textContent=dinero(totalSaldo);
   const excedente=Number(r.excedente||0);
   const excedenteBox=$("rExcedenteBox");
