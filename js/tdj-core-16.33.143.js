@@ -1,6 +1,6 @@
 import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.161";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.161";
