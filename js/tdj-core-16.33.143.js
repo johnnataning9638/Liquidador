@@ -1,6 +1,7 @@
 import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
+import {calcularRecibosCompartidos} from "./recibos-compartidos-232.js?v=16.33.232";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
 import {interpretarObligacionConIA, interpretarPagosConIA, fusionarPagosSeguros, comprobarMotorIA} from "./ai-bridge.js?v=16.33.161";
@@ -183,7 +184,7 @@ function nuevoVto(numero=1){return {id:uid("VTO"),numero,periodo:numero,fecha:""
 function nuevaObligacion(numero){
   return {
     id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"",tipoTasaConfirmada:false,
-    vencimientos:[nuevoVto(1)],pagos:[],importacion:""
+    vencimientos:[nuevoVto(1)],pagos:[],importacion:"",obligacionDIAN:"",documentoFuente:""
   };
 }
 function nuevoTitulo(numero){return {id:uid("TDJ"),numero,tdj:"",fecha:"",valor:0,observacion:""};}
@@ -387,6 +388,10 @@ function renderObligaciones(){
         <label class="tdj-tasa-obligacion" hidden>TIPO DE TASA<select data-k="tipoTasa">${opcionTipoObligacionTDJ(o.tipoTasa||"TASA DIAN")}</select></label>
         <label class="tdj-tasa-obligacion" hidden>TASA<input data-tasa-obligacion class="money" readonly value="" placeholder="SELECCIONE TASA"></label>
       </div>
+      <details class="subpanel"><summary class="subhead">Recibos compartidos entre documentos (opcional, dos cuotas)</summary>
+        <div class="compact-grid"><label>NÚMERO DE OBLIGACIÓN DIAN<input data-k="obligacionDIAN" value="${esc(o.obligacionDIAN||"")}" placeholder="Solo para documentos de la misma obligación"></label><label>DOCUMENTO FUENTE<input data-k="documentoFuente" value="${esc(o.documentoFuente||"")}" placeholder="Documento de este bloque"></label></div>
+        <p class="nota">Complete ambos campos únicamente para documentos de una misma obligación ordinaria de dos cuotas. El orden de los bloques define la secuencia entre documentos.</p>
+      </details>
       <div class="subpanel"><div class="subhead"><strong>CUOTAS / VENCIMIENTOS</strong><button class="primario small" data-action="agregar-cuota">+ AGREGAR CUOTA</button></div>
         <div class="tabla-scroll"><table class="mini-table cuotas-mini"><thead><tr><th>Nº</th><th>PERÍODO / CUOTA</th><th>FECHA VENCIMIENTO</th><th>IMPORTE / IMPUESTO</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>`;
@@ -1042,9 +1047,16 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // PRIMERO: liquidación normal de cada obligación, exactamente con los
     // pagos registrados para esa obligación. Esta liquidación queda guardada
     // como soporte base para PDF y Excel.
+    const documentosCompartidos=obligaciones.filter(o=>String(o.obligacionDIAN||"").trim());
+    if(documentosCompartidos.length && titulos.some(t=>Number(t.valor)>0))throw new Error("RECIBO COMPARTIDO: esta ruta admite pagos normales sin títulos TDJ. Quite la identificación conjunta para usar la ruta TDJ habitual.");
+    const liquidacionesConjuntas=documentosCompartidos.length
+      ?calcularRecibosCompartidos(obligaciones.map(o=>({...o,__corteRecibo:fechaCorteTDJ(o)||"",pagos:pagosRealesHastaCorteTDJ(o,fechaCorteTDJ(o))})),{
+        motor,
+        datosMotor:(o,pagos=o.pagos,corte)=>datosMotor(o,pagos,corte||o.__corteRecibo||pagos.at(-1)?.fecha||hoyISO())
+      }):new Map();
     const liquidacionesBase=new Map();
     for(const o of obligaciones){
-      liquidacionesBase.set(o.id,calcularLiquidacionBaseTDJ(o));
+      liquidacionesBase.set(o.id,liquidacionesConjuntas.get(o.id)||calcularLiquidacionBaseTDJ(o));
     }
 
     // La secuencia de aplicación de TDJ respeta el orden de las obligaciones
@@ -1345,7 +1357,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       let estadoFinal=null;
       try{
         const motorFinal=motorParaObligacion(o)||motor;
-        estadoFinal=motorFinal?.calcular(
+        estadoFinal=liquidacionesConjuntas.get(o.id)||motorFinal?.calcular(
           datosMotor(o,movimientosFinales,fechaCorteFinal,{permitirBeneficioFueraVigencia:true})
         );
       }catch{
@@ -1682,11 +1694,19 @@ function construirFilasExcelTDJ(){
     push(["TIPO DE LIQUIDACIÓN","FECHA AUTO ADMISORIO","FECHA PROVIDENCIA DEFINITIVA"],{header:true});
     push([upper(o.tipoLiquidacion||"PRIVADA"),o.fechaAutoAdmisorio||"",o.fechaProvidenciaDefinitiva||""]);
     push(["CONCEPTO","AÑO","PERÍODO","SANCIÓN","VALOR SANCIÓN","BENEFICIO SANCIÓN","FECHA SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
-    push([upper(o.concepto),o.anio,o.periodo||"",o.tieneSancion||"NO",o.valorSancion||0,o.beneficioSancion||"",o.fechaSancion||"",o.beneficioTributario||"NINGUNO"],{money:[5]});push([]);
+    push([upper(o.concepto),o.anio,o.periodo||"",o.tieneSancion||"NO",o.valorSancion||0,o.beneficioSancion||"",o.fechaSancion||"",o.beneficioTributario||"NINGUNO"],{money:[5]});
+    if(o.obligacionDIAN||o.documentoFuente)push(["IDENTIDAD DOCUMENTAL","OBLIGACIÓN DIAN",o.obligacionDIAN||"","DOCUMENTO FUENTE",o.documentoFuente||""]);
+    push([]);
     push(["VENCIMIENTOS / SALDOS"],{title:true});push(["Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO","SALDO FINAL BASE"],{header:true});
     (base.vencimientos||o.vencimientos||[]).forEach((v,i)=>push([i+1,v.periodo||i+1,v.fecha,v.impuesto||0,v.saldo||0],{money:[4,5]}));push([]);
     push(["PAGOS REGISTRADOS — LIQUIDACIÓN NORMAL"],{title:true});push(["Nº","RECIBO","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
     (base.detalle||[]).forEach((d,i)=>push([i+1,d.pago?.recibo||"",d.pago?.fecha||"",d.pago?.valor||0,d.tipoAplicado||"TASA DIAN",d.tasaVisible??"",d.pago?.observacion||"",d.interesGenerado||0,d.aplicado?.impuesto||0,d.aplicado?.intereses||0,d.aplicado?.sancion||0,d.aplicado?.total||0,d.excedente||0],{money:[4,7,8,9,10,11,12],percent:[6]}));
+    for(const d of base.detalle||[]){
+      const c=d.imputacionConjunta;if(!c)continue;
+      push(["IMPUTACIÓN POR RECIBO COMPARTIDO"],{title:true});
+      push(["RECIBO","OBLIGACIÓN DIAN","FECHA","PAGO CONJUNTO","BASE IMPUESTO","BASE INTERESES","BASE SANCIÓN","PROPORCIÓN %"],{header:true});
+      push([c.recibo,c.obligacionDIAN,c.fecha,c.pagoGlobal,c.deudaGlobal.impuesto,c.deudaGlobal.intereses,c.deudaGlobal.sancion,c.porcentaje],{money:[4,5,6,7]});
+    }
     if(!(base.detalle||[]).length)push(["NO HAY PAGOS REGISTRADOS."]);
     if((base.detalle||[]).length){
       push(["IMPUTACIÓN POR VENCIMIENTO — PAGOS NORMALES"],{title:true});
@@ -1767,6 +1787,7 @@ function construirFilasExcelTDJ(){
   push(["FORMATO","TDJ_RECOVERY_V1"]);
   obligaciones.forEach((o,oi)=>{
     push(["OBLIGACIÓN",oi+1,"TIPO DE LIQUIDACIÓN",upper(o.tipoLiquidacion||"PRIVADA"),"FECHA AUTO ADMISORIO",o.fechaAutoAdmisorio||"","FECHA PROVIDENCIA DEFINITIVA",o.fechaProvidenciaDefinitiva||""]);
+    if(o.obligacionDIAN||o.documentoFuente)push(["IDENTIDAD DOCUMENTAL","OBLIGACIÓN DIAN",o.obligacionDIAN||"","DOCUMENTO FUENTE",o.documentoFuente||""]);
     push(["DATOS OBLIGACIÓN","CONCEPTO","AÑO","PERÍODO","TIENE SANCIÓN","VALOR SANCIÓN","FECHA SANCIÓN","BENEFICIO SANCIÓN","BENEFICIO TRIBUTARIO","TIPO DE TASA"],{header:true});
     push(["",upper(o.concepto||""),o.anio||"",o.periodo??"",upper(o.tieneSancion||"NO"),truncarValorEntero(o.valorSancion||0),o.fechaSancion||"",upper(o.beneficioSancion||""),upper(o.beneficioTributario||"NINGUNO"),upper(o.tipoTasa||"TASA DIAN")],{money:[6]});
     push(["VENCIMIENTOS","Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO"],{header:true});
@@ -2105,6 +2126,7 @@ function bloqueDetallePagoDIANTDJ(x,i,d,r){
   ${String(d.tipoLiquidacion||"").toUpperCase()==="OFICIAL"?bloqueSuspensionInteresesPdfTDJ(x,d,i):""}
   ${bloqueActualizacionSancionPdfTDJ(x,i)}
   ${bloqueSancionDeclaracion1419PdfTDJ(x,d)}
+  ${x.imputacionConjunta?`<div class="pdf-beneficio" style="white-space:normal">RECIBO COMPARTIDO ${escPdf(x.imputacionConjunta.recibo)}. Obligación DIAN ${escPdf(x.imputacionConjunta.obligacionDIAN)}. Base conjunta: ${dinero(Object.values(x.imputacionConjunta.deudaGlobal).reduce((s,v)=>s+Number(v||0),0))}. Pago conjunto: ${dinero(x.imputacionConjunta.pagoGlobal)}. Proporción: ${Number(x.imputacionConjunta.porcentaje).toFixed(4)}%.</div>`:""}
   <div class="pdf-pago"><div class="pdf-pago-titulo">VALOR PAGO &nbsp; → &nbsp; ${dinero(x.pago.valor)}</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>PROPORCIÓN / APLICADO</th><th>SALDOS</th></tr></thead><tbody><tr><td>Impuesto</td><td>${dinero(x.deudaAntes?.impuesto)}</td><td>${dinero(x.aplicado?.impuesto)}</td><td>${dinero(x.saldo?.impuesto)}</td></tr><tr><td>Intereses</td><td>${dinero(x.deudaAntes?.intereses)}</td><td>${dinero(x.aplicado?.intereses)}</td><td>${dinero(x.saldo?.intereses)}</td></tr><tr><td>Sanción</td><td>${dinero(x.deudaAntes?.sancion)}</td><td>${dinero(x.aplicado?.sancion)}</td><td>${dinero(x.saldo?.sancion)}</td></tr><tr class="total"><td>TOTALES</td><td>${dinero((x.deudaAntes?.impuesto||0)+(x.deudaAntes?.intereses||0)+(x.deudaAntes?.sancion||0))}</td><td>${dinero(x.aplicado?.total)}</td><td>${dinero(x.saldo?.total)}</td></tr></tbody></table>${Number(x.excedente||x.aplicado?.excedente||0)>0?`<div class="pdf-excedente"><b>${(x.pago?.esTDJ===true||String(x.pago?.tdj||"").trim()!=="")?"EXCEDENTE DE TÍTULO":"PAGO EN EXCESO"}:</b> ${dinero(x.excedente??x.aplicado.excedente)}</div>`:""}</div>
   <div class="pdf-aplicaciones"><h3>APLICACIÓN DEL PAGO POR VENCIMIENTO</h3><table><thead><tr><th>VENCIMIENTO</th><th>FECHA</th><th>IMPUESTO APLICADO</th><th>SALDO DEL VENCIMIENTO</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article>`;
@@ -2689,6 +2711,8 @@ async function importarExcelTDJ(){
         const end=m+1<marcas.length?marcas[m+1]:rows.length;
         const seg=rows.slice(start+1,end);
         const o=nuevaObligacion(nuevas.length+1);
+        const identidad=seg.find(r=>normImportacionTDJ(r?.[0])==="IDENTIDAD DOCUMENTAL");
+        if(identidad){o.obligacionDIAN=String(identidad[2]||"").trim();o.documentoFuente=String(identidad[4]||"").trim();}
 
         // Metadatos específicos de esta obligación.
         const tipoIdx=idxFila(seg,r=>normImportacionTDJ(r?.[0])==="TIPO DE LIQUIDACION");
@@ -3194,3 +3218,4 @@ function init(){
   comprobarMotorIA().then(r=>{window.__tdjEstadoIA={estado:"CONECTADO",version:r?.version||"—"};actualizarIndicadoresIA();if(r?.disponible||r?.version)setStatus(`MOTOR DISPONIBLE · IA DIAN v${r.version||"—"}`,"ok");}).catch(()=>{window.__tdjEstadoIA={estado:"NO COMPROBADO",version:"—"};actualizarIndicadoresIA();});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+

@@ -1,5 +1,12 @@
 # Cambios
 
+## 16.33.232 - 2026-10-22 (propuesta)
+
+- TDJ: ruta opcional de recibos compartidos para documentos identificados explícitamente como una misma obligación DIAN privada ordinaria de dos cuotas. Primero cancela documentos cubiertos y luego calcula una proporción conjunta y distribuye por vencimiento/documento.
+- Mantiene los motores privados/oficiales y sus fórmulas sin cambios. Sin identificación documental se conserva la ruta anterior. SIMPLE, beneficios y títulos judiciales quedan fuera de la nueva ruta; una combinación no admitida se informa y no se reclasifica silenciosamente.
+- Conserva identidad y trazabilidad en Excel y PDF. La prueba AINNEX reproduce los cuatro pagos y los saldos de impuesto $196.999.000 y sanción $18.592.000.
+- Preparado para revisión en rama separada. No desplegado en producción.
+
 ## 16.33.210 - 2026-10-20
 
 - Exclusivamente TDJ: la tabla visual de tasas de cada título/obligación usa la misma información efectiva del motor, inicialmente JSON local y después las tasas sincronizadas desde Supabase.
@@ -69,3 +76,4 @@
 - Los archivos de motor compartidos, la fórmula de proporcionalidad y el módulo DIAN permanecen sin cambios.
 
 Validación local: diez casos de integración TDJ, exportación XLSX binaria, regresión matemática existente (33 aserciones), sintaxis y controles de estabilidad. El diagnóstico histórico de conservación SIMPLE continúa fuera de este alcance y no se presenta como corregido.
+

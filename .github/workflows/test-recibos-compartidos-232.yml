@@ -1,0 +1,25 @@
+name: Recibos compartidos de dos cuotas
+on:
+  pull_request:
+    paths:
+      - 'js/recibos-compartidos-232.js'
+      - 'js/tdj-core-16.33.143.js'
+      - 'tests/*recibos-compartidos-232.mjs'
+      - '.github/workflows/test-recibos-compartidos-232.yml'
+permissions:
+  contents: read
+jobs:
+  recibos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check js/recibos-compartidos-232.js
+      - run: node --check js/tdj-core-16.33.143.js
+      - run: node tests/regresion-recibos-compartidos-232.mjs
+      - run: node tests/integracion-recibos-compartidos-232.mjs
+      - run: node tests/regresion-matematica.mjs
+      - run: node tests/regresion-tdj-beneficios-203.mjs
+      - run: node tests/regresion-prioridad-pagos-tdj-130.mjs
