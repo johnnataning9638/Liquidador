@@ -1990,7 +1990,24 @@ function aplicarImportacionPagosSolo(obj){
   // IMPORTACIÓN DESDE LA PESTAÑA PAGOS:
   // aquí SOLO se incorporan pagos. Nunca se deben crear/modificar
   // vencimientos de DATOS Y VENCIMIENTOS.
-  if(obj.pagos?.length)pagos=[...pagos,...obj.pagos];
+  // Evitar que un mismo registro se multiplique al pegarlo o importarlo otra vez.
+  // Se conserva la primera aparición, sin sumar valores ni cambiar la imputación.
+  const clavePago=p=>{
+    const documento=String(p.recibo||"").replace(/\D/g,"");
+    const titulo=String(p.tdj||"").replace(/\D/g,"");
+    const fecha=fechaISO(p.fecha)||String(p.fecha||"").trim();
+    const valor=truncarValorEntero(p.valor);
+    return `${titulo?"T:"+titulo:documento?"R:"+documento:"SIN-DOC"}|${fecha}|${valor}`;
+  };
+  const existentes=new Set(pagos.map(clavePago));
+  let agregados=0;
+  for(const pago of (obj.pagos||[])){
+    const clave=clavePago(pago);
+    if(existentes.has(clave))continue;
+    existentes.add(clave);
+    pagos.push(pago);
+    agregados++;
+  }
   renderPagos();
   actualizarEstadoIndicador("listo",`Parámetros cargados · Importación aplicada: ${obj.pagos?.length||0} pago(s)`);
 }
