@@ -8,6 +8,7 @@ Alcance: retirar la importación IA de DIAN y TDJ y corregir el consumo indebido
 - Trazabilidad TDJ, alta: tdj-core-16.33.143.js podía tomar el último detalle de otro movimiento si no existía el del título actual. Se omiten los títulos excluidos y se exige identidad del detalle. Los casos de beneficios y múltiples obligaciones vuelven a pasar después de esta protección conjunta.
 - Versiones y controles históricos: la navegación TDJ conservaba un guard 202 y la limpieza enlazaba a 210; las entradas y el pie visibles eran 231. Se sincronizan en 233 los puntos activos afectados. Los controles vigentes adaptan sus referencias y la exportación PDF imprimible sin eliminar la prueba crítica ni sus valores esperados.
 - Entorno CI: la ejecución inicial de navegador falló al instalar Playwright 1.55.0 sobre ubuntu-latest, que resolvió a Ubuntu 26.04 no soportado por esa versión. Se fijan los dos trabajos de navegador a Ubuntu 24.04; no se retiran pruebas ni se actualizan dependencias de aplicación.
+- El control posterior al despliegue confirmó el cierre correcto, pero falló al leer el PDF porque el runner no incluía pdftotext. Se añade poppler-utils explícitamente en ambos trabajos de navegador y se comprueba el ejecutable en CI. Las pruebas directas contra Render Live ya habían aprobado PDF, XLSX y recálculo con el extractor disponible localmente.
 
 ## Evidencia
 
