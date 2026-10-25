@@ -8,9 +8,11 @@ const jsEntrada=fs.readFileSync('js/tdj.js','utf8');
 const html=fs.readFileSync('titulos.html','utf8');
 const local=JSON.parse(fs.readFileSync('datos/tasas-moratorias.json','utf8'));
 const fecha='2026-10-19';
-assert.equal(local.some(r=>r.desde<=fecha && fecha<=r.hasta),false,'Fixture: archivo local termina en septiembre');
+assert.equal(local.find(r=>r.desde<=fecha && fecha<=r.hasta)?.tasas['TASA DIAN'],0.2659,'Respaldo local de octubre validado con SFC y Supabase');
+const localSinOctubre=local.filter(r=>!(r.desde<=fecha && fecha<=r.hasta));
+assert.equal(localSinOctubre.some(r=>r.desde<=fecha && fecha<=r.hasta),false,'Fixture independiente: simular respaldo anterior sin octubre');
 const tasasSupabaseSimuladas=[
- ...local,{desde:'2026-10-01',hasta:'2026-10-31',tasas:{'TASA DIAN':0.2659},fuente:'SUPABASE'}
+ ...localSinOctubre,{desde:'2026-10-01',hasta:'2026-10-31',tasas:{'TASA DIAN':0.2659},fuente:'SUPABASE'}
 ];
 // Reproducir funciones reales de vista sin navegador; NO copiar sus formulas a la prueba.
 const fechas=vista.slice(vista.indexOf('  function fechaISOVisual('),vista.indexOf('  function obtenerObligaciones('));

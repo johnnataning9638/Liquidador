@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-const guard=fs.readFileSync(new URL('../js/tdj-secuencia-guard-16.33.176.js',import.meta.url),'utf8');
+const guard=fs.readFileSync(new URL('../js/tdj-secuencia-guard-16.33.185.js',import.meta.url),'utf8');
 const tdj=fs.readFileSync(new URL('../js/tdj.js',import.meta.url),'utf8');
 const core=fs.readFileSync(new URL('../js/tdj-core-16.33.143.js',import.meta.url),'utf8');
-assert.match(guard,/const sinActual=/);assert.match(guard,/valor:0/);assert.match(guard,/normalesCompletamenteAplicados/);assert.match(guard,/saldo<=1000/);assert.match(guard,/const corregidos=/);
+assert.match(guard,/esExcluidoPorCierreMismaFecha/);assert.match(guard,/detalleExclusion/);assert.match(guard,/esTDJExcluidoPorCierre:true/);assert.match(guard,/total:0/);
 assert.match(tdj,/import\s+"\.\/tdj-tasa-bridge-16\.33\.174\.js\?v=16\.33\.(?:210|212)"/);
 assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.185\.js\?v=16\.33\.185"/);
 assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.176\.js/);assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);

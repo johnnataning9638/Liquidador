@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
-const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
+const root=process.env.TEST_SITE_DIR?path.resolve(process.env.TEST_SITE_DIR):path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const output=process.env.ARTIFACT_DIR||path.join(root,'test-results/anticipos-234');
 const live=process.env.TEST_BASE_URL;
 const base=live||'http://127.0.0.1:23400';

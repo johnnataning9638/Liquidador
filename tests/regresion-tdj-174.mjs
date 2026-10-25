@@ -36,12 +36,12 @@ assert.equal(r2o2.pagos.find(p=>p.id===t2.id).valor,10000000);
 
 // Contrato de exportación: el parche debe conservar el bloque canónico y
 // separar valor original, aplicado, endoso y destino, sin tocar motores.
-const exportSource=fs.readFileSync(new URL('../js/export-tdj-recovery-16.33.174.js',import.meta.url),'utf8');
+const exportSource=fs.readFileSync(new URL('../js/export-dian-tdj-control-16.33.178.js',import.meta.url),'utf8');
 assert.match(exportSource,/TÍTULOS \/ TDJ — TÍTULOS REGISTRADOS/);
 assert.match(exportSource,/VALOR ORIGINAL/);
 assert.match(exportSource,/APLICADO/);
 assert.match(exportSource,/ENDOSO/);
-assert.match(exportSource,/DISPONIBLE PARA SIGUIENTE OBLIGACIÓN \/ ENDOSO/);
+assert.match(exportSource,/CONTROL FINAL 178/);
 
 const bridgeSource=fs.readFileSync(new URL('../js/tdj-tasa-bridge-16.33.174.js',import.meta.url),'utf8');
 assert.match(bridgeSource,/remanentePrevioMismaFecha/);
