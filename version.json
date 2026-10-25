@@ -1,7 +1,7 @@
 {
-  "version": "16.33.244",
-  "previousVersion": "16.33.243",
-  "baseCommit": "0f6898ebfa04f77b8358fe74e3f01e9273a8e4fb",
+  "version": "16.33.245",
+  "previousVersion": "16.33.244",
+  "baseCommit": "5ccc8511de3fa7cc5d0df37846264e2fadf70637",
   "date": "2026-10-25",
-  "change": "Retirar solo el panel y módulo de auditoría DIAN; conservar colores y pegado de la versión actual"
+  "change": "Bloquear valor y fecha de sanción DIAN salvo selección SI, sin modificar cálculos"
 }

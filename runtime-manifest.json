@@ -1,5 +1,5 @@
 {
-  "version": "16.33.244",
+  "version": "16.33.245",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -55,7 +55,7 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "5e991b61e0d4152ea565d509d9109f7a7c2484aa33544c246d7f559889e27611",
+    "js/app.js": "7e600b6ae7b9f634edb2f93ffa75c836367eb1df557875b09f208a75fd003d56",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
@@ -93,7 +93,7 @@
   "authorizedPresentationChanges": {
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.244: conservar color y pegado de main 0f6898e; retirada exclusiva de auditoría DIAN autorizada"
+      "reason": "16.33.245: bloqueo autorizado de valor y fecha de sanción DIAN según SI; cálculos y exportaciones intactos"
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",

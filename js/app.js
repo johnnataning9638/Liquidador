@@ -677,12 +677,14 @@ function sincronizarTipoLiquidacionConSancion(){
 function habilitarSancion(){
   const tiene=$("tieneSancion");
   if(!tiene)return;
-  // La sanción se mantiene siempre editable. SI/NO controla su participación
-  // en el cálculo, pero no bloquea la captura manual del valor, fecha o beneficio.
-  ["valorSancion","fechaSancion","beneficioSancion"].forEach(id=>{
+  // Permitir captura de valor y fecha únicamente cuando se indica SI.
+  // Bloquear también el calendario sin borrar los datos ya capturados.
+  const haySancion=upper(tiene.value)==="SI";
+  ["valorSancion","fechaSancion","fechaSancionPicker"].forEach(id=>{
     const el=$(id);
-    if(el)el.disabled=false;
+    if(el)el.disabled=!haySancion;
   });
+  if($("beneficioSancion"))$("beneficioSancion").disabled=false;
   sincronizarTipoLiquidacionConSancion();
   actualizarSancionMinimaUI();
   capturarSancionUI();
@@ -1862,7 +1864,7 @@ async function limpiar(){
     else if(!el.readOnly)el.value="";
   });
   // Estado inicial: el funcionario puede elegir SI o NO. Al elegir SI,
-  // habilitarSancion() libera inmediatamente los campos de captura.
+  // habilitarSancion() sincroniza el bloqueo con la selección de sanción.
   if($("sancionMinima"))$("sancionMinima").value="";
   renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("detalleCalculo").innerHTML="";
   ["rSaldoImpuestoIndicador","rSaldoSancionIndicador","rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotalFooter"].forEach(id=>{const el=$(id);if(el)el.textContent=dinero(0);});
