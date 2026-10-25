@@ -1,7 +1,7 @@
 {
-  "version": "16.33.233",
-  "previousVersion": "16.33.231",
-  "baseCommit": "18cd6ba645b7d40bd0f3f8f8587c145c1fd7d946",
+  "version": "16.33.234",
+  "previousVersion": "16.33.233",
+  "baseCommit": "f5895776939f6c7116e75b14bfa8afbbca6075e5",
   "date": "2026-10-24",
-  "change": "Importación normal sin IA en DIAN y TDJ"
+  "change": "Recuperar anticipos DIAN al importar Excel TDJ sin títulos"
 }

@@ -2114,6 +2114,7 @@ async function importarExcelNormal(){
         titulos.push({tdj,fecha,valor,observacion:upper(obsRaw||"")});
       };
       let seccionEncontrada=false;
+      let filasTitulosDeclaradas=0;
       for(let i=0;i<rows.length;i++){
         const row=rows[i]||[];
         const primera=normalizarEtiqueta(row[0]);
@@ -2135,6 +2136,7 @@ async function importarExcelNormal(){
           if(!fila.some(v=>v!==null&&v!==undefined&&String(v).trim()!==""))break;
           const marcador=normalizarEtiqueta(fila[0]);
           if(marcador.startsWith("RECUPERACION COMPLETA")||marcador.startsWith("FIN RECUPERACION")||marcador.startsWith("TITULOS / TDJ")||marcador.startsWith("TOTAL ENDOSO"))break;
+          filasTitulosDeclaradas++;
           agregarTitulo(fila[ixT],fila[ixF],fila[ixV],ixO>=0?fila[ixO]:"");
         }
         if(titulos.length)break;
@@ -2150,7 +2152,10 @@ async function importarExcelNormal(){
           }
         }
       }
-      if(!titulos.length)throw new Error("No se reconocieron títulos en el Excel TDJ. Se cancela la importación para evitar perderlos.");
+      // Los TDJ son opcionales. Un inventario reconocido y vacío no debe
+      // cancelar los vencimientos y pagos de la obligación. Si hay filas de
+      // títulos sin reconocer, se conserva la protección contra su pérdida.
+      if(!titulos.length&&(!seccionEncontrada||filasTitulosDeclaradas>0))throw new Error("No se reconocieron títulos en el Excel TDJ. Se cancela la importación para evitar perderlos.");
       // En DIAN todos los TDJ registrados ingresan sin duplicar registros.
       // La tasa/beneficio proviene exclusivamente de la obligación 1.
       const ixRecuperacion=rows.findIndex(r=>normExcel(r?.[0])==="DATOS OBLIGACION"&&normExcel(r?.[1])==="CONCEPTO");
