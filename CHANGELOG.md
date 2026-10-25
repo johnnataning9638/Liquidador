@@ -1,3 +1,9 @@
+# 16.33.246
+
+- Retirar cuatro notas históricas de RELEASES y dos comprobantes antiguos de integración/despliegue Render. El historial permanece recuperable en Git.
+- Conservar las pruebas, AGENTS.md, .agents, CHANGELOG, auditoría técnica y guía de operación TIM/IPC.
+- Sin cambios funcionales en DIAN/TDJ, cálculos, beneficios, sanciones, importación, exportación ni Supabase. Los 51 recursos públicos se conservan.
+
 # 16.33.245
 
 - DIAN: valor y fecha de sanción, incluido el calendario, bloqueados si Tiene sanción está vacío o en NO; habilitados con SI. Se conservan los valores al alternar y el comportamiento del tipo de liquidación.

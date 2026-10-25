@@ -1,4 +1,4 @@
-import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.245";
+import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.246";
 instalarPegadoUnicoTitulosTDJ();
 // TDJ v16.33.212 — navegación TAB + tasa individual + restricciones + secuencia/reconciliación + cierre PDF + recuperación de beneficios Excel + identidad estable por obligación + resolución robusta de contexto + remanente antes de endoso + silencio de alerta falsa de endoso.
 // Las capas de secuencia se cargan de forma estática para eliminar la carrera
@@ -71,6 +71,6 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.245");
+import("./tdj-core-16.33.143.js?v=16.33.246");
 // Capa visual TDJ × OBLIGACIÓN.
 import("./tdj-visual-beneficios.js?v=16.33.210");
