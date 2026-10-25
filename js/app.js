@@ -770,7 +770,7 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
   let enBloquePagosVerde=false;
   const body=safeRows.map((r,i)=>{
     const etiqueta=String(Array.isArray(r)?r[0]??"": "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
-    if(etiqueta==="PAGOS Y APLICACION" || etiqueta==="PAGOS REGISTRADOS — LIQUIDACION NORMAL")enBloquePagosVerde=true;
+    if(/^DETALLE TDJ\b.*\bAPLICACION\b/.test(etiqueta))enBloquePagosVerde=true;
     else if(!Array.isArray(r)||r.length===0||titleRows.includes(i))enBloquePagosVerde=false;
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
