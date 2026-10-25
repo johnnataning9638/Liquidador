@@ -1,3 +1,7 @@
+# 16.33.241
+
+- Encabezados DIAN/TDJ centrados respecto a la pantalla, con adaptación de navegación en pantallas pequeñas. Sin cambios funcionales.
+
 # 16.33.240
 
 - DIAN: excedentes nominales completos en indicador y soportes PDF/Excel, incluso si el cálculo reservó parte de un TDJ para pagos posteriores.

@@ -1,7 +1,7 @@
 {
-  "version": "16.33.240",
-  "previousVersion": "16.33.239",
-  "baseCommit": "f84ff1b9e2acf3db2aa9e4b4b49d3302d1c46146",
+  "version": "16.33.241",
+  "previousVersion": "16.33.240",
+  "baseCommit": "8dec06ba0b808862d065b8fba4db15cb92fd99b9",
   "date": "2026-10-24",
-  "change": "Excedentes nominales DIAN coherentes en pantalla/PDF/Excel y detalle TDJ sin aplicación; motores intactos"
+  "change": "Centrar títulos y subtítulos DIAN/TDJ respecto a la pantalla, con navegación adaptable"
 }
