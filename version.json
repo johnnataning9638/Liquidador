@@ -1,7 +1,7 @@
 {
-  "version": "16.33.243",
-  "previousVersion": "16.33.242",
-  "baseCommit": "8dec06ba0b808862d065b8fba4db15cb92fd99b9",
+  "version": "16.33.244",
+  "previousVersion": "16.33.243",
+  "baseCommit": "0f6898ebfa04f77b8358fe74e3f01e9273a8e4fb",
   "date": "2026-10-25",
-  "change": "Protección de pegado único en pagos DIAN y TDJ"
+  "change": "Retirar solo el panel y módulo de auditoría DIAN; conservar colores y pegado de la versión actual"
 }

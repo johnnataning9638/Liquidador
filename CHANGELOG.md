@@ -1,3 +1,7 @@
+# 16.33.244
+
+- DIAN: retirar únicamente el panel Auditoría y trazabilidad y su código informativo. Colores Excel, protección de pegado, cálculos y soportes de la versión publicada 16.33.243 conservados.
+
 # 16.33.243
 
 - Pegado único en los cuadros de pagos de DIAN y TDJ: captura literal del portapapeles sin propagación múltiple de eventos.
