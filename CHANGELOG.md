@@ -1,5 +1,11 @@
 # Cambios
 
+## 16.33.234 - 2026-10-24
+
+- DIAN: un Excel TDJ con inventario de títulos reconocido y vacío ya no cancela la carga de cuotas, fechas e impuestos. Se conserva el rechazo de filas de títulos que no puedan reconocerse.
+- Se reproduce y verifica la recuperación de seis anticipos, pagos y ausencia de títulos con el archivo local del usuario, además de una prueba pública con datos ficticios. Verificados los recorridos DIAN → Excel → DIAN y DIAN → Excel → TDJ.
+- No modifica TDJ, motores de cálculo, tasas ni datos de Supabase. Versiones de entrada y visibles sincronizadas en 16.33.234.
+
 ## 16.33.233 - 2026-10-24
 
 - DIAN y TDJ: se retiran los cinco botones Importar IA, sus indicadores, la conexión al motor IA y el envío de ejemplos. Se conserva el importador normal.
