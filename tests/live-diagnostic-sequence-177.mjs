@@ -1,4 +1,4 @@
-import {chromium} from 'playwright';
+import {chromium} from './browser-runtime.mjs';
 const u='https://liquidador-de-obligaciones-tributarias.onrender.com/titulos.html?v=16.33.177';
 const b=await chromium.launch({headless:true});const p=await b.newPage();try{await p.goto(u,{waitUntil:'networkidle',timeout:30000});const r=await p.evaluate(async()=>{const {MotorLiquidacion}=await import('./js/motor-liquidacion.js?v=16.33.161');const {ajustarTDJParaPagosPosteriores}=await import('./js/prioridad-tdj-v132.js?v=16.33.161');const motor=new MotorLiquidacion();const pagos=[
 {id:'P1',numero:1,fecha:'2026-06-16',valor:15027000,tipo:'TASA DIAN'},

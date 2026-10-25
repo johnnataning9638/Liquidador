@@ -15,8 +15,12 @@ export function ajustarTDJParaPagosPosteriores(motor,datos,{soloTDJId}={}){
     return d&&Number(d.aplicado?.total||0)>=Number(p.valor)-0.5&&Number(d.excedente??d.aplicado?.excedente??0)<=0.5;
   });
   const nominal=Math.max(0,Math.trunc(Number(actual.valor)||0));
+  // 16.33.233: proteger primero el cierre sin el título actual. La búsqueda
+  // del máximo factible podía consumir $1.000 por redondeo aun con saldo cero.
+  const sinActual=simular(0);
+  if(protegidos(sinActual)&&Number(sinActual.total)<=0.5){actual.valor=0;return {...datos,pagos};}
   if(protegidos(simular(nominal)))return {...datos,pagos};
-  if(!protegidos(simular(0))){actual.valor=0;return {...datos,pagos};}
+  if(!protegidos(sinActual)){actual.valor=0;return {...datos,pagos};}
   let lo=0,hi=nominal,mejor=0;
   while(lo<=hi){const mid=Math.floor((lo+hi)/2);if(protegidos(simular(mid))){mejor=mid;lo=mid+1;}else hi=mid-1;}
   actual.valor=mejor>1000?Math.floor(mejor/1000)*1000:mejor;

@@ -7,5 +7,6 @@ assert.match(guard,/const sinActual=/);assert.match(guard,/valor:0/);assert.matc
 assert.match(tdj,/import\s+"\.\/tdj-tasa-bridge-16\.33\.174\.js\?v=16\.33\.(?:210|212)"/);
 assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.185\.js\?v=16\.33\.185"/);
 assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.176\.js/);assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
-assert.match(tdj,/tdj-core-16\.33\.143\.js/);assert.match(tdj,/tdj-core-16\.33\.143\.js\?v=16\.33\.210/);assert.ok(core.length>200000,'El core protegido debe permanecer presente y no sustituirse por una versión reducida.');
+const {version}=JSON.parse(fs.readFileSync('version.json','utf8'));
+assert.match(tdj,/tdj-core-16\.33\.143\.js/);assert.ok(tdj.includes(`tdj-core-16.33.143.js?v=${version}`));assert.ok(core.length>200000,'El core protegido debe permanecer presente y no sustituirse por una versión reducida.');
 console.log('REGRESION TDJ 16.33.176: OK — compatibilidad con guardia vigente 185');
