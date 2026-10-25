@@ -78,23 +78,11 @@
 
   /* Botones principales: ancho completo, sin romper la lógica de eventos. */
   .card-head>.primario,
-  .card-head>.secundario,
-  .tdj-sheet-actions button{
+  .card-head>.secundario{
     min-height:40px;
   }
   .card-head>.primario{
     width:100%;
-  }
-  .tdj-sheet-actions{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:6px;
-    margin:8px 0;
-  }
-  .tdj-sheet-actions button{
-    width:100%;
-    margin:0;
-    padding:9px 10px;
   }
 
   /* Importadores: controles apilados, sin desbordamiento horizontal. */

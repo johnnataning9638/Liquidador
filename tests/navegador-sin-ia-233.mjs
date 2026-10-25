@@ -35,6 +35,10 @@ try {
     assert.equal(await page.locator('.indicador-ia').count(), 0);
   };
   const numeric = text => Number(text.replace(/[^\d-]/g,''));
+  const buttonStyles=async(selector)=>page.locator(selector).evaluateAll(buttons=>buttons.map(button=>{
+    const s=getComputedStyle(button);
+    return Object.fromEntries(['height','fontFamily','fontSize','fontWeight','lineHeight','padding','borderRadius','backgroundColor','color'].map(k=>[k,s[k]]));
+  }));
   const captureExports = async (pdfButton, excelButton, label, expectedBalance) => {
     await page.evaluate(()=>{
       window.__pdfHTML233=''; window.__xlsx233=null;
@@ -88,8 +92,10 @@ try {
     ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],
     'DIAN reúne las exportaciones después de Importar Excel');
   await captureExports(page.locator('#btnExportarPdf'),page.locator('#btnExportarExcel'),'dian',900000);
+  const dianDesktop=await buttonStyles('[data-pane="resultados"] .botonera button');
   await page.locator('[data-pane="resultados"] .botonera').screenshot({path:path.join(output,'dian-botonera.png')});
   await page.setViewportSize({width:390,height:844});
+  const dianMobile=await buttonStyles('[data-pane="resultados"] .botonera button');
   for(const id of ['btnExportarExcel','btnExportarPdf']){
     const button=page.locator('#'+id);await button.scrollIntoViewIfNeeded();
     const box=await button.boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=390,'Exportación accesible en móvil');
@@ -103,6 +109,19 @@ try {
   await page.goto(`${baseURL}/titulos.html?v=16.33.233`, {waitUntil:'networkidle'});
   await page.waitForSelector('.obligacion-card', {state:'attached'});
   await assertNoIA();
+  for(const [width,reference] of [[1365,dianDesktop],[390,dianMobile]]){
+    await page.setViewportSize({width,height:width===390?844:950});
+    for(const pane of ['datos','pagos','titulos']){
+      await page.locator(`[data-tab="${pane}"]`).click();
+      const bar=`[data-pane="${pane}"] .tdj-sheet-actions`;
+      assert.deepEqual(await page.locator(bar+' button').allTextContents(),
+        ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Orden TDJ ${pane}`);
+      assert.deepEqual(await buttonStyles(bar+' button'),reference,`Diseño DIAN en TDJ ${pane} a ${width}px`);
+      await page.locator(bar).screenshot({path:path.join(output,`tdj-botonera-${pane}-${width}.png`)});
+    }
+  }
+  await page.setViewportSize({width:1365,height:950});
+  await page.locator('[data-tab="datos"]').click();
   await page.locator('#destinoImportacionObligacion').selectOption({index:1});
   await page.locator('#importarObligacionTexto').fill(obligation);
   await page.locator('#btnImportarObligacionTDJ').click();
