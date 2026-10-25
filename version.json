@@ -1,7 +1,7 @@
 {
-  "version": "16.33.236",
-  "previousVersion": "16.33.235",
-  "baseCommit": "bea593e58361599750d20b88eed5866a297a0304",
+  "version": "16.33.237",
+  "previousVersion": "16.33.236",
+  "baseCommit": "c8bcde0c07112b23e5f2718be8c515a602870335",
   "date": "2026-10-24",
-  "change": "Unificar orden y diseño de las tres barras TDJ con DIAN"
+  "change": "Mover navegación TDJ al encabezado y retirar botones inferiores"
 }

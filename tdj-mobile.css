@@ -187,15 +187,6 @@
   }
   .nota-endoso{margin:8px 10px 10px}
 
-  .nav-footer{
-    flex-direction:column;
-    gap:6px;
-    margin-top:10px;
-  }
-  .nav-footer button{
-    width:100%;
-    min-height:40px;
-  }
 
   /* Paneles de tasas/IPC: se conservan intactos y solo se adaptan al ancho. */
   .tdj-parametros-panel{
