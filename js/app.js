@@ -2299,6 +2299,19 @@ function configurarBase(){
   // Se normaliza únicamente el texto PEGADO, no los datos escritos manualmente.
   // Identificamos filas completas por recibo/TDJ + fecha + valor; preservamos el
   // primer encabezado y todas las filas diferentes en su orden original.
+  // Captura única del portapapeles, antes de los manejadores por campo.
+  // Nunca genera pagos: solo muestra una copia literal del último pegado.
+  if(!window.__dianPegadoPagosUnico243){
+    window.__dianPegadoPagosUnico243=true;
+    window.addEventListener("paste",e=>{
+      if(e.target?.id!=="pegarDatos")return;
+      const texto=e.clipboardData?.getData("text/plain");
+      if(typeof texto!=="string")return;
+      e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();
+      const campo=e.target;campo.value=texto;
+      campo.setSelectionRange?.(texto.length,texto.length);
+    },true);
+  }
   $("pegarDatos")?.addEventListener("paste",e=>{
     const texto=e.clipboardData?.getData("text/plain");
     if(!texto)return;
