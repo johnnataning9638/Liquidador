@@ -167,6 +167,9 @@ try {
   await page.waitForSelector('.obligacion-card', {state:'attached'});
   await page.locator('.topbar .ruta-modulo button').nth(1).click();
   await page.waitForURL('**/liquidacion.html');
+  // La carga de parámetros debe terminar antes de salir de DIAN; abortarla
+  // durante la siguiente navegación activa el aviso de error de la aplicación.
+  await page.waitForLoadState('networkidle');
   await page.goto(`${baseURL}/titulos.html`,{waitUntil:'networkidle'});
   await page.locator('.topbar .ruta-modulo button').first().click();
   await page.waitForURL('**/index.html');
