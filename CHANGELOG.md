@@ -1,3 +1,10 @@
+# 16.33.248
+
+- Corrección matemática autorizada: retirar redistribuirSancionSimple, que forzaba sanción después de aplicar la proporción y descontaba saldos varias veces. El motor conserva su reparto proporcional original.
+- En cuatro a seis cuotas, registrar la sanción proporcional sobre la misma base de anticipos, también antes o el día del primer vencimiento.
+- Caso de control: deuda $430.000 y pago $10.000; aplicar $9.000 a impuesto y $1.000 a sanción, con saldo $391.000 + $29.000 = $420.000.
+- Conservar fórmula de proporción/redondeo, TDJ mínimos, beneficios, tasas, IPC y motor oficial. Prueba de conservación ahora obligatoria en CI y auditoría exacta del alcance autorizado.
+
 # 16.33.247
 
 - TDJ: el indicador de TIM del 31/03/2026 reconoce la tasa mensual de marzo ya utilizada por el motor, aunque el tramo histórico termine el día 30. Las tasas derivadas vuelven a mostrarse.

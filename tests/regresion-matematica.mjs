@@ -13,10 +13,10 @@ const rule = {
   periodicidad: "ANUAL"
 };
 
-function motor() {
+function motor(tasas = rates) {
   return new MotorLiquidacion({
-    tasasMoratorias: rates,
-    intereses: rates,
+    tasasMoratorias: tasas,
+    intereses: tasas,
     reglasObligaciones: [rule],
     uvt: []
   });
@@ -91,9 +91,10 @@ for (const count of [4, 5, 6]) {
 }
 
 // Caso integral: 6 anticipos pagados antes de la fecha de sanción.
-// La sanción declarada ($2.294.000) debe quedar distribuida en los anticipos
-// y nunca trasladarse artificialmente a un pago posterior.
-const simple6Pagos = motor().calcular({
+// La sanción participa proporcionalmente; no se fuerza su cancelación total.
+// Con tasa cero: cada pago de $500.000 distribuye $305.000 a impuesto
+// y $195.000 a sanción, usando el redondeo a miles ya establecido.
+const simple6Pagos = motor([{...rates[0],tasas:{"TASA DIAN":0}}]).calcular({
   concepto: "PRUEBA REGRESION",
   anio: 2026,
   tipoLiquidacion: "PRIVADA",
@@ -114,7 +115,8 @@ const simple6Pagos = motor().calcular({
   }))
 });
 const sancionSimple6Aplicada=simple6Pagos.detalle.reduce((a,d)=>a+Number(d?.aplicado?.sancion||0),0);
-ok("SIMPLE 6 anticipos: la sanción total de $2.294.000 se imputa en los pagos anteriores", sancionSimple6Aplicada === 2294000);
+ok("SIMPLE 6 anticipos: sanción proporcional de seis pagos de $195.000", sancionSimple6Aplicada === 1170000);
+ok("SIMPLE 6 anticipos: saldo real inicial menos pagos", simple6Pagos.total === 2894000);
 ok("SIMPLE 6 anticipos: todos los pagos participan en la distribución de sanción", simple6Pagos.detalle.every(d=>Number(d?.aplicado?.sancion||0)>0));
 
 // SIMPLE 4–6 cuotas: los anticipos conservan la metodología SIMPLE y no

@@ -1,5 +1,4 @@
-// Diagnóstico NO BLOQUEANTE: reproduce un defecto conocido sin alterar el motor.
-// Una vez corregido el cálculo, convertir este control en prueba obligatoria.
+// Control obligatorio: saldo inicial menos pago y proporción de cuatro cuotas.
 import assert from "node:assert/strict";
 import { MotorLiquidacion } from "../js/motor-liquidacion.js";
 
@@ -19,3 +18,6 @@ const resultado = motor.calcular(datos);
 const esperado = 430000-10000;
 console.log(JSON.stringify({esperado,obtenido:resultado.total,detalle:resultado.detalle?.[0]?.aplicado},null,2));
 assert.equal(resultado.total,esperado,"Conservación monetaria: saldo inicial menos pagos debe coincidir con saldo final (sin intereses)");
+
+assert.deepEqual([resultado.detalle[0].aplicado.impuesto,resultado.detalle[0].aplicado.sancion],[9000,1000]);
+assert.deepEqual([resultado.impuesto,resultado.sancion],[391000,29000]);

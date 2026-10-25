@@ -7,9 +7,9 @@ for(const f of removed)assert.equal(fs.existsSync(f),false,`${f} no se utiliza y
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
 for(const [f,expected] of Object.entries(manifest.protected)){
  const actual=crypto.createHash('sha256').update(fs.readFileSync(f,'utf8').replace(/\r\n/g,'\n')).digest('hex');
- assert.equal(actual,expected,`${f}: se prohíbe cambiar fórmulas o capas matemáticas`);
+ assert.equal(actual,expected,`${f}: contenido debe coincidir con el manifiesto aprobado`);
  const baseline=execFileSync('git',['show',`627b181fb2c56a9e67e578fa72ea1fc129fc950a:${f}`]);
- assert.equal(crypto.createHash('sha256').update(baseline.toString('utf8').replace(/\r\n/g,'\n')).digest('hex'),manifest.authorizedPresentationChanges?.[f]?.baselineHash||expected,`${f}: conservar referencia anterior a la presentación autorizada`);
+ assert.equal(crypto.createHash('sha256').update(baseline.toString('utf8').replace(/\r\n/g,'\n')).digest('hex'),manifest.authorizedCalculationChanges?.[f]?.baselineHash||manifest.authorizedPresentationChanges?.[f]?.baselineHash||expected,`${f}: conservar referencia anterior a la presentación autorizada`);
 }
 assert.equal(manifest.version,JSON.parse(fs.readFileSync('version.json','utf8')).version);
 for(const f of manifest.files)assert.ok(fs.existsSync(f),`Recurso publicado faltante: ${f}`);

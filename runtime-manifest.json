@@ -1,5 +1,5 @@
 {
-  "version": "16.33.247",
+  "version": "16.33.248",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -62,9 +62,9 @@
     "js/importador-excel.js": "07646b3a040312e2efe13e95ceab0643b703a5555c4f4eb7970ebc80a047c785",
     "js/importador-obligacion.js": "6d4e18e5b790d21ed5ea252ade93ad91fcae7d753c467e077ec3290dbc81672f",
     "js/importador.js": "33bb0580f7bdb8ecd6afcda22821aefca9fc080dcd57519665a4da811fecb38a",
-    "js/motor-liquidacion-base.js": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
+    "js/motor-liquidacion-base.js": "870f95f167163266e9d8210e7ee93ebb96da01fe9dacb888415e8c22d0a1bb05",
     "js/motor-liquidacion-oficial.js": "7d6d51053cd4fc89c6d89253e499269f85750b9156dcce4a724763831ae6035a",
-    "js/motor-liquidacion.js": "601604752e4ba8840c5c8d5840a4f1f07da7b47b75db49d22ac99daad76b11fe",
+    "js/motor-liquidacion.js": "955768083c15a1ddb21208bf71049e390ee087aa6dd4b9b138c237b772bb72f8",
     "js/motor-normativo-historico.js": "a9b985ddfbe85aa9a470769a39c0e2cc1ae5b07b4290ccc53a47d168c1f96044",
     "js/prioridad-tdj-v132.js": "3a8fda712cc0d4b145f2256bf0e44afae213e310aade155e1be88899c9169233",
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
@@ -110,6 +110,16 @@
     "js/tdj-visual-beneficios.js": {
       "baselineHash": "7335afacead8672878eedaba3e1b5907e23aaa32db0421a194f51208f12cbc9e",
       "reason": "16.33.247: alinear indicador visual de huecos intramensuales con TIM del motor; sin extender a meses no parametrizados"
+    }
+  },
+  "authorizedCalculationChanges": {
+    "js/motor-liquidacion.js": {
+      "baselineHash": "601604752e4ba8840c5c8d5840a4f1f07da7b47b75db49d22ac99daad76b11fe",
+      "reason": "16.33.248: usuario autoriza conservar proporción y restar una vez el pago en cuatro a seis cuotas; alcance verificado por tests/alcance-proporcion-248.mjs"
+    },
+    "js/motor-liquidacion-base.js": {
+      "baselineHash": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
+      "reason": "16.33.248: usuario autoriza conservar proporción y restar una vez el pago en cuatro a seis cuotas; alcance verificado por tests/alcance-proporcion-248.mjs"
     }
   }
 }
