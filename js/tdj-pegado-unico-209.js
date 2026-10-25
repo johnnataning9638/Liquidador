@@ -3,7 +3,7 @@
 // ni multiplicación por la cantidad de obligaciones existentes.
 export function procesarPegadoTitulosTDJ(evento){
   const el=evento?.target;
-  if(!el||el.id!=="importarTitulosTexto")return false;
+  if(!el||!["importarTitulosTexto","importarPagosTexto"].includes(el.id))return false;
   const clip=evento.clipboardData?.getData("text/plain");
   if(typeof clip!=="string")return false;
   evento.preventDefault();
