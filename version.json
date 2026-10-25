@@ -1,7 +1,7 @@
 {
-  "version": "16.33.249",
-  "previousVersion": "16.33.248",
-  "baseCommit": "47bfdab7eda02cc8e2f3fc43f52cc9c2993492e6",
+  "version": "16.33.250",
+  "previousVersion": "16.33.249",
+  "baseCommit": "3a051662a2ad43a51b08d6d8794c4e5263ada8f3",
   "date": "2026-10-25",
-  "change": "TDJ: resumen final PDF siempre, con o sin titulos y movimientos, con saldos del resultado"
+  "change": "Franja verde en VALOR PAGO de cada detalle PDF DIAN y TDJ, sin alterar cálculos"
 }
