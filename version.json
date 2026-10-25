@@ -1,7 +1,7 @@
 {
-  "version": "16.33.245",
-  "previousVersion": "16.33.244",
-  "baseCommit": "5ccc8511de3fa7cc5d0df37846264e2fadf70637",
+  "version": "16.33.246",
+  "previousVersion": "16.33.245",
+  "baseCommit": "96de8b0ccd7e784aa901a7b75f29217eddfc902a",
   "date": "2026-10-25",
-  "change": "Bloquear valor y fecha de sanción DIAN salvo selección SI, sin modificar cálculos"
+  "change": "Retirar seis notas históricas prescindibles sin cambios funcionales"
 }
