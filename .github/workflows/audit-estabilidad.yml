@@ -74,6 +74,8 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftotext -v
       - name: Verificar recursos TDJ 177 en Render LIVE
         run: node tests/live-resource-177.mjs
       - name: Diagnóstico directo prioridad TDJ4 177
