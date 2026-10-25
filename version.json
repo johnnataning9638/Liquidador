@@ -1,7 +1,7 @@
 {
-  "version": "16.33.246",
-  "previousVersion": "16.33.245",
-  "baseCommit": "96de8b0ccd7e784aa901a7b75f29217eddfc902a",
+  "version": "16.33.247",
+  "previousVersion": "16.33.246",
+  "baseCommit": "ec4ca859bcdbe13440e7a651d05214660f8085fb",
   "date": "2026-10-25",
-  "change": "Retirar seis notas históricas prescindibles sin cambios funcionales"
+  "change": "Corregir visualización TIM y tasas derivadas del TDJ del 31/03/2026 sin cambiar el cálculo"
 }

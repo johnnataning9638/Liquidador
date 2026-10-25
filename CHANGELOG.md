@@ -1,3 +1,8 @@
+# 16.33.247
+
+- TDJ: el indicador de TIM del 31/03/2026 reconoce la tasa mensual de marzo ya utilizada por el motor, aunque el tramo histórico termine el día 30. Las tasas derivadas vuelven a mostrarse.
+- No se extienden tasas a meses sin parametrizar ni se modifican cálculos, beneficios, tablas, exportaciones o Supabase.
+
 # 16.33.246
 
 - Retirar cuatro notas históricas de RELEASES y dos comprobantes antiguos de integración/despliegue Render. El historial permanece recuperable en Git.

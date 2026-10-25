@@ -1,5 +1,5 @@
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
-import {referenciaTimTDJ} from './tdj-tasa-vista-207.js?v=16.33.207';
+import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33.247';
 // TDJ v16.33.205 — TASAS INDIVIDUALES POR TÍTULO Y OBLIGACIÓN.
 // La columna OBLIGACIÓN conserva su función exclusivamente descriptiva.
 // La selección TIPO DE TASA/TASA se aplica ahora por combinación TDJ × OBLIGACIÓN.
@@ -137,7 +137,7 @@ import {referenciaTimTDJ} from './tdj-tasa-vista-207.js?v=16.33.207';
     if(es("DECRETO 1474")&&es("ART. 21"))return 0;
     if(es("DECRETO 0240")&&es("ART. 3"))return 0.045;
     if(es("DECRETO 0240")&&es("ART. 4"))return 0;
-    const row=tasasMoratorias.find(x=>String(x?.desde||"").slice(0,10)<=f&&String(x?.hasta||"").slice(0,10)>=f);
+    const row=filaTimVisualTDJ(f,tasasMoratorias);
     const tim=Number(row?.tasas?.["TASA DIAN"]);
     if(!Number.isFinite(tim))return null;
     const r4=n=>Math.round(Number(n)*10000)/10000;
