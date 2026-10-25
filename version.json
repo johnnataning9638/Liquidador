@@ -1,7 +1,7 @@
 {
-  "version": "16.33.235",
-  "previousVersion": "16.33.234",
-  "baseCommit": "c441176ec5c9626430200282df66abdcccfa01b1",
+  "version": "16.33.236",
+  "previousVersion": "16.33.235",
+  "baseCommit": "bea593e58361599750d20b88eed5866a297a0304",
   "date": "2026-10-24",
-  "change": "Reubicar exportaciones Excel y PDF en la barra inferior de resultados DIAN"
+  "change": "Unificar orden y diseño de las tres barras TDJ con DIAN"
 }

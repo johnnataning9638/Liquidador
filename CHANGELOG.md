@@ -1,5 +1,12 @@
 # Cambios
 
+## 16.33.236 — Barras de acciones TDJ como DIAN
+- Las tres pestañas TDJ comparten el orden Importar Excel, Exportar Excel, Exportar PDF, Limpiar y Calcular liquidación.
+- Se reutilizan clases de DIAN para tamaño, tipografía, colores, espaciado y adaptación móvil; se retiran estilos duplicados de las barras TDJ.
+- Se conservan clases de eventos e identificadores, importaciones, exportaciones, limpieza y motores.
+- Prueba de navegador compara estilos computados de cada botón con DIAN en escritorio y móvil, además de la regresión funcional PDF/XLSX vigente.
+
+
 ## 16.33.235 — Botones de exportación DIAN
 - En Resultados DIAN, Exportar Excel y Exportar PDF quedan después de Importar Excel en la barra inferior.
 - Se elimina el recuadro Soportes de la liquidación; se conserva el aviso de exportación accesible.
