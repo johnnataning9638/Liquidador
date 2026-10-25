@@ -1,5 +1,5 @@
 {
-  "version": "16.33.249",
+  "version": "16.33.250",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -92,12 +92,12 @@
   "notes": "Los sufijos históricos identifican capas activas. Sus bytes matemáticos se conservan.",
   "authorizedPresentationChanges": {
     "js/app.js": {
-      "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.245: bloqueo autorizado de valor y fecha de sanción DIAN según SI; cálculos y exportaciones intactos"
+      "baselineHash": "7e600b6ae7b9f634edb2f93ffa75c836367eb1df557875b09f208a75fd003d56",
+      "reason": "16.33.250: franja verde exclusiva del encabezado VALOR PAGO del detalle PDF DIAN; sin cambios en cálculos"
     },
     "js/tdj-core-16.33.143.js": {
-      "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
-      "reason": "16.33.249: cierre PDF TDJ sin titulos ni movimientos, saldos existentes y cache de presentacion; sin cambios en motores"
+      "baselineHash": "5d4e0a2bf191355bb3f34d35e1e3fcf913c3150b3abcaf44057e461b0f96f575",
+      "reason": "16.33.250: franja verde exclusiva del encabezado VALOR PAGO del detalle PDF TDJ; sin cambios en cálculos"
     },
     "js/tdj-pegado-unico-209.js": {
       "baselineHash": "f2633e7de992c4825ed13d0b7dbfbdedbcd036584652829b35f0182b488db785",
