@@ -38,6 +38,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-anticipos-234.mjs
       - name: Validar excedente nominal DIAN y detalle TDJ sin aplicación
         run: TEST_SITE_DIR=dist node tests/navegador-excedentes-240.mjs
+      - name: Verificar tasas de tres TDJ y cierre de marzo
+        run: TEST_SITE_DIR=dist node tests/navegador-tasa-247.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

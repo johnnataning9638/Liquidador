@@ -1,5 +1,5 @@
 {
-  "version": "16.33.246",
+  "version": "16.33.247",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -84,9 +84,9 @@
     "js/tdj-prioridad-203.js": "5b4394a448498e192ad4bf806012175f5296535071264c4749147d921481c91d",
     "js/tdj-secuencia-guard-16.33.185.js": "cc2e81461bf674433c8cc4be005fe0ac7c7d441880dd613e7791283f933649e1",
     "js/tdj-tasa-bridge-16.33.174.js": "10160298aa8227ec3677a0ca064699fd03dd565f5e5bf50fdb9b2241607f81d8",
-    "js/tdj-tasa-vista-207.js": "e482df0694e9a67d4ae6fd078e42b85568006909e7310467dc728304c110b653",
+    "js/tdj-tasa-vista-207.js": "0e0bf240844b7943f8a6008b5b7bed493b5a38aa7a7ecf82700086602774fc32",
     "js/tdj-tasas-203.js": "9a085bb621d05eb40c071d139134678e72980eed44ce1929ccb3aac9483fe926",
-    "js/tdj-visual-beneficios.js": "7335afacead8672878eedaba3e1b5907e23aaa32db0421a194f51208f12cbc9e",
+    "js/tdj-visual-beneficios.js": "d987545f1298c44ebc7ce8172720082e8532185b51b954831d4eed19e43acf5c",
     "js/utilidades.js": "2dd81359c5962e39c9936084a707f532426ad6143efe41a7ff8c77baf4d4d3bf"
   },
   "notes": "Los sufijos históricos identifican capas activas. Sus bytes matemáticos se conservan.",
@@ -102,6 +102,14 @@
     "js/tdj-pegado-unico-209.js": {
       "baselineHash": "f2633e7de992c4825ed13d0b7dbfbdedbcd036584652829b35f0182b488db785",
       "reason": "16.33.244: conservar color y pegado de main 0f6898e; retirada exclusiva de auditoría DIAN autorizada"
+    },
+    "js/tdj-tasa-vista-207.js": {
+      "baselineHash": "e482df0694e9a67d4ae6fd078e42b85568006909e7310467dc728304c110b653",
+      "reason": "16.33.247: alinear indicador visual de huecos intramensuales con TIM del motor; sin extender a meses no parametrizados"
+    },
+    "js/tdj-visual-beneficios.js": {
+      "baselineHash": "7335afacead8672878eedaba3e1b5907e23aaa32db0421a194f51208f12cbc9e",
+      "reason": "16.33.247: alinear indicador visual de huecos intramensuales con TIM del motor; sin extender a meses no parametrizados"
     }
   }
 }
