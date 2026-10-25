@@ -21,7 +21,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Obligaciones — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.234">
+<link rel="stylesheet" href="estilos.css?v=16.33.235">
 </head>
 <body>
 <header class="topbar">
@@ -159,22 +159,14 @@
 
 
 
-<section class="panel soporte-panel">
-  <div class="panel-title fila-titulo"><span>Soportes de la liquidación</span><span class="badge soporte-badge">FASE 17</span></div>
-  <div class="soporte-contenido">
-    <div class="nota">Genere un archivo Excel con la trazabilidad de vencimientos, pagos, intereses, imputaciones y saldos. El soporte PDF reproduce la estructura del liquidador y muestra la aplicación de cada pago.</div>
-    <div class="acciones soporte-acciones">
-      <button id="btnExportarExcel" class="secundario">Exportar Excel</button>
-      <button id="btnExportarPdf" class="primario">Exportar PDF</button>
-    </div>
-    <div id="estadoExportacion" class="resultado-calendario" hidden></div>
-  </div>
-</section>
+<div id="estadoExportacion" class="resultado-calendario" role="status" hidden></div>
 
 <details class="panel auditoria-panel"><summary>Auditoría y trazabilidad</summary><div class="detalle"><div class="nota">La auditoría conserva la trazabilidad de normativa, vencimientos, intereses, sanciones, pagos, imputación y saldo sin ocupar espacio permanente en la pantalla.</div><button id="btnGenerarAuditoria" class="secundario">Generar auditoría</button><div id="resultadoAuditoria" class="resultado-auditoria"></div></div></details>
 
       <section class="botonera" aria-label="Acciones de liquidación">
         <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
+        <button type="button" id="btnExportarExcel" class="secundario grande">Exportar Excel</button>
+        <button type="button" id="btnExportarPdf" class="primario grande">Exportar PDF</button>
         <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
         <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
       </section>
@@ -184,7 +176,7 @@
 
 
 </main>
-<footer>Liquidador — versión 16.33.234, con TIM e IPC centralizados y alertas informativas</footer>
+<footer>Liquidador — versión 16.33.235, con TIM e IPC centralizados y alertas informativas</footer>
 <script>
 // DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
 (function(){
@@ -264,7 +256,7 @@
   else iniciar();
 })();
 </script>
-<script type="module" src="js/app.js?v=16.33.234"></script>
+<script type="module" src="js/app.js?v=16.33.235"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){

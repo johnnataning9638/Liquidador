@@ -1,7 +1,7 @@
 {
-  "version": "16.33.234",
-  "previousVersion": "16.33.233",
-  "baseCommit": "f5895776939f6c7116e75b14bfa8afbbca6075e5",
+  "version": "16.33.235",
+  "previousVersion": "16.33.234",
+  "baseCommit": "c441176ec5c9626430200282df66abdcccfa01b1",
   "date": "2026-10-24",
-  "change": "Recuperar anticipos DIAN al importar Excel TDJ sin títulos"
+  "change": "Reubicar exportaciones Excel y PDF en la barra inferior de resultados DIAN"
 }

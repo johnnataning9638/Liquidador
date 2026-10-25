@@ -83,7 +83,19 @@ try {
   await page.waitForFunction(()=>Number(document.querySelector('#rDeudaImpuesto')?.textContent.replace(/[^0-9]/g,''))>0);
   assert.equal(numeric(await page.locator('#rSaldoImpuesto').textContent()),900000);
   await page.locator('[data-tab="resultados"]').click();
+  assert.equal(await page.locator('.soporte-panel').count(),0,'DIAN elimina el recuadro de soportes');
+  assert.deepEqual(await page.locator('[data-pane="resultados"] .botonera button').allTextContents(),
+    ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],
+    'DIAN reúne las exportaciones después de Importar Excel');
   await captureExports(page.locator('#btnExportarPdf'),page.locator('#btnExportarExcel'),'dian',900000);
+  await page.locator('[data-pane="resultados"] .botonera').screenshot({path:path.join(output,'dian-botonera.png')});
+  await page.setViewportSize({width:390,height:844});
+  for(const id of ['btnExportarExcel','btnExportarPdf']){
+    const button=page.locator('#'+id);await button.scrollIntoViewIfNeeded();
+    const box=await button.boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=390,'Exportación accesible en móvil');
+  }
+  await page.locator('[data-pane="resultados"] .botonera').screenshot({path:path.join(output,'dian-botonera-movil.png')});
+  await page.setViewportSize({width:1365,height:950});
   await page.locator('[data-tab="pagos"]').click();
   await page.locator('[data-pane="pagos"] .btn-limpiar-normal').click();
   assert.equal(await page.locator('#tablaPagos tbody tr').count(), 0);

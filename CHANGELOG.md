@@ -1,5 +1,12 @@
 # Cambios
 
+## 16.33.235 — Botones de exportación DIAN
+- En Resultados DIAN, Exportar Excel y Exportar PDF quedan después de Importar Excel en la barra inferior.
+- Se elimina el recuadro Soportes de la liquidación; se conserva el aviso de exportación accesible.
+- Se mantienen identificadores y manejadores de exportación, cálculos, importadores y diseño TDJ.
+- Validación en navegador: orden, ausencia del recuadro, accesibilidad móvil, PDF y Excel con NIT y saldo esperados; regresiones vigentes.
+
+
 ## 16.33.234 - 2026-10-24
 
 - DIAN: un Excel TDJ con inventario de títulos reconocido y vacío ya no cancela la carga de cuotas, fechas e impuestos. Se conserva el rechazo de filas de títulos que no puedan reconocerse.
