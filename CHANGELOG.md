@@ -1,3 +1,9 @@
+# 16.33.245
+
+- DIAN: valor y fecha de sanción, incluido el calendario, bloqueados si Tiene sanción está vacío o en NO; habilitados con SI. Se conservan los valores al alternar y el comportamiento del tipo de liquidación.
+- Sin cambios en cálculos, beneficios, TDJ, exportaciones, TIM, IPC ni Supabase.
+- Pruebas de estados, importación, limpieza por pestaña y regresión.
+
 # 16.33.244
 
 - DIAN: retirar únicamente el panel Auditoría y trazabilidad y su código informativo. Colores Excel, protección de pegado, cálculos y soportes de la versión publicada 16.33.243 conservados.

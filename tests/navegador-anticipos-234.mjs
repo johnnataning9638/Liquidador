@@ -28,6 +28,12 @@ try{
   const ready=page.waitForEvent('dialog');
   const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button.click()]);
   await chooser.setFiles(file);await ready;
+  if(new URL(page.url()).pathname.endsWith('/liquidacion.html')){
+   const selection=await page.locator('#tieneSancion').inputValue();
+   for(const id of ['valorSancion','fechaSancion','fechaSancionPicker','tipoLiquidacion'])
+    assert.equal(await page.locator('#'+id).isDisabled(),selection!=='SI','Importación sincroniza '+id);
+  }
+
   // La recuperación de pagos programa el cambio de pestaña a los 50 ms.
   // Esperar ese cierre de la interfaz antes de seleccionar la siguiente pestaña.
   await page.waitForTimeout(100);

@@ -90,6 +90,23 @@ try {
   await page.waitForFunction(() => document.querySelector('#concepto')?.options.length > 1);
   await assertNoIA();
   await assertCenteredHeader('dian');
+  const assertSancionState=async(selection)=>{
+    for(const id of ['valorSancion','fechaSancion','fechaSancionPicker','tipoLiquidacion'])
+      assert.equal(await page.locator('#'+id).isDisabled(),selection!=='SI',id+' estado '+selection);
+  };
+  await assertSancionState('');
+  await page.locator('#tieneSancion').selectOption('NO');await assertSancionState('NO');
+  await page.locator('#tieneSancion').selectOption('SI');await assertSancionState('SI');
+  await page.locator('#valorSancion').fill('123000');
+  await page.locator('#fechaSancion').fill('15/01/2024');await page.locator('#fechaSancion').blur();
+  const sanctionValues=await page.locator('#valorSancion,#fechaSancion,#fechaSancionPicker').evaluateAll(els=>els.map(e=>e.value));
+  for(const selection of ['NO','','SI']){
+    await page.locator('#tieneSancion').selectOption(selection);await assertSancionState(selection);
+    assert.deepEqual(await page.locator('#valorSancion,#fechaSancion,#fechaSancionPicker').evaluateAll(els=>els.map(e=>e.value)),sanctionValues,'Alternar conserva valores');
+  }
+  await page.locator('[data-pane="datos"] .btn-limpiar-normal').click();
+  await assertSancionState('');
+
   assert.equal(await page.locator('.auditoria-panel,#btnGenerarAuditoria,#resultadoAuditoria').count(),0,'DIAN retira auditoría y sus controles');
   await page.locator('#pegarDatosObligacion').fill(obligation);
   await page.locator('#btnProcesarDatosObligacion').click();
@@ -157,6 +174,7 @@ try {
   assert.equal(await page.locator('#nit').inputValue(),'');
   assert.equal(await page.locator('#razonSocial').inputValue(),'');
   assert.equal(await page.locator('#tieneSancion').inputValue(),'');
+  await assertSancionState('');
   assert.equal(await page.locator('#tablaVencimientos tbody tr').count(),1);
   assert.equal(await page.locator('#tablaVencimientos .fecha-native').inputValue(),'');
   assert.deepEqual(await fields('#tablaPagos input,#tablaPagos select,#pegarDatos'),pagosAntesDeLimpiar,'Limpiar Datos conserva pagos');
