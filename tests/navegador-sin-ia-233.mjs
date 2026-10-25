@@ -35,6 +35,25 @@ try {
     assert.equal(await page.locator('button').filter({hasText:/^\s*Importar IA\s*$/i}).count(), 0);
     assert.equal(await page.locator('.indicador-ia').count(), 0);
   };
+
+  const assertCenteredHeader=async(module)=>{
+    for(const width of [1920,1365,1024,768,390,360]){
+      await page.setViewportSize({width,height:950});
+      const geometry=await page.locator('.topbar').evaluate(header=>{
+        const rect=el=>{const b=el.getBoundingClientRect();return {left:b.left,right:b.right,top:b.top,bottom:b.bottom};};
+        const textRect=el=>{const range=document.createRange();range.selectNodeContents(el);return rect(range);};
+        return {width:document.documentElement.clientWidth,title:textRect(header.querySelector('h1')),subtitle:textRect(header.querySelector('p')),buttons:[...header.querySelectorAll('button')].map(rect)};
+      });
+      for(const key of ['title','subtitle']){
+        const box=geometry[key];
+        assert.ok(Math.abs((box.left+box.right)/2-geometry.width/2)<2,`${module} ${key} centrado a ${width}px`);
+        assert.ok(box.left>=0&&box.right<=geometry.width,`${module} ${key} visible`);
+        for(const button of geometry.buttons)assert.ok(button.right<=box.left||button.left>=box.right||button.bottom<=box.top||button.top>=box.bottom,`${module}: título sin superposición con navegación`);
+      }
+      await page.locator('.topbar').screenshot({path:path.join(output,`${module}-encabezado-${width}.png`)});
+    }
+    await page.setViewportSize({width:1365,height:950});
+  };
   const numeric = text => Number(text.replace(/[^\d-]/g,''));
   const buttonStyles=async(selector)=>page.locator(selector).evaluateAll(buttons=>buttons.map(button=>{
     const s=getComputedStyle(button);
@@ -70,6 +89,7 @@ try {
   await page.goto(`${baseURL}/liquidacion.html?v=${version}`, {waitUntil:'networkidle'});
   await page.waitForFunction(() => document.querySelector('#concepto')?.options.length > 1);
   await assertNoIA();
+  await assertCenteredHeader('dian');
   await page.locator('#pegarDatosObligacion').fill(obligation);
   await page.locator('#btnProcesarDatosObligacion').click();
   assert.equal(await page.locator('#nit').inputValue(), '900123456');
@@ -147,6 +167,7 @@ try {
   await page.goto(`${baseURL}/titulos.html?v=${version}`, {waitUntil:'networkidle'});
   await page.waitForSelector('.obligacion-card', {state:'attached'});
   await assertNoIA();
+  await assertCenteredHeader('tdj');
   assert.equal(await page.locator('.nav-footer').count(),0,'TDJ elimina navegación inferior');
   assert.deepEqual(await page.locator('.topbar .ruta-modulo button').allTextContents(),
     ['← Módulo de inicio','Ir a liquidación de obligaciones'],'Navegación TDJ agrupada arriba');
