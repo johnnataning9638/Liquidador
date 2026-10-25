@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
 const decodedRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+const {version}=JSON.parse(await fs.readFile(path.join(decodedRoot,'version.json'),'utf8'));
 const output = process.env.ARTIFACT_DIR || path.resolve(decodedRoot, 'test-results/sin-ia-233');
 const live = process.env.TEST_BASE_URL;
 const baseURL = live || 'http://127.0.0.1:23300';
@@ -66,7 +67,7 @@ try {
   };
   const obligation = 'NIT: 900123456\nRazón social: EMPRESA PRUEBA SAS\nAño: 2023\nFecha\tImpuesto\n16/05/2024\t1.000.000';
   const payment = 'Recibo\tFecha\tValor\n4911089297230\t16/05/2024\t100.000';
-  await page.goto(`${baseURL}/liquidacion.html?v=16.33.233`, {waitUntil:'networkidle'});
+  await page.goto(`${baseURL}/liquidacion.html?v=${version}`, {waitUntil:'networkidle'});
   await page.waitForFunction(() => document.querySelector('#concepto')?.options.length > 1);
   await assertNoIA();
   await page.locator('#pegarDatosObligacion').fill(obligation);
@@ -143,7 +144,7 @@ try {
   await page.waitForURL('**/titulos.html');
   await page.waitForLoadState('networkidle');
 
-  await page.goto(`${baseURL}/titulos.html?v=16.33.233`, {waitUntil:'networkidle'});
+  await page.goto(`${baseURL}/titulos.html?v=${version}`, {waitUntil:'networkidle'});
   await page.waitForSelector('.obligacion-card', {state:'attached'});
   await assertNoIA();
   assert.equal(await page.locator('.nav-footer').count(),0,'TDJ elimina navegación inferior');
