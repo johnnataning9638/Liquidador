@@ -1,7 +1,7 @@
 {
-  "version": "16.33.242",
-  "previousVersion": "16.33.241",
+  "version": "16.33.243",
+  "previousVersion": "16.33.242",
   "baseCommit": "4bf5c9f23e85337218ee02ed788c83d47a96740d",
   "date": "2026-10-25",
-  "change": "Verde salvia exclusivo del bloque de pagos y aplicación en Excel DIAN y en cada obligación TDJ"
+  "change": "Retirar auditoría y trazabilidad DIAN; incluye verde exclusivo de pagos Excel DIAN/TDJ autorizado"
 }

@@ -1,5 +1,5 @@
 {
-  "version": "16.33.242",
+  "version": "16.33.243",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -13,7 +13,6 @@
     "index.html",
     "js/actualizacion-sancion.js",
     "js/app.js",
-    "js/auditoria-trazabilidad.js",
     "js/calendario-tributario.js",
     "js/decreto-1419.js",
     "js/excedentes-soporte.js",
@@ -57,8 +56,7 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "3aa636d196a05019b1307b01162af0bc87b86427ab7465bd6773bde13161cd08",
-    "js/auditoria-trazabilidad.js": "ef8c79b4d3edb597c81f81ff54005976bd50795372a0eb25efe90972def8ee08",
+    "js/app.js": "cb4078167d0c6ebb0db08abe45b530cf001c304220ce6a0022ec86bc69596a1b",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
@@ -96,7 +94,7 @@
   "authorizedPresentationChanges": {
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.240/242: soporte de excedentes y color de pagos Excel autorizados; motores intactos"
+      "reason": "16.33.240/242/243: soporte de excedentes, color Excel y retirada del panel informativo autorizados; motores intactos"
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",

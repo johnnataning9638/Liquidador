@@ -22,7 +22,8 @@ const document={readyState:'loading',querySelectorAll:()=>[],querySelector:()=>n
 }};
 let priority=prioridad;
 if(fs.existsSync('js/tdj-prioridad-203.js'))priority=await import('../js/tdj-prioridad-203.js');
-const ctx=vm.createContext({...util,...decreto,...priority,...tasas203,MotorLiquidacion,MotorLiquidacionOficial,document,
+// Esta VM comprueba cálculo y contenido XLSX; el formato XML con DOM real se valida en navegador-color-pagos-242.
+const ctx=vm.createContext({aplicarVerdePagosExcel:files=>files,...util,...decreto,...priority,...tasas203,MotorLiquidacion,MotorLiquidacionOficial,document,
   window:{addEventListener(){}},console:{log(){},warn(){},error(){}},alert:m=>errors.push(m),CSS:{escape:s=>s},setTimeout(){},requestAnimationFrame(){},Blob,TextEncoder,TextDecoder,DataView,Uint8Array});
 vm.runInContext(src+`
 sincronizarPagosVisiblesTDJ=()=>{};sincronizarTitulosVisiblesTDJ=()=>{};sincronizarCapturaManualTDJ=()=>{};

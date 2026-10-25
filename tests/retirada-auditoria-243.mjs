@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read=f=>fs.readFileSync(f,'utf8');
+assert.doesNotMatch(read('liquidacion.html'),/auditoria-panel|resultadoAuditoria|btnGenerarAuditoria|Auditoría y trazabilidad/);
+assert.doesNotMatch(read('js/app.js'),/AuditoriaTrazabilidad|construirAuditoria|renderAuditoria|ultimaAuditoria|resultadoAuditoria|btnGenerarAuditoria|auditoria-trazabilidad/);
+assert.doesNotMatch(read('estilos.css'),/\.audit-|\.auditoria-panel|\.resultado-auditoria/);
+assert.equal(fs.existsSync('js/auditoria-trazabilidad.js'),false);
+const manifest=JSON.parse(read('runtime-manifest.json'));
+assert.ok(!manifest.files.includes('js/auditoria-trazabilidad.js'));
+assert.ok(!Object.hasOwn(manifest.protected,'js/auditoria-trazabilidad.js'));
+assert.match(read('js/app.js'),/motor\.validarObligacion\(d\)/,'Conservar la validación necesaria para calcular');
+console.log('AUDITORIA 243 OK: panel, módulo, estilos y conexiones retirados; validación de cálculo conservada');

@@ -1,3 +1,7 @@
+# 16.33.243
+
+- DIAN: se retiran el panel Auditoría y trazabilidad, su módulo informativo, estilos y conexiones. Se conservan las validaciones de cálculo y la trazabilidad de pagos/títulos en los soportes. Incluye el color de pagos Excel de 16.33.242.
+
 # 16.33.242
 
 - Excel DIAN/TDJ: verde salvia únicamente en el título, columnas y datos del bloque de pagos/aplicación, repetido por obligación TDJ. Los demás colores y los formatos numéricos se conservan.

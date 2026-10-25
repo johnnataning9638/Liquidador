@@ -7,7 +7,6 @@ import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.23
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
-import {AuditoriaTrazabilidad} from "./auditoria-trazabilidad.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normExcel} from "./importador-excel.js?v=16.33.222";
@@ -34,14 +33,14 @@ const TIPOS=[
   TIPO_1419.ART10_CORRECCION
 ];
 
-let motor=null,motorPrivado=null,motorOficial=null,actualizadorSancion=null,calendarioMotor=null,normativoHistorico=null,auditoria=null;
+let motor=null,motorPrivado=null,motorOficial=null,actualizadorSancion=null,calendarioMotor=null,normativoHistorico=null;
 let uvt=[],tasasMoratorias=[],tasasBase=[],ipc=[],ipcBase=[],ipcCentrales=[],beneficios=[],sanciones=[],reglasObligaciones=[],calendarioData=null;
 let pagos=[];
 let tasasPersonalizadas=[];
 let tasasCentrales=[];
 let supabaseClient=null;
 let adminEmail=null;
-let ultimaLiquidacion=null,ultimaAuditoria=null;
+let ultimaLiquidacion=null;
 let obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
 let limpiando=false;
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
@@ -307,7 +306,6 @@ async function cargarDatos(){
   mensajeActualizacionesPendientes();
   calendarioMotor=new CalendarioTributario({datos:calendarioData.tablas||[]});
   normativoHistorico=new MotorNormativoHistorico({datos:normativoData});
-  auditoria=new AuditoriaTrazabilidad({version:"REAJUSTE 16.33.122"});
   if(estado){estado.className="indicador-parametros listo";estado.title="Parámetros cargados";estado.setAttribute("aria-label","Parámetros cargados");}
 }
 
@@ -1594,20 +1592,6 @@ function exportarPdf(){
 
 function mostrarEstadoExportacion(texto){const el=$("estadoExportacion");if(el){el.hidden=false;el.textContent=texto;}}
 
-function construirAuditoria(){
-  if(!auditoria)return null;
-  const d=leerFormulario();
-  const validacion=motor?.validarObligacion(d)||null;
-  const norm=normativoHistorico?.evaluar(d)||null;
-  return auditoria.construir({datos:d,validacion,normativo:norm,depuracion:null,determinacion:null,liquidacion:ultimaLiquidacion});
-}
-function renderAuditoria(){
-  const box=$("resultadoAuditoria"),a=construirAuditoria();if(!a)return;
-  ultimaAuditoria=a;
-  const pasos=(a.pasos||[]).map(p=>`<div class="audit-step"><strong>${esc(p.id)} · ${esc(p.nombre)}</strong><span class="audit-badge-ok">${esc(p.estado||"")}</span>${p.advertencias?.length?`<small>⚠ ${esc(p.advertencias.join(" | "))}</small>`:""}</div>`).join("");
-  box.innerHTML=`<div class="audit-cabecera"><div><span>Estado</span><strong>${esc(a.estado)}</strong></div><div><span>Identificador</span><strong>${esc(a.identificador)}</strong></div></div><div class="audit-pasos">${pasos}</div>`;
-}
-
 function normalizarTipoBeneficioVigencia(v){
   return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g," ").trim();
 }
@@ -1820,7 +1804,6 @@ function calcular(){
     ultimaLiquidacion=r;
     pintarInforme(r);
     renderVencimientos();
-    renderAuditoria();
     actualizarEstadoIndicador("listo",`Parámetros cargados · Liquidación procesada: ${r.detalle.length} pago(s)`);
   }catch(e){console.error(e);alert(e.message||"No fue posible calcular la liquidación.");enfocarCampoError(e.focusTarget);}
 }
@@ -1860,7 +1843,7 @@ async function limpiarPagosPestanaNormal(){
 async function limpiar(){
   if(limpiando)return;
   limpiando=true;
-  pagos=[];obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];ultimaLiquidacion=null;ultimaAuditoria=null;
+  pagos=[];obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];ultimaLiquidacion=null;
   // El botón LIMPIAR inicia una obligación completamente nueva.
   // Es importante reiniciar también el estado auxiliar de sanción y el
   // estado usado por las pestañas: HTMLFormElement.reset() o limpiar
@@ -1877,7 +1860,7 @@ async function limpiar(){
   // Estado inicial: el funcionario puede elegir SI o NO. Al elegir SI,
   // habilitarSancion() libera inmediatamente los campos de captura.
   if($("sancionMinima"))$("sancionMinima").value="";
-  renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("resultadoAuditoria").innerHTML="";$("detalleCalculo").innerHTML="";
+  renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("detalleCalculo").innerHTML="";
   ["rSaldoImpuestoIndicador","rSaldoSancionIndicador","rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotalFooter"].forEach(id=>{const el=$(id);if(el)el.textContent=dinero(0);});
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
   if($("rExcedenteBox")){$("rExcedenteBox").hidden=true;$("rExcedente").textContent=dinero(0);}
@@ -2282,7 +2265,6 @@ function configurarBase(){
   $("btnAgregarPago").addEventListener("click",()=>agregarPago());
   $("btnAgregarCuota")?.addEventListener("click",agregarCuota);
   $("btnCalcularVencimiento").addEventListener("click",renderCalendario);
-  $("btnGenerarAuditoria").addEventListener("click",renderAuditoria);
   document.querySelectorAll(".btn-exportar-excel").forEach(b=>b.addEventListener("click",exportarExcel));
   document.querySelectorAll(".btn-importar-excel").forEach(b=>b.addEventListener("click",importarExcelNormal));
   document.querySelectorAll(".btn-exportar-pdf").forEach(b=>b.addEventListener("click",exportarPdf));
