@@ -1,3 +1,4 @@
+import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
@@ -706,10 +707,11 @@ function pintarInforme(r){
   const valorSaldo=id=>Number((document.getElementById(id)?.textContent||'').replace(/[^0-9-]/g,''))||0;
   const totalSaldo=valorSaldo('rSaldoImpuesto')+valorSaldo('rSaldoIntereses')+valorSaldo('rSaldoSancion');
   $("rDeudaTotal").textContent=dinero(totalDeuda);$("rPropTotal").textContent=dinero(totalAplicado);if($("rSaldoImpuestoIndicador"))$("rSaldoImpuestoIndicador").textContent=dinero(s.impuesto);if($("rSaldoSancionIndicador"))$("rSaldoSancionIndicador").textContent=dinero(s.sancion);$("rSaldoTotalFooter").textContent=dinero(totalSaldo);
-  const excedente=Number(r.excedente||0);
+  const excedentesVista=resultadoExcedentesSoporte({pagos,fechaCorte:r.fechaCorte},r);
+  const excedente=excedentesVista.excedente;
   const excedenteBox=$("rExcedenteBox");
   if(excedenteBox){excedenteBox.hidden=excedente<=0;if($("rExcedente"))$("rExcedente").textContent=dinero(excedente);}
-  const detalle=(r.detalle||[]).map((x,i)=>`<div class="detalle-item"><strong>Pago ${i+1} — ${fechaVisible(x.pago.fecha)}</strong> · ${dinero(valorNominalPagoPdf(x,d))} · <strong>${esc(x.tipoAplicado||"TASA DIAN")}</strong> · ${esc(x.notaBeneficio||"")} · interés liquidado ${dinero(x.interesLiquidado??x.interesGenerado)} · impuesto aplicado ${dinero(x.aplicado.impuesto)} · intereses aplicados ${dinero(x.aplicado.intereses)} · sanción aplicada ${dinero(x.aplicado.sancion)}${Number(x.excedente||x.aplicado?.excedente||0)>0?` · <strong class="texto-excedente">EXCEDENTE ${dinero(x.excedente??x.aplicado.excedente)}</strong>`:""}</div>`).join("");
+  const detalle=(excedentesVista.detalle||[]).map((x,i)=>`<div class="detalle-item"><strong>Pago ${i+1} — ${fechaVisible(x.pago.fecha)}</strong> · ${dinero(valorNominalPagoPdf(x,{pagos}))} · <strong>${esc(x.tipoAplicado||"TASA DIAN")}</strong> · ${esc(x.notaBeneficio||"")} · interés liquidado ${dinero(x.interesLiquidado??x.interesGenerado)} · impuesto aplicado ${dinero(x.aplicado.impuesto)} · intereses aplicados ${dinero(x.aplicado.intereses)} · sanción aplicada ${dinero(x.aplicado.sancion)}${Number(x.excedente||x.aplicado?.excedente||0)>0?` · <strong class="texto-excedente">EXCEDENTE ${dinero(x.excedente??x.aplicado.excedente)}</strong>`:""}</div>`).join("");
   const act=r.sancionActualizacion||null;
   const resumenSancion=act&&Number(act.actualizacionAcumulada||0)>0
     ?`<div class="detalle-item"><strong>Actualización de sanción (Art. 867-1):</strong> base ${dinero(act.saldoOriginal||0)} · actualización acumulada ${dinero(act.actualizacionAcumulada||0)} · saldo final ${dinero(act.saldoFinal||0)}</div>`
@@ -855,7 +857,7 @@ function zipStore(files){
 
 function construirDatosSoporte(){
   if(!ultimaLiquidacion)throw new Error("Primero debe calcular la liquidación.");
-  const d=leerFormulario(),r=ultimaLiquidacion;
+  const d=leerFormulario(),r=resultadoExcedentesSoporte(d,ultimaLiquidacion);
   return {d,r};
 }
 
@@ -1068,14 +1070,14 @@ function bloqueSancionDeclaracion1419Pdf(x,d){
 function resumenExcedentesPagosPdf(r){
   const detalles=Array.isArray(r?.detalle)?r.detalle:[];
   if(!detalles.length)return "";
-  const pagos=detalles.map((x,i)=>({
+  const pagos=r.excedentesSoporte||detalles.map((x,i)=>({
     pago:i+1,
     recibo:String(x?.pago?.recibo||"").trim(),
     fecha:x?.pago?.fecha||"",
     valor:Number(x?.pago?.valor||0),
     excedente:Math.max(0,Number(x?.excedente??x?.aplicado?.excedente??0))
   }));
-  const total=pagos.reduce((a,x)=>a+x.excedente,0);
+  const total=Number(r.excedente||0);
   const filas=pagos.map(x=>`<tr><td>PAGO ${x.pago}</td><td>${escPdf(x.recibo||"—")}</td><td>${escPdf(fechaVisible(x.fecha))}</td><td>${dinero(x.valor)}</td><td>${dinero(x.excedente)}</td></tr>`).join("");
   return `<section class="pdf-hoja pdf-hoja-final-resumen"><div class="pdf-pagina"><article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">CONSOLIDACIÓN FINAL DE EXCEDENTES DE PAGOS</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-excedentes-finales"><h3>EXCEDENTES POR PAGO</h3><table><thead><tr><th>PAGO</th><th>RECIBO</th><th>FECHA DE PAGO</th><th>VALOR PAGADO</th><th>EXCEDENTE</th></tr></thead><tbody>${filas}</tbody><tfoot><tr><th colspan="4">TOTAL EXCEDENTES</th><th>${dinero(total)}</th></tr></tfoot></table></div><div class="pdf-excedente-final"><b>TOTAL EXCEDENTES:</b> <span>${dinero(total)}</span></div><div class="pdf-nota">Nota: el excedente corresponde al valor de cada pago que no fue aplicado a la obligación liquidada.</div></article></div></section>`;
 }
@@ -1091,7 +1093,7 @@ function resumenFinalPdf(r){
   const filas=tramos.length?tramos.map(t=>`<tr><td>${t.pago}</td><td>${escPdf(fechaVisible(t.fechaPago))}</td><td>${t.anio}</td><td>${escPdf(fechaVisible(t.desde))}</td><td>${Number(t.anioInflacion??(Number(t.anio||0)-1))}</td><td>${dinero(t.saldoAntes??t.saldoInicial??0)}</td><td>${dinero(t.actualizacion||0)}</td><td>${dinero(t.saldoDespues??t.saldoFinal??0)}</td></tr>`).join(""):"<tr><td colspan='8'>No se realizaron actualizaciones de sanción.</td></tr>";
   const excedentes=(r.detalle||[]).map((x,i)=>({pago:i+1,fecha:x.pago?.fecha||"",valor:Number(x.excedente||x.aplicado?.excedente||0)}));
   const filasExcedentes=excedentes.length?excedentes.map(e=>`<tr><td>${e.pago}</td><td>${escPdf(fechaVisible(e.fecha))}</td><td>${dinero(e.valor)}</td></tr>`).join(""):"<tr><td colspan='3'>No se registraron pagos.</td></tr>";
-  const excedenteTotal=excedentes.reduce((a,e)=>a+e.valor,0);
+  const excedenteTotal=Number(r.excedente||0);
   const totalIntereses=r.detalle.reduce((a,x)=>a+Number(x.interesGenerado??x.interesLiquidado??0),0);
   const totalActualizacionSancion=r.detalle.length?r.detalle.reduce((a,x)=>a+Number(x.actualizacionSancion?.actualizacionTotal||0),0):Number(r.sancionActualizacion?.actualizacionAcumulada||0);
   const reducciones1419=r.detalle.flatMap((x,i)=>(x.actualizacionSancion?.eventos||[]).filter(e=>String(e.beneficio||"").toUpperCase().includes("DECRETO 1419")).map(e=>({pago:i+1,fecha:x.pago?.fecha||"",...e})));
@@ -1244,7 +1246,7 @@ function exportarExcel(){
     push(["CONSOLIDACIÓN DE EXCEDENTES POR PAGO"],{title:true});
     push(["PAGO","FECHA DE PAGO","EXCEDENTE DEL PAGO"],{header:true});
     (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.fecha||"",Number(x.excedente||x.aplicado?.excedente||0)],{money:[3]}));
-    const excedenteTotalReporte=(r.detalle||[]).reduce((a,x)=>a+Number(x.excedente||x.aplicado?.excedente||0),0);
+    const excedenteTotalReporte=Number(r.excedente||0);
     push(["EXCEDENTE TOTAL — SUMATORIA DE TODOS LOS PAGOS","",excedenteTotalReporte],{money:[3]});
     push([]);
     // BLOQUE CANÓNICO COMPATIBLE CON TDJ:

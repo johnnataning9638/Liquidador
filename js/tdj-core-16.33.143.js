@@ -1,3 +1,4 @@
+import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
@@ -2311,6 +2312,15 @@ async function exportarPdfTDJ(){
       if(bloqueExcedentes)bloquesExcedentesFinal.push(bloqueExcedentes);
     });
 
+
+    // Soporte exclusivo de presentación: no agrega aplicaciones ni altera endoso.
+    titulosSinAplicacionSoporte(resultado).forEach(({obligacion:o,detalle:d})=>{
+      const tipo=tipoTasaTDJ(d.pago,o)||"TASA DIAN";
+      const tasa=motorParaObligacion(o)?.tasaPorFecha(d.pago.fecha,tipo)||0;
+      const dPdf={...d,tipoAplicado:tipo,tasaVisible:tasa*100};
+      const anteriores=(resultado.resumenObligaciones||[]).flatMap(x=>x.detalleCronologicoFinal||[]);
+      paginas.push(`<section class="pdf-hoja">${bloqueDetallePagoDIANTDJ(dPdf,anteriores.length,datosPDFTDJ(o,d.pago),{detalle:[...anteriores,dPdf],vencimientos:o.vencimientos||[]})}</section>`);
+    });
 
     const observacionesBeneficio1419=observacionesBeneficio1419ComoLista(resultado.observacionesBeneficio1419).map(t=>`<div class="pdf-alerta">${escPdf(t)}</div>`).join("");
     const endRows=resultado.resumenTitulos.filter(x=>Number(x.excedente||0)>0).map(x=>`<tr><td>${escPdf(x.titulo.tdj||`TDJ ${x.titulo.numero}`)}</td><td>${escPdf(fechaVisible(x.titulo.fecha))}</td><td>${dinero(x.titulo.valor)}</td><td>${dinero(x.excedente)}</td><td>ENDOSO</td></tr>`).join("")||`<tr><td colspan="5">NO HAY TÍTULOS SOBRANTES.</td></tr>`;

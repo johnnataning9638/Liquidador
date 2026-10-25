@@ -23,6 +23,7 @@ jobs:
           node tests/regresion-prioridad-cierre-233.mjs
           node tests/limpieza-239.mjs
           node tests/parametros-239.mjs
+          node tests/excedentes-240.mjs
           node scripts/preparar-sitio.mjs
       - name: Instalar navegador de prueba
         run: |
@@ -34,6 +35,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-sin-ia-233.mjs
       - name: Recuperar seis anticipos de Excel TDJ sin títulos y verificar round-trip
         run: TEST_SITE_DIR=dist node tests/navegador-anticipos-234.mjs
+      - name: Validar excedente nominal DIAN y detalle TDJ sin aplicación
+        run: TEST_SITE_DIR=dist node tests/navegador-excedentes-240.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
