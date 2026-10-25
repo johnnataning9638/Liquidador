@@ -1,7 +1,7 @@
 {
-  "version": "16.33.247",
-  "previousVersion": "16.33.246",
-  "baseCommit": "ec4ca859bcdbe13440e7a651d05214660f8085fb",
+  "version": "16.33.248",
+  "previousVersion": "16.33.247",
+  "baseCommit": "870c83165f540e70caf1d8a6d6483f6aed16ec9c",
   "date": "2026-10-25",
-  "change": "Corregir visualización TIM y tasas derivadas del TDJ del 31/03/2026 sin cambiar el cálculo"
+  "change": "Conservar proporcionalidad y saldos reales en cuatro a seis cuotas; retirar redistribución posterior incorrecta"
 }

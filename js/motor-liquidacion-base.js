@@ -1347,7 +1347,9 @@ export class MotorLiquidacion{
       //    en cero, pero aún existe sanción pendiente, la sanción se asigna al
       //    primer vencimiento exigible: la deuda sigue existiendo precisamente
       //    por la sanción y no se crea una fila adicional artificial.
-      const vtosConSaldoRestante=vencimientosExigibles.filter(v=>{
+      // SIMPLE: la sanción proporcional también se registra en anticipos
+      // sin vencimientos exigibles; usar la misma base que calculó la proporción.
+      const vtosConSaldoRestante=baseProporcional.filter(v=>{
         const interesOriginal=Number(intCalc.porVto.find(x=>x.id===v.id)?.interes||0);
         const interesAplicado=Number(
           aplicacionesVto.find(x=>x.id===v.id)?.aplicadoIntereses||0
@@ -1355,7 +1357,7 @@ export class MotorLiquidacion{
         return Number(v.saldo||0)>0 || Math.max(0,interesOriginal-interesAplicado)>0;
       });
       const vtoSancion=vtosConSaldoRestante[0] ||
-        (Number(saldoSancion||0)>0 ? vencimientosExigibles[0] : null);
+        (Number(saldoSancion||0)>0 ? baseProporcional[0] : null);
       if(vtoSancion && Number(aplicacionGlobal.sancion||0)>0){
         aplicadoSancion=Math.min(
           Math.max(0,saldoSancion),

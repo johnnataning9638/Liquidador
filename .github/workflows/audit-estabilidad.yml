@@ -25,6 +25,7 @@ jobs:
           set -e
           node tests/sancion-ui-245.mjs
           node tests/tasa-tdj-247.mjs
+          node tests/proporcionalidad-cuotas-248.mjs
           node tests/regresion-tasa-avisos-207.mjs
           node tests/regresion-dian-titulos-206.mjs
           node tests/regresion-tdj-ventanas-205.mjs
@@ -51,15 +52,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           set -e
-          git fetch origin main --quiet
-          for f in js/motor-liquidacion.js js/motor-liquidacion-oficial.js; do
-            diff="$(git diff --unified=0 origin/main...HEAD -- "$f" || true)"
-            echo "$diff"
-            if echo "$diff" | grep -E '^[+-]' | grep -vE '^[+-]{3}' | grep -vE '^[+-]import .*\\?v='; then
-              echo "ERROR: se detectó un cambio funcional en $f."
-              exit 1
-            fi
-          done
+          node tests/alcance-proporcion-248.mjs
       - name: Verificar controles de cálculo DIAN
         run: |
           set -e
