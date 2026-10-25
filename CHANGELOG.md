@@ -1,5 +1,13 @@
 # Cambios
 
+## 16.33.238 — Navegación y acciones DIAN
+- Se agrega Ir a liquidación de TDJ junto a Módulo de inicio, con el mismo diseño y enlace directo.
+- Datos y vencimientos y Pagos incorporan Exportar Excel y Exportar PDF con el orden y diseño de Resultados.
+- Los botones nuevos usan los exportadores existentes mediante clases compartidas, sin duplicar identificadores.
+- Se conservan intactas las funciones de Limpiar Datos, Limpiar Pagos y su conexión por pestaña. Pruebas antes y después verifican la conservación de datos y pagos respectivamente.
+- Regresión de navegación, diseño escritorio/móvil, PDF y Excel desde las tres pestañas y controles vigentes.
+
+
 ## 16.33.237 — Navegación superior TDJ
 - Se retira la navegación inferior de TDJ en todas sus pestañas.
 - Ir a liquidación de obligaciones se ubica a la derecha de Módulo de inicio en el encabezado, usando las mismas clases y diseño del botón existente.

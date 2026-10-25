@@ -21,11 +21,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Obligaciones — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.237">
+<link rel="stylesheet" href="estilos.css?v=16.33.238">
+<style>
+.topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+@media(max-width:650px){.topbar .ruta-modulo,.topbar .btn-inicio{width:100%}.topbar .btn-inicio{min-height:38px}}
+</style>
 </head>
 <body>
 <header class="topbar">
-  <div class="ruta-modulo"><button type="button" class="secundario btn-inicio" onclick="window.location.href='index.html'">← Módulo de inicio</button></div>
+  <div class="ruta-modulo"><button type="button" class="secundario btn-inicio" onclick="window.location.href='index.html'">← Módulo de inicio</button><button type="button" id="btnIrTDJ" class="secundario btn-inicio" onclick="window.location.href='titulos.html'">Ir a liquidación de TDJ</button></div>
   <div><h1>LIQUIDADOR DE OBLIGACIONES</h1><p>Liquidación histórica de obligaciones, pagos, intereses, sanciones y saldo</p></div>
   <span id="estadoSistema" class="indicador-parametros cargando" role="status" aria-label="Cargando parámetros" title="Cargando parámetros"></span>
 </header>
@@ -99,6 +103,8 @@
 
       <section class="botonera" aria-label="Acciones de liquidación">
         <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
+        <button type="button" class="secundario grande btn-exportar-excel">Exportar Excel</button>
+        <button type="button" class="primario grande btn-exportar-pdf">Exportar PDF</button>
         <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
         <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
       </section>
@@ -121,6 +127,8 @@
 
       <section class="botonera" aria-label="Acciones de liquidación">
         <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
+        <button type="button" class="secundario grande btn-exportar-excel">Exportar Excel</button>
+        <button type="button" class="primario grande btn-exportar-pdf">Exportar PDF</button>
         <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
         <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
       </section>
@@ -165,8 +173,8 @@
 
       <section class="botonera" aria-label="Acciones de liquidación">
         <button type="button" class="secundario grande btn-importar-excel">Importar Excel</button>
-        <button type="button" id="btnExportarExcel" class="secundario grande">Exportar Excel</button>
-        <button type="button" id="btnExportarPdf" class="primario grande">Exportar PDF</button>
+        <button type="button" id="btnExportarExcel" class="secundario grande btn-exportar-excel">Exportar Excel</button>
+        <button type="button" id="btnExportarPdf" class="primario grande btn-exportar-pdf">Exportar PDF</button>
         <button type="button" class="peligro grande btn-limpiar-normal">Limpiar</button>
         <button type="button" class="primario grande btn-calcular-normal">Calcular liquidación</button>
       </section>
@@ -176,7 +184,7 @@
 
 
 </main>
-<footer>Liquidador — versión 16.33.237, con TIM e IPC centralizados y alertas informativas</footer>
+<footer>Liquidador — versión 16.33.238, con TIM e IPC centralizados y alertas informativas</footer>
 <script>
 // DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
 (function(){
@@ -256,7 +264,7 @@
   else iniciar();
 })();
 </script>
-<script type="module" src="js/app.js?v=16.33.237"></script>
+<script type="module" src="js/app.js?v=16.33.238"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){

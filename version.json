@@ -1,7 +1,7 @@
 {
-  "version": "16.33.237",
-  "previousVersion": "16.33.236",
-  "baseCommit": "c8bcde0c07112b23e5f2718be8c515a602870335",
+  "version": "16.33.238",
+  "previousVersion": "16.33.237",
+  "baseCommit": "e019c0a4e952b5e13168d191c1e4cd721ff9df33",
   "date": "2026-10-24",
-  "change": "Mover navegación TDJ al encabezado y retirar botones inferiores"
+  "change": "Enlace superior DIAN a TDJ y cinco acciones en las tres pestañas DIAN, conservando limpieza por pestaña"
 }
