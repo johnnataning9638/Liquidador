@@ -1,7 +1,7 @@
 {
-  "version": "16.33.241",
-  "previousVersion": "16.33.240",
+  "version": "16.33.242",
+  "previousVersion": "16.33.241",
   "baseCommit": "8dec06ba0b808862d065b8fba4db15cb92fd99b9",
-  "date": "2026-10-24",
-  "change": "Centrar títulos y subtítulos DIAN/TDJ respecto a la pantalla, con navegación adaptable"
+  "date": "2026-10-25",
+  "change": "Auditoría conservadora; sincronización de versión pública y actualización de caché sin cambios tributarios"
 }
