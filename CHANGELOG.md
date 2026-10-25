@@ -1,3 +1,8 @@
+# 16.33.243
+
+- Pegado único en los cuadros de pagos de DIAN y TDJ: captura literal del portapapeles sin propagación múltiple de eventos.
+- Sin cambios en motores tributarios, cálculos o importación de títulos.
+
 # 16.33.242
 
 - Auditoría conservadora de GitHub, Render y Supabase. Se conservan pruebas, documentación operativa y módulos activos.
