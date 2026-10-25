@@ -24,6 +24,7 @@ jobs:
           node tests/limpieza-239.mjs
           node tests/parametros-239.mjs
           node tests/excedentes-240.mjs
+          node tests/retirada-auditoria-244.mjs
           node scripts/preparar-sitio.mjs
       - name: Instalar navegador de prueba
         run: |

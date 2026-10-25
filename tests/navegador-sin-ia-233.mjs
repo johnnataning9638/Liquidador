@@ -90,6 +90,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#concepto')?.options.length > 1);
   await assertNoIA();
   await assertCenteredHeader('dian');
+  assert.equal(await page.locator('.auditoria-panel,#btnGenerarAuditoria,#resultadoAuditoria').count(),0,'DIAN retira auditoría y sus controles');
   await page.locator('#pegarDatosObligacion').fill(obligation);
   await page.locator('#btnProcesarDatosObligacion').click();
   assert.equal(await page.locator('#nit').inputValue(), '900123456');
@@ -235,6 +236,7 @@ try {
   const iaRequests = requests.filter(x=>/ai-bridge|ai-liquidador|\/interpret\/|\/feedback|\/health.*ia/i.test(x));
   assert.deepEqual(iaRequests, []);
   assert.deepEqual(errors, []);
+  assert.deepEqual(requests.filter(u=>u.includes('auditoria-trazabilidad.js')),[],'Módulo de auditoría retirado de la carga');
   assert.deepEqual(alerts.filter(x=>!x.startsWith('¿Desea iniciar')&&!x.startsWith('Excel importado correctamente.')), []);
   const result = {estado:'OK',modo:live?'produccion':'local', importaciones:['DIAN obligación','DIAN pagos','TDJ obligación','TDJ pagos','TDJ títulos'],saldos:{dian:900000,tdj:899843},exportaciones:'PDF y XLSX DIAN/TDJ; reimportación XLSX TDJ',limpieza:'DIAN pagos y TDJ global',solicitudesIA:iaRequests,erroresJS:errors,alertas:alerts,serviciosExternos:live?'Conexión real de producción':'Bloqueados; configuración Supabase vacía de prueba'};
   await fs.writeFile(path.join(output,'navegador-233.json'),JSON.stringify(result,null,2));
