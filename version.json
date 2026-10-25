@@ -1,7 +1,7 @@
 {
-  "version": "16.33.238",
-  "previousVersion": "16.33.237",
-  "baseCommit": "e019c0a4e952b5e13168d191c1e4cd721ff9df33",
-  "date": "2026-10-24",
-  "change": "Enlace superior DIAN a TDJ y cinco acciones en las tres pestañas DIAN, conservando limpieza por pestaña"
+  "version": "16.33.239",
+  "previousVersion": "16.33.238",
+  "baseCommit": "627b181fb2c56a9e67e578fa72ea1fc129fc950a",
+  "date": "2026-10-25",
+  "change": "Limpieza de recursos desconectados y actualizador TIM/IPC independiente; motores y limpieza por pestaña intactos"
 }

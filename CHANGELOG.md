@@ -1,5 +1,14 @@
 # Cambios
 
+## 16.33.239 — Limpieza controlada y parámetros TIM/IPC
+- Se retiran 111 archivos históricos o desconectados, incluidas 83 notas anteriores recuperables en Git; se conserva la nota vigente.
+- Manifiesto público de 51 recursos, paquete dist y comprobación de integridad de 35 módulos activos contra la versión aprobada.
+- TIM mensual SFC e IPC anual de diciembre DANE: consultas independientes, reintentos, validación de período, dry-run, registro del resultado y conservación de registros existentes ante discrepancias.
+- Se preserva el cron diario 05:00 Colombia y se amplía su timeout. Se evita duplicar períodos de TIM.
+- Respaldo local de octubre sincronizado con la TIM oficial ya registrada (26,59%).
+- Motores, beneficios, exportadores, importadores y limpieza por pestaña conservados. La corrección de redistribución de sanción queda expresamente pendiente por decisión del usuario.
+
+
 ## 16.33.238 — Navegación y acciones DIAN
 - Se agrega Ir a liquidación de TDJ junto a Módulo de inicio, con el mismo diseño y enlace directo.
 - Datos y vencimientos y Pagos incorporan Exportar Excel y Exportar PDF con el orden y diseño de Resultados.

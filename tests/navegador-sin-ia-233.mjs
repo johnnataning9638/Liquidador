@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
-const decodedRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+const decodedRoot = process.env.TEST_SITE_DIR ? path.resolve(process.env.TEST_SITE_DIR) : path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const {version}=JSON.parse(await fs.readFile(path.join(decodedRoot,'version.json'),'utf8'));
 const output = process.env.ARTIFACT_DIR || path.resolve(decodedRoot, 'test-results/sin-ia-233');
 const live = process.env.TEST_BASE_URL;

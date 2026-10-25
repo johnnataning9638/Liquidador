@@ -3610,5 +3610,16 @@
     "fuente": "DIAN - serie histórica de TIM incorporada al proyecto",
     "prioridadFuente": 1,
     "id": "TIM-172"
+  },
+  {
+    "desde": "2026-10-01",
+    "hasta": "2026-10-31",
+    "tasas": {
+      "TASA DIAN": 0.2659
+    },
+    "metodologia": "INTERES_SIMPLE_DIARIO",
+    "fuente": "https://www.superfinanciera.gov.co/personas/",
+    "norma": "ART. 635 E.T. — TASA DE USURA MENOS 2 PUNTOS",
+    "id": "TIM-173"
   }
 ]
