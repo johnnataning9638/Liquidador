@@ -35,7 +35,7 @@ assert.equal(titulosSinAplicacionSoporte({...cerrado,resumenObligaciones:[{...ce
 assert.equal(titulosSinAplicacionSoporte({...cerrado,resumenTitulos:[{...cerrado.resumenTitulos[0],trazabilidad:[{aplicado:1}]}]}).length,0,'No repetir títulos con aplicación');
 assert.equal(titulosSinAplicacionSoporte({...cerrado,resumenTitulos:[{...cerrado.resumenTitulos[0],titulo:{...pagos[1],fecha:'2026-07-20'}}]}).length,0,'No anticipar una cancelación futura');
 const baseline=f=>execFileSync('git',['show',`f84ff1b9e2acf3db2aa9e4b4b49d3302d1c46146:${f}`],{encoding:'utf8'}).replace(/\r\n/g,'\n');
-const core=fs.readFileSync('js/tdj-core-16.33.143.js','utf8').replace(/^import \{titulosSinAplicacionSoporte\}[^\n]*\n/,'').replace(/\r\n/g,'\n');
+const core=fs.readFileSync('js/tdj-core-16.33.143.js','utf8').replace(/^import \{(?:titulosSinAplicacionSoporte|aplicarVerdePagosExcel)\}[^\n]*\n/gm,'').replace('zipStoreTDJ(aplicarVerdePagosExcel(files))','zipStoreTDJ(files)').replace(/\r\n/g,'\n');
 assert.equal(core.split('async function exportarPdfTDJ()')[0],baseline('js/tdj-core-16.33.143.js').split('async function exportarPdfTDJ()')[0],'Captura, aplicación, motores y trazabilidad TDJ intactos');
 const calcular=s=>s.slice(s.indexOf('function calcular(){'),s.indexOf('async function limpiarDatosPestanaNormal')).replace(/\r\n/g,'\n');
 assert.equal(calcular(app),calcular(baseline('js/app.js')),'Cálculo DIAN y asignación del resultado intactos');

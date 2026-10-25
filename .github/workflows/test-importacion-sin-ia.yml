@@ -37,6 +37,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-anticipos-234.mjs
       - name: Validar excedente nominal DIAN y detalle TDJ sin aplicación
         run: TEST_SITE_DIR=dist node tests/navegador-excedentes-240.mjs
+      - name: Verificar verde exclusivo en Excel DIAN y tres obligaciones TDJ
+        run: TEST_SITE_DIR=dist node tests/navegador-color-pagos-242.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

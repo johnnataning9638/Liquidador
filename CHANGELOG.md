@@ -1,3 +1,7 @@
+# 16.33.242
+
+- Excel DIAN/TDJ: verde salvia únicamente en el título, columnas y datos del bloque de pagos/aplicación, repetido por obligación TDJ. Los demás colores y los formatos numéricos se conservan.
+
 # 16.33.241
 
 - Encabezados DIAN/TDJ centrados respecto a la pantalla, con adaptación de navegación en pantallas pequeñas. Sin cambios funcionales.
