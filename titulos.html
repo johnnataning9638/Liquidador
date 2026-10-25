@@ -18,14 +18,14 @@
 })();
 </script>
 
-<!-- TDJ UI DEPLOY 16.33.236 -->
+<!-- TDJ UI DEPLOY 16.33.237 -->
 <script id="tdj-version-guard">
 (function(){
   try{
     var u=new URL(window.location.href);
     var v=u.searchParams.get("v");
-    if(v && v!=="16.33.236"){
-      u.searchParams.set("v","16.33.236");
+    if(v && v!=="16.33.237"){
+      u.searchParams.set("v","16.33.237");
       window.location.replace(u.toString());
     }
   }catch(e){}
@@ -33,15 +33,15 @@
 </script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Títulos / TDJ — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.236">
-<link rel="stylesheet" href="tdj-mobile.css?v=16.33.236" media="screen and (max-width:650px)">
+<link rel="stylesheet" href="estilos.css?v=16.33.237">
+<link rel="stylesheet" href="tdj-mobile.css?v=16.33.237" media="screen and (max-width:650px)">
 <style>
 .compact-grid label[hidden]{display:none!important}
 /* AJUSTE TDJ v16.32.82: únicamente organización visual de pestañas y botones. Lógica sin cambios. */
 .tabs-nav{display:flex!important;align-items:center;gap:8px;flex-wrap:nowrap;width:100%;overflow:visible;padding:0;background:transparent;border:0;box-shadow:none;margin-bottom:14px}.tabs-nav .tab-btn{min-width:0;padding:10px 12px;font-size:12px;white-space:nowrap}.tdj-tab-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-width:0;flex:1;background:#dfe8ee;border:1px solid #b9c9d5;border-radius:8px;overflow:hidden;box-shadow:0 2px 5px #00000012}@media(max-width:900px){.tabs-nav{flex-wrap:wrap}}
 :root{--tdj-blue:#003b5c;--tdj-soft:#eef3f7;--tdj-border:#cbd5df;--tdj-green:#2e7d32;--tdj-red:#a52a2a}
 body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24px 42px}.tdj-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}.tdj-top h1{margin:0;color:var(--tdj-blue);font-size:25px}.tdj-top p{margin:6px 0 0;color:#687783}.tdj-actions{display:flex;gap:8px;flex-wrap:wrap}.estado-motor{padding:8px 12px;border-radius:18px;font-size:12px;font-weight:700;display:inline-block}.estado-motor.ok{background:#e7f5ed;color:#14633e}.estado-motor.warn{background:#fff4df;color:#8a5a00}.estado-motor.loading{background:#edf2f6;color:#4c6474}.estado-motor.error{background:#fdeaea;color:#8d2222}
-.card{background:#fff;border:1px solid var(--tdj-border);border-radius:10px;box-shadow:0 4px 16px rgba(23,63,95,.06);margin-bottom:14px}.card-head{padding:14px 16px;border-bottom:1px solid #cbd5df;display:flex;justify-content:space-between;gap:15px;align-items:center}.card-head h3{margin:3px 0 0;color:#173047;font-size:16px}.kicker{font-size:11px;font-weight:800;color:#687783;letter-spacing:.5px}.card-actions,.actions{display:flex;gap:8px;flex-wrap:wrap}.compact-grid{padding:14px 16px;display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}.compact-grid label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:#596875}.compact-grid input,.compact-grid select,.subpanel input,.subpanel select,.import-box textarea,.tdj-import textarea{width:100%;box-sizing:border-box;border:1px solid #aebbc8;border-radius:6px;padding:8px 9px;background:#fff;color:#173047}.subpanel{margin:0 16px 14px;border:1px solid #cbd5df;border-radius:8px;overflow:hidden}.subhead{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:var(--tdj-soft);color:#173047;font-size:12px}.tabla-scroll{overflow:auto}.mini-table,.result-table{width:100%;border-collapse:collapse;font-size:12px}.mini-table th,.mini-table td,.result-table th,.result-table td{border-bottom:1px solid #cbd5df;padding:7px 8px;text-align:left;vertical-align:middle}.mini-table th,.result-table th{background:#e8eef3;color:#173047;font-size:10px;text-transform:uppercase;white-space:nowrap}.mini-table input,.mini-table select{min-width:100px}.money{text-align:right}.small{padding:6px 10px!important;font-size:11px!important}.import-box{margin:0 16px 14px;padding:11px;background:#f7fafc;border:1px dashed #b9c9d5;border-radius:8px}.import-box textarea{min-height:80px;margin-bottom:8px}.import-result{margin-top:7px;font-size:12px;color:#36536a}.tdj-import{padding:14px 16px}.tdj-import textarea{min-height:80px}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.metric{background:#fff;border:1px solid var(--tdj-border);border-radius:9px;padding:13px}.metric span{display:block;font-size:10px;font-weight:800;color:#687783}.metric strong{display:block;margin-top:5px;font-size:20px;color:var(--tdj-blue)}.resultado-head{padding:14px 16px;border-bottom:1px solid #cbd5df}.resultado-head h2{margin:0;color:var(--tdj-blue);font-size:17px}.endoso{margin-top:12px;padding:11px 13px;border-left:4px solid #007f9e;background:#eef3f7;color:#173047;font-weight:700}.nota-endoso{margin:10px 16px 16px}.nav-footer{display:flex;justify-content:space-between;gap:10px;margin-top:18px}.peligro{color:#fff;background:#a52828;border:1px solid #8f2020;border-radius:6px;padding:7px 10px;cursor:pointer}.primario,.secundario{cursor:pointer}.secundario{border:1px solid #9eb0be}.import-title{margin-top:0;color:var(--tdj-blue)}@media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}.tdj-top{flex-direction:column}}@media(max-width:650px){.compact-grid{grid-template-columns:1fr}.summary-grid{grid-template-columns:1fr}.tdj-wrap{padding:12px}.card-head{flex-direction:column;align-items:flex-start}}
+.card{background:#fff;border:1px solid var(--tdj-border);border-radius:10px;box-shadow:0 4px 16px rgba(23,63,95,.06);margin-bottom:14px}.card-head{padding:14px 16px;border-bottom:1px solid #cbd5df;display:flex;justify-content:space-between;gap:15px;align-items:center}.card-head h3{margin:3px 0 0;color:#173047;font-size:16px}.kicker{font-size:11px;font-weight:800;color:#687783;letter-spacing:.5px}.card-actions,.actions{display:flex;gap:8px;flex-wrap:wrap}.compact-grid{padding:14px 16px;display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}.compact-grid label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:#596875}.compact-grid input,.compact-grid select,.subpanel input,.subpanel select,.import-box textarea,.tdj-import textarea{width:100%;box-sizing:border-box;border:1px solid #aebbc8;border-radius:6px;padding:8px 9px;background:#fff;color:#173047}.subpanel{margin:0 16px 14px;border:1px solid #cbd5df;border-radius:8px;overflow:hidden}.subhead{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:var(--tdj-soft);color:#173047;font-size:12px}.tabla-scroll{overflow:auto}.mini-table,.result-table{width:100%;border-collapse:collapse;font-size:12px}.mini-table th,.mini-table td,.result-table th,.result-table td{border-bottom:1px solid #cbd5df;padding:7px 8px;text-align:left;vertical-align:middle}.mini-table th,.result-table th{background:#e8eef3;color:#173047;font-size:10px;text-transform:uppercase;white-space:nowrap}.mini-table input,.mini-table select{min-width:100px}.money{text-align:right}.small{padding:6px 10px!important;font-size:11px!important}.import-box{margin:0 16px 14px;padding:11px;background:#f7fafc;border:1px dashed #b9c9d5;border-radius:8px}.import-box textarea{min-height:80px;margin-bottom:8px}.import-result{margin-top:7px;font-size:12px;color:#36536a}.tdj-import{padding:14px 16px}.tdj-import textarea{min-height:80px}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.metric{background:#fff;border:1px solid var(--tdj-border);border-radius:9px;padding:13px}.metric span{display:block;font-size:10px;font-weight:800;color:#687783}.metric strong{display:block;margin-top:5px;font-size:20px;color:var(--tdj-blue)}.resultado-head{padding:14px 16px;border-bottom:1px solid #cbd5df}.resultado-head h2{margin:0;color:var(--tdj-blue);font-size:17px}.endoso{margin-top:12px;padding:11px 13px;border-left:4px solid #007f9e;background:#eef3f7;color:#173047;font-weight:700}.nota-endoso{margin:10px 16px 16px}.peligro{color:#fff;background:#a52828;border:1px solid #8f2020;border-radius:6px;padding:7px 10px;cursor:pointer}.primario,.secundario{cursor:pointer}.secundario{border:1px solid #9eb0be}.import-title{margin-top:0;color:var(--tdj-blue)}@media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}.tdj-top{flex-direction:column}}@media(max-width:650px){.compact-grid{grid-template-columns:1fr}.summary-grid{grid-template-columns:1fr}.tdj-wrap{padding:12px}.card-head{flex-direction:column;align-items:flex-start}}
 .tdj-title-import{margin:0 16px 14px;padding:14px 16px;background:#fff;border:1px solid var(--tdj-border);border-radius:8px}.tdj-title-import .import-title{margin:0 0 10px}.tdj-title-import-grid{display:grid;grid-template-columns:minmax(0,1fr) 185px;gap:10px;align-items:start}.tdj-title-import-grid textarea{width:100%;min-height:88px;box-sizing:border-box;border:1px solid #aebbc8;border-radius:6px;padding:8px 9px;background:#fff;color:#173047;resize:vertical}.tdj-title-import-actions{display:flex;flex-direction:column;gap:7px;align-items:center;width:185px}.tdj-title-import-actions button{width:185px;min-height:36px;display:flex;align-items:center;justify-content:center;gap:7px}.tdj-title-import-actions #resultadoImportacionTitulos{width:100%;font-size:11px;text-align:center;color:#36536a}/* POSICION FINAL TDJ: IMPORTAR SIEMPRE A LA DERECHA DEL AREA DE IMPORTACION. */
 .tdj-global-import .tdj-import-grid{display:grid;grid-template-columns:minmax(0,1fr) 185px;gap:10px;align-items:start;}
 .tdj-global-import .tdj-import-grid .import-destino{grid-column:1 / -1;}
@@ -119,10 +119,11 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 .nota-endoso{margin:7px 12px 9px}
 
 
+.topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
 /* Las barras comparten el diseño DIAN, sin los bordes de controles internos TDJ. */
 .tdj-sheet-actions button{border:0}
 .tdj-sheet-actions .peligro{background:var(--rojo);border-radius:5px}
-.nav-footer{margin-top:10px}
+
 .tdj-parametros-panel{margin-bottom:6px}
 .tdj-parametros-panel .panel-title{padding:6px 8px}
 .tdj-parametros-panel .tasas-admin-bar{padding:6px 8px}
@@ -134,7 +135,7 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 </head>
 <body>
 <header class="topbar">
-  <div class="ruta-modulo"><button type="button" class="secundario btn-inicio" onclick="window.location.href='index.html'">← Módulo de inicio</button></div>
+  <div class="ruta-modulo"><button type="button" class="secundario btn-inicio" onclick="window.location.href='index.html'">← Módulo de inicio</button><button type="button" class="secundario btn-inicio" onclick="window.location.href='liquidacion.html'">Ir a liquidación de obligaciones</button></div>
   <div><h1>LIQUIDACIÓN DE TÍTULOS / TDJ</h1><p>Aplicación secuencial de títulos sobre múltiples obligaciones</p></div>
   <span id="estadoMotorTDJ" class="indicador-parametros cargando" role="status" aria-label="Cargando parámetros" title="Cargando parámetros"></span>
 </header>
@@ -242,9 +243,8 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
       </div>
   </section>
 
-  <div class="nav-footer"><button class="secundario" type="button" onclick="window.location.href='index.html'">← MÓDULO DE INICIO</button><button class="secundario" type="button" onclick="window.location.href='liquidacion.html'">IR A LIQUIDACIÓN DE OBLIGACIONES</button></div>
 </main>
-<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.236</footer>
+<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.237</footer>
 <script id="tdj-global-clear-143">
 document.addEventListener("DOMContentLoaded",function(){
   const b=document.getElementById("btnLimpiarTitulosGlobal");
@@ -256,5 +256,5 @@ document.addEventListener("DOMContentLoaded",function(){
   },true);
 });
 </script>
-<script type="module" src="js/tdj.js?v=16.33.236"></script>
+<script type="module" src="js/tdj.js?v=16.33.237"></script>
 </body></html>

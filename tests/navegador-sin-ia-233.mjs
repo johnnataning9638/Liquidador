@@ -109,8 +109,19 @@ try {
   await page.goto(`${baseURL}/titulos.html?v=16.33.233`, {waitUntil:'networkidle'});
   await page.waitForSelector('.obligacion-card', {state:'attached'});
   await assertNoIA();
+  assert.equal(await page.locator('.nav-footer').count(),0,'TDJ elimina navegación inferior');
+  assert.deepEqual(await page.locator('.topbar .ruta-modulo button').allTextContents(),
+    ['← Módulo de inicio','Ir a liquidación de obligaciones'],'Navegación TDJ agrupada arriba');
   for(const [width,reference] of [[1365,dianDesktop],[390,dianMobile]]){
     await page.setViewportSize({width,height:width===390?844:950});
+    const navStyles=await buttonStyles('.topbar .ruta-modulo button');
+    assert.deepEqual(navStyles[1],navStyles[0],'Mismo diseño de ambos botones superiores');
+    const navBoxes=await page.locator('.topbar .ruta-modulo button').evaluateAll(buttons=>buttons.map(b=>{
+      const r=b.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right};
+    }));
+    assert.ok(navBoxes.every(b=>b.x>=0&&b.right<=width),'Navegación superior accesible');
+    if(width===1365)assert.ok(navBoxes[1].x>navBoxes[0].x&&navBoxes[1].y===navBoxes[0].y,'Enlace DIAN a la derecha de Inicio');
+    await page.locator('.topbar').screenshot({path:path.join(output,`tdj-navegacion-${width}.png`)});
     for(const pane of ['datos','pagos','titulos']){
       await page.locator(`[data-tab="${pane}"]`).click();
       const bar=`[data-pane="${pane}"] .tdj-sheet-actions`;
@@ -154,6 +165,11 @@ try {
   await page.locator('#btnLimpiarTitulosGlobal').click();
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('.obligacion-card', {state:'attached'});
+  await page.locator('.topbar .ruta-modulo button').nth(1).click();
+  await page.waitForURL('**/liquidacion.html');
+  await page.goto(`${baseURL}/titulos.html`,{waitUntil:'networkidle'});
+  await page.locator('.topbar .ruta-modulo button').first().click();
+  await page.waitForURL('**/index.html');
   const iaRequests = requests.filter(x=>/ai-bridge|ai-liquidador|\/interpret\/|\/feedback|\/health.*ia/i.test(x));
   assert.deepEqual(iaRequests, []);
   assert.deepEqual(errors, []);

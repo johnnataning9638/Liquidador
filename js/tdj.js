@@ -22,7 +22,7 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 })();
 (function(){
   document.addEventListener("DOMContentLoaded",function(){var footer=document.querySelector("footer");if(footer)footer.textContent=footer.textContent.replace(/v16\\.33\\.(163|164|165|166|167|168|169|170|171|172|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200)/g,"v16.33.210");},{once:true});
-  document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.236&reinicio="+Date.now());},true);
+  document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.237&reinicio="+Date.now());},true);
 })();
 
 // v16.33.199: una fecha de corte sin valor es informativa. Durante el cálculo
@@ -71,6 +71,6 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.236");
+import("./tdj-core-16.33.143.js?v=16.33.237");
 // Capa visual TDJ × OBLIGACIÓN.
 import("./tdj-visual-beneficios.js?v=16.33.210");

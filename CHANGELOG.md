@@ -1,5 +1,12 @@
 # Cambios
 
+## 16.33.237 — Navegación superior TDJ
+- Se retira la navegación inferior de TDJ en todas sus pestañas.
+- Ir a liquidación de obligaciones se ubica a la derecha de Módulo de inicio en el encabezado, usando las mismas clases y diseño del botón existente.
+- En móvil ambos enlaces conservan el diseño accesible de Inicio y se adaptan al ancho.
+- Pruebas: posición y estilos del encabezado en escritorio/móvil, navegación efectiva a DIAN e Inicio y regresiones de importación, cálculo, exportación y limpieza.
+
+
 ## 16.33.236 — Barras de acciones TDJ como DIAN
 - Las tres pestañas TDJ comparten el orden Importar Excel, Exportar Excel, Exportar PDF, Limpiar y Calcular liquidación.
 - Se reutilizan clases de DIAN para tamaño, tipografía, colores, espaciado y adaptación móvil; se retiran estilos duplicados de las barras TDJ.
