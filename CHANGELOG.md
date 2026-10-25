@@ -1,3 +1,9 @@
+# 16.33.240
+
+- DIAN: excedentes nominales completos en indicador y soportes PDF/Excel, incluso si el cálculo reservó parte de un TDJ para pagos posteriores.
+- TDJ: detalle PDF informativo del título íntegro posterior a la cancelación, con deuda, aplicación y saldo en cero.
+- Motores, sanciones, beneficios, IPC/TIM y limpieza por pestaña sin cambios.
+
 # Cambios
 
 ## 16.33.239 — Limpieza controlada y parámetros TIM/IPC

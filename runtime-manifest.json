@@ -1,5 +1,5 @@
 {
-  "version": "16.33.239",
+  "version": "16.33.240",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -16,6 +16,7 @@
     "js/auditoria-trazabilidad.js",
     "js/calendario-tributario.js",
     "js/decreto-1419.js",
+    "js/excedentes-soporte.js",
     "js/export-dian-tdj-control-16.33.178.js",
     "js/importador-excel.js",
     "js/importador-obligacion.js",
@@ -55,7 +56,7 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
+    "js/app.js": "fae80ab38a1883fa93e7da947a4d7e548c7459c916649cebe7c9c1f2d775a986",
     "js/auditoria-trazabilidad.js": "ef8c79b4d3edb597c81f81ff54005976bd50795372a0eb25efe90972def8ee08",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
@@ -71,7 +72,7 @@
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
+    "js/tdj-core-16.33.143.js": "7778d74bd4c3823b924716a97101eda71efd60d8daba9578d50038070b1365d6",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",
@@ -90,5 +91,15 @@
     "js/tdj-visual-beneficios.js": "7335afacead8672878eedaba3e1b5907e23aaa32db0421a194f51208f12cbc9e",
     "js/utilidades.js": "2dd81359c5962e39c9936084a707f532426ad6143efe41a7ff8c77baf4d4d3bf"
   },
-  "notes": "Los sufijos históricos identifican capas activas. Sus bytes matemáticos se conservan."
+  "notes": "Los sufijos históricos identifican capas activas. Sus bytes matemáticos se conservan.",
+  "authorizedPresentationChanges": {
+    "js/app.js": {
+      "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
+      "reason": "16.33.240: presentación de excedentes y soporte PDF autorizados; motores intactos"
+    },
+    "js/tdj-core-16.33.143.js": {
+      "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
+      "reason": "16.33.240: presentación de excedentes y soporte PDF autorizados; motores intactos"
+    }
+  }
 }

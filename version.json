@@ -1,7 +1,7 @@
 {
-  "version": "16.33.239",
-  "previousVersion": "16.33.238",
-  "baseCommit": "627b181fb2c56a9e67e578fa72ea1fc129fc950a",
-  "date": "2026-10-25",
-  "change": "Limpieza de recursos desconectados y actualizador TIM/IPC independiente; motores y limpieza por pestaña intactos"
+  "version": "16.33.240",
+  "previousVersion": "16.33.239",
+  "baseCommit": "f84ff1b9e2acf3db2aa9e4b4b49d3302d1c46146",
+  "date": "2026-10-24",
+  "change": "Excedentes nominales DIAN coherentes en pantalla/PDF/Excel y detalle TDJ sin aplicación; motores intactos"
 }
