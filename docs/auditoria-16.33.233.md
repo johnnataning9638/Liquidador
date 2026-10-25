@@ -7,6 +7,7 @@ Alcance: retirar la importación IA de DIAN y TDJ y corregir el consumo indebido
 - Prioridad TDJ, alta: tdj-prioridad-203.js maximizaba el título aplicable sin comprobar primero si los pagos posteriores ya cerraban la deuda con título cero. La prueba independiente reprodujo 1000 frente a 0 antes de la corrección. Se añade el cierre previo y se conserva el título si todavía existe deuda real.
 - Trazabilidad TDJ, alta: tdj-core-16.33.143.js podía tomar el último detalle de otro movimiento si no existía el del título actual. Se omiten los títulos excluidos y se exige identidad del detalle. Los casos de beneficios y múltiples obligaciones vuelven a pasar después de esta protección conjunta.
 - Versiones y controles históricos: la navegación TDJ conservaba un guard 202 y la limpieza enlazaba a 210; las entradas y el pie visibles eran 231. Se sincronizan en 233 los puntos activos afectados. Los controles vigentes adaptan sus referencias y la exportación PDF imprimible sin eliminar la prueba crítica ni sus valores esperados.
+- Entorno CI: la ejecución inicial de navegador falló al instalar Playwright 1.55.0 sobre ubuntu-latest, que resolvió a Ubuntu 26.04 no soportado por esa versión. Se fijan los dos trabajos de navegador a Ubuntu 24.04; no se retiran pruebas ni se actualizan dependencias de aplicación.
 
 ## Evidencia
 
@@ -28,7 +29,7 @@ Supabase: proyecto ulismfqyxnujkwvjjmcp, estado ACTIVE_HEALTHY. Inspección de e
 - Importador de obligación, gravedad media: un pegado tabulado con primera columna numérica de cuota, por ejemplo `1\t16/05/2024\t1.000.000`, puede tomar 1 como impuesto. La ruta comprobada de fecha e importe sin ese índice reconoce $1.000.000. El archivo del importador es idéntico a la base; requiere corrección separada y no se oculta cambiando su prueba de dominio.
 - Los 22 contratos históricos requieren modernización y clasificación individual; su fallo no prueba por sí solo un defecto funcional.
 - El diagnóstico de conservación SIMPLE que el protocolo del repositorio registra como conocido permanece fuera de esta corrección. No se afirma auditoría normativa completa de todos los regímenes.
-- La verificación local del protocolo Python requiere PyYAML ausente en este entorno. El workflow Codex protocol lo instala y lo ejecuta en GitHub; su resultado remoto debe comprobarse antes de fusionar.
+- La verificación local del protocolo Python requiere PyYAML ausente en este entorno. El workflow Codex protocol lo instaló y aprobó en GitHub para el commit inicial del PR; se vuelve a comprobar sobre el commit final antes de fusionar.
 
 ## Publicación y comprobación
 
