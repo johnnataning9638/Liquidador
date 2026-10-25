@@ -1,5 +1,13 @@
 # Cambios
 
+## 16.33.233 - 2026-10-24
+
+- DIAN y TDJ: se retiran los cinco botones Importar IA, sus indicadores, la conexión al motor IA y el envío de ejemplos. Se conserva el importador normal.
+- TDJ: si los pagos posteriores cierran completamente la obligación sin el título actual, este conserva su nominal para otra obligación o endoso. Se impide usar el detalle de otro título cuando el actual queda excluido.
+- El caso crítico conserva su expectativa: títulos $31.000.000, aplicado $16.548.000, endoso $14.452.000; el cuarto título conserva $10.000.000.
+- Versiones visibles, entradas, estilos y módulos modificados sincronizados. Pruebas nuevas de importación, prioridad, PDF, Excel, recálculo y trazabilidad. Se conservan las pruebas críticas existentes.
+- Auditoría y alcance en `docs/auditoria-16.33.233.md`. No requiere migraciones ni cambios de datos en Supabase.
+
 ## 16.33.210 - 2026-10-20
 
 - Exclusivamente TDJ: la tabla visual de tasas de cada título/obligación usa la misma información efectiva del motor, inicialmente JSON local y después las tasas sincronizadas desde Supabase.

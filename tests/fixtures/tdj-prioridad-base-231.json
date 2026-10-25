@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "18cd6ba645b7d40bd0f3f8f8587c145c1fd7d946",
+  "sourceVersion": "16.33.231",
+  "verifiedOn": "2026-10-24",
+  "source": "Reproducción en Chrome sobre producción antes del despliegue de retirada IA, y sobre la copia local del mismo motor",
+  "purpose": "Distinguir el defecto previo del control crítico esperado; no convertir el defecto en un resultado aceptado",
+  "historical177": {"applied":16548000,"endoso":14452000},
+  "observed231": {"total":31000000,"applied":16549000,"saldo":0,"endoso":14451000},
+  "expected": {"total":31000000,"applied":16548000,"saldo":0,"endoso":14452000,"thirdApplied":15548000,"thirdRemainder":4452000,"fourthApplied":0,"fourthRemainder":10000000}
+}

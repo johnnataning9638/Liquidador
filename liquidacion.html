@@ -21,7 +21,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Obligaciones — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.130">
+<link rel="stylesheet" href="estilos.css?v=16.33.233">
 </head>
 <body>
 <header class="topbar">
@@ -87,10 +87,10 @@
   <div class="panel-title fila-titulo"><span>Importación inteligente — NIT, razón social y cuotas</span><span class="mini-badge">PEGAR DATOS</span></div>
   <div class="importador importador-obligacion">
     <textarea id="pegarDatosObligacion" rows="5" placeholder="Pegue aquí la información de la obligación. Puede venir ordenada o desordenada, en filas o columnas, con o sin títulos. El sistema intentará reconocer NIT, razón social y hasta seis cuotas (número, fecha e impuesto declarado) sin exigir un orden específico."></textarea>
-    <div class="acciones-importacion acciones-obligacion-ia">
+    <div class="acciones-importacion acciones-obligacion">
       <button type="button" id="btnProcesarDatosObligacion" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>Importar</span></button>
-      <button type="button" id="btnProcesarDatosObligacionIA" class="primario"><span>Importar IA</span></button>
-      <span id="btnComprobarIAObligacion" class="indicador-parametros error indicador-ia" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span>
+
+
     </div>
   </div>
   <div id="resultadoImportacionObligacion" class="importacion-resumen" hidden></div>
@@ -109,11 +109,11 @@
 <section class="panel">
   <div class="panel-title fila-titulo"><span>Tabla de pagos históricos</span><div class="acciones"><button id="btnAgregarPago" class="primario">Agregar pago</button><button id="btnImportar" class="secundario">Importar</button><input id="archivoImportacion" type="file" accept=".txt,.csv,.tsv" hidden></div></div>
   <div class="importador"><textarea id="pegarDatos" rows="4" placeholder="Pega información horizontal o vertical. Puede contener información con o sin títulos. En pagos sin títulos, reconoce recibos que inicien por 4 y tengan más de 12 dígitos, luego fecha y valor; descarta lo demás."></textarea><div class="acciones-importacion acciones-pagos-wrap">
-      <div class="acciones-pagos-ia">
+      <div class="acciones-pagos">
         <button id="btnProcesarPegado" class="secundario"><span class="btn-icon" aria-hidden="true">⇧</span><span>Importar</span></button>
-        <button id="btnProcesarPegadoIA" class="primario"><span>Importar IA</span></button>
+
       </div>
-      <span id="btnComprobarIA" class="indicador-parametros error indicador-ia" role="status" aria-label="IA no comprobada" title="IA no comprobada"></span>
+
     </div></div>
   <div class="tabla-scroll"><table id="tablaPagos"><thead><tr><th>Nº</th><th>TDJ Nº</th><th>Recibo Nº</th><th>Fecha pago</th><th>Valor pago</th><th>Tipo</th><th>Tasa</th><th>Observación</th><th>Acción</th></tr></thead><tbody></tbody></table></div>
 </section>
@@ -184,7 +184,7 @@
 
 
 </main>
-<footer>Liquidador — versión 16.33.231, con TIM e IPC centralizados y alertas informativas</footer>
+<footer>Liquidador — versión 16.33.233, con TIM e IPC centralizados y alertas informativas</footer>
 <script>
 // DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
 (function(){
@@ -264,7 +264,7 @@
   else iniciar();
 })();
 </script>
-<script type="module" src="js/app.js?v=16.33.231"></script>
+<script type="module" src="js/app.js?v=16.33.233"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){

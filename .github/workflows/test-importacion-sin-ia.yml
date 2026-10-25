@@ -1,0 +1,32 @@
+name: Importación normal sin IA
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  importacion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar retirada IA y sincronización de versión
+        run: |
+          node tests/regresion-sin-ia-233.mjs
+          node tests/regresion-prioridad-cierre-233.mjs
+      - name: Instalar navegador de prueba
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Probar importación, cálculo, PDF, Excel y limpieza
+        run: node tests/navegador-sin-ia-233.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: importacion-sin-ia
+          path: test-results/sin-ia-233

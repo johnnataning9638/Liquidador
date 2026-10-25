@@ -1,6 +1,5 @@
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
-import {interpretarPagosConIA,interpretarObligacionConIA,fusionarPagosSeguros,comprobarMotorIA,getEstadoIA,enviarFeedbackIA} from "./ai-bridge.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
 import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.231";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
@@ -42,7 +41,6 @@ let supabaseClient=null;
 let adminEmail=null;
 let ultimaLiquidacion=null,ultimaAuditoria=null;
 let obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
-let feedbackIAPendientes=new Set();
 let limpiando=false;
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
 let estadoSancionUI={tiene:"",valor:"",fecha:"",beneficio:""};
@@ -1824,22 +1822,10 @@ function calcular(){
   }catch(e){console.error(e);alert(e.message||"No fue posible calcular la liquidación.");enfocarCampoError(e.focusTarget);}
 }
 
-async function guardarFeedbackIALimpiezaNormal(tipo){
-  if(!feedbackIAPendientes.has(tipo))return;
-  try{
-    const ejemplos=tipo==="pagos"?construirFeedbackPagosIA():construirFeedbackObligacionIA();
-    if(ejemplos.length)await enviarFeedbackIA(ejemplos,"liquidador-ia-"+tipo+"-limpieza");
-  }catch(e){
-    console.warn("Aprendizaje IA al limpiar ("+tipo+"):",e);
-  }
-  feedbackIAPendientes.delete(tipo);
-}
-
 async function limpiarDatosPestanaNormal(){
   if(limpiando)return;
   limpiando=true;
   try{
-    await guardarFeedbackIALimpiezaNormal("obligacion");
     estadoSancionUI={tiene:"",valor:"",fecha:"",origen:"",beneficio:""};
     const sancion=$("tieneSancion");
     if(sancion){sancion.value="";delete sancion.dataset.tabValue;}
@@ -1859,7 +1845,6 @@ async function limpiarPagosPestanaNormal(){
   if(limpiando)return;
   limpiando=true;
   try{
-    await guardarFeedbackIALimpiezaNormal("pagos");
     pagos=[];
     document.querySelectorAll('[data-pane="pagos"] input,[data-pane="pagos"] textarea').forEach(el=>{
       if(el.type==="file")el.value="";
@@ -1872,25 +1857,6 @@ async function limpiarPagosPestanaNormal(){
 async function limpiar(){
   if(limpiando)return;
   limpiando=true;
-  // LIMPIAR inicia un análisis nuevo. Antes de borrar el expediente actual,
-  // guarda silenciosamente el aprendizaje de las importaciones IA realizadas
-  // durante este análisis. Si hubo pagos y obligación IA, se guardan ambos.
-  const pendientes=[...feedbackIAPendientes];
-  if(pendientes.length){
-    for(const tipo of pendientes){
-      try{
-        const ejemplos=tipo==="pagos"?construirFeedbackPagosIA():construirFeedbackObligacionIA();
-        if(!ejemplos.length)continue;
-        await enviarFeedbackIA(ejemplos,`liquidador-ia-${tipo}-limpieza`);
-      }catch(e){
-        // El aprendizaje nunca debe impedir ni alterar la limpieza del Liquidador.
-        // El error queda en consola para diagnóstico técnico, sin alertar al usuario.
-        console.warn(`Aprendizaje IA al limpiar (${tipo}):`,e);
-      }
-    }
-  }
-  feedbackIAPendientes.clear();
-  ocultarFeedbackIA();
   pagos=[];obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];ultimaLiquidacion=null;ultimaAuditoria=null;
   // El botón LIMPIAR inicia una obligación completamente nueva.
   // Es importante reiniciar también el estado auxiliar de sanción y el
@@ -1913,53 +1879,6 @@ async function limpiar(){
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
   if($("rExcedenteBox")){$("rExcedenteBox").hidden=true;$("rExcedente").textContent=dinero(0);}
   limpiando=false;
-}
-
-
-function construirFeedbackPagosIA(){
-  const ejemplos=[];
-  for(const p of Array.isArray(pagos)?pagos:[]){
-    const tdj=String(p?.tdj||"").trim();
-    const recibo=String(p?.recibo||"").trim();
-    const fecha=String(p?.fecha||"").trim();
-    const valor=Number(p?.valor||0);
-    if(tdj)ejemplos.push({text:`TDJ ${tdj}`,label:"TDJ"});
-    if(recibo)ejemplos.push({text:`RECIBO ${recibo}`,label:"RECIBO"});
-    if(fecha)ejemplos.push({text:`FECHA ${fechaVisible(fecha)}`,label:"FECHA"});
-    if(Number.isFinite(valor)&&valor>0)ejemplos.push({text:`VALOR ${dinero(valor)}`,label:"VALOR"});
-  }
-  return ejemplos;
-}
-
-function construirFeedbackObligacionIA(){
-  const ejemplos=[];
-  const nit=String($("nit")?.value||"").replace(/\D/g,"");
-  const razon=String($("razonSocial")?.value||"").trim();
-  const anio=String($("anio")?.value||"").trim();
-  if(nit)ejemplos.push({text:`NIT ${nit}`,label:"NIT"});
-  if(razon)ejemplos.push({text:razon,label:"RAZON_SOCIAL"});
-  if(/^20\d{2}$/.test(anio))ejemplos.push({text:`AÑO ${anio}`,label:"ANIO"});
-  for(const c of Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]){
-    const fecha=String(c?.fecha||"").trim();
-    const impuesto=Number(c?.impuesto||0);
-    if(fecha)ejemplos.push({text:`FECHA ${fechaVisible(fecha)}`,label:"FECHA"});
-    if(Number.isFinite(impuesto)&&impuesto>0)ejemplos.push({text:`VALOR ${dinero(impuesto)}`,label:"VALOR"});
-  }
-  return ejemplos;
-}
-
-function mostrarFeedbackIA(tipo){
-  // Ya no se muestran botones ni avisos al usuario. La marca solo indica que,
-  // al pulsar LIMPIAR, debe guardarse silenciosamente el aprendizaje de esta IA.
-  feedbackIAPendientes.add(tipo);
-  const pagosBox=$("feedbackIApagos");
-  const obligacionBox=$("feedbackIAobligacion");
-  if(pagosBox)pagosBox.hidden=true;
-  if(obligacionBox)obligacionBox.hidden=true;
-}
-
-function ocultarFeedbackIA(){
-  [$("feedbackIApagos"),$("feedbackIAobligacion")].forEach(x=>{if(x)x.hidden=true;});
 }
 
 
@@ -2340,24 +2259,6 @@ function configurarBase(){
   $("anio").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"");habilitarSancion();actualizarSancionMinimaUI();renderCalendario();});
   $("concepto").addEventListener("change",()=>{renderMetadatosConcepto();renderVencimientos();renderCalendario();});
   $("periodo").addEventListener("change",renderCalendario);
-  function renderEstadoIA(){
-    try{
-      const e=getEstadoIA?.();
-      const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
-      if(!dots.length||!e)return;
-      const ok=["CONECTADO","PAGOS APLICADOS","PAGOS INTERPRETADOS","OBLIGACION VALIDADA","OBLIGACION INTERPRETADA"].includes(String(e.estado||"").toUpperCase());
-      const version=e.version&&e.version!=="—"?` · versión ${e.version}`:"";
-      const titulo=ok?`IA DIAN comprobada${version}`:"IA DIAN no comprobada · Haga clic para comprobar";
-      dots.forEach(dot=>{
-        dot.className=`indicador-parametros indicador-ia ${ok?"listo":"error"}`;
-        dot.title=titulo;
-        dot.setAttribute("aria-label",titulo);
-      });
-    }catch{}
-  }
-  window.addEventListener("dian-ai-status",renderEstadoIA);
-  renderEstadoIA();
-
   $("tipoLiquidacion").addEventListener("change",()=>{seleccionarMotorPorTipo();actualizarCamposTipoLiquidacion();actualizarSancionMinimaUI();});
   $("tieneSancion").addEventListener("change",()=>{estadoSancionUI.tiene=$("tieneSancion").value;habilitarSancion();});
   $("valorSancion").addEventListener("input",()=>{estadoSancionUI.valor=$("valorSancion").value;});
@@ -2416,116 +2317,19 @@ function configurarBase(){
     campo.setRangeText(insercion,inicio,fin,"end");
     campo.dispatchEvent(new Event("input",{bubbles:true}));
   });
-  $("btnProcesarPegado").addEventListener("click",()=>{try{ocultarFeedbackIA();aplicarImportacionPagosSolo(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
-  $("btnProcesarPegadoIA")?.addEventListener("click",async()=>{
-    const text=$("pegarDatos").value;
-    try{
-      actualizarEstadoIndicador("cargando","IA DIAN: interpretando pagos...");
-      const base=importarDatosInteligente(text);
-      const ai=await interpretarPagosConIA(text);
-
-      // El importador determinístico sigue siendo la red de seguridad. Si la
-      // IA no consigue estructurar ningún pago, nunca se borra el pegado ni
-      // se deja la tabla vacía: se aplican los pagos determinísticos ya
-      // reconocidos y se informa que la IA no pudo complementar el caso.
-      if(!ai.pagos.length){
-        if(!base.pagos?.length)throw new Error("Ni el importador determinístico ni la IA encontraron pagos completos con fecha, valor y documento/TDJ.");
-        aplicarImportacionPagosSolo(base);
-        $("pegarDatos").value="";
-        actualizarEstadoIndicador("listo",`IA DIAN: no estructuró pagos completos; se conservaron ${base.pagos.length} pago(s) reconocidos determinísticamente.`);
-        return;
-      }
-
-      // Obligación y vencimientos siguen pasando por el importador determinístico.
-      // La IA entrega únicamente registros estructurados de pagos.
-      const fusion=fusionarPagosSeguros(base.pagos,ai.pagos);
-      base.pagos=fusion.pagos;
-      aplicarImportacionPagosSolo(base);
-      $("pegarDatos").value="";
-      window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"PAGOS APLICADOS",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:base.pagos.length,anomalies:(ai.aiAnomalies||[]).length,timestamp:new Date().toISOString()}}));
-      actualizarEstadoIndicador("listo",`IA DIAN: ${ai.pagosValidos} pago(s) estructurado(s) · ${base.pagos.length} pago(s) aplicados · confianza ${Math.round(Number(ai.confidence||0)*100)}%${fusion.advertencias?.length?` · ${fusion.advertencias.length} advertencia(s)`:""}`);
-      // El aprendizaje solo se guarda después de que el usuario confirme o
-      // corrija los datos que quedaron en la tabla.
-      mostrarFeedbackIA("pagos");
-      if(fusion.advertencias?.length) console.warn("Advertencias de fidelidad IA:",fusion.advertencias);
-    }catch(e){
-      console.error(e);
-      actualizarEstadoIndicador("error", "IA DIAN no disponible o datos no reconocidos");
-      alert(e.message||"No fue posible interpretar los pagos con IA.");
-    }
-  });
-
-  const comprobarIAAutomaticamente=async()=>{
-    const dots=[$("btnComprobarIA"),$("btnComprobarIAObligacion")].filter(Boolean);
-    dots.forEach(dot=>{
-      dot.className="indicador-parametros indicador-ia cargando";
-      dot.title="Comprobando conexión con IA DIAN...";
-      dot.setAttribute("aria-label","Comprobando conexión con IA DIAN");
-    });
-    try{
-      const r=await comprobarMotorIA();
-      renderEstadoIA();
-      dots.forEach(dot=>{
-        dot.title=`IA DIAN activa · motor v${r.version||"—"}`;
-        dot.setAttribute("aria-label",`IA DIAN activa · motor v${r.version||"—"}`);
-      });
-    }catch(e){
-      // La comprobación es silenciosa: si el AI Engine no está disponible,
-      // los indicadores permanecen rojos y el Liquidador sigue funcionando.
-      renderEstadoIA();
-    }
-  };
-  // Comprobación única y asíncrona al abrir el Liquidador.
-  // El estado queda cacheado durante 45 s en ai-bridge.js; no se hacen
-  // consultas cada 10 segundos ni se genera tráfico periódico innecesario.
-  void comprobarIAAutomaticamente();
-
+  $("btnProcesarPegado").addEventListener("click",()=>{try{aplicarImportacionPagosSolo(importarDatosInteligente($("pegarDatos").value));$("pegarDatos").value="";}catch(e){alert(e.message);}});
   $("btnImportar").addEventListener("click",()=>$("archivoImportacion").click());
-  $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{ocultarFeedbackIA();aplicarImportacionPagosSolo(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
+  $("archivoImportacion").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{aplicarImportacionPagosSolo(importarDatosInteligente(await f.text()));}catch(err){alert(err.message);}e.target.value="";});
 
   $("btnProcesarDatosObligacion").addEventListener("click",()=>{
     try{
-      ocultarFeedbackIA();
+
       const obj=importarDatosObligacionInteligente($("pegarDatosObligacion").value);
       aplicarImportacionObligacion(obj);
       $("pegarDatosObligacion").value="";
     }catch(e){alert(e.message||"No pude reconocer los datos de la obligación.");}
   });
-  $("btnProcesarDatosObligacionIA")?.addEventListener("click",async()=>{
-    const text=$("pegarDatosObligacion").value;
-    try{
-      if(!text.trim())throw new Error("No hay información de obligación para interpretar.");
-      actualizarEstadoIndicador("cargando","IA DIAN: interpretando NIT, razón social y cuotas...");
-      const base=importarDatosObligacionInteligente(text);
-      const ai=await interpretarObligacionConIA(text,base);
-      const obj=ai.resultado||{};
-      // La IA puede complementar/validar, pero nunca puede eliminar cuotas
-      // que el importador determinístico ya reconoció del texto pegado.
-      const cuotasBase=Array.isArray(base.cuotas)?base.cuotas:[];
-      const cuotasIA=Array.isArray(obj.cuotas)?obj.cuotas:[];
-      // En DATOS Y VENCIMIENTOS, las fechas e importes pegados por el usuario
-      // son la fuente de verdad. La IA NO puede reemplazar, renumerar ni
-      // eliminar cuotas determinísticas; solo se usa si el parser base no
-      // encontró ninguna cuota.
-      obj.cuotas=cuotasBase.length?cuotasBase:cuotasIA;
-      aplicarImportacionObligacion(obj);
-      $("pegarDatosObligacion").value="";
-      const confianza=Math.round(Number(ai.confidence||0)*100);
-      const r=$("resultadoImportacionObligacion");
-      if(r){
-        r.innerHTML=(r.innerHTML||"")+` · <strong>IA DIAN:</strong> validación ${confianza}% — datos determinísticos confirmados`;
-      }
-      window.dispatchEvent(new CustomEvent("dian-ai-status",{detail:{estado:"OBLIGACION VALIDADA",version:ai.version||"0.6.6",confidence:Number(ai.confidence||0),pagosValidos:obj.cuotas?.length||0,anomalies:0,timestamp:new Date().toISOString()}}));
-      actualizarEstadoIndicador("listo",`IA DIAN: NIT, razón social y ${obj.cuotas?.length||0} cuota(s) validados · confianza ${confianza}%`);
-      // El aprendizaje solo se guarda después de que el usuario confirme o
-      // corrija los datos que quedaron en la obligación.
-      mostrarFeedbackIA("obligacion");
-    }catch(e){
-      console.error(e);
-      actualizarEstadoIndicador("error","IA DIAN no validó los datos de la obligación");
-      alert(e.message||"No fue posible interpretar la obligación con IA.");
-    }
-  });
+
 }
 
 if(typeof window!=="undefined"){

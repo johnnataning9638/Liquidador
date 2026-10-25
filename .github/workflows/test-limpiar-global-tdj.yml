@@ -31,7 +31,8 @@ jobs:
           const h=fs.readFileSync('titulos.html','utf8');
           const decl=/const hayTitulosRegistrados=titulos\.some\(t=>fechaISO\(t\.fecha\)&&Number\(t\.valor\)>0\);/;
           if((s.match(new RegExp(decl.source,'g'))||[]).length!==1) throw new Error('hayTitulosRegistrados no tiene una única declaración');
-          if(s.indexOf('const hayTitulosRegistrados=')>s.indexOf('if(hayTitulosRegistrados || hayExcedentesPago)')) throw new Error('TDZ en resumen PDF');
+          const use=/if\(\(?hayTitulosRegistrados \|\| hayExcedentesPago/.exec(s);
+          if(!use || s.indexOf('const hayTitulosRegistrados=')>use.index) throw new Error('TDZ en resumen PDF');
           if(!h.includes('Se borrarán datos, pagos, títulos y resultados.')) throw new Error('Confirmación global ausente');
           if(h.includes('¿Desea limpiar únicamente los títulos / TDJ registrados?')) throw new Error('Persistió el mensaje antiguo');
           if(!h.includes('tdj-version-guard')) throw new Error('Guardia de versión TDJ ausente');
