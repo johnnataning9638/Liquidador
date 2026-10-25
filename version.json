@@ -1,7 +1,7 @@
 {
-  "version": "16.33.248",
-  "previousVersion": "16.33.247",
-  "baseCommit": "870c83165f540e70caf1d8a6d6483f6aed16ec9c",
+  "version": "16.33.249",
+  "previousVersion": "16.33.248",
+  "baseCommit": "47bfdab7eda02cc8e2f3fc43f52cc9c2993492e6",
   "date": "2026-10-25",
-  "change": "Conservar proporcionalidad y saldos reales en cuatro a seis cuotas; retirar redistribución posterior incorrecta"
+  "change": "TDJ: resumen final PDF siempre, con o sin titulos y movimientos, con saldos del resultado"
 }

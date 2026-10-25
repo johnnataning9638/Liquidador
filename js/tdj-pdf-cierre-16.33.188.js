@@ -78,7 +78,9 @@
 
   function parseSupport(section){
     const a=section?.querySelector(":scope > article")||section?.firstElementChild;
-    if(!a)return {};
+    // Compatibilidad con soportes anteriores sin página de títulos: conservar
+    // la estructura que necesita el cierre sin interrumpir la exportación.
+    if(!a)return {article:null,grid:{}};
     const grid={};
     a.querySelectorAll(".pdf-resumen-grid > div").forEach(x=>{
       const k=clean(x.querySelector("b")?.textContent).toUpperCase();
@@ -128,10 +130,17 @@
   function resumenLiquidacion(doc,details,support){
     const grupos=new Map();
     details.forEach(x=>{if(!grupos.has(x.clave))grupos.set(x.clave,[]);grupos.get(x.clave).push(x);});
-    let saldoFinal=Number(support.grid["SALDO OBLIGACIONES"]||support.grid["SALDO FINAL OBLIGACIONES"]||0);
-    if(!saldoFinal)saldoFinal=[...grupos.values()].reduce((sum,g)=>sum+(g[g.length-1]?.saldoTotal||0),0);
+    // El cierre usa los saldos ya calculados, incluso sin pagos o sin títulos.
+    // No reconstruir deuda desde pagos históricos ni sustituir un cero válido.
+    const main=doc.querySelector("main.pdf-soporte");
+    const saldoInformado=main?.getAttribute("data-saldo-obligaciones");
+    const sancionInformada=main?.getAttribute("data-saldo-sancion");
+    const saldoFinal=saldoInformado!=null?Number(saldoInformado):
+      (support.grid["SALDO OBLIGACIONES"]??support.grid["SALDO FINAL OBLIGACIONES"]??
+        [...grupos.values()].reduce((sum,g)=>sum+(g[g.length-1]?.saldoTotal||0),0));
     const excedenteTotal=details.reduce((s,x)=>s+x.excedentePago,0);
-    const sancionFinal=[...grupos.values()].reduce((s,g)=>s+(g[g.length-1]?.sancionSaldo||0),0);
+    const sancionFinal=sancionInformada!=null?Number(sancionInformada):
+      [...grupos.values()].reduce((s,g)=>s+(g[g.length-1]?.sancionSaldo||0),0);
     const intereses=details.reduce((s,x)=>s+x.intereses,0);
     const actualizacion=details.reduce((s,x)=>s+x.actualizaciones.reduce((a,u)=>a+u.actualizacion,0),0);
     const reduccion=details.reduce((s,x)=>s+x.reducciones.reduce((a,r)=>a+Math.max(0,r.antes-r.aplicado),0),0);

@@ -1,3 +1,9 @@
+# 16.33.249
+
+- TDJ: generar siempre el resumen final y la consolidacion de pagos, aunque no haya titulos ni movimientos. Conservar el formato de cierre y las tablas de actualizacion y reduccion de sancion.
+- Mostrar saldo y sancion del resultado ya calculado; preservar ceros validos y evitar reconstruir deuda desde pagos historicos. Titulos y endoso solo si existen.
+- Conservar motores, beneficios, tasas, IPC, importacion, Excel, persistencia y cierre SIMPLE. Pruebas con los cuatro Excel originales, casos adicionales y auditoria exacta del alcance.
+
 # 16.33.248
 
 - Corrección matemática autorizada: retirar redistribuirSancionSimple, que forzaba sanción después de aplicar la proporción y descontaba saldos varias veces. El motor conserva su reparto proporcional original.
