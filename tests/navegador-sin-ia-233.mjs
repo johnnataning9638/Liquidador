@@ -93,18 +93,55 @@ try {
     'DIAN reúne las exportaciones después de Importar Excel');
   await captureExports(page.locator('#btnExportarPdf'),page.locator('#btnExportarExcel'),'dian',900000);
   const dianDesktop=await buttonStyles('[data-pane="resultados"] .botonera button');
+  assert.deepEqual(await page.locator('.topbar .ruta-modulo button').allTextContents(),
+    ['← Módulo de inicio','Ir a liquidación de TDJ'],'Navegación DIAN con enlace TDJ');
+  const dianNav=await buttonStyles('.topbar .ruta-modulo button');
+  assert.deepEqual(dianNav[1],dianNav[0],'Enlace TDJ con el diseño de Inicio');
+  for(const pane of ['datos','pagos','resultados']){
+    await page.locator(`[data-tab="${pane}"]`).click();
+    const bar=`[data-pane="${pane}"] .botonera`;
+    assert.deepEqual(await page.locator(bar+' button').allTextContents(),
+      ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Cinco acciones DIAN ${pane}`);
+    assert.deepEqual(await buttonStyles(bar+' button'),dianDesktop,`Diseño DIAN ${pane}`);
+    await captureExports(page.locator(bar+' .btn-exportar-pdf'),page.locator(bar+' .btn-exportar-excel'),'dian-'+pane,900000);
+  }
+  await page.locator('.topbar').screenshot({path:path.join(output,'dian-navegacion.png')});
   await page.locator('[data-pane="resultados"] .botonera').screenshot({path:path.join(output,'dian-botonera.png')});
   await page.setViewportSize({width:390,height:844});
   const dianMobile=await buttonStyles('[data-pane="resultados"] .botonera button');
+  for(const pane of ['datos','pagos','resultados']){
+    await page.locator(`[data-tab="${pane}"]`).click();
+    assert.deepEqual(await buttonStyles(`[data-pane="${pane}"] .botonera button`),dianMobile,`Diseño DIAN móvil ${pane}`);
+  }
   for(const id of ['btnExportarExcel','btnExportarPdf']){
     const button=page.locator('#'+id);await button.scrollIntoViewIfNeeded();
     const box=await button.boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=390,'Exportación accesible en móvil');
   }
   await page.locator('[data-pane="resultados"] .botonera').screenshot({path:path.join(output,'dian-botonera-movil.png')});
   await page.setViewportSize({width:1365,height:950});
+  const fields=async(selector)=>page.locator(selector).evaluateAll(els=>els.map(el=>({id:el.id,value:el.value,disabled:el.disabled})));
+  const datosAntesDeLimpiar=await fields('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea');
+  const saldoAntesDeLimpiar=await page.locator('#rSaldoImpuesto').textContent();
   await page.locator('[data-tab="pagos"]').click();
   await page.locator('[data-pane="pagos"] .btn-limpiar-normal').click();
   assert.equal(await page.locator('#tablaPagos tbody tr').count(), 0);
+  assert.deepEqual(await fields('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea'),datosAntesDeLimpiar,'Limpiar Pagos conserva datos y vencimientos');
+  assert.equal(await page.locator('#rSaldoImpuesto').textContent(),saldoAntesDeLimpiar,'Limpiar Pagos conserva resultado previo');
+  await page.locator('#pegarDatos').fill(payment);await page.locator('#btnProcesarPegado').click();
+  const pagosAntesDeLimpiar=await fields('#tablaPagos input,#tablaPagos select,#pegarDatos');
+  await page.waitForTimeout(100);
+  await page.locator('[data-tab="datos"]').click();
+  await page.locator('[data-pane="datos"] .btn-limpiar-normal').click();
+  assert.equal(await page.locator('#nit').inputValue(),'');
+  assert.equal(await page.locator('#razonSocial').inputValue(),'');
+  assert.equal(await page.locator('#tieneSancion').inputValue(),'');
+  assert.equal(await page.locator('#tablaVencimientos tbody tr').count(),1);
+  assert.equal(await page.locator('#tablaVencimientos .fecha-native').inputValue(),'');
+  assert.deepEqual(await fields('#tablaPagos input,#tablaPagos select,#pegarDatos'),pagosAntesDeLimpiar,'Limpiar Datos conserva pagos');
+  assert.equal(await page.locator('#rSaldoImpuesto').textContent(),saldoAntesDeLimpiar,'Limpiar Datos conserva resultado previo');
+  await page.locator('#btnIrTDJ').click();
+  await page.waitForURL('**/titulos.html');
+  await page.waitForLoadState('networkidle');
 
   await page.goto(`${baseURL}/titulos.html?v=16.33.233`, {waitUntil:'networkidle'});
   await page.waitForSelector('.obligacion-card', {state:'attached'});

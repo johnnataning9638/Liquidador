@@ -2280,9 +2280,9 @@ function configurarBase(){
   $("btnAgregarCuota")?.addEventListener("click",agregarCuota);
   $("btnCalcularVencimiento").addEventListener("click",renderCalendario);
   $("btnGenerarAuditoria").addEventListener("click",renderAuditoria);
-  $("btnExportarExcel").addEventListener("click",exportarExcel);
+  document.querySelectorAll(".btn-exportar-excel").forEach(b=>b.addEventListener("click",exportarExcel));
   document.querySelectorAll(".btn-importar-excel").forEach(b=>b.addEventListener("click",importarExcelNormal));
-  $("btnExportarPdf").addEventListener("click",exportarPdf);
+  document.querySelectorAll(".btn-exportar-pdf").forEach(b=>b.addEventListener("click",exportarPdf));
   $("btnGuardarTasa").addEventListener("click",guardarTasaManual);
   $("btnGuardarIPC")?.addEventListener("click",guardarIPCManual);
   $("btnActualizarTasaDian").addEventListener("click",actualizarDesdeDIAN);
