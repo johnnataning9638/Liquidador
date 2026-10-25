@@ -1,3 +1,9 @@
+# 16.33.242
+
+- Auditoría conservadora de GitHub, Render y Supabase. Se conservan pruebas, documentación operativa y módulos activos.
+- Se sincroniza la versión pública y parámetros de caché de las páginas, sin cambios en cálculos, motores ni estructura de datos.
+- Los sufijos históricos de módulos activos se mantienen para no alterar dependencias.
+
 # 16.33.241
 
 - Encabezados DIAN/TDJ centrados respecto a la pantalla, con adaptación de navegación en pantallas pequeñas. Sin cambios funcionales.
