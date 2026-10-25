@@ -1,11 +1,11 @@
-import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.248";
+import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.249";
 instalarPegadoUnicoTitulosTDJ();
 // TDJ v16.33.212 — navegación TAB + tasa individual + restricciones + secuencia/reconciliación + cierre PDF + recuperación de beneficios Excel + identidad estable por obligación + resolución robusta de contexto + remanente antes de endoso + silencio de alerta falsa de endoso.
 // Las capas de secuencia se cargan de forma estática para eliminar la carrera
 // de módulos que podía dejar la trazabilidad en un estado diferente al PDF.
 import "./tdj-tasa-bridge-16.33.174.js?v=16.33.212";
 import "./tdj-secuencia-guard-16.33.185.js?v=16.33.185";
-import "./tdj-pdf-cierre-16.33.189.js?v=16.33.215";
+import "./tdj-pdf-cierre-16.33.189.js?v=16.33.249";
 import "./tdj-import-beneficio-16.33.192.js?v=16.33.210";
 import "./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.193";
 import "./tdj-beneficio-contexto-16.33.194.js?v=16.33.194";
@@ -71,6 +71,6 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.248");
+import("./tdj-core-16.33.143.js?v=16.33.249");
 // Capa visual TDJ × OBLIGACIÓN.
-import("./tdj-visual-beneficios.js?v=16.33.248");
+import("./tdj-visual-beneficios.js?v=16.33.249");

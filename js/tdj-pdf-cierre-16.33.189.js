@@ -1,7 +1,7 @@
 // TDJ PDF CIERRE v16.33.189
 // Homologación visual FINAL con el resumen PDF del Liquidador DIAN.
 // No modifica cálculos, motores, distribución, cronología, endoso ni datos.
-import "./tdj-pdf-cierre-16.33.188.js?v=16.33.215";
+import "./tdj-pdf-cierre-16.33.188.js?v=16.33.249";
 
 (function(){
   "use strict";
