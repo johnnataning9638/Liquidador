@@ -24,7 +24,14 @@ try{
   try{return route.fulfill({status:200,contentType:name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.json')?'application/json':'text/html',body:await fs.readFile(file)});}catch{return route.fulfill({status:404,body:''});}
  });
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{alerts.push(d.message());await d.accept();});
- const choose=async(button,file)=>{const ready=page.waitForEvent('dialog');const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button.click()]);await chooser.setFiles(file);await ready;};
+ const choose=async(button,file)=>{
+  const ready=page.waitForEvent('dialog');
+  const [chooser]=await Promise.all([page.waitForEvent('filechooser'),button.click()]);
+  await chooser.setFiles(file);await ready;
+  // La recuperación de pagos programa el cambio de pestaña a los 50 ms.
+  // Esperar ese cierre de la interfaz antes de seleccionar la siguiente pestaña.
+  await page.waitForTimeout(100);
+ };
  const readCuotas=async(selector)=>page.locator(selector).evaluateAll(rows=>rows.map(row=>({
   fecha:row.querySelector('.fecha-native')?.value,
   impuesto:Number((row.querySelector('[data-v="impuesto"]')?.value||'').replace(/[^0-9-]/g,'')),
