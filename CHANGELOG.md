@@ -1,3 +1,11 @@
+## 16.33.252 — 2026-10-26
+- TDJ: conservar fechas de corte con valor cero, sin recibo ni TDJ, al importar el Excel DIAN.
+- Conservar el corte durante el cálculo sin títulos reales y generar la liquidación PDF sin movimientos antes del resumen, incluso usando la fecha calculada cuando no hay corte explícito.
+- Corregir escala porcentual de la tasa en el encabezado de proyección y etiquetar sus intereses como intereses a fecha de corte.
+- Motores, cálculo DIAN, distribución de pagos/títulos y endosos intactos. Sin cambios de Supabase ni dependencias.
+- Reproducido con Excel del usuario: antes solo dos resúmenes; después liquidación detallada, corte conservado y coherencia UI/PDF/XLSX.
+- 37 controles locales aprobados. Chromium: caso del usuario y sintético con corte anterior/sin corte, más seis suites de regresión DIAN/TDJ.
+
 ## 16.33.251 — 2026-10-26
 - PDF DIAN sin pagos: eliminar referencia a `x` inexistente al presentar tasas; corrige alerta y vista previa vacía.
 - Sin cambios en motores, importadores, Excel, parámetros ni Supabase; franja verde conservada.

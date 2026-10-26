@@ -1,7 +1,7 @@
 {
-  "version": "16.33.251",
-  "previousVersion": "16.33.250",
-  "baseCommit": "0ded9461dcaa7aeb1805bd66c4d10609c9476dcb",
+  "version": "16.33.252",
+  "previousVersion": "16.33.251",
+  "baseCommit": "3294b4932773fb78033add8c666b542fd2efb0df",
   "date": "2026-10-26",
-  "change": "Corregir x no definida en PDF DIAN sin pagos; conservar tasas y cálculos"
+  "change": "TDJ: conservar corte sin pago y mostrar liquidación detallada antes del resumen PDF"
 }

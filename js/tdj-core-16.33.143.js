@@ -2203,9 +2203,16 @@ function claveAplicacionTDJPDF(a){
 }
 
 
+function fechaCorteProyeccionPDFTDJ(x){
+  const corte=fechaCorteTDJ(x?.obligacion);
+  if(corte)return corte;
+  if((x?.detalleCronologicoFinal||[]).length)return "";
+  return fechaISO((x?.estadoFinal||x?.liquidacionBase)?.fechaCorte)||hoyISO();
+}
+
 function bloqueProyeccionFechaCorteTDJ(x){
   const o=x?.obligacion||{};
-  const corte=fechaCorteTDJ(o);
+  const corte=fechaCorteProyeccionPDFTDJ(x);
   if(!corte)return "";
   const r=x?.liquidacionBase||x?.estadoFinal||{};
   const impuesto=Math.max(0,Number(r?.impuesto||0));
@@ -2223,12 +2230,12 @@ function bloqueProyeccionFechaCorteTDJ(x){
     interesesPorCuota:Array.isArray(r?.interesesPorCuota)?r.interesesPorCuota:[],
     interesLiquidado:intereses,
     tipoAplicado:o?.tipoTasa||"TASA DIAN",
-    tasaVisible:tasaInfo?.tasa==null?null:Number(tasaInfo.tasa),
+    tasaVisible:tasaInfo?.tasa==null?null:Number(tasaInfo.tasa)*100,
     notaBeneficio:tasaInfo?.nota||"TASA APLICABLE A LA FECHA DE CORTE."
   };
   const d=datosPDFTDJ(o,xCorte.pago);
   const rSoporte={detalle:[xCorte],vencimientos:o?.vencimientos||[],interesesPorCuota:Array.isArray(r?.interesesPorCuota)?r.interesesPorCuota:[],intereses,fechaCorte:corte};
-  return `<article class="pdf-liquidacion pdf-detalle-dian pdf-proyeccion-corte"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE OBLIGACIÓN — PROYECCIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"PRIVADA")}</strong></div><div class="pdf-dato"><b>FECHA DE SANCIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div></div><section class="pdf-bloque"><h2>PROYECCIÓN A FECHA DE CORTE</h2><table><tbody><tr><th>FECHA DE CORTE</th><td>${escPdf(fechaVisible(corte))}</td><th>TIPO DE TASA / BENEFICIO</th><td>${escPdf(xCorte.tipoAplicado)}</td></tr><tr><th>TASA APLICABLE</th><td>${xCorte.tasaVisible==null?"—":Number(xCorte.tasaVisible).toFixed(3)+"%"}</td><th>PAGOS REGISTRADOS HASTA EL CORTE</th><td>${dinero(totalPagos)}</td></tr></tbody></table></section><section class="pdf-bloque"><h2>SALDO PROYECTADO A LA FECHA DE CORTE</h2><table><thead><tr><th>CONCEPTO</th><th>VALOR PENDIENTE</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(impuesto)}</td></tr><tr><td>INTERESES</td><td>${dinero(intereses)}</td></tr><tr><td>SANCIÓN</td><td>${dinero(sancion)}</td></tr></tbody><tfoot><tr><th>TOTAL PENDIENTE PROYECTADO</th><th>${dinero(total)}</th></tr></tfoot></table></section>${tablaInteresesPdfTDJ(xCorte,rSoporte)}<div class="pdf-beneficio"><b>ALCANCE:</b> ESTE DOCUMENTO ES UNA PROYECCIÓN DE LA OBLIGACIÓN A LA FECHA DE CORTE INDICADA. NO CORRESPONDE A UN PAGO REGISTRADO NI A UN TÍTULO DE DEPÓSITO JUDICIAL.</div><div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article>`;
+  return `<article class="pdf-liquidacion pdf-detalle-dian pdf-proyeccion-corte"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE OBLIGACIÓN — PROYECCIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"PRIVADA")}</strong></div><div class="pdf-dato"><b>FECHA DE SANCIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div></div><section class="pdf-bloque"><h2>PROYECCIÓN A FECHA DE CORTE</h2><table><tbody><tr><th>FECHA DE CORTE</th><td>${escPdf(fechaVisible(corte))}</td><th>TIPO DE TASA / BENEFICIO</th><td>${escPdf(xCorte.tipoAplicado)}</td></tr><tr><th>TASA APLICABLE</th><td>${xCorte.tasaVisible==null?"—":Number(xCorte.tasaVisible).toFixed(3)+"%"}</td><th>PAGOS REGISTRADOS HASTA EL CORTE</th><td>${dinero(totalPagos)}</td></tr></tbody></table></section><section class="pdf-bloque"><h2>SALDO PROYECTADO A LA FECHA DE CORTE</h2><table><thead><tr><th>CONCEPTO</th><th>VALOR PENDIENTE</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(impuesto)}</td></tr><tr><td>INTERESES</td><td>${dinero(intereses)}</td></tr><tr><td>SANCIÓN</td><td>${dinero(sancion)}</td></tr></tbody><tfoot><tr><th>TOTAL PENDIENTE PROYECTADO</th><th>${dinero(total)}</th></tr></tfoot></table></section>${tablaInteresesPdfTDJ(xCorte,rSoporte).replace("TOTAL INTERESES DEL PAGO","TOTAL INTERESES A FECHA DE CORTE")}<div class="pdf-beneficio"><b>ALCANCE:</b> ESTE DOCUMENTO ES UNA PROYECCIÓN DE LA OBLIGACIÓN A LA FECHA DE CORTE INDICADA. NO CORRESPONDE A UN PAGO REGISTRADO NI A UN TÍTULO DE DEPÓSITO JUDICIAL.</div><div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article>`;
 }
 
 async function exportarPdfTDJ(){
@@ -2269,7 +2276,7 @@ async function exportarPdfTDJ(){
     // PROYECCIÓN SIN MOVIMIENTO: una fecha de corte no es un pago ni un TDJ.
     // El motor sí calcula la obligación, pero antes el exportador no generaba
     // ninguna página y abría about:blank. Ahora se genera un soporte específico.
-    const obligacionesConProyeccion=resultado.resumenObligaciones.filter(x=>fechaCorteTDJ(x.obligacion));
+    const obligacionesConProyeccion=resultado.resumenObligaciones.filter(x=>fechaCorteProyeccionPDFTDJ(x));
     obligacionesConProyeccion.forEach(x=>{
       paginas.push(`<section class="pdf-hoja">${bloqueProyeccionFechaCorteTDJ(x)}</section>`);
     });
@@ -2813,9 +2820,10 @@ async function importarExcelTDJ(){
             if(/^(IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|TITULOS \/ TDJ|TITULOS TDJ|RECUPERACION COMPLETA|FIN RECUPERACION|OBLIGACION \d+ -)/.test(srow))break;
             if(ixN>=0&&!/^\d+$/.test(String(r[ixN]??"").trim()))continue;
             const f=fechaCampoTDJImport(ixF>=0?r[ixF]:""), val=truncarValorEntero(numExcel(ixV>=0?r[ixV]:""));
-            if(!f||val<=0)continue;
             const tdjNum=upper(ixT>=0?r[ixT]||"":"").trim();
             const recibo=upper(ixR>=0?r[ixR]||"":"").trim();
+            // Una fecha sin recibo, título ni valor conserva el corte del Excel.
+            if(!f||val<0||(val===0&&(tdjNum||recibo)))continue;
             const tipo=upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN");
             const obs=upper(ixObs>=0?r[ixObs]||"":"");
             if(tdjNum){
