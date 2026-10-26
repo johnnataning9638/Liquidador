@@ -47,10 +47,13 @@ const newLine=read(core).split('\n').find(l=>l.includes('win.document.write(`<!d
 assert.equal(newLine,oldLine.replace('<main class="pdf-soporte">','<main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">'));
 const metadata='    // Metadatos de presentación: conservar los saldos del resultado sin exigir\n    // la existencia de páginas de pago o de soporte de títulos.\n    const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);\n';
 expected=expected.replace(oldLine,metadata+newLine);
+expected=expected.replace('<div class="pdf-pago-titulo">VALOR PAGO','<div class="pdf-pago-titulo" style="background:#d9f2e3">VALOR PAGO');
 assert.equal(read(core),expected,'Sin cambios en cálculos, importación, UI ni Excel');
 const manifest=JSON.parse(read('runtime-manifest.json'));
 for(const file of Object.keys(manifest.protected)){
  if([core,'js/tdj-pdf-cierre-16.33.188.js','js/tdj-pdf-cierre-16.33.189.js'].includes(file))continue;
- assert.equal(read(file),old(file),file+': intacto frente a 248');
+ let current=read(file);
+ if(file==='js/app.js')current=current.replace('<div class="pdf-pago-titulo" style="background:#d9f2e3">VALOR PAGO','<div class="pdf-pago-titulo">VALOR PAGO').replace('map(t=>tasaPdfArt45(null,Number(t.tasa)*100))','map(t=>tasaPdfArt45(x,Number(t.tasa)*100))');
+ assert.equal(current,old(file),file+': intacto frente a 248');
 }
 console.log('RESUMEN 249 OK: soporte ausente, saldos parciales, cero válido, sin pagos, compatibilidad e integridad exacta');

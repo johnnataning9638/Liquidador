@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-for(const f of ['js/app.js','js/tdj.js']){
+for(const f of ['js/app.js','js/tdj-core-16.33.143.js']){
   const s=fs.readFileSync(f,'utf8');
   assert.match(s,/interesesCalculados/);
   assert.ok(/Number\(r\?\.intereses\|\|0\)/.test(s)||/r\?\.intereses\|\|x\?\.interesLiquidado/.test(s),'Debe existir el fallback de interés de corte.');

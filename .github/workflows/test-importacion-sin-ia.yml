@@ -42,6 +42,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-tasa-247.mjs
       - name: Validar proporción y conservación en UI PDF Excel DIAN y TDJ
         run: TEST_SITE_DIR=dist node tests/navegador-proporcion-248.mjs
+      - name: Validar PDF DIAN sin pagos privada y oficial
+        run: TEST_SITE_DIR=dist node tests/navegador-pdf-dian-251.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

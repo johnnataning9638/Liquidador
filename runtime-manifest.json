@@ -1,5 +1,5 @@
 {
-  "version": "16.33.250",
+  "version": "16.33.251",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -55,7 +55,7 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "7e600b6ae7b9f634edb2f93ffa75c836367eb1df557875b09f208a75fd003d56",
+    "js/app.js": "fa0174a86a2a0a118d440fadcda6bccf72b0d156b7a2590b7b26015439d1ede8",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
@@ -70,7 +70,7 @@
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "5d4e0a2bf191355bb3f34d35e1e3fcf913c3150b3abcaf44057e461b0f96f575",
+    "js/tdj-core-16.33.143.js": "efcdd07bf196f315bbd685b0548076c46bbaf43d2071016732dd8ed42f1b5bd5",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",
@@ -92,12 +92,14 @@
   "notes": "Los sufijos históricos identifican capas activas. Sus bytes matemáticos se conservan.",
   "authorizedPresentationChanges": {
     "js/app.js": {
-      "baselineHash": "7e600b6ae7b9f634edb2f93ffa75c836367eb1df557875b09f208a75fd003d56",
-      "reason": "16.33.250: franja verde exclusiva del encabezado VALOR PAGO del detalle PDF DIAN; sin cambios en cálculos"
+      "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
+      "reason": "16.33.251: corregir contexto de formato de tasas del PDF DIAN sin pagos; conservar franja verde y cálculos",
+      "previousReleaseHash": "cf719d7190a525e598483fffb8425593f05df6cbb7f4eb851ab44687ec91584b"
     },
     "js/tdj-core-16.33.143.js": {
-      "baselineHash": "5d4e0a2bf191355bb3f34d35e1e3fcf913c3150b3abcaf44057e461b0f96f575",
-      "reason": "16.33.250: franja verde exclusiva del encabezado VALOR PAGO del detalle PDF TDJ; sin cambios en cálculos"
+      "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
+      "reason": "16.33.250: franja verde exclusiva del encabezado VALOR PAGO del detalle PDF TDJ; sin cambios en cálculos",
+      "previousReleaseHash": "efcdd07bf196f315bbd685b0548076c46bbaf43d2071016732dd8ed42f1b5bd5"
     },
     "js/tdj-pegado-unico-209.js": {
       "baselineHash": "f2633e7de992c4825ed13d0b7dbfbdedbcd036584652829b35f0182b488db785",
