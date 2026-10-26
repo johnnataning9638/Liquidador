@@ -43,6 +43,13 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
   }
   function neutralizarCortes(){
     restaurar=[];
+    // Sin títulos reales, el corte es la referencia necesaria de la liquidación.
+    const hayTituloReal=[...document.querySelectorAll('#tablaTitulos tbody tr')].some(tr=>{
+      const numero=String(tr.querySelector('[data-t="tdj"]')?.value||'').trim();
+      const valor=Number(String(tr.querySelector('[data-t="valor"]')?.value||'').replace(/[^0-9-]/g,''))||0;
+      return numero&&valor>0;
+    });
+    if(!hayTituloReal)return;
     const filas=[...document.querySelectorAll('#tablaTitulos tbody tr, .pago-obligacion-card .pagos-mini tbody tr')];
     filas.forEach(tr=>{
       if(!esCorteVisible(tr))return;
@@ -71,6 +78,6 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.251");
+import("./tdj-core-16.33.143.js?v=16.33.252");
 // Capa visual TDJ × OBLIGACIÓN.
 import("./tdj-visual-beneficios.js?v=16.33.249");

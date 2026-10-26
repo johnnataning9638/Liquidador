@@ -29,6 +29,7 @@ jobs:
         run: |
           node tests/regresion-matematica.mjs
           node tests/pdf-dian-sin-pagos-251.mjs
+          node tests/alcance-tdj-pdf-252.mjs
       - name: Inventory historical regression tests
         shell: bash
         run: |
