@@ -1,7 +1,7 @@
 {
-  "version": "16.33.250",
-  "previousVersion": "16.33.249",
-  "baseCommit": "3a051662a2ad43a51b08d6d8794c4e5263ada8f3",
-  "date": "2026-10-25",
-  "change": "Franja verde en VALOR PAGO de cada detalle PDF DIAN y TDJ, sin alterar cálculos"
+  "version": "16.33.251",
+  "previousVersion": "16.33.250",
+  "baseCommit": "0ded9461dcaa7aeb1805bd66c4d10609c9476dcb",
+  "date": "2026-10-26",
+  "change": "Corregir x no definida en PDF DIAN sin pagos; conservar tasas y cálculos"
 }

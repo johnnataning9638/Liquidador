@@ -1548,7 +1548,7 @@ function bloquePdfSinPagos(d,r){
     `<tr><td colspan="7">NO SE REALIZARON ACTUALIZACIONES DE SANCIÓN.</td></tr>`;
   const totalAct=tramosSancion.reduce((a,t)=>a+Number(t.actualizacion||0),0);
   const diasInteres=detalle.reduce((a,t)=>a+Number(t.dias||0),0);
-  const tasas=[...new Set(detalle.filter(t=>t.tasa!=null).map(t=>tasaPdfArt45(x,Number(t.tasa)*100)))].join(" / ")||"TASA DIAN";
+  const tasas=[...new Set(detalle.filter(t=>t.tasa!=null).map(t=>tasaPdfArt45(null,Number(t.tasa)*100)))].join(" / ")||"TASA DIAN";
   const corte=r.fechaCorte||d.fechaCorte||hoyISO();
   return `<article class="pdf-liquidacion">
     <div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>LIQUIDACIÓN A FECHA DE CORTE — SIN PAGOS</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>

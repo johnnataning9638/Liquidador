@@ -1,3 +1,10 @@
+## 16.33.251 — 2026-10-26
+- PDF DIAN sin pagos: eliminar referencia a `x` inexistente al presentar tasas; corrige alerta y vista previa vacía.
+- Sin cambios en motores, importadores, Excel, parámetros ni Supabase; franja verde conservada.
+- Regresión específica privada/oficial, tasas múltiples/nulas y comprobación de resultados intactos.
+- 36 controles CI locales aprobados y pruebas Chromium: PDF sin pagos privada/oficial, coherencia UI/PDF/XLSX y regresión de pagos/reimportación DIAN/TDJ.
+- Actualizados hashes y controles históricos para admitir únicamente la franja verde ya autorizada y esta corrección; motores intactos frente a 16.33.250.
+
 # 16.33.249
 
 - TDJ: generar siempre el resumen final y la consolidacion de pagos, aunque no haya titulos ni movimientos. Conservar el formato de cierre y las tablas de actualizacion y reduccion de sancion.
