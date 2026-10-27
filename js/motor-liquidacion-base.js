@@ -597,6 +597,7 @@ export class MotorLiquidacion{
   }
 
   normalizarVencimientos(datos){
+    const soloSancion=String(datos.tieneSancion||" ").trim().toUpperCase()==="SI"&&Number(datos.valorSancion||0)>0;
     if(Array.isArray(datos.vencimientos)&&datos.vencimientos.length){
       return datos.vencimientos.map((v,i)=>({
         id:v.id||`VTO-${i+1}`,
@@ -604,12 +605,12 @@ export class MotorLiquidacion{
         impuesto:Math.max(0,Number(v.impuesto??v.valor??0)),
         concepto:v.concepto||datos.concepto||"",
         periodo:v.periodo||datos.periodo||""
-      })).filter(v=>v.fecha&&v.impuesto>0).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+      })).filter(v=>v.fecha&&(v.impuesto>0||soloSancion)).sort((a,b)=>a.fecha.localeCompare(b.fecha));
     }
     return [
       {id:"VTO-1",fecha:fechaISO(datos.fechaVto1),impuesto:Math.max(0,Number(datos.impuestoVto1||0)),concepto:datos.concepto||"",periodo:datos.periodo||""},
       {id:"VTO-2",fecha:fechaISO(datos.fechaVto2),impuesto:Math.max(0,Number(datos.impuestoVto2||0)),concepto:datos.concepto||"",periodo:datos.periodo||""}
-    ].filter(v=>v.fecha&&v.impuesto>0).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    ].filter(v=>v.fecha&&(v.impuesto>0||soloSancion)).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   }
 
   verificarImpuestoPlastico(datos){
@@ -664,12 +665,19 @@ export class MotorLiquidacion{
     return this.interesHistorico(base,vto,pago,tasaAplicable,{factor,tipo});
   }
 
+  resolverFechaCorte(datos){
+    const filas=datos.pagos||[];
+    const hayCorte=filas.some(p=>fechaISO(p?.fecha)&&Number(p?.valor||0)===0);
+    if(!hayCorte)return fechaISO(datos.fechaCorte)||null;
+    return [fechaISO(datos.fechaCorte),...filas.map(p=>fechaISO(p?.fecha))].filter(Boolean).sort().at(-1)||null;
+  }
+
   calcular(datos){
     const validacion=this.validarObligacion(datos);
     if(validacion.errores.length) throw new Error(validacion.errores.join(" "));
 
     const vencimientos=this.normalizarVencimientos(datos);
-    const fechaCorte=fechaISO(datos.fechaCorte)||null;
+    const fechaCorte=this.resolverFechaCorte(datos);
     const pagos=[...(datos.pagos||[])]
       .map((p,i)=>({...p,fecha:fechaISO(p.fecha),valor:Number(p.valor||0),ordenOriginal:i}))
       .filter(p=>p.fecha&&p.valor>0&&(fechaCorte?! (p.fecha>fechaCorte):true))
@@ -1254,7 +1262,7 @@ export class MotorLiquidacion{
        * Los vencimientos futuros siguen formando parte del saldo total, pero
        * no participan en la proporcionalidad de un pago anterior a su fecha.
        */
-      const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha);
+      const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha||(Number(v.impuesto)===0&&sancionHabilitadaPorFecha));
       // RÉGIMEN SIMPLE (4-6 anticipos): MUISCA proporciona el pago
       // sobre el capital consolidado de todas las cuotas, incluidas futuras.
       // Los intereses siguen causándose solo en las cuotas vencidas.

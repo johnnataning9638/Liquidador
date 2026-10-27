@@ -714,8 +714,12 @@ function renumerarTitulos(){titulos.forEach((t,i)=>{t.numero=i+1;});}
 
 function agregarObligacion(){invalidarResultadoTDJ();obligaciones.push(nuevaObligacion(obligaciones.length+1));renderObligaciones();renderPagos();}
 function agregarTitulo(){invalidarResultadoTDJ();titulos.push(nuevoTitulo(titulos.length+1));renderTitulos();actualizarVisibilidadTasasObligacionesTDJ();}
-function esFechaCorteTDJ(x){return Boolean(fechaISO(x?.fecha))&&Number(x?.valor||0)<=0&&!String(x?.tdj||"").trim()&&!String(x?.recibo||"").trim();}
-function fechaCorteTDJ(o){return [...(o?.pagos||[]).filter(esFechaCorteTDJ).map(x=>fechaISO(x.fecha)||""),...(titulos||[]).filter(esFechaCorteTDJ).map(x=>fechaISO(x.fecha)||"")].filter(Boolean).sort().at(-1)||"";}
+function esFechaCorteTDJ(x){return Boolean(fechaISO(x?.fecha))&&Number(x?.valor||0)===0;}
+function fechaCorteTDJ(o){
+  const filas=[...(o?.pagos||[]),...(titulos||[])];
+  if(!filas.some(esFechaCorteTDJ))return "";
+  return filas.map(x=>fechaISO(x.fecha)||"").filter(Boolean).sort().at(-1)||"";
+}
 function pagosRealesHastaCorteTDJ(o,corte=""){return (o?.pagos||[]).filter(p=>p.fecha&&Number(p.valor)>0&&(!corte||String(p.fecha)<=String(corte))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor)})).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a._orden||0)-Number(b._orden||0));}
 function sincronizarPagosVisiblesTDJ(){
   // La interfaz puede conservar temporalmente un valor escrito en pantalla
@@ -783,7 +787,7 @@ function validarDatos(){
   sincronizarCapturaManualTDJ();
   sincronizarCapturaManualTDJ();
   for(const o of obligaciones){
-    o.vencimientos=o.vencimientos.filter(v=>v.fecha&&Number(v.impuesto)>0);
+    o.vencimientos=o.vencimientos.filter(v=>v.fecha&&(Number(v.impuesto)>0||(o.tieneSancion==="SI"&&Number(o.valorSancion||0)>0)));
     // CONCEPTO / IMPUESTO, AÑO GRAVABLE Y PERÍODO SON DATOS NO BLOQUEANTES.
     // El motor continúa con el proceso y conserva la información disponible.
     if(o.periodo!=="" && (!/^\d+$/.test(String(o.periodo)) || Number(o.periodo)<1 || Number(o.periodo)>12))throw new Error(`OBLIGACIÓN ${o.numero}: el período debe estar entre 1 y 12.`);
@@ -2214,13 +2218,13 @@ function bloqueProyeccionFechaCorteTDJ(x){
   const o=x?.obligacion||{};
   const corte=fechaCorteProyeccionPDFTDJ(x);
   if(!corte)return "";
-  const r=x?.liquidacionBase||x?.estadoFinal||{};
+  const final=x?.estadoFinal||x?.liquidacionBase||{};
+  const r={...final,interesesPorCuota:final.detalle?.at(-1)?.interesesPorCuota||final.interesesPorCuota||[]};
   const impuesto=Math.max(0,Number(r?.impuesto||0));
   const intereses=Math.max(0,Number(r?.intereses||0));
   const sancion=Math.max(0,Number(r?.sancion||0));
   const total=Math.max(0,Number(r?.total??(impuesto+intereses+sancion)));
-  const pagosCorte=pagosRealesHastaCorteTDJ(o,corte);
-  const totalPagos=pagosCorte.reduce((a,p)=>a+Math.max(0,Number(p.valor||0)),0);
+  const totalPagos=(r.detalle||[]).reduce((a,x)=>a+Math.max(0,Number(x.pago?.valor||0)),0);
   const tasaInfo=tasaVisibleObligacionTDJ(o?.tipoTasa||"TASA DIAN",corte);
   const xCorte={
     pago:{id:uid("CORTE"),fecha:corte,valor:0,recibo:"",tdj:"",observacion:"PROYECCIÓN A FECHA DE CORTE",esTDJ:false},
@@ -2581,7 +2585,7 @@ function leerTitulosTDJRegistradosExcel(rows){
     const tdj=numeroTituloImportacion(r?.[ixT]);
     const fecha=fechaTituloImportacion(r?.[ixF]);
     const valor=valorTituloImportacion(r?.[ixV]);
-    if(!tdj||!fecha||!(valor>0))return false;
+    if(!fecha||valor<0||(!tdj&&valor>0))return false;
     const key=`${tdj}|${fecha}|${valor}`;
     if(vistos.has(key))return false;
     vistos.add(key);
@@ -2679,7 +2683,7 @@ async function importarExcelTDJ(){
         const tdjTxt=upper(tdjNum||"").trim();
         const f=fechaCampoTDJImport(fecha)||"";
         const v=truncarValorEntero(valor);
-        if(!f||v<=0)return false;
+        if(!f||v<0)return false;
         const clave=`${tdjTxt}|${f}|${v}`;
         if(clavesTitulos.has(clave))return false;
         clavesTitulos.add(clave);
@@ -2785,7 +2789,7 @@ async function importarExcelTDJ(){
             if(!s)continue;
             if(/^(PAGOS REGISTRADOS|IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|OBLIGACION \d+ -)/.test(s))break;
             const f=fechaCampoTDJImport(r[ixF]), imp=truncarValorEntero(numExcel(r[ixI]));
-            if(f&&imp>0){
+            if(f&&imp>=0){
               const n=ixN>=0?Number(r[ixN]):NaN;
               arr.push({id:uid("VTO"),numero:Number.isFinite(n)&&n>0?n:arr.length+1,periodo:ixP>=0?r[ixP]:arr.length+1,fecha:f,impuesto:imp});
             }
@@ -2823,10 +2827,10 @@ async function importarExcelTDJ(){
             const tdjNum=upper(ixT>=0?r[ixT]||"":"").trim();
             const recibo=upper(ixR>=0?r[ixR]||"":"").trim();
             // Una fecha sin recibo, título ni valor conserva el corte del Excel.
-            if(!f||val<0||(val===0&&(tdjNum||recibo)))continue;
+            if(!f||val<0)continue;
             const tipo=upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN");
             const obs=upper(ixObs>=0?r[ixObs]||"":"");
-            if(tdjNum){
+            if(tdjNum&&val>0){
               agregarTituloImportado(tdjNum,f,val,tipo,obs);
               continue;
             }
@@ -2871,7 +2875,7 @@ async function importarExcelTDJ(){
           const f=fechaCampoTDJImport(r[ixF]);
           const val=truncarValorEntero(numExcel(r[ixV]));
           const tdjNum=upper(r[ixT]||"");
-          if(f&&(tdjNum||val>0)){
+          if(f&&val>=0){
             agregarTituloImportado(
               tdjNum,f,val,
               upper(ixTipo>=0?r[ixTipo]||"TASA DIAN":"TASA DIAN"),

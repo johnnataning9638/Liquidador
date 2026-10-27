@@ -25,59 +25,11 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
   document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.242&reinicio="+Date.now());},true);
 })();
 
-// v16.33.199: una fecha de corte sin valor es informativa. Durante el cálculo
-// no debe ocultar un TDJ real posterior, porque el cierre final del motor usa
-// esa fecha de corte antes de evaluar el remanente/endoso. Neutralizamos SOLO
-// las filas de corte/proyección durante el cálculo y las restauramos al terminar.
-// No se toca ningún TDJ real, pago real, tasa, beneficio, fórmula ni distribución.
-(function(){
-  let restaurar=[];
-  function esCorteVisible(tr){
-    if(!tr)return false;
-    const tdj=String(tr.querySelector('[data-t="tdj"]')?.value||'').trim();
-    const recibo=String(tr.querySelector('[data-p="recibo"]')?.value||'').trim();
-    const valorRaw=tr.querySelector('[data-t="valor"]')?.value||tr.querySelector('[data-p="valor"]')?.value||'';
-    const valor=Number(String(valorRaw).replace(/[^0-9-]/g,''))||0;
-    const fecha=String(tr.querySelector('.fecha-campo')?.value||tr.querySelector('.fecha-native')?.value||'').trim();
-    return Boolean(fecha)&&!tdj&&!recibo&&valor<=0;
-  }
-  function neutralizarCortes(){
-    restaurar=[];
-    // Sin títulos reales, el corte es la referencia necesaria de la liquidación.
-    const hayTituloReal=[...document.querySelectorAll('#tablaTitulos tbody tr')].some(tr=>{
-      const numero=String(tr.querySelector('[data-t="tdj"]')?.value||'').trim();
-      const valor=Number(String(tr.querySelector('[data-t="valor"]')?.value||'').replace(/[^0-9-]/g,''))||0;
-      return numero&&valor>0;
-    });
-    if(!hayTituloReal)return;
-    const filas=[...document.querySelectorAll('#tablaTitulos tbody tr, .pago-obligacion-card .pagos-mini tbody tr')];
-    filas.forEach(tr=>{
-      if(!esCorteVisible(tr))return;
-      const text=tr.querySelector('.fecha-campo'),picker=tr.querySelector('.fecha-native');
-      if(!text&&!picker)return;
-      restaurar.push({text,picker,textValue:text?.value||'',pickerValue:picker?.value||''});
-      if(text){text.value='';text.dispatchEvent(new Event('blur',{bubbles:true}));}
-      if(picker){picker.value='';picker.dispatchEvent(new Event('change',{bubbles:true}));}
-    });
-  }
-  function restaurarCortes(){
-    const pendientes=restaurar.splice(0);
-    pendientes.forEach(x=>{
-      if(x.text){x.text.value=x.textValue;x.text.dispatchEvent(new Event('blur',{bubbles:true}));}
-      if(x.picker){x.picker.value=x.pickerValue;x.picker.dispatchEvent(new Event('change',{bubbles:true}));}
-    });
-  }
-  document.addEventListener('click',function(e){
-    const b=e.target?.closest?.('.btn-calcular-tdj');
-    if(!b)return;
-    neutralizarCortes();
-    setTimeout(restaurarCortes,0);
-  },true);
-})();
-
+// 16.33.253: conservar los cortes durante todo el cálculo; el núcleo
+// resuelve la fecha máxima de pagos y títulos sin excluir movimientos reales.
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.252");
+import("./tdj-core-16.33.143.js?v=16.33.253");
 // Capa visual TDJ × OBLIGACIÓN.
 import("./tdj-visual-beneficios.js?v=16.33.249");

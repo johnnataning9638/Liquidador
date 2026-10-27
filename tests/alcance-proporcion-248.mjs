@@ -1,9 +1,10 @@
 import fs from 'node:fs';
+import {revertirCambios253} from './alcance-sancion-corte-253.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 const baseline='870c83165f540e70caf1d8a6d6483f6aed16ec9c';
 const previous=file=>execFileSync('git',['show',`${baseline}:${file}`],{encoding:'utf8'}).replace(/\r\n/g,'\n');
-const read=file=>fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n');
+const read=file=>revertirCambios253(fs.readFileSync(file,'utf8'),file);
 const file='js/motor-liquidacion.js';
 let expected=previous(file);
 const start=expected.indexOf('function redistribuirSancionSimple('),end=expected.indexOf('const esArt9=',start);

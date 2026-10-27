@@ -46,6 +46,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-pdf-dian-251.mjs
       - name: Validar detalle PDF TDJ sin pagos y fecha de corte importada
         run: TEST_SITE_DIR=dist node tests/navegador-tdj-pdf-252.mjs
+      - name: Validar sanción sin capital y cronología de cortes Pagos TDJ
+        run: TEST_SITE_DIR=dist node tests/navegador-sancion-corte-253.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,3 +1,10 @@
+## 16.33.253 — 2026-10-27
+
+- DIAN y TDJ: permitir cuotas de capital cero o vacío cuando existe sanción; mantener intereses de capital en cero.
+- Conservar fechas de corte sin valor en la cronología de pagos y títulos, incluyendo recuperación Excel.
+- Cierre posterior al último pago en motor oficial con sus reglas existentes; sin cambio en proporcionalidad ni beneficios.
+- Pruebas de sanción privada/oficial, IPC, movimientos mezclados, corte cronológico, PDF y Excel.
+
 ## 16.33.252 — 2026-10-26
 - TDJ: conservar fechas de corte con valor cero, sin recibo ni TDJ, al importar el Excel DIAN.
 - Conservar el corte durante el cálculo sin títulos reales y generar la liquidación PDF sin movimientos antes del resumen, incluso usando la fecha calculada cuando no hay corte explícito.

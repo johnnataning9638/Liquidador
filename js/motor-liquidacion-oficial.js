@@ -152,7 +152,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     if(validacion.errores.length)throw new Error(validacion.errores.join(" "));
 
     const vencimientos=this.normalizarVencimientos(datos);
-    const fechaCorte=fechaISO(datos.fechaCorte)||null;
+    const fechaCorte=this.resolverFechaCorte(datos);
     const pagos=[...(datos.pagos||[])]
       .map((p,i)=>({...p,fecha:fechaISO(p.fecha),valor:Number(p.valor||0),ordenOriginal:i}))
       .filter(p=>p.fecha&&p.valor>0&&(fechaCorte?! (p.fecha>fechaCorte):true))
@@ -374,7 +374,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         continue;
       }
 
-      const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha);
+      const vencimientosExigibles=saldosVto.filter(v=>pago.fecha>v.fecha||(Number(v.impuesto)===0&&sancionHabilitadaPorFecha));
       const impuestoExigible=vencimientosExigibles.reduce((a,v)=>a+Math.max(0,v.saldo),0);
       const interesesExigibles=intCalc.porVto.filter(x=>vencimientosExigibles.some(v=>v.id===x.id)).reduce((a,x)=>a+Math.max(0,Number(x.interes||0)),0);
       const deudaProporcional={impuesto:impuestoExigible,intereses:interesesExigibles,sancion:sancionHabilitadaPorFecha?Math.max(0,saldoSancion):0};
@@ -419,6 +419,27 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       detalle.push({pago,tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,tasaVisible:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,tipoAplicado:pago.tipo||"TASA DIAN",beneficio:especial.beneficio?.id||null,notaBeneficio:especial.nota,interesGenerado:intCalc.liquidado,interesLiquidado:intCalc.liquidado,tramosInteres:intCalc.tramos,interesesPorCuota,deudaAntes,aplicado,excedente,aplicacionesVto,actualizacionSancion:actualizacionSancionPago,saldo:{impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0)+saldoIntereses+Math.max(0,saldoSancion)}});
     }
 
+    let detalleFechaCorte=null;
+    if(fechaCorte&&fechaCorte>pagos.at(-1)?.fecha){
+      const corte=calcularInteresesAntesPago({fecha:fechaCorte,valor:0,tipo:"TASA DIAN"});
+      saldoIntereses=roundMil(corte.liquidado);
+      const actualizacion={aplicada:false,fechaCorte,tramos:[],actualizacionTotal:0,saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion)};
+      if(saldoSancion>0&&fechaFirmezaSancion&&fechaCorte>fechaFirmezaSancion&&!articulo10Seleccionado){
+        const act=this.actualizarSancionOficial(saldoSancion,fechaFirmezaSancion,fechaCorte,{aniosAplicados:[...aniosActualizacionSancionAplicados]});
+        saldoSancion=act.valor;
+        for(const t of act.tramos||[])if(t.aplicado)aniosActualizacionSancionAplicados.add(Number(t.anio));
+        advertenciasSancion.push(...(act.advertencias||[]));
+        actualizacion.aplicada=Number(act.actualizacion||0)>0;
+        actualizacion.actualizacionTotal=Number(act.actualizacion||0);
+        actualizacion.tramos=act.tramos||[];
+        actualizacion.saldoDespues=roundMil(saldoSancion);
+        detalleActualizacionSancion.push({fechaCorte,...act});
+      }
+      const saldo={impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:saldoIntereses,sancion:Math.max(0,saldoSancion)};
+      saldo.total=saldo.impuesto+saldo.intereses+saldo.sancion;
+      detalleFechaCorte={pago:{id:`CORTE-${fechaCorte}`,fecha:fechaCorte,valor:0,tipo:"FECHA DE CORTE",esFechaCorte:true},esFechaCorte:true,tipoAplicado:"FECHA DE CORTE",notaBeneficio:"CIERRE INFORMATIVO SIN PAGO",deudaAntes:{...saldo},saldo,aplicado:{impuesto:0,intereses:0,sancion:0,total:0,excedente:0},excedente:0,aplicacionesVto:[],tramosInteres:corte.tramos||[],interesesPorCuota:corte.porVto||[],interesLiquidado:saldoIntereses,interesGenerado:saldoIntereses,actualizacionSancion:actualizacion};
+      detalle.push(detalleFechaCorte);
+    }
     const impuesto=saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0);const ultimo=detalle.at(-1)||null;
     return {tipoLiquidacion:"OFICIAL",vencimientos:saldosVto,impuesto,intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:impuesto+saldoIntereses+Math.max(0,saldoSancion),excedente:Number(excedenteTotal||0),ultimo,detalle,advertencias:[...validacion.advertencias,...advertenciasSancion,...detalle.flatMap(x=>x.tramosInteres.filter(t=>t.advertencia).map(t=>t.advertencia))],beneficiosAplicados:[...new Set(detalle.map(x=>x.tipoAplicado).filter(t=>t&&t!=="TASA DIAN"))],reglaObligacion:validacion.regla,validacionObligacion:validacion,verificacionObligacion:this.verificarImpuestoPlastico(datos),fechaCorte:fechaCorte||pagos.at(-1)?.fecha||null,suspensionIntereses:{fechaAutoAdmisorio:auto,fechaCumplimientoDosAnos:auto?this.sumarAnos(auto,2):null,fechaInicioSuspension:auto?this.sumarDias(this.sumarAnos(auto,2),1):null,fechaFinSuspension:providencia?this.sumarDias(providencia,-1):null,fechaReanudacionIntereses:providencia||null,fechaEjecutoriaProvidencia:providencia||null,aplicada:!!(auto&&providencia&&providencia>=this.sumarDias(this.sumarAnos(auto,2),1))},sancionActualizacion:{fechaBase:fechaFirmezaSancion,fechaUltimaActualizacion:detalleActualizacionSancion.at(-1)?.fechaPago||fechaFirmezaSancion,saldoOriginal:roundMil(sancionBaseOriginal),saldoFinal:roundMil(saldoSancion),actualizacionAcumulada:roundMil(Math.max(0,saldoSancion-sancionBaseOriginal)),tramos:detalleActualizacionSancion}};
   }
