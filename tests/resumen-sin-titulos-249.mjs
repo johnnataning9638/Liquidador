@@ -1,4 +1,5 @@
 import {revertirCambiosTDJ252} from './alcance-tdj-pdf-252.mjs';
+import {revertirCambios253} from './alcance-sancion-corte-253.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -53,7 +54,7 @@ assert.equal(revertirCambiosTDJ252(read(core)),expected,'Sin cambios en cálculo
 const manifest=JSON.parse(read('runtime-manifest.json'));
 for(const file of Object.keys(manifest.protected)){
  if([core,'js/tdj-pdf-cierre-16.33.188.js','js/tdj-pdf-cierre-16.33.189.js'].includes(file))continue;
- let current=read(file);
+ let current=revertirCambios253(read(file),file);
  if(file==='js/app.js')current=current.replace('<div class="pdf-pago-titulo" style="background:#d9f2e3">VALOR PAGO','<div class="pdf-pago-titulo">VALOR PAGO').replace('map(t=>tasaPdfArt45(null,Number(t.tasa)*100))','map(t=>tasaPdfArt45(x,Number(t.tasa)*100))');
  assert.equal(current,old(file),file+': intacto frente a 248');
 }

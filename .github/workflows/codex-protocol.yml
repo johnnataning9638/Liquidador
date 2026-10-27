@@ -28,6 +28,8 @@ jobs:
       - name: Existing mathematical regression
         run: |
           node tests/regresion-matematica.mjs
+          node tests/sancion-corte-253.mjs
+          node tests/alcance-sancion-corte-253.mjs
           node tests/pdf-dian-sin-pagos-251.mjs
           node tests/alcance-tdj-pdf-252.mjs
       - name: Inventory historical regression tests

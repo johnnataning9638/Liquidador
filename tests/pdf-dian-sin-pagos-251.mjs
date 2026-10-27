@@ -1,9 +1,10 @@
 import {revertirCambiosTDJ252} from './alcance-tdj-pdf-252.mjs';
+import {revertirCambios253} from './alcance-sancion-corte-253.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-const source=fs.readFileSync('js/app.js','utf8');
+const source=revertirCambios253(fs.readFileSync('js/app.js','utf8'),'js/app.js');
 const fn=source.slice(source.indexOf('function bloquePdfSinPagos('),source.indexOf('\nfunction exportarPdf('));
 const ctx=vm.createContext({escPdf:String,dinero:n=>`$ ${Number(n||0)}`,fechaVisible:String,dvNIT:()=>0,hoyISO:()=> '2026-10-26'});
 vm.runInContext(source.match(/const tasaPdfArt45=.*;/)[0]+fn,ctx);
@@ -23,5 +24,5 @@ for(const tipoLiquidacion of ['PRIVADA','OFICIAL']){
 console.log('PDF DIAN 251 OK: privada/oficial sin pagos; tasas múltiples, nulas y ausentes; resultados intactos');
 
 const previous=execFileSync('git',['show','0ded9461dcaa7aeb1805bd66c4d10609c9476dcb:js/app.js'],{encoding:'utf8'});
-assert.equal(source,previous.replace('map(t=>tasaPdfArt45(x,Number(t.tasa)*100))','map(t=>tasaPdfArt45(null,Number(t.tasa)*100))'),'Una única corrección de presentación frente a 250');
-for(const f of ['js/motor-liquidacion.js','js/motor-liquidacion-base.js','js/motor-liquidacion-oficial.js','js/tdj-core-16.33.143.js'])assert.equal(f==='js/tdj-core-16.33.143.js'?revertirCambiosTDJ252(fs.readFileSync(f,'utf8')):fs.readFileSync(f,'utf8'),execFileSync('git',['show','0ded9461dcaa7aeb1805bd66c4d10609c9476dcb:'+f],{encoding:'utf8'}),f+' intacto');
+assert.equal(source,previous.replace(/\r\n/g,'\n').replace('map(t=>tasaPdfArt45(x,Number(t.tasa)*100))','map(t=>tasaPdfArt45(null,Number(t.tasa)*100))'),'Una única corrección de presentación frente a 250 antes de 253');
+for(const f of ['js/motor-liquidacion.js','js/motor-liquidacion-base.js','js/motor-liquidacion-oficial.js','js/tdj-core-16.33.143.js'])assert.equal(f==='js/tdj-core-16.33.143.js'?revertirCambiosTDJ252(fs.readFileSync(f,'utf8')):revertirCambios253(fs.readFileSync(f,'utf8'),f),execFileSync('git',['show','0ded9461dcaa7aeb1805bd66c4d10609c9476dcb:'+f],{encoding:'utf8'}).replace(/\r\n/g,'\n'),f+' conservar base anterior a 253');

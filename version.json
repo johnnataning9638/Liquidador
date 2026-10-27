@@ -1,7 +1,7 @@
 {
-  "version": "16.33.252",
-  "previousVersion": "16.33.251",
-  "baseCommit": "3294b4932773fb78033add8c666b542fd2efb0df",
-  "date": "2026-10-26",
-  "change": "TDJ: conservar corte sin pago y mostrar liquidación detallada antes del resumen PDF"
+  "version": "16.33.253",
+  "previousVersion": "16.33.252",
+  "baseCommit": "eaa424cfaf3248a6b058ca93ce81ad17aca4fab4",
+  "date": "2026-10-27",
+  "change": "Liquidar solo sanción y conservar corte máximo de pagos/títulos sin abonos ficticios"
 }

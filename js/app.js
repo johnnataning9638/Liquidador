@@ -394,8 +394,8 @@ function leerFormulario(){
   // Si no hay pagos reales, la primera fila puede aportar solo la fecha de corte.
   const pagosReales=pagos.filter(p=>Number(p?.valor||0)>0);
   const fechaUltimoPago=pagosReales.map(p=>fechaISO(p?.fecha)||"").filter(Boolean).sort().at(-1)||"";
-  const fechasCorte=pagos.filter(p=>fechaISO(p?.fecha)&&Number(p?.valor||0)<=0&&!String(p?.tdj||"").trim()&&!String(p?.recibo||"").trim()).map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort();
-  const fechaCorte=fechasCorte.at(-1)||fechaUltimoPago;
+  const fechasCorte=pagos.filter(p=>fechaISO(p?.fecha)&&Number(p?.valor||0)===0).map(p=>fechaISO(p.fecha)||"").filter(Boolean).sort();
+  const fechaCorte=[fechasCorte.at(-1),fechaUltimoPago].filter(Boolean).sort().at(-1)||"";
   return {
     nit:$("nit").value.replace(/\D/g,""),
     anio:Number($("anio").value||0),
@@ -412,8 +412,8 @@ function leerFormulario(){
     fechaVencimientoDeclarar:fechaISO((obligacionVencimientos.find(v=>Number(v.numero)===1)||{}).fecha||""),
     fechaCorte,
     vencimientos:obligacionVencimientos
-      .filter(v=>v.fecha&&Number(v.impuesto)>0)
-      .map(v=>({...v,impuesto:Number(v.impuesto)})),
+      .filter(v=>v.fecha&&(Number(v.impuesto)>0||($("tieneSancion").value==="SI"&&numeroDesdeTexto($("valorSancion").value)>0)))
+      .map(v=>({...v,impuesto:Number(v.impuesto||0)})),
     tieneSancion:upper($("tieneSancion").value),
     valorSancion:numeroDesdeTexto($("valorSancion").value),
     fechaSancion:fechaISO($("fechaSancion").value),
@@ -2016,7 +2016,7 @@ function leerVencimientosFlexNormal(rows,headerIdx){
     if(/^(PAGOS Y APLICACION|PAGOS REGISTRADOS|PAGOS|DETALLE DE INTERESES|ACTUALIZACION DE SANCION|RESUMEN FINAL|RECUPERACION COMPLETA|FIN RECUPERACION COMPLETA|TITULOS \/ TDJ)/.test(s))break;
     const f=fechaExcel(ixF>=0?r[ixF]:"");
     const imp=truncarValorEntero(numExcel(ixI>=0?r[ixI]:""));
-    if(!f||imp<=0)continue;
+    if(!f||imp<0)continue;
     const n=ixN>=0?Number(r[ixN]):NaN;
     // EL PERÍODO/CUOTA NO SE IMPORTA: siempre se genera 1..N según
     // el orden de las filas que contienen FECHA + IMPORTE.
