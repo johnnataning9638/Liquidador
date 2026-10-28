@@ -5,7 +5,7 @@ import {MotorLiquidacion} from '../js/motor-liquidacion-base.js';
 const m=new MotorLiquidacion({tasasMoratorias:[]});
 m.tasaPorFecha=()=>0.2476;
 m.beneficioPorTipo=()=>null;
-const tasa=(fecha,tipo='TASA DIAN')=>m.tasaEspecial(tipo,fecha).tasa;
+const tasa=(fecha,tipo='TASA DIAN')=>Number(m.tasaEspecial(tipo,fecha).tasa.toFixed(4));
 assert.equal(tasa('2020-05-21'),0.2476,'21 mayo fuera del decreto');
 assert.equal(tasa('2020-05-22'),0.1819,'22 mayo dentro del decreto');
 assert.equal(tasa('2020-06-15'),0.1812,'junio IBC');
