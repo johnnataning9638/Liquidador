@@ -1,7 +1,7 @@
 {
-  "version": "16.33.257",
-  "previousVersion": "16.33.256",
+  "version": "16.33.258",
+  "previousVersion": "16.33.257",
   "baseCommit": "fcd71f528fc8ac3e5d6864182378996033308313",
   "date": "2026-10-27",
-  "change": "TDJ: recuperar cuotas editadas después de liquidar solo sanción sin impuesto"
+  "change": "TDJ PDF: soporte azul detallado para cuotas sin pagos"
 }
