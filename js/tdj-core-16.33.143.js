@@ -2266,6 +2266,19 @@ function bloqueProyeccionFechaCorteTDJ(x){
   };
   const d=datosPDFTDJ(o,xCorte.pago);
   const rSoporte={detalle:[xCorte],vencimientos:o?.vencimientos||[],interesesPorCuota:Array.isArray(r?.interesesPorCuota)?r.interesesPorCuota:[],intereses,fechaCorte:corte};
+  // PDF TDJ: misma plantilla azul de DIAN también cuando hay cuotas,
+  // exclusivamente sin pagos ni títulos reales. Los importes siguen del motor.
+  const sinMovimientos=(o.pagos||[]).every(p=>Number(p.valor||0)===0)
+    &&!(x.aplicaciones||[]).some(a=>Number(a.aplicado||0)>0)
+    &&!(x.detalleCronologicoFinal||[]).some(t=>Number(t.pago?.valor||t.valor||0)>0);
+  if(sinMovimientos){
+    const datos={...d,fechaCorte:corte};
+    const estado={...r,impuesto,intereses,sancion,total,fechaCorte:corte,
+      vencimientos:o.vencimientos||[],
+      interesesPorCuota:rSoporte.interesesPorCuota,
+      sancionActualizacion:r.sancionActualizacion||final.sancionActualizacion||{}};
+    return `<div class="pdf-sancion-dian">${crearRenderSancionTDJ({escPdf,dinero,fechaVisible,hoyISO,dvNIT:calcularDvNITTDJ,tasaPdfArt45})(datos,estado)}</div>`;
+  }
   return `<article class="pdf-liquidacion pdf-detalle-dian pdf-proyeccion-corte"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDACIÓN DE OBLIGACIÓN — PROYECCIÓN</div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div><div class="pdf-datos"><div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(calcularDvNITTDJ(d.nit))}</strong></div><div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"PRIVADA")}</strong></div><div class="pdf-dato"><b>FECHA DE SANCIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div></div><section class="pdf-bloque"><h2>PROYECCIÓN A FECHA DE CORTE</h2><table><tbody><tr><th>FECHA DE CORTE</th><td>${escPdf(fechaVisible(corte))}</td><th>TIPO DE TASA / BENEFICIO</th><td>${escPdf(xCorte.tipoAplicado)}</td></tr><tr><th>TASA APLICABLE</th><td>${xCorte.tasaVisible==null?"—":Number(xCorte.tasaVisible).toFixed(3)+"%"}</td><th>PAGOS REGISTRADOS HASTA EL CORTE</th><td>${dinero(totalPagos)}</td></tr></tbody></table></section><section class="pdf-bloque"><h2>SALDO PROYECTADO A LA FECHA DE CORTE</h2><table><thead><tr><th>CONCEPTO</th><th>VALOR PENDIENTE</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(impuesto)}</td></tr><tr><td>INTERESES</td><td>${dinero(intereses)}</td></tr><tr><td>SANCIÓN</td><td>${dinero(sancion)}</td></tr></tbody><tfoot><tr><th>TOTAL PENDIENTE PROYECTADO</th><th>${dinero(total)}</th></tr></tfoot></table></section>${tablaInteresesPdfTDJ(xCorte,rSoporte).replace("TOTAL INTERESES DEL PAGO","TOTAL INTERESES A FECHA DE CORTE")}<div class="pdf-beneficio"><b>ALCANCE:</b> ESTE DOCUMENTO ES UNA PROYECCIÓN DE LA OBLIGACIÓN A LA FECHA DE CORTE INDICADA. NO CORRESPONDE A UN PAGO REGISTRADO NI A UN TÍTULO DE DEPÓSITO JUDICIAL.</div><div class="pdf-nota">La liquidación adjunta no exime al contribuyente de su responsabilidad de verificar que los valores determinados correspondan con su obligación tributaria y de efectuar el pago respectivo, conforme a los artículos 1, 6, 574 y 591 del Estatuto Tributario – Título II, Deberes y Obligaciones Formales.</div></article>`;
 }
 
@@ -2471,7 +2484,7 @@ async function exportarPdfTDJ(){
     // Metadatos de presentación: conservar los saldos del resultado sin exigir
     // la existencia de páginas de pago o de soporte de títulos.
     const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(esSoloSancionSinPagosTDJ)?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main></body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
