@@ -351,6 +351,19 @@ export class MotorLiquidacion{
     const beneficio=this.beneficioPorTipo(t);
     const redondear4=n=>Math.round(Number(n)*10000)/10000;
     const es=needle=>t.includes(needle);
+    // Decreto 688/2020, art. 1: para pagos normales con TASA DIAN dentro
+    // del 22/05 al 30/11/2020 se usa IBC consumo y ordinario certificado,
+    // SIN alterar la tabla histórica de TIM. No aplica a fechas de corte sin pago.
+    const f688=String(fechaPago||"").slice(0,10);
+    const ibc688={5:18.19,6:18.12,7:18.12,8:18.29,9:18.35,10:18.09,11:17.84};
+    const periodo688=f688>="2020-05-22"&&f688<="2020-11-30";
+    if(t==="TASA DIAN"&&periodo688){
+      const porcentaje=ibc688[Number(f688.slice(5,7))];
+      const tasa=porcentaje/100;
+      return {tasa,factor:1,tasaFija:tasa,beneficio:null,
+        factorSancion:1,reduceSancion:false,aplicacionAutomatica688:true,
+        nota:`DECRETO 688 DE 2020 ART. 1 — APLICACIÓN AUTOMÁTICA: IBC consumo y ordinario ${porcentaje.toFixed(2)}% E.A. para pago ${f688}. Tasa TIM original conservada.`};
+    }
 
     if(es("DECRETO 1419") && es("ART. 9")){
       return {tasa:0.045,factor:1,tasaFija:0.045,beneficio,
