@@ -1,5 +1,5 @@
 {
-  "version": "16.33.255",
+  "version": "16.33.256",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -71,7 +71,7 @@
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "64b0677ca9b7946a6c52fa5bac91b2be60e85c74d6635ace75f4e265af3281d5",
+    "js/tdj-core-16.33.143.js": "68ad2599af8a0cee570826fceac4677c23cc9f347033fbc8f2a6d59d3153662c",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",
@@ -99,7 +99,7 @@
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
-      "reason": "16.33.255: soporte solo sanción sin pagos igual a DIAN en pantalla/PDF, conservando resumen TDJ; motores y DIAN intactos",
+      "reason": "16.33.256: retiro exclusivo del detalle en pantalla; PDF intacto, lectura de campos e invalidación de resultado al recalcular",
       "previousReleaseHash": "efcdd07bf196f315bbd685b0548076c46bbaf43d2071016732dd8ed42f1b5bd5"
     },
     "js/tdj-pegado-unico-209.js": {

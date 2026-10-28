@@ -48,9 +48,7 @@ try{
    const detail=preview.locator('.pdf-sancion-dian .pdf-liquidacion');assert.equal(await detail.count(),1,'Soporte DIAN completo dentro de PDF TDJ');assert.equal(await detail.innerHTML(),dianHtml,'HTML del detalle idéntico a DIAN');
    assert.deepEqual(await styles(detail),dianStyles,'Letra, tamaño, color y espaciado iguales a DIAN');
    assert.ok((await preview.locator('main').textContent()).includes('RESUMEN FINAL'),'Mantener resumen TDJ');
-   const screen=page.locator('#soporteSancionDianTDJ .pdf-liquidacion');assert.equal(await screen.count(),1);assert.equal(await screen.innerHTML(),dianHtml,'Pantalla TDJ idéntica al detalle DIAN');
-   const rows=await screen.locator('.pdf-actualizacion-sancion tbody tr').allTextContents();assert.ok(rows.some(x=>x.includes('133.000')));assert.ok(rows.some(x=>x.includes('138.000')));
-   assert.equal(money(await screen.locator('.pdf-actualizacion-sancion tfoot th').nth(1).textContent()),271000);
+   const screen=page.locator('#soporteSancionDianTDJ .pdf-liquidacion');assert.equal(await screen.count(),0,'Detalle de sanción solo en PDF; pantalla TDJ limpia');
    await page.screenshot({path:path.join(output,'tdj-pantalla.png'),fullPage:true});
    const f=await excel(page.locator('.tdj-excel:visible').first(),'tdj-recuperacion');await page.goto(base+'/titulos.html',{waitUntil:'networkidle'});await page.waitForSelector('.obligacion-card');await choose(page.locator('.tdj-import-excel:visible').first(),f);await page.locator('[data-tab="titulos"]').click();await page.locator('.btn-calcular-tdj:visible').first().click();assert.equal(money(await page.locator('#tablaResultadoObligaciones tbody tr td').last().textContent()),expected);
   }

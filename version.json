@@ -1,7 +1,7 @@
 {
-  "version": "16.33.255",
-  "previousVersion": "16.33.254",
-  "baseCommit": "d0f6d51b47465fbf27fd9e444e4d8d1b8239b794",
+  "version": "16.33.256",
+  "previousVersion": "16.33.255",
+  "baseCommit": "fcd71f528fc8ac3e5d6864182378996033308313",
   "date": "2026-10-27",
-  "change": "TDJ: detalle de solo sanción sin pagos idéntico a DIAN en pantalla y PDF; resumen TDJ conservado"
+  "change": "TDJ: retirar detalle solo sanción de pantalla, preservarlo en PDF y forzar recálculo fresco"
 }
