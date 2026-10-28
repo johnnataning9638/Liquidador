@@ -29,6 +29,8 @@ jobs:
         run: |
           node tests/regresion-matematica.mjs
           node tests/sancion-corte-253.mjs
+          node tests/solo-sancion-sin-cuotas-254.mjs
+          node tests/alcance-solo-sancion-254.mjs
           node tests/alcance-sancion-corte-253.mjs
           node tests/pdf-dian-sin-pagos-251.mjs
           node tests/alcance-tdj-pdf-252.mjs

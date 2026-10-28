@@ -1,4 +1,5 @@
 import {revertirCambiosTDJ252} from './alcance-tdj-pdf-252.mjs';
+import {revertirCambios254} from './alcance-solo-sancion-254.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -39,5 +40,5 @@ const baseline=f=>execFileSync('git',['show',`0f6898ebfa04f77b8358fe74e3f01e9273
 const core=revertirCambiosTDJ252(fs.readFileSync('js/tdj-core-16.33.143.js','utf8').replace(/\r\n/g,'\n'));
 assert.equal(core.split('async function exportarPdfTDJ()')[0].replace('<div class="pdf-pago-titulo" style="background:#d9f2e3">VALOR PAGO','<div class="pdf-pago-titulo">VALOR PAGO'),baseline('js/tdj-core-16.33.143.js').split('async function exportarPdfTDJ()')[0],'Captura, aplicación, motores y trazabilidad TDJ intactos');
 const calcular=s=>s.slice(s.indexOf('function calcular(){'),s.indexOf('async function limpiarDatosPestanaNormal')).replace(/\r\n/g,'\n').replace(/^[ \t]*renderAuditoria\(\);\n/gm,'');
-assert.equal(calcular(app),calcular(baseline('js/app.js')),'Cálculo DIAN y asignación del resultado intactos');
+assert.equal(calcular(revertirCambios254(app,'js/app.js')),calcular(baseline('js/app.js')),'Cálculo DIAN intacto excepto validación autorizada de solo sanción 254');
 console.log('EXCEDENTES 240: indicador nominal y resultado interno intacto');

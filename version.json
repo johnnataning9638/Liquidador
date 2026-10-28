@@ -1,7 +1,7 @@
 {
-  "version": "16.33.253",
-  "previousVersion": "16.33.252",
-  "baseCommit": "eaa424cfaf3248a6b058ca93ce81ad17aca4fab4",
+  "version": "16.33.254",
+  "previousVersion": "16.33.253",
+  "baseCommit": "38acdd71e55f637fad5d9b2a05d2f92326584058",
   "date": "2026-10-27",
-  "change": "Liquidar solo sanción y conservar corte máximo de pagos/títulos sin abonos ficticios"
+  "change": "Permitir solo sanción con cuotas completamente vacías y aplicar pagos sin vencimientos ficticios"
 }

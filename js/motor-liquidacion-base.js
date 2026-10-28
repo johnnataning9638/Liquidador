@@ -38,6 +38,10 @@ export class MotorLiquidacion{
     return this.reglasObligaciones.find(r=>String(r.concepto||"").trim().toUpperCase()===c)||null;
   }
 
+  esSoloSancion(datos){
+    return String(datos?.tieneSancion||" ").trim().toUpperCase()==="SI"&&Number(datos?.valorSancion||0)>0&&Boolean(fechaISO(datos?.fechaSancion));
+  }
+
   validarObligacion(datos){
     const regla=this.reglaObligacion(datos.concepto);
     const advertencias=[];
@@ -74,7 +78,7 @@ export class MotorLiquidacion{
       if(peso<=0) advertencias.push("Para Productos Plásticos se requiere el peso gravable en gramos para verificar el impuesto; no se presume la base.");
     }
     if(regla.historica) advertencias.push("La obligación seleccionada corresponde a un régimen histórico; debe aplicarse la normativa vigente para el año gravable indicado.");
-    if(regla.vencimientos==="NO_AUTOGENERAR"&&vencimientos.length===0) errores.push("Debe registrar al menos un vencimiento antes de calcular.");
+    if(regla.vencimientos==="NO_AUTOGENERAR"&&vencimientos.length===0&&!this.esSoloSancion(datos)) errores.push("Debe registrar al menos un vencimiento antes de calcular.");
     if(regla.periodicidad?.includes("BIMESTRAL")&&datos.periodo&&Number(datos.periodo)>6) advertencias.push("El período indicado supera seis y no corresponde a una periodicidad bimestral simple.");
     if(regla.periodicidad?.includes("MENSUAL")&&datos.periodo&&Number(datos.periodo)>12) errores.push("El período mensual debe estar entre 1 y 12.");
 
@@ -126,7 +130,7 @@ export class MotorLiquidacion{
     // los datos diligenciados por el funcionario. No se exige seleccionar una
     // periodicidad para poder liquidar.
     if(regla.familia==="GMF") advertencias.push("GMF se controla por semanas; el campo período no sustituye la identificación de la semana del hecho generador.");
-    if(vencimientos.length===0) errores.push("No hay vencimientos con fecha e impuesto válidos para liquidar.");
+    if(vencimientos.length===0&&!this.esSoloSancion(datos)) errores.push("No hay vencimientos con fecha e impuesto válidos para liquidar.");
     const fechas=vencimientos.map(v=>v.fecha);
     if(regla.familia==="IMPUESTO_PLASTICOS"){
       const fechaMin=regla.historicaDesde||"2023-01-01";
@@ -1366,15 +1370,15 @@ export class MotorLiquidacion{
       });
       const vtoSancion=vtosConSaldoRestante[0] ||
         (Number(saldoSancion||0)>0 ? baseProporcional[0] : null);
-      if(vtoSancion && Number(aplicacionGlobal.sancion||0)>0){
+      if((vtoSancion||(!saldosVto.length&&sancionHabilitadaPorFecha)) && Number(aplicacionGlobal.sancion||0)>0){
         aplicadoSancion=Math.min(
           Math.max(0,saldoSancion),
           Number(aplicacionGlobal.sancion||0)
         );
         saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
-        const existente=aplicacionesVto.find(x=>x.id===vtoSancion.id);
+        const existente=vtoSancion&&aplicacionesVto.find(x=>x.id===vtoSancion.id);
         if(existente) existente.aplicadoSancion=aplicadoSancion;
-        else aplicacionesVto.push({
+        else if(vtoSancion) aplicacionesVto.push({
           id:vtoSancion.id,
           aplicado:0,
           aplicadoIntereses:0,
