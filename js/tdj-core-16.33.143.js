@@ -1011,11 +1011,15 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     // y finalmente se ejecuta nuevamente toda la secuencia cronológica.
     sincronizarPagosVisiblesTDJ();
     sincronizarTitulosVisiblesTDJ();
+    sincronizarCapturaManualTDJ();
     // La elegibilidad de la tasa seleccionada en cada obligación se informa,
     // pero NO bloquea la liquidación ni cambia automáticamente la selección del funcionario.
     validarConfiguracionAntesCalcularTDJ();
     validarDatos();
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
+    // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.
+    resultado=null;
+    resultadoDesactualizado=true;
     ajustarBaseProporcionalTDJ208(motor);
     ajustarBaseProporcionalTDJ208(motorOficial);
 
@@ -1478,7 +1482,9 @@ function pintarSoporteSancionTDJ(resultado){
 
 function pintarResultado(r){
   const box=$("resultadoTDJ");if(!box)return;box.hidden=false;box.style.display="";
-  pintarSoporteSancionTDJ(r);
+  // El detalle de solo sanción permanece exclusivamente en el PDF.
+  // La pantalla conserva únicamente el resultado de aplicación de títulos.
+  document.getElementById("soporteSancionDianTDJ")?.remove();
   const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Number(t.valor||0),0);
   const totalAplicado=Number(r.totalAplicadoFinal ?? r.resumenTitulos.reduce((a,t)=>a+t.trazabilidad.reduce((x,y)=>x+Number(y.aplicado||0),0),0));
   const saldoCierre=Number(r.saldoObligacionesPDF||0);
