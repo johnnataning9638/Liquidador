@@ -15,3 +15,6 @@ assert.equal(manifest.version,JSON.parse(fs.readFileSync('version.json','utf8'))
 for(const f of manifest.files)assert.ok(fs.existsSync(f),`Recurso publicado faltante: ${f}`);
 assert.equal(fs.readFileSync('supabase/migrations/20261025023900_parametros_monitor_cron.sql','utf8').includes("0 10 * * *"),true);
 console.log('LIMPIEZA 239 OK: archivos retirados, recursos vigentes y hashes de cálculos preservados');
+
+// Regresión específica de la tasa automática del Decreto 688, sin modificar TIM.
+await import('./decreto-688-259.mjs');
