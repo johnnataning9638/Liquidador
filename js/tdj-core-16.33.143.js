@@ -888,7 +888,10 @@ function sincronizarCapturaManualTDJ(){
   document.querySelectorAll("#listaObligaciones .obligacion-card").forEach(sec=>{
     const o=obligaciones.find(x=>x.id===sec.dataset.id); if(!o)return;
     sec.querySelectorAll(".cuotas-mini tbody tr").forEach(tr=>{
-      const v=o.vencimientos.find(x=>x.id===tr.dataset.vtoId); if(!v)return;
+      // Restaurar la fila visible si un cálculo anterior descartó una cuota de valor cero.
+      // De lo contrario, escribir impuesto después de liquidar solo sanción no se procesa.
+      let v=o.vencimientos.find(x=>x.id===tr.dataset.vtoId);
+      if(!v){v={id:tr.dataset.vtoId,numero:o.vencimientos.length+1,periodo:o.vencimientos.length+1,fecha:"",impuesto:0};o.vencimientos.push(v);}
       const fecha=fechaISO(tr.querySelector(".fecha-campo")?.value||tr.querySelector(".fecha-native")?.value||"");
       const impuesto=numeroDesdeTexto(tr.querySelector('[data-v="impuesto"]')?.value||"");
       const periodo=tr.querySelector('[data-v="periodo"]')?.value;
