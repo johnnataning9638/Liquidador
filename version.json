@@ -1,7 +1,6 @@
 {
-  "version": "16.33.259",
-  "previousVersion": "16.33.258",
-  "baseCommit": "fcd71f528fc8ac3e5d6864182378996033308313",
-  "date": "2026-10-27",
-  "change": "Aplicación automática Decreto 688 de 2020 por fecha de pago DIAN y TDJ"
+  "version": "16.33.260",
+  "previousVersion": "16.33.259",
+  "date": "2026-10-28",
+  "change": "Art. 4 Decreto 0240: sanción proporcional solamente para pagos posteriores a vencimiento de cuota en régimen ordinario"
 }
