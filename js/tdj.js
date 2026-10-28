@@ -25,11 +25,11 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
   document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.242&reinicio="+Date.now());},true);
 })();
 
-// 16.33.253: conservar los cortes durante todo el cálculo; el núcleo
+// 16.33.254: conservar los cortes durante todo el cálculo; el núcleo
 // resuelve la fecha máxima de pagos y títulos sin excluir movimientos reales.
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.253");
+import("./tdj-core-16.33.143.js?v=16.33.254");
 // Capa visual TDJ × OBLIGACIÓN.
 import("./tdj-visual-beneficios.js?v=16.33.249");

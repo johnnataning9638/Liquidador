@@ -1765,7 +1765,7 @@ function calcular(){
     // de esta sección es indicar si existe sanción. Para una liquidación
     // matemática debe existir al menos un vencimiento con fecha e impuesto.
     if(!d.tieneSancion){const e=new Error("Debe indicar si la obligación tiene sanción.");e.focusTarget="#tieneSancion";throw e;}
-    if(!d.vencimientos.length){const e=new Error("Debe registrar al menos un vencimiento con fecha e impuesto declarado.");e.focusTarget="#tablaVencimientos .fecha-vto";throw e;}
+    if(!d.vencimientos.length&&!motor.esSoloSancion(d)){const e=new Error("Debe registrar un vencimiento con impuesto o una sanción con valor y fecha válidos.");e.focusTarget="#tablaVencimientos .fecha-vto";throw e;}
     const hayPagosReales=d.pagos.some(p=>Number(p?.valor||0)>0);
     if(!hayPagosReales && !d.fechaCorte){
       {const e=new Error("Para liquidar una obligación sin pagos debe registrar la FECHA DE CORTE en la primera fila de Pagos. Solo es necesario diligenciar la fecha de pago/corte; TDJ, recibo y valor pueden quedar en blanco o en cero.");e.focusTarget="#tablaPagos .fecha-pago";throw e;}
@@ -2174,7 +2174,7 @@ async function importarExcelNormal(){
       for(const t of titulos)t.tipo=tasaPorTituloPrimera.get(t.tdj)||tasaPrimeraObligacion;
       for(const t of titulos)pagosImport.push({id:crypto.randomUUID(),tdj:t.tdj,recibo:"",fecha:t.fecha,valor:truncarValorEntero(t.valor),tipo:t.tipo||"TASA DIAN",observacion:t.observacion||""});
       if(get("TIPO DE LIQUIDACIÓN")&&$("tipoLiquidacion"))$("tipoLiquidacion").value=upper(get("TIPO DE LIQUIDACIÓN")).includes("OFICIAL")?"OFICIAL":"PRIVADA";
-      if(venc.length)obligacionVencimientos=venc;
+      if(venc.length||motor.esSoloSancion({tieneSancion:$("tieneSancion").value,valorSancion:numeroDesdeTexto($("valorSancion").value),fechaSancion:$("fechaSancion").value}))obligacionVencimientos=venc;
       pagos=pagosImport;
       renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();actualizarCamposTipoLiquidacion();renderCalendario();renderBeneficio();
       actualizarEstadoIndicador("listo",`Excel TDJ importado en Liquidador normal · 1 obligación · ${titulos.length} título(s) convertido(s) en pago(s) · ${pagosImport.length} pago(s) total(es)`);
@@ -2242,7 +2242,7 @@ async function importarExcelNormal(){
       ["VALOR PAGO","VALOR","VALOR DEL PAGO","IMPORTE","VALOR PAGADO"]
     ]);
     const pagosImport=leerPagosFlexNormal(rows,ph);
-    if(venc.length)obligacionVencimientos=venc;
+    if(venc.length||motor.esSoloSancion({tieneSancion:$("tieneSancion").value,valorSancion:numeroDesdeTexto($("valorSancion").value),fechaSancion:$("fechaSancion").value}))obligacionVencimientos=venc;
     pagos=pagosImport;
     renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();actualizarCamposTipoLiquidacion();renderCalendario();renderBeneficio();
     actualizarEstadoIndicador("listo",`Excel importado correctamente · ${venc.length} vencimiento(s) · ${pagosImport.filter(x=>x.valor>0).length} pago(s)`);

@@ -397,11 +397,11 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const vtoSancion=sancionHabilitadaPorFecha
         ?(vencimientosExigibles.find(v=>v.id===idVtoSancion)||vencimientosExigibles[0]||null)
         :null;
-      if(vtoSancion&&Number(aplicacionGlobal.sancion||0)>0){
+      if((vtoSancion||(!saldosVto.length&&sancionHabilitadaPorFecha))&&Number(aplicacionGlobal.sancion||0)>0){
         aplicadoSancion=Math.min(Math.max(0,saldoSancion),Number(aplicacionGlobal.sancion||0));
         saldoSancion=Math.max(0,saldoSancion-aplicadoSancion);
-        const existente=aplicacionesVto.find(x=>x.id===vtoSancion.id);
-        if(existente)existente.aplicadoSancion=aplicadoSancion;else aplicacionesVto.push({id:vtoSancion.id,aplicado:0,aplicadoIntereses:0,aplicadoSancion,saldo:vtoSancion.saldo});
+        const existente=vtoSancion&&aplicacionesVto.find(x=>x.id===vtoSancion.id);
+        if(existente)existente.aplicadoSancion=aplicadoSancion;else if(vtoSancion)aplicacionesVto.push({id:vtoSancion.id,aplicado:0,aplicadoIntereses:0,aplicadoSancion,saldo:vtoSancion.saldo});
       }
       remanentePago=Math.max(0,remanentePago-aplicadoSancion);
       if(remanentePago>0){

@@ -791,7 +791,7 @@ function validarDatos(){
     // CONCEPTO / IMPUESTO, AÑO GRAVABLE Y PERÍODO SON DATOS NO BLOQUEANTES.
     // El motor continúa con el proceso y conserva la información disponible.
     if(o.periodo!=="" && (!/^\d+$/.test(String(o.periodo)) || Number(o.periodo)<1 || Number(o.periodo)>12))throw new Error(`OBLIGACIÓN ${o.numero}: el período debe estar entre 1 y 12.`);
-    if(!o.vencimientos.length){const e=new Error(`OBLIGACIÓN ${o.numero}: registre al menos una cuota con fecha e importe.`);e.focusTarget=`#listaObligaciones .cuotas-mini .fecha-campo, #listaObligaciones .cuotas-mini [data-v="impuesto"]`;throw e;}
+    if(!o.vencimientos.length&&!motorParaObligacion(o).esSoloSancion(o)){const e=new Error(`OBLIGACIÓN ${o.numero}: registre una cuota con fecha e importe o una sanción con valor y fecha válidos.`);e.focusTarget=`#listaObligaciones .cuotas-mini .fecha-campo, #listaObligaciones .cuotas-mini [data-v="impuesto"]`;throw e;}
     if(!o.tieneSancion)o.tieneSancion="NO";
     if(o.tieneSancion==="SI"&&!Number(o.valorSancion||0)){const e=new Error(`OBLIGACIÓN ${o.numero}: indique el valor de la sanción.`);e.focusTarget=`#listaObligaciones [data-k="valorSancion"]`;throw e;}
     o.pagos=o.pagos.filter(p=>p.fecha&&(Number(p.valor)>0||esFechaCorteTDJ(p))).map(p=>({...p,fecha:fechaISO(p.fecha),valor:truncarValorEntero(p.valor||0)}));

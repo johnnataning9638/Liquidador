@@ -1,3 +1,10 @@
+## 16.33.254 — 2026-10-27
+
+- Corregir captura manual de solo sanción con cuotas completamente vacías y sin fecha en DIAN/TDJ.
+- Validar sanción por su propio valor/fecha; aplicar pagos y títulos sin cuota ficticia.
+- Importar Excel sin cuotas elimina capital previo del formulario; conservar corte y actualización vigente.
+- Pruebas del formulario nuevo, caso RENTA 2022/sanción 2.500.000 del 01/01/2023, privada/oficial, PDF y round-trip XLSX.
+
 ## 16.33.253 — 2026-10-27
 
 - DIAN y TDJ: permitir cuotas de capital cero o vacío cuando existe sanción; mantener intereses de capital en cero.
