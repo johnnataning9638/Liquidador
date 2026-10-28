@@ -21,7 +21,6 @@ const TIPOS=[
   "ART. 91 LEY 2277",
   "ART. 93 LEY 2277 - OMISAS",
   "ART. 48 LEY 2155",
-  "ART. 1 DECRETO 688 DE 2020 - IBC",
   "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
   "ART. 20 DECRETO 1474 DE 2025",
   "ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",
@@ -1779,6 +1778,8 @@ function calcular(){
     // siempre usa MotorLiquidacion. Esto evita que una importación, una
     // restauración de formulario o un cambio de tipo deje en memoria el motor
     // anterior y genere una actualización de sanción equivocada.
+    const fechas688=(d.pagos||[]).filter(p=>Number(p.valor||0)>0 && String(p.tipo||"TASA DIAN").trim().toUpperCase()==="TASA DIAN" && fechaISO(p.fecha)>="2020-05-22" && fechaISO(p.fecha)<="2020-11-30").map(p=>fechaVisible(p.fecha));
+    if(fechas688.length)alert("APLICACIÓN AUTOMÁTICA — DECRETO 688 DE 2020, ARTÍCULO 1\\n\\nLos pagos del "+fechas688.join(", ")+" se liquidarán con la tasa transitoria del interés bancario corriente de consumo y ordinario certificada por la Superintendencia Financiera, vigente en el mes de cada pago.\\n\\nPeríodo: 22/05/2020 al 30/11/2020. No se altera la tabla de tasas moratorias ordinarias ni se tramitan facilidades de pago.\\n\\nPulse ACEPTAR para continuar.");
     const motorCalculo=d.tipoLiquidacion==="OFICIAL"?motorOficial:motorPrivado;
     if(!motorCalculo)throw new Error("El motor de liquidación seleccionado no está disponible.");
     motor=motorCalculo;
