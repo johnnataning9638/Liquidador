@@ -4,6 +4,10 @@ import {execFileSync} from 'node:child_process';
 const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-presentacion-sancion-255.json',import.meta.url),'utf8'));
 export function revertirCambios255(source,file){
  source=source.replace(/\r\n/g,'\n');
+ if(file==='js/tdj.js')source=source.replace('tdj-core-16.33.143.js?v=16.33.256','tdj-core-16.33.143.js?v=16.33.255');
+ if(file==='js/tdj-core-16.33.143.js'){
+  source=source.replace(`  // El detalle de solo sanción permanece exclusivamente en el PDF.\n  // La pantalla conserva únicamente el resultado de aplicación de títulos.\n  document.getElementById("soporteSancionDianTDJ")?.remove();`, '  pintarSoporteSancionTDJ(r);').replace(`    sincronizarCapturaManualTDJ();\n    // La elegibilidad`, '    // La elegibilidad').replace(`    // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.\n    resultado=null;\n    resultadoDesactualizado=true;\n    ajustarBaseProporcionalTDJ208(motor);`,'    ajustarBaseProporcionalTDJ208(motor);');
+ }
  for(const [before,after] of [...(patches[file]||[])].reverse()){
   assert.ok(source.includes(after),file+': soporte de solo sanción delimitado');source=source.replace(after,before);
  }
