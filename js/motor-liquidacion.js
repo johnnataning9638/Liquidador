@@ -71,6 +71,17 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     const sancionDeclarada=n(datos?.valorSancion)>0;
     const esOrdinario=!esSimple4a6(datos);
     const esPrivada=String(datos?.tipoLiquidacion||"").trim().toUpperCase()==="PRIVADA";
+    // Art. 4 D0240: únicamente el régimen ordinario puede imputar sanción
+    // cuando el pago sea ESTRICTAMENTE posterior al vencimiento de la cuota.
+    // No se modifica la proporcionalidad de SIMPLE ni de otros beneficios.
+    const esArt4Ordinario=esOrdinario&&String(pagoActual?.tipo||"").toUpperCase().includes("ART. 4 DECRETO 0240");
+    const pagoPosteriorCuota=esArt4Ordinario&&(datos?.vencimientos||[]).some(v=>{
+      const fechaVto=iso(v?.fecha||v?.fechaVto);
+      return fechaVto&&iso(pagoActual?.fecha)>fechaVto&&n(v?.impuesto??v?.valor)>0;
+    });
+    if(esArt4Ordinario&&!pagoPosteriorCuota){
+      return super.aplicarProporcionalidad(pago,{...deuda,sancion:0});
+    }
 
     // NUEVA REGLA DE IMPUTACIÓN — RÉGIMEN ORDINARIO / LIQUIDACIÓN PRIVADA:
     // La sanción participa en la proporcionalidad de TODOS los pagos, incluso
