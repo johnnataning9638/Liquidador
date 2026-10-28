@@ -18,6 +18,8 @@ function revertirCambios259(source,file){
   if(start>=0){let end=source.indexOf('    // Invalidar siempre',start);if(end<0)end=source.indexOf('    ajustarBaseProporcionalTDJ208(motor);',start);if(end<0)throw Error('Sin final aviso TDJ 259');source=source.slice(0,start)+source.slice(end);}
   source=source.replace('"ART. 48 LEY 2155","ART. 120 LEY 2010','"ART. 48 LEY 2155","ART. 1 DECRETO 688 DE 2020 - IBC","ART. 120 LEY 2010');
  }
+ if(file==='js/motor-liquidacion.js')source=source.replace(/    \/\/ Art\. 4 D0240:[\s\S]*?\n    }\n(?=\n    \/\/ NUEVA REGLA)/,'');
+ if(file==='js/tdj.js')source=source.replace('tdj-core-16.33.143.js?v=16.33.260','tdj-core-16.33.143.js?v=16.33.259');
  if(file==='js/tdj.js')source=source.replace('tdj-core-16.33.143.js?v=16.33.259','tdj-core-16.33.143.js?v=16.33.258');
  return source;
 }

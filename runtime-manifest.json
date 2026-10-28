@@ -1,5 +1,5 @@
 {
-  "version": "16.33.259",
+  "version": "16.33.260",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -65,7 +65,7 @@
     "js/importador.js": "33bb0580f7bdb8ecd6afcda22821aefca9fc080dcd57519665a4da811fecb38a",
     "js/motor-liquidacion-base.js": "9324e17a5e627a4f43bb7ac399abe69d921e6ebebd90d3d3b3a2999449efafdf",
     "js/motor-liquidacion-oficial.js": "2246dc0df98420dc367293c1ab0f5ea533b9b188e9342377e6d5e16f9f32fac9",
-    "js/motor-liquidacion.js": "955768083c15a1ddb21208bf71049e390ee087aa6dd4b9b138c237b772bb72f8",
+    "js/motor-liquidacion.js": "9c1307bb6b59983c11d6ff63eeb948143de729636f917a76f1ba7c998611e75d",
     "js/motor-normativo-historico.js": "a9b985ddfbe85aa9a470769a39c0e2cc1ae5b07b4290ccc53a47d168c1f96044",
     "js/prioridad-tdj-v132.js": "3a8fda712cc0d4b145f2256bf0e44afae213e310aade155e1be88899c9169233",
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
@@ -126,7 +126,7 @@
   "authorizedCalculationChanges": {
     "js/motor-liquidacion.js": {
       "baselineHash": "601604752e4ba8840c5c8d5840a4f1f07da7b47b75db49d22ac99daad76b11fe",
-      "reason": "16.33.248: usuario autoriza conservar proporción y restar una vez el pago en cuatro a seis cuotas; alcance verificado por tests/alcance-proporcion-248.mjs"
+      "reason": "16.33.260: solo Art.4 D0240 régimen ordinario, pago posterior al vencimiento; preservar motor proporcional, SIMPLE y otros beneficios"
     },
     "js/motor-liquidacion-base.js": {
       "baselineHash": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
