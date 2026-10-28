@@ -1,3 +1,4 @@
+import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.255";
 import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
@@ -1460,8 +1461,24 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
   }
 }
 
+function bloqueSoloSancionTDJ(x){
+  if(!esSoloSancionSinPagosTDJ(x))return "";
+  const o=x.obligacion,r=x.estadoFinal||x.liquidacionBase;
+  const d={...datosPDFTDJ(o),fechaCorte:r.fechaCorte};
+  return `<div class="pdf-sancion-dian">${crearRenderSancionTDJ({escPdf,dinero,fechaVisible,hoyISO,dvNIT:calcularDvNITTDJ,tasaPdfArt45})(d,r)}</div>`;
+}
+function pintarSoporteSancionTDJ(resultado){
+  const box=$("resultadoTDJ");if(!box)return;
+  let panel=$("soporteSancionDianTDJ");
+  if(!panel){panel=document.createElement("div");panel.id="soporteSancionDianTDJ";box.prepend(panel);}
+  const html=(resultado.resumenObligaciones||[]).map(bloqueSoloSancionTDJ).join("");
+  panel.hidden=!html;
+  panel.innerHTML=html?`<style>${estilosSancionTDJ()}</style>${html}`:"";
+}
+
 function pintarResultado(r){
   const box=$("resultadoTDJ");if(!box)return;box.hidden=false;box.style.display="";
+  pintarSoporteSancionTDJ(r);
   const totalTitulos=titulos.filter(t=>fechaISO(t.fecha)&&Number(t.valor)>0).reduce((a,t)=>a+Number(t.valor||0),0);
   const totalAplicado=Number(r.totalAplicadoFinal ?? r.resumenTitulos.reduce((a,t)=>a+t.trazabilidad.reduce((x,y)=>x+Number(y.aplicado||0),0),0));
   const saldoCierre=Number(r.saldoObligacionesPDF||0);
@@ -2215,6 +2232,7 @@ function fechaCorteProyeccionPDFTDJ(x){
 }
 
 function bloqueProyeccionFechaCorteTDJ(x){
+  const soloSancion=bloqueSoloSancionTDJ(x);if(soloSancion)return soloSancion;
   const o=x?.obligacion||{};
   const corte=fechaCorteProyeccionPDFTDJ(x);
   if(!corte)return "";
@@ -2444,7 +2462,7 @@ async function exportarPdfTDJ(){
     // Metadatos de presentación: conservar los saldos del resultado sin exigir
     // la existencia de páginas de pago o de soporte de títulos.
     const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(esSoloSancionSinPagosTDJ)?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main></body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});

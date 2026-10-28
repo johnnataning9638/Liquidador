@@ -28,6 +28,8 @@ jobs:
           node tests/proporcionalidad-cuotas-248.mjs
           node tests/sancion-corte-253.mjs
           node tests/solo-sancion-sin-cuotas-254.mjs
+          node tests/presentacion-sancion-255.mjs
+          node tests/alcance-presentacion-sancion-255.mjs
           node tests/alcance-solo-sancion-254.mjs
           node tests/alcance-sancion-corte-253.mjs
           node tests/regresion-tasa-avisos-207.mjs

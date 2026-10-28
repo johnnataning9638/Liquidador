@@ -1,9 +1,10 @@
 import fs from 'node:fs';
+import {revertirCambios255} from './alcance-presentacion-sancion-255.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-solo-sancion-254.json',import.meta.url),'utf8'));
 export function revertirCambios254(source,file){
- source=source.replace(/\r\n/g,'\n');
+ source=revertirCambios255(source,file);
  for(const [before,after] of [...(patches[file]||[])].reverse()){
   assert.ok(source.includes(after),file+': conservar alcance exacto de hotfix 254');
   source=source.replace(after,before);

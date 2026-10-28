@@ -1,3 +1,9 @@
+## 16.33.255 — 2026-10-27
+
+- TDJ: soporte completo de solo sanción sin pagos con la misma plantilla y estilos de DIAN; pantalla y PDF.
+- Mostrar desglose de intereses, detalle IPC/actualización, saldos y condición sin pagos antes del resumen TDJ habitual.
+- DIAN, motores, fórmulas y Excel intactos; pruebas de paridad y alcance exclusivo, recuperación y casos con movimientos.
+
 ## 16.33.254 — 2026-10-27
 
 - Corregir captura manual de solo sanción con cuotas completamente vacías y sin fecha en DIAN/TDJ.
