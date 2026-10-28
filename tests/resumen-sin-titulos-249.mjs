@@ -1,5 +1,6 @@
 import {revertirCambiosTDJ252} from './alcance-tdj-pdf-252.mjs';
 import {revertirCambios253} from './alcance-sancion-corte-253.mjs';
+import {revertirCambios255} from './alcance-presentacion-sancion-255.mjs';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -45,7 +46,7 @@ let expected=old(core)
  .replace('// PÁGINA INICIAL: solo se incluye cuando existe al menos un título aplicado.','// Soporte de saldos para toda obligación ordinaria, también sin movimientos.')
  .replace('if((hayTitulosRegistrados || hayExcedentesPago) && !esRegimenSimplePDF)    paginas.push(','if(!esRegimenSimplePDF)    paginas.push(');
 const oldLine=expected.split('\n').find(l=>l.includes('win.document.write(`<!doctype html><html><head>'));
-const newLine=read(core).split('\n').find(l=>l.includes('win.document.write(`<!doctype html><html><head>'));
+const newLine=revertirCambios255(read(core),core).split('\n').find(l=>l.includes('win.document.write(`<!doctype html><html><head>'));
 assert.equal(newLine,oldLine.replace('<main class="pdf-soporte">','<main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">'));
 const metadata='    // Metadatos de presentación: conservar los saldos del resultado sin exigir\n    // la existencia de páginas de pago o de soporte de títulos.\n    const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);\n';
 expected=expected.replace(oldLine,metadata+newLine);

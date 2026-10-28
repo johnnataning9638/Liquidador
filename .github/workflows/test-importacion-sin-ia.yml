@@ -50,6 +50,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-sancion-corte-253.mjs
       - name: Solo sanción sin cuotas desde formularios nuevos DIAN y TDJ
         run: TEST_SITE_DIR=dist node tests/navegador-solo-sancion-254.mjs
+      - name: Soporte TDJ solo sanción con paridad de contenido y estilo DIAN
+        run: TEST_SITE_DIR=dist node tests/navegador-presentacion-sancion-255.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
