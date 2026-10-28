@@ -1,5 +1,5 @@
 {
-  "version": "16.33.256",
+  "version": "16.33.257",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -99,7 +99,7 @@
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
-      "reason": "16.33.256: retiro exclusivo del detalle en pantalla; PDF intacto, lectura de campos e invalidación de resultado al recalcular",
+      "reason": "16.33.257: reponer cuota visible eliminada con impuesto cero en liquidación anterior antes de recálculo TDJ",
       "previousReleaseHash": "efcdd07bf196f315bbd685b0548076c46bbaf43d2071016732dd8ed42f1b5bd5"
     },
     "js/tdj-pegado-unico-209.js": {
