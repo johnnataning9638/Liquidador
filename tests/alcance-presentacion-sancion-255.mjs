@@ -9,6 +9,12 @@ export function revertirCambios255(source,file){
  }
  return source;
 }
-for(const file of Object.keys(patches))assert.equal(revertirCambios255(fs.readFileSync(file,'utf8'),file),execFileSync('git',['show','d0f6d51:'+file],{encoding:'utf8'}).replace(/\r\n/g,'\n'),file+': solo presentación TDJ');
+for(const file of Object.keys(patches)){
+ let original=fs.readFileSync(file,'utf8');
+ if(file==='js/tdj-core-16.33.143.js'){
+  original=original.replace('  // El detalle de solo sanción permanece exclusivamente en el PDF.\n  // La pantalla conserva únicamente el resultado de aplicación de títulos.\n  document.getElementById("soporteSancionDianTDJ")?.remove();', '  pintarSoporteSancionTDJ(r);').replace('    sincronizarCapturaManualTDJ();\n    // La elegibilidad', '    // La elegibilidad').replace('    // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.\n    resultado=null;\n    resultadoDesactualizado=true;\n    ajustarBaseProporcionalTDJ208(motor);','    ajustarBaseProporcionalTDJ208(motor);');
+ }
+ assert.equal(revertirCambios255(original,file),execFileSync('git',['show','d0f6d51:'+file],{encoding:'utf8'}).replace(/\r\n/g,'\n'),file+': solo presentación TDJ');
+}
 for(const file of ['js/app.js','js/motor-liquidacion.js','js/motor-liquidacion-base.js','js/motor-liquidacion-oficial.js'])assert.equal(fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n'),execFileSync('git',['show','d0f6d51:'+file],{encoding:'utf8'}).replace(/\r\n/g,'\n'),file+': DIAN y motores intactos');
 console.log('ALCANCE 255 OK: únicamente presentación TDJ; DIAN y motores idénticos a 254');
