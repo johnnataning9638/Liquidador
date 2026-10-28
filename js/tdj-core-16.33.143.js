@@ -1021,7 +1021,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     validarDatos();
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
     const pagos688=obligaciones.flatMap(o=>(o.pagos||[]).filter(p=>Number(p.valor||0)>0&&String(p.tipo||"TASA DIAN").trim().toUpperCase()==="TASA DIAN"&&fechaISO(p.fecha)>="2020-05-22"&&fechaISO(p.fecha)<="2020-11-30").map(p=>`OBLIGACIÓN ${o.numero}: ${fechaVisible(p.fecha)}`));
-    if(pagos688.length)alert("APLICACIÓN AUTOMÁTICA — DECRETO 688 DE 2020, ARTÍCULO 1\\n\\n"+pagos688.join("\\n")+"\\n\\nLas fechas indicadas se liquidarán con el interés bancario corriente de consumo y ordinario certificado por la Superintendencia Financiera para el mes de cada pago (22/05/2020 al 30/11/2020). Las tasas moratorias históricas no cambian.\\n\\nPulse ACEPTAR para continuar.");
+    if(pagos688.length)alert("APLICACIÓN AUTOMÁTICA — DECRETO 688 DE 2020, ARTÍCULO 1\n\n"+pagos688.join("\n")+"\n\nLas fechas indicadas se liquidarán con el interés bancario corriente de consumo y ordinario certificado por la Superintendencia Financiera para el mes de cada pago (22/05/2020 al 30/11/2020). Las tasas moratorias históricas no cambian.\n\nPulse ACEPTAR para continuar.");
     // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.
     resultado=null;
     resultadoDesactualizado=true;
