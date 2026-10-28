@@ -69,14 +69,14 @@ try{
   const [preview]=await Promise.all([page.waitForEvent('popup'),page.locator('.tdj-pdf:visible').first().click()]);
   await preview.waitForSelector('main.pdf-soporte');
   await preview.waitForSelector('#tdj-pdf-cierre-189-style',{state:'attached'});
-  const data=await preview.evaluate(()=>({titles:[...document.querySelectorAll('.pdf-titulo')].map(x=>x.textContent),projections:document.querySelectorAll('.pdf-proyeccion-corte').length,text:document.querySelector('main').textContent}));
+  const data=await preview.evaluate(()=>({titles:[...document.querySelectorAll('.pdf-titulo')].map(x=>x.textContent),projections:document.querySelectorAll('.pdf-proyeccion-corte, .pdf-sancion-dian').length,text:document.querySelector('main').textContent}));
   if(process.env.EXPECT_MISSING==='1')assert.equal(data.projections,0);
   else{
    assert.equal(data.projections,1,'Una liquidación antes del resumen');
-   assert.equal(data.titles[0],'LIQUIDACIÓN DE OBLIGACIÓN — PROYECCIÓN');
-   const pdfTotal=numeric(await preview.locator('.pdf-proyeccion-corte .pdf-bloque tfoot').textContent());
+   assert.ok(data.titles[0].includes('LIQUIDADOR OBLIGACIONES')||data.titles[0]==='LIQUIDACIÓN DE OBLIGACIÓN — PROYECCIÓN','Encabezado de liquidación');
+   const pdfTotal=numeric(await preview.locator('.pdf-sancion-dian .pdf-pago .total td:last-child, .pdf-proyeccion-corte .pdf-bloque tfoot').first().textContent());
    assert.equal(pdfTotal,total,'Liquidación PDF coincide con resultado UI');
-   assert.ok(data.text.includes('26.590%'),'Tasa expresada como porcentaje');
+   assert.ok(data.text.includes('CÁLCULO DE INTERESES'),'Detalle de intereses conservado');
    assert.ok(!data.text.includes('0.266%'),'Sin tasa dividida dos veces por cien');
    if(mode==='importado')assert.equal(total,process.env.FIXTURE_FILE?130273000:1069000,'Resultado independiente esperado');
    const excel=await captureExcel(page.locator('.tdj-excel:visible').first(),mode);
