@@ -1,3 +1,9 @@
+## 16.33.260 — 2026-10-28
+
+- Art. 4 del Decreto 0240/2026: en régimen ordinario se habilita la sanción en proporcionalidad únicamente cuando el pago sea posterior al vencimiento de una cuota con impuesto.
+- Se conserva régimen simple sin cambios de lógica, así como los demás beneficios; se sincronizan las rutas de carga de DIAN y TDJ.
+- Pendiente: validar pruebas integrales y despliegue de producción antes de publicar.
+
 ## 16.33.255 — 2026-10-27
 
 - TDJ: soporte completo de solo sanción sin pagos con la misma plantilla y estilos de DIAN; pantalla y PDF.
