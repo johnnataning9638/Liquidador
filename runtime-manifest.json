@@ -56,7 +56,7 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "24d980eb70e443a430417bd4bc256b991ce04f3f87ceced4aa20d4edf4a013bb",
+    "js/app.js": "12fed5398f014a38c75c1bf1304192c45763c790b2c618017fc5fa20cb11f7f1",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
@@ -94,7 +94,7 @@
   "authorizedPresentationChanges": {
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.251: corregir contexto de formato de tasas del PDF DIAN sin pagos; conservar franja verde y cálculos",
+      "reason": "16.33.259: mensaje informativo y retirada de selector Decreto 688; aplicación automática mediante motor compartido",
       "previousReleaseHash": "cf719d7190a525e598483fffb8425593f05df6cbb7f4eb851ab44687ec91584b"
     },
     "js/tdj-core-16.33.143.js": {
