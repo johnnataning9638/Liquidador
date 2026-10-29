@@ -23,6 +23,8 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
+          node tests/uvt-automatico-263.mjs
+          node tests/uvt-cliente-263.mjs
           node tests/sanciones-minimas-261.mjs
           node tests/sancion-ui-245.mjs
           node tests/tasa-tdj-247.mjs

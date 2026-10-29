@@ -1,4 +1,5 @@
 import {actualizarParametros,crearLectorHttp} from './core.mjs';
+import {tokenProgramadorValido} from './auth.mjs';
 
 const url=Deno.env.get('SUPABASE_URL')!;
 const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -11,15 +12,23 @@ const repository={
  async tim(v:Record<string,unknown>){return (await rest(`tasas_liquidador?select=tasa&fecha_inicio=eq.${v.fecha_inicio}&fecha_fin=eq.${v.fecha_fin}&tipo_tasa=eq.TASA%20DIAN&limit=1`))[0]||null;},
  async ipc(year:number){return (await rest(`ipc_liquidador?select=inflacion&anio_inflacion=eq.${year}&limit=1`))[0]||null;},
  async insertTim(v:unknown){await rest('tasas_liquidador',{method:'POST',body:JSON.stringify(v)});},
- async insertIpc(v:unknown){await rest('ipc_liquidador',{method:'POST',body:JSON.stringify(v)});}
+ async insertIpc(v:unknown){await rest('ipc_liquidador',{method:'POST',body:JSON.stringify(v)});},
+ async uvt(year:number){return (await rest(`uvt_liquidador?select=valor_uvt,sancion_minima&anio=eq.${year}&limit=1`))[0]||null;},
+ async insertUvt(v:unknown){await rest('uvt_liquidador',{method:'POST',body:JSON.stringify(v)});}
 };
 Deno.serve(async(req:Request)=>{
  if(req.method!=='POST')return Response.json({error:'Solo POST'},{status:405});
+ const token=req.headers.get('X-Parametros-Token');
+ if(!token)return Response.json({error:'Actualización reservada al programador autorizado'},{status:403});
+ try{
+  const control=(await rest('parametros_actualizacion_control?select=token_sha256&id=eq.1&limit=1'))[0];
+  if(!await tokenProgramadorValido(token,control?.token_sha256))return Response.json({error:'Programador no autorizado'},{status:403});
+ }catch{return Response.json({error:'No se pudo verificar el programador'},{status:503});}
  let body;try{body=await req.json();}catch{return Response.json({error:'JSON inválido'},{status:400});}
  const started=new Date().toISOString();
- const result=await actualizarParametros({repository,fetchText:crearLectorHttp(),dryRun:body?.dry_run===true});
+ const result=await actualizarParametros({repository,fetchText:crearLectorHttp(),dryRun:body?.dry_run===true,forceUVT:body?.force_uvt===true});
  // No se registran tokens, cabeceras ni datos de liquidaciones.
- try{await rest('parametros_actualizacion_log',{method:'POST',body:JSON.stringify({version:result.version,dry_run:result.dry_run,inicio:started,fin:new Date().toISOString(),ok:result.ok,tim:result.tim,ipc:result.ipc})});}
+ try{await rest('parametros_actualizacion_log',{method:'POST',body:JSON.stringify({version:result.version,dry_run:result.dry_run,inicio:started,fin:new Date().toISOString(),ok:result.ok,tim:result.tim,ipc:result.ipc,uvt:result.uvt})});}
  catch(e){console.error('No fue posible registrar el resultado del actualizador',e.message);return Response.json({...result,registro:'ERROR'},{status:500});}
  return Response.json(result,{status:result.ok?200:207});
 });

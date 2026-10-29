@@ -31,7 +31,7 @@ try{
   await p.waitForSelector(tdj?'.obligacion-card':'#anio');
   assert.ok((await p.locator('footer').textContent()).includes(version),'Pie de página identifica la versión publicada');
   assert.equal(new URL(p.url()).searchParams.get('v'),version,'Guardia conserva la versión publicada');
-  const loaded=await p.evaluate(async()=>{const r=await fetch('datos/uvt.json',{cache:'no-store'});if(!r.ok)throw Error('UVT HTTP '+r.status);return (await r.json()).map(x=>[x.anio,x.sancionMinima]);});
+  const loaded=await p.evaluate(async()=>{const r=await fetch('datos/uvt.json',{cache:'no-store'});if(!r.ok)throw Error('UVT HTTP '+r.status);return (await r.json()).filter(x=>x.anio>=2006).map(x=>[x.anio,x.sancionMinima]);});
   assert.deepEqual(loaded,valores,'Datos reales cargados por '+(tdj?'TDJ':'DIAN'));
   if(tdj){
    await p.locator('[data-k="tieneSancion"]').selectOption('SI');await set('[data-k="valorSancion"]','1000000');await p.locator('[data-k="beneficioSancion"]').selectOption('CON BENEFICIO');

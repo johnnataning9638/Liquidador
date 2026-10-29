@@ -1,4 +1,5 @@
-// Actualizador 16.33.239. Solo obtiene parámetros publicados; no calcula liquidaciones.
+import {actualizarUVT} from './uvt.mjs';
+// Actualizador 16.33.263. Solo obtiene parámetros publicados; no calcula liquidaciones.
 export const SFC_URL='https://www.superfinanciera.gov.co/personas/';
 export const DANE_URL='https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc/ipc-informacion-tecnica';
 const strip=s=>String(s).replace(/<!--[\s\S]*?-->/g,' ').replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/\s+/g,' ').trim();
@@ -30,10 +31,11 @@ export function parseDaneAnnual(html,year){
 }
 export function crearLectorHttp(fetchImpl=fetch,{attempts=3,timeoutMs=12000,sleep=ms=>new Promise(r=>setTimeout(r,ms))}={}){
  return async url=>{
-  const u=new URL(url);if(u.protocol!=='https:'||!['www.superfinanciera.gov.co','www.dane.gov.co','www.dian.gov.co'].includes(u.hostname))throw Error('Fuente no autorizada');
+  const u=new URL(url);if(u.protocol!=='https:'||!['www.superfinanciera.gov.co','www.dane.gov.co','www.dian.gov.co','normograma.dian.gov.co'].includes(u.hostname))throw Error('Fuente no autorizada');
   let last;
   for(let i=0;i<attempts;i++){
-   try{const r=await fetchImpl(url,{signal:AbortSignal.timeout(timeoutMs),headers:{'User-Agent':'Liquidador-Parametros/16.33.239','Accept':'text/html,application/xhtml+xml'}});
+   try{const r=await fetchImpl(url,{signal:AbortSignal.timeout(timeoutMs),headers:{'User-Agent':'Liquidador-Parametros/16.33.263','Accept':'text/html,application/xhtml+xml'}});
+    if(r.url){const final=new URL(r.url);if(final.protocol!=='https:'||!['www.superfinanciera.gov.co','www.dane.gov.co','www.dian.gov.co','normograma.dian.gov.co'].includes(final.hostname))throw Error('Redirección de fuente no autorizada');}
     if(!r.ok){const e=Object.assign(Error(`${u.hostname} HTTP ${r.status}`),{status:r.status});if(r.status===404)throw e;last=e;}else return await r.text();
    }catch(e){if(e.status===404)throw e;last=e;}
    if(i+1<attempts)await sleep(300*(i+1));
@@ -63,6 +65,6 @@ async function ipc({now,fetchText,repository,dryRun}){
 export async function actualizarParametros(options){
  const args={now:new Date(),dryRun:false,...options};
  const isolated=async fn=>{try{return await fn(args);}catch(e){return {accion:'ERROR',error:String(e.message||e)};}};
- const [timResult,ipcResult]=await Promise.all([isolated(tim),isolated(ipc)]);
- return {version:'16.33.239',dry_run:args.dryRun,tim:timResult,ipc:ipcResult,ok:![timResult,ipcResult].some(x=>['ERROR','REVISION_MANUAL'].includes(x.accion))};
+ const [timResult,ipcResult,uvtResult]=await Promise.all([isolated(tim),isolated(ipc),isolated(actualizarUVT)]);
+ return {version:'16.33.263',dry_run:args.dryRun,tim:timResult,ipc:ipcResult,uvt:uvtResult,ok:![timResult,ipcResult,uvtResult].some(x=>['ERROR','REVISION_MANUAL'].includes(x.accion))};
 }

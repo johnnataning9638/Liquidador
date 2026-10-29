@@ -1,3 +1,11 @@
+## 16.33.263 — 2026-10-28
+
+- Histórico oficial de sanción mínima ampliado de 21 a 39 años (1988–2026), con los 21 importes previos idénticos y sin inventar UVT anteriores a 2006.
+- Tabla central `uvt_liquidador` con trazabilidad, restricciones de integridad, lectura pública de años vigentes e inserción exclusiva del servidor. DIAN y TDJ consultan la misma fuente con respaldo local y caché de parámetros verificados.
+- Actualizador anual DIAN: precarga de diciembre, primeros diez días hábiles de enero, festivos colombianos y reintentos si falta el año. No sobrescribe históricos ni aplica años futuros antes del 1 de enero.
+- Mantener cron de las 05:00 Colombia y ejecución independiente de TIM/IPC/UVT; incorporar autenticación interna del programador y registro UVT. No cambian los motores ni las reglas de liquidación.
+- Probar histórico, redondeo, vigencias, caídas de fuentes, futura UVT sin despliegue, permisos, UI/PDF/XLSX y recuperación.
+
 ## 16.33.262 — 2026-10-28
 
 - Sincronizar la versión visible de DIAN y TDJ, la guardia de URL y la acción de reinicio TDJ con los recursos publicados. Estos indicadores aún conservaban 16.33.259.

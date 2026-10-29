@@ -1,3 +1,4 @@
+import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
@@ -163,8 +164,8 @@ function leerTasasPersonalizadas(){
 function guardarTasasPersonalizadas(){localStorage.setItem("liquidador_dian_tasas_personalizadas",JSON.stringify(tasasPersonalizadas));}
 function reconstruirMotor(){
   actualizadorSancion=new ActualizadorSancion({ipc});
-  motorPrivado=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});
-  motorOficial=new MotorLiquidacionOficial({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});
+  motorPrivado=protegerMinimaUVT(new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones}));
+  motorOficial=protegerMinimaUVT(new MotorLiquidacionOficial({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones}));
   seleccionarMotorPorTipo();
 }
 function seleccionarMotorPorTipo(){
@@ -285,7 +286,7 @@ async function cargarDatos(){
   if(estado){estado.className="indicador-parametros cargando";estado.title="Cargando parámetros";estado.setAttribute("aria-label","Cargando parámetros");}
   let normativoData;
   [uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones,calendarioData,normativoData]=await Promise.all([
-    fetch("datos/uvt.json").then(r=>r.json()),
+    cargarUVTConRespaldo(),
     fetch("datos/tasas-moratorias.json").then(r=>r.json()),
     fetch("datos/ipc.json").then(r=>r.json()),
     fetch("datos/beneficios.json").then(r=>r.json()),
