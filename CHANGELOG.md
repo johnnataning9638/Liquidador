@@ -1,3 +1,9 @@
+## 16.33.262 — 2026-10-28
+
+- Sincronizar la versión visible de DIAN y TDJ, la guardia de URL y la acción de reinicio TDJ con los recursos publicados. Estos indicadores aún conservaban 16.33.259.
+- Agregar regresión que exige coincidencia entre `version.json`, el pie de página y la versión de URL después de cargar cada módulo.
+- Conservar las sanciones mínimas DIAN corregidas en 261 y todos los cálculos.
+
 ## 16.33.261 — 2026-10-28
 
 - Corregir sanción mínima de 2006 a $201.000; 2011 a $251.000; 2012 a $260.000; 2013 a $268.000; 2020 a $356.000; 2021 a $363.000; 2022 a $380.000 y 2023 a $424.000.
