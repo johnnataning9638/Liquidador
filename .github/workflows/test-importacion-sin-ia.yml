@@ -34,6 +34,10 @@ jobs:
           pdftotext -v
       - name: Verificar sanciones mínimas DIAN 2006–2026 en ambos módulos
         run: TEST_SITE_DIR=dist node tests/navegador-sanciones-minimas-261.mjs
+      - name: Verificar histórico completo 1988–2026 en ambos módulos
+        run: TEST_SITE_DIR=dist node tests/navegador-uvt-263.mjs
+      - name: Simular año nuevo central y caída de conexión sin desplegar
+        run: TEST_SITE_DIR=dist node tests/navegador-futura-263.mjs
       - name: Probar importación, cálculo, PDF, Excel y limpieza
         run: TEST_SITE_DIR=dist node tests/navegador-sin-ia-233.mjs
       - name: Recuperar seis anticipos de Excel TDJ sin títulos y verificar round-trip

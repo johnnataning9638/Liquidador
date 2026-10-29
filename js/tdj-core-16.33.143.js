@@ -1,3 +1,4 @@
+import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.255";
 import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
@@ -191,14 +192,14 @@ function nuevoTitulo(numero){return {id:uid("TDJ"),numero,tdj:"",fecha:"",valor:
 
 function normalizarDatosLocal(){
   return Promise.all([
-    fetch("datos/uvt.json").then(r=>r.json()),fetch("datos/ipc.json").then(r=>r.json()),fetch("datos/tasas-moratorias.json").then(r=>r.json()),
+    cargarUVTConRespaldo(),fetch("datos/ipc.json").then(r=>r.json()),fetch("datos/tasas-moratorias.json").then(r=>r.json()),
     fetch("datos/beneficios.json").then(r=>r.json()),fetch("datos/sanciones.json").then(r=>r.json()),fetch("datos/reglas-obligaciones.json").then(r=>r.json())
   ]).then(([a,b,c,d,e,f])=>{uvt=a||[];ipc=b||[];tasas=c||[];window.__tdjBeneficios=d||[];window.__tdjSanciones=e||[];window.__tdjReglas=f||[];reconstruirMotor();});
 }
 function reconstruirMotor(){
   const cfg={uvt,intereses:tasas,ipc,tasasMoratorias:tasas,beneficios:window.__tdjBeneficios||[],sanciones:window.__tdjSanciones||[],reglasObligaciones:window.__tdjReglas||[]};
-  motor=new MotorLiquidacion(cfg);
-  motorOficial=new MotorLiquidacionOficial(cfg);
+  motor=protegerMinimaUVT(new MotorLiquidacion(cfg));
+  motorOficial=protegerMinimaUVT(new MotorLiquidacionOficial(cfg));
   // Una sola tabla de tasas para motor y visualización de TDJ.
   // Se emite tanto al cargar el JSON local como después de sincronizar Supabase.
   window.__tdjTasasEfectivas210=tasas.map(fila=>({...fila,tasas:{...(fila.tasas||{})}}));

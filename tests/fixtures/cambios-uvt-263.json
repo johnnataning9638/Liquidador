@@ -1,0 +1,38 @@
+{
+  "js/app.js": [
+    [
+      "",
+      "import {cargarUVTConRespaldo,protegerMinimaUVT} from \"./uvt-parametros.js?v=16.33.263\";\n"
+    ],
+    [
+      "fetch(\"datos/uvt.json\").then(r=>r.json())",
+      "cargarUVTConRespaldo()"
+    ],
+    [
+      "  motorPrivado=new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});",
+      "  motorPrivado=protegerMinimaUVT(new MotorLiquidacion({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones}));"
+    ],
+    [
+      "  motorOficial=new MotorLiquidacionOficial({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones});",
+      "  motorOficial=protegerMinimaUVT(new MotorLiquidacionOficial({uvt,tasasMoratorias,ipc,beneficios,sanciones,reglasObligaciones}));"
+    ]
+  ],
+  "js/tdj-core-16.33.143.js": [
+    [
+      "",
+      "import {cargarUVTConRespaldo,protegerMinimaUVT} from \"./uvt-parametros.js?v=16.33.263\";\n"
+    ],
+    [
+      "fetch(\"datos/uvt.json\").then(r=>r.json())",
+      "cargarUVTConRespaldo()"
+    ],
+    [
+      "  motor=new MotorLiquidacion(cfg);",
+      "  motor=protegerMinimaUVT(new MotorLiquidacion(cfg));"
+    ],
+    [
+      "  motorOficial=new MotorLiquidacionOficial(cfg);",
+      "  motorOficial=protegerMinimaUVT(new MotorLiquidacionOficial(cfg));"
+    ]
+  ]
+}

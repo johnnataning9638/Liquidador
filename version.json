@@ -1,7 +1,7 @@
 {
-  "version": "16.33.262",
-  "previousVersion": "16.33.261",
-  "baseCommit": "c145c4bed090e2989d16f44bd71e19e6eb6cf138",
+  "version": "16.33.263",
+  "previousVersion": "16.33.262",
+  "baseCommit": "b4a66480a66ced8797eacb5e2b87238a214df43a",
   "date": "2026-10-28",
-  "change": "Sincronizar versión visible, guardia y reinicio TDJ con las sanciones mínimas oficiales DIAN 2006–2026"
+  "change": "UVT y sanciones mínimas centrales 1988–2026; actualización anual automática DIAN, cron seguro y respaldo verificado"
 }

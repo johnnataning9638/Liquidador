@@ -1,3 +1,4 @@
+import {revertirCambios263} from './alcance-uvt-263.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
@@ -5,6 +6,8 @@ const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-presentacio
 // Neutralizar exclusivamente el cambio autorizado 259 antes de comprobar
 // el alcance histórico 255/254. No altera el motor ni el código de producción.
 function revertirCambios259(source,file){
+ source=revertirCambios263(source,file);
+ if(file==='js/tdj.js')source=source.replace('tdj-core-16.33.143.js?v=16.33.263','tdj-core-16.33.143.js?v=16.33.262');
  if(file==='js/motor-liquidacion-base.js'){
   source=source.replace(/    \/\/ Decreto 688\/2020, art\. 1:[\s\S]*?\n    }\n/, '');
  }

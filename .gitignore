@@ -2,6 +2,7 @@ node_modules/
 test-results/
 
 dist/
+supabase/.temp/
 
 # Archivos de prueba aportados por el usuario: conservar solo localmente.
 tests/fixtures/resumen-sin-titulos-249/
