@@ -2,7 +2,7 @@
   {
     "anio": 2006,
     "valor": 20000.0,
-    "sancionMinima": 200000.0
+    "sancionMinima": 201000.0
   },
   {
     "anio": 2007,
@@ -27,17 +27,17 @@
   {
     "anio": 2011,
     "valor": 25132.0,
-    "sancionMinima": 252000.0
+    "sancionMinima": 251000.0
   },
   {
     "anio": 2012,
     "valor": 26049.0,
-    "sancionMinima": 261000.0
+    "sancionMinima": 260000.0
   },
   {
     "anio": 2013,
     "valor": 26841.0,
-    "sancionMinima": 269000.0
+    "sancionMinima": 268000.0
   },
   {
     "anio": 2014,
@@ -72,22 +72,22 @@
   {
     "anio": 2020,
     "valor": 35607.0,
-    "sancionMinima": 357000.0
+    "sancionMinima": 356000.0
   },
   {
     "anio": 2021,
     "valor": 36308.0,
-    "sancionMinima": 364000.0
+    "sancionMinima": 363000.0
   },
   {
     "anio": 2022,
     "valor": 38004.0,
-    "sancionMinima": 381000.0
+    "sancionMinima": 380000.0
   },
   {
     "anio": 2023,
     "valor": 42412.0,
-    "sancionMinima": 425000.0
+    "sancionMinima": 424000.0
   },
   {
     "anio": 2024,

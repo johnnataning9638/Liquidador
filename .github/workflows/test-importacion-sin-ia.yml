@@ -32,6 +32,8 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends poppler-utils
           pdftotext -v
+      - name: Verificar sanciones mínimas DIAN 2006–2026 en ambos módulos
+        run: TEST_SITE_DIR=dist node tests/navegador-sanciones-minimas-261.mjs
       - name: Probar importación, cálculo, PDF, Excel y limpieza
         run: TEST_SITE_DIR=dist node tests/navegador-sin-ia-233.mjs
       - name: Recuperar seis anticipos de Excel TDJ sin títulos y verificar round-trip

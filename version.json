@@ -1,6 +1,7 @@
 {
-  "version": "16.33.260",
-  "previousVersion": "16.33.259",
+  "version": "16.33.261",
+  "previousVersion": "16.33.260",
+  "baseCommit": "fc91d11cd243b41370603f6613a6e2e901c5042c",
   "date": "2026-10-28",
-  "change": "Art. 4 Decreto 0240: sanción proporcional solamente para pagos posteriores a vencimiento de cuota en régimen ordinario"
+  "change": "Corregir sanciones mínimas DIAN 2006–2026: ocho importes históricos; fuente única DIAN y TDJ"
 }
