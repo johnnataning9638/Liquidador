@@ -1,7 +1,7 @@
 {
-  "version": "16.33.261",
-  "previousVersion": "16.33.260",
-  "baseCommit": "fc91d11cd243b41370603f6613a6e2e901c5042c",
+  "version": "16.33.262",
+  "previousVersion": "16.33.261",
+  "baseCommit": "c145c4bed090e2989d16f44bd71e19e6eb6cf138",
   "date": "2026-10-28",
-  "change": "Corregir sanciones mínimas DIAN 2006–2026: ocho importes históricos; fuente única DIAN y TDJ"
+  "change": "Sincronizar versión visible, guardia y reinicio TDJ con las sanciones mínimas oficiales DIAN 2006–2026"
 }
