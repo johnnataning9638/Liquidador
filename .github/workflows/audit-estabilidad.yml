@@ -23,6 +23,7 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
+          node tests/sanciones-minimas-261.mjs
           node tests/sancion-ui-245.mjs
           node tests/tasa-tdj-247.mjs
           node tests/proporcionalidad-cuotas-248.mjs

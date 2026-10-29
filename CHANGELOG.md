@@ -1,3 +1,9 @@
+## 16.33.261 — 2026-10-28
+
+- Corregir sanción mínima de 2006 a $201.000; 2011 a $251.000; 2012 a $260.000; 2013 a $268.000; 2020 a $356.000; 2021 a $363.000; 2022 a $380.000 y 2023 a $424.000.
+- Conservar los otros 13 años y los valores UVT. DIAN y TDJ consumen la misma tabla `datos/uvt.json`; no cambian fórmulas, beneficios, tasas ni IPC.
+- Documentar fuentes oficiales y agregar regresión de los 21 años, motores privado/oficial, interfaz y límites del beneficio.
+
 ## 16.33.260 — 2026-10-28
 
 - Art. 4 del Decreto 0240/2026: en régimen ordinario se habilita la sanción en proporcionalidad únicamente cuando el pago sea posterior al vencimiento de una cuota con impuesto.
