@@ -1,5 +1,5 @@
 {
-  "version": "16.33.267",
+  "version": "16.33.268",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -56,26 +56,27 @@
     "js/uvt-parametros.js",
     "datos/interes-bancario-corriente.json",
     "js/decreto-688-50.js",
-    "js/favorabilidad-2010.js"
+    "js/favorabilidad-2010.js",
+    "js/ley2155-art48.js"
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "e61bf136db4af8d6e5640f3dbe4f68572755553ee365f6f2eb0408b3604c087e",
+    "js/app.js": "c894299a2b01871953d3f22afdd2c03264be0f09bf1ffe9acdd19d1655735a19",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
     "js/importador-excel.js": "07646b3a040312e2efe13e95ceab0643b703a5555c4f4eb7970ebc80a047c785",
     "js/importador-obligacion.js": "6d4e18e5b790d21ed5ea252ade93ad91fcae7d753c467e077ec3290dbc81672f",
     "js/importador.js": "787baa1e68f0d4e8c3377486f1c452e195d6e0ae7995250692498224308bc955",
-    "js/motor-liquidacion-base.js": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a",
-    "js/motor-liquidacion-oficial.js": "7f890dc816ab8dae1b1b723489862e006d99817ed89d4503fb7466c621c3b496",
-    "js/motor-liquidacion.js": "d1f114a79beeceaef6b6c65779f079d7b142787c29c739e21641a5a3b584c151",
+    "js/motor-liquidacion-base.js": "310debcf20cd867075573c363ee68379f16c9cb5b749678f1a9aceaca89a852f",
+    "js/motor-liquidacion-oficial.js": "d2f1d64355ac97ee32eedaba87378511093a488901e736facb0bf166c976ee78",
+    "js/motor-liquidacion.js": "d2725f1485705399811463faaaab2356485490de7d35331f25a067a57b551993",
     "js/motor-normativo-historico.js": "a9b985ddfbe85aa9a470769a39c0e2cc1ae5b07b4290ccc53a47d168c1f96044",
     "js/prioridad-tdj-v132.js": "3a8fda712cc0d4b145f2256bf0e44afae213e310aade155e1be88899c9169233",
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "63d52b1eb5dbe8e920d5206a1fa8836c9def54ecefb9d1d447f29244af83ee1e",
+    "js/tdj-core-16.33.143.js": "12a3964f751bd248dbbb4432ddbcd12f2193b042feffd1f5d65bab15e98c1d3b",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",
@@ -91,20 +92,20 @@
     "js/tdj-tasa-bridge-16.33.174.js": "10160298aa8227ec3677a0ca064699fd03dd565f5e5bf50fdb9b2241607f81d8",
     "js/tdj-tasa-vista-207.js": "0e0bf240844b7943f8a6008b5b7bed493b5a38aa7a7ecf82700086602774fc32",
     "js/tdj-tasas-203.js": "47dc793da713544b70c30ba5c42416539059ffd12c7fe3bbe6b41463a87c4cc5",
-    "js/tdj-visual-beneficios.js": "441458d0f737529f88f4454588f9892532d40eabcad5c786d79488457055b015",
+    "js/tdj-visual-beneficios.js": "6cf3423826819a21cc8d834b34e970ec50d9241948804e4f81fee693f7a87ca8",
     "js/utilidades.js": "2dd81359c5962e39c9936084a707f532426ad6143efe41a7ff8c77baf4d4d3bf"
   },
   "notes": "Sufijos históricos identifican capas activas. Cambios de cálculo autorizados delimitados por pruebas de alcance y conservación.",
   "authorizedPresentationChanges": {
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "bbc2df30c499e6b358a2b5dd7d0fc9188e929ff773f21378b0d27939464cf96f"
+      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
+      "previousReleaseHash": "e61bf136db4af8d6e5640f3dbe4f68572755553ee365f6f2eb0408b3604c087e"
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "127fe18ac6185eda39f13c9e926752dfba4b268df37a198afdacc0268d19a10a"
+      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
+      "previousReleaseHash": "63d52b1eb5dbe8e920d5206a1fa8836c9def54ecefb9d1d447f29244af83ee1e"
     },
     "js/tdj-pegado-unico-209.js": {
       "baselineHash": "f2633e7de992c4825ed13d0b7dbfbdedbcd036584652829b35f0182b488db785",
@@ -116,8 +117,8 @@
     },
     "js/tdj-visual-beneficios.js": {
       "baselineHash": "7335afacead8672878eedaba3e1b5907e23aaa32db0421a194f51208f12cbc9e",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "a3d57f7769182351a3a569b7f704f270bcbec92e16141959db9b04c3de6a51ee"
+      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
+      "previousReleaseHash": "441458d0f737529f88f4454588f9892532d40eabcad5c786d79488457055b015"
     },
     "js/tdj-pdf-cierre-16.33.188.js": {
       "baselineHash": "d7a61a5fe04ebb370f0067516db939daa4018553440a56e0389c2fec7165c51c",
@@ -141,18 +142,18 @@
   "authorizedCalculationChanges": {
     "js/motor-liquidacion.js": {
       "baselineHash": "601604752e4ba8840c5c8d5840a4f1f07da7b47b75db49d22ac99daad76b11fe",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "9c1307bb6b59983c11d6ff63eeb948143de729636f917a76f1ba7c998611e75d"
+      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
+      "previousReleaseHash": "d1f114a79beeceaef6b6c65779f079d7b142787c29c739e21641a5a3b584c151"
     },
     "js/motor-liquidacion-base.js": {
       "baselineHash": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "369804e07a7087b368f09599877b389011f26c6101f1e07493fb3f9fd6876677"
+      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
+      "previousReleaseHash": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a"
     },
     "js/motor-liquidacion-oficial.js": {
       "baselineHash": "7d6d51053cd4fc89c6d89253e499269f85750b9156dcce4a724763831ae6035a",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "2246dc0df98420dc367293c1ab0f5ea533b9b188e9342377e6d5e16f9f32fac9"
+      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
+      "previousReleaseHash": "7f890dc816ab8dae1b1b723489862e006d99817ed89d4503fb7466c621c3b496"
     },
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",

@@ -1,4 +1,4 @@
-import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
+import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
 import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33.247';
@@ -13,7 +13,6 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     "ART. 45 LEY 2155",
     "ART. 91 LEY 2277",
     "ART. 93 LEY 2277 - OMISAS",
-    "ART. 48 LEY 2155",
     TIPO_688_50,
     "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
     "ART. 20 DECRETO 1474 DE 2025",

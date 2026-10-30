@@ -2,12 +2,12 @@ import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.255";
 import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
-import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.267";
+import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.268";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.267";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.267";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.268";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.161";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
@@ -36,7 +36,7 @@ function calcularDvNITTDJ(nit){
 
 const TIPOS=[
   "TASA DIAN","ART. 45 LEY 2155","ART. 91 LEY 2277","ART. 93 LEY 2277 - OMISAS",
-  "ART. 48 LEY 2155",TIPO_688_50,"ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
+  TIPO_688_50,"ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
   "ART. 20 DECRETO 1474 DE 2025","ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",
   "ART. 3 DECRETO 0240 DE 2026","ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION",
   TIPO_1419.ART9,TIPO_1419.ART10_OMISO,TIPO_1419.ART10_CORRECCION
@@ -1011,6 +1011,14 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
     const pagos688=obligaciones.flatMap(o=>(o.pagos||[]).filter(p=>Number(p.valor||0)>0&&String(p.tipo||"TASA DIAN").trim().toUpperCase()==="TASA DIAN"&&fechaISO(p.fecha)>="2020-05-22"&&fechaISO(p.fecha)<="2020-11-30").map(p=>`OBLIGACIÓN ${o.numero}: ${fechaVisible(p.fecha)}`));
     if(pagos688.length)alert("APLICACIÓN AUTOMÁTICA — DECRETO 688 DE 2020, ARTÍCULO 1\n\n"+pagos688.join("\n")+"\n\nLas fechas indicadas se liquidarán con el interés bancario corriente de consumo y ordinario certificado por la Superintendencia Financiera para el mes de cada pago (22/05/2020 al 30/11/2020). Las tasas moratorias históricas no cambian.\n\nPulse ACEPTAR para continuar.");
+    const avisos48=obligaciones.flatMap(o=>[
+      ...(o.pagos||[]).map(p=>({o,p,tipo:p.tipo||"TASA DIAN"})),
+      ...titulos.map(t=>({o,p:t,tipo:tipoTasaTDJ(t,o)}))
+    ].filter(x=>Number(x.p?.valor)>0).map(x=>({...x,especial:motor.tasaEspecial(x.tipo,x.p.fecha,{vencimientos:o.vencimientos,valorPago:x.p.valor})}))
+      .filter(x=>x.especial?.aplicacionAutomaticaArt48));
+    if(avisos48.length)alert("APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\n\n"+
+      [...new Set(avisos48.map(x=>"OBLIGACIÓN "+x.o.numero+" / "+fechaVisible(x.p.fecha)+": "+(x.especial.porCuota?"TASA IBC SEGÚN CUOTA":(x.especial.tasa*100).toFixed(2)+"% EA")))].join("\n")+
+      "\n\nIBC certificado para pagos y títulos del 14/09/2021 al 31/03/2022, únicamente en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y demás requisitos de favorabilidad del expediente.\n\nPulse ACEPTAR para continuar.");
     // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.
     resultado=null;
     resultadoDesactualizado=true;
@@ -1691,6 +1699,7 @@ function construirFilasExcelTDJ(){
     (base.vencimientos||o.vencimientos||[]).forEach((v,i)=>push([i+1,v.periodo||i+1,v.fecha,v.impuesto||0,v.saldo||0],{money:[4,5]}));push([]);
     push(["PAGOS REGISTRADOS — LIQUIDACIÓN NORMAL"],{title:true});push(["Nº","RECIBO","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
     (base.detalle||[]).forEach((d,i)=>push([i+1,d.pago?.recibo||"",d.pago?.fecha||"",d.pago?.valor||0,d.tipoAplicado||"TASA DIAN",d.tasaVisible??"",d.pago?.observacion||"",d.interesGenerado||0,d.aplicado?.impuesto||0,d.aplicado?.intereses||0,d.aplicado?.sancion||0,d.aplicado?.total||0,d.excedente||0],{money:[4,7,8,9,10,11,12],percent:[6]}));
+    (base.detalle||[]).filter(d=>String(d.notaBeneficio||"").includes("LEY 2155 DE 2021 ART. 48")).forEach(d=>push(["ART. 48 LEY 2155 — PAGO AUTOMÁTICO",d.pago?.fecha||"","TASA IBC",d.tasaVisible==null?"SEGÚN CUOTA":Number(d.tasaVisible).toFixed(2)+"% EA","FUNDAMENTO",d.notaBeneficio]));
     if(!(base.detalle||[]).length)push(["NO HAY PAGOS REGISTRADOS."]);
     if((base.detalle||[]).length){
       push(["IMPUTACIÓN POR VENCIMIENTO — PAGOS NORMALES"],{title:true});
@@ -1710,6 +1719,7 @@ function construirFilasExcelTDJ(){
       const d=detallePDFDesdeAplicacionTDJ(a,o);
       push([`DETALLE TDJ ${a.titulo} — APLICACIÓN ${j+1}`],{title:true});
       push(["DOCUMENTO","FECHA","VALOR DEL TÍTULO","TIPO","TASA"],{header:true});push([a.titulo,a.fecha,a.valorAntes||0,d?.tipoAplicado||"TASA DIAN",d?.tasaVisible??""],{money:[3],percent:[5]});
+      if(String(d?.notaBeneficio||"").includes("LEY 2155 DE 2021 ART. 48"))push(["ART. 48 LEY 2155 — TDJ AUTOMÁTICO",a.fecha||"","TASA IBC",d.tasaVisible==null?"SEGÚN CUOTA":Number(d.tasaVisible).toFixed(2)+"% EA","FUNDAMENTO",d.notaBeneficio]);
       if(String(d?.tipoAplicado||"").includes("ART. 45 LEY 2155")){
         const esp=motor?.tasaEspecial(d.tipoAplicado,a.fecha);
         push(["ART. 45 LEY 2155","FECHA TDJ",a.fecha,"IBC REFERENCIA APROX. EA",esp?.ibcOriginal==null?"":esp.ibcOriginal.toFixed(2)+"%","REDUCCIÓN IBC","80%","TASA FINAL",esp?.tasa==null?"NO DISPONIBLE":(esp.tasa*100).toFixed(2)+"%"]);

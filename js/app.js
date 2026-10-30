@@ -1,11 +1,11 @@
-import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
+import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.267";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.267";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.268";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
@@ -23,7 +23,6 @@ const TIPOS=[
   "ART. 45 LEY 2155",
   "ART. 91 LEY 2277",
   "ART. 93 LEY 2277 - OMISAS",
-  "ART. 48 LEY 2155",
   TIPO_688_50,
   "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
   "ART. 20 DECRETO 1474 DE 2025",
@@ -1153,6 +1152,9 @@ function exportarExcel(){
     push([]);
     push(["SALDO TOTAL",r.total||0,"EXCEDENTE",r.excedente||0,"ÚLTIMO PAGO",r.ultimo?.pago?.fecha||"","TASA ÚLTIMO PAGO",r.ultimo?.tasaVisible??""],{money:[2,4],percent:[8]});
     push(["TIPOS DE TASA/BENEFICIO APLICADOS",(r.beneficiosAplicados||[]).join(" | ")||"TASA DIAN"]);
+    (r.detalle||[]).filter(x=>String(x.notaBeneficio||"").includes("LEY 2155 DE 2021 ART. 48")).forEach(x=>{
+      push(["ART. 48 LEY 2155 — PAGO AUTOMÁTICO",x.pago?.fecha||"","TASA IBC",x.tasaVisible==null?"SEGÚN CUOTA":Number(x.tasaVisible).toFixed(2)+"% EA","FUNDAMENTO",x.notaBeneficio]);
+    });
     (r.detalle||[]).filter(x=>String(x.tipoAplicado||"").includes("ART. 45 LEY 2155")).forEach(x=>{
       const esp=motor?.tasaEspecial(x.tipoAplicado,x.pago?.fecha);
       push(["ART. 45 LEY 2155 — FECHA PAGO",x.pago?.fecha||"","IBC REFERENCIA APROX. EA",esp?.ibcOriginal==null?"":esp.ibcOriginal.toFixed(2)+"%","REDUCCIÓN IBC","80%","TASA FINAL",esp?.tasa==null?"NO DISPONIBLE":(esp.tasa*100).toFixed(2)+"%"]);
@@ -1763,6 +1765,12 @@ function calcular(){
     motor=motorCalculo;
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
+    const avisosArt48=(d.pagos||[]).filter(p=>Number(p.valor)>0).map(p=>({
+      pago:p,especial:motor.tasaEspecial(p.tipo,p.fecha,{vencimientos:d.vencimientos,valorPago:p.valor})
+    })).filter(x=>x.especial?.aplicacionAutomaticaArt48);
+    if(avisosArt48.length)alert("APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\n\n"+
+      avisosArt48.map(x=>fechaVisible(x.pago.fecha)+": "+(x.especial.porCuota?"TASA IBC SEGÚN CUOTA":(x.especial.tasa*100).toFixed(2)+"% EA")).join("\n")+
+      "\n\nSe usa el interés bancario corriente certificado para pagos dentro del 14/09/2021 al 31/03/2022 en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y requisitos de favorabilidad del expediente.\n\nPulse ACEPTAR para continuar.");
 
     // PRIORIDAD CRONOLÓGICA TDJ/PAGOS — MISMA LÓGICA DEL MÓDULO TDJ.
     // Cuando existe un título antes de uno o más pagos normales posteriores,

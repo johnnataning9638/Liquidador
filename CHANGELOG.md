@@ -1,3 +1,11 @@
+## 16.33.268 — Ley 2155 artículos 45 y 48 (2026-10-29)
+
+- Art. 45: activar reducción del 20 % de sanción con piso mínimo legal 2021 en liquidación privada y oficial, una sola vez por obligación; preserva el cálculo previo de interés IBC reducido.
+- Art. 48 parágrafo 2: IBC certificado SFC 2021-09 a 2022-03 sobre pagos efectivos desde 14/09/2021 hasta 31/03/2022, solo en vencimientos exigibles al 30/06/2021 como criterio conservador de elegibilidad; obligaciones mixtas se evalúan por cuota. Otros beneficios seleccionados se preservan.
+- Retira la selección manual del art. 48 en DIAN y TDJ, mantiene la importación histórica de tipos y la evidencia del motivo en notas de resultados/PDF.
+- Pruebas matemáticas nuevas para ambos motores y ventanas; diferencias del motor documentadas con fixture reversible, hashes nuevos y referencia histórica intacta.
+- La existencia de mérito ejecutivo, los demás requisitos de favorabilidad en cobro y la validez del beneficio deben verificarse con la documentación del expediente; la fecha de vencimiento no sustituye un concepto jurídico.
+
 ## 16.33.267 — 2026-10-29
 
 - Aplicación automática Ley 2010 art.120 par.2: pagos reales 27/12/2019–21/05/2020 sobre vencimientos anteriores al 27/12/2019, usando IBC certificado + 2 puntos.

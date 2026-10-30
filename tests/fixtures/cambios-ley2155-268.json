@@ -1,0 +1,188 @@
+{
+  "js/motor-liquidacion-base.js": [
+    [
+      "          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 3 DECRETO 0240\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 9 DECRETO 1419\")) && saldoSancion>0){",
+      "          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 3 DECRETO 0240\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 9 DECRETO 1419\")) && saldoSancion>0){"
+    ],
+    [
+      "        const anioMinima=this.anioSancionParaMinima(datos,true);\n        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));",
+      "        const esArt45=String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\");\n        const anioMinima=esArt45?2021:this.anioSancionParaMinima(datos,true);\n        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));"
+    ],
+    [
+      "import {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from \"./decreto-688-50.js?v=16.33.266\";",
+      "import {tasaArt48Automatico} from \"./ley2155-art48.js?v=16.33.268\";\nimport {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from \"./decreto-688-50.js?v=16.33.266\";"
+    ],
+    [
+      "    if(automatico?.aplicacionAutomatica2010)return {...automatico,factor:1,tasaFija:automatico.tasa,beneficio:null,factorSancion:1,reduceSancion:false};",
+      "    if(automatico?.aplicacionAutomatica2010)return {...automatico,factor:1,tasaFija:automatico.tasa,beneficio:null,factorSancion:1,reduceSancion:false};\n    const art48=tasaArt48Automatico(t,fechaPago,contexto);\n    if(art48?.aplicacionAutomaticaArt48)return {...art48,factor:1,tasaFija:art48.tasa,beneficio:null,factorSancion:1,reduceSancion:false};"
+    ],
+    [
+      "    if(es(\"ART. 48 LEY 2155\") || es(\"DECRETO 688 DE 2020\")){",
+      "    if(es(\"DECRETO 688 DE 2020\")){"
+    ]
+  ],
+  "js/app.js": [
+    [
+      "  \"ART. 48 LEY 2155\",\n  TIPO_688_50,\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\",",
+      "  TIPO_688_50,\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\","
+    ],
+    [
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.267\";",
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.267\";",
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.267\";",
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.268\";"
+    ],
+    [
+      "    (r.detalle||[]).filter(x=>String(x.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")).forEach(x=>{",
+      "    (r.detalle||[]).filter(x=>String(x.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\")).forEach(x=>{\n      push([\"ART. 48 LEY 2155 — PAGO AUTOMÁTICO\",x.pago?.fecha||\"\",\"TASA IBC\",x.tasaVisible==null?\"SEGÚN CUOTA\":Number(x.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",x.notaBeneficio]);\n    });\n    (r.detalle||[]).filter(x=>String(x.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")).forEach(x=>{"
+    ],
+    [
+      "    if(valid.errores.length)throw new Error(valid.errores.join(\" \"));",
+      "    if(valid.errores.length)throw new Error(valid.errores.join(\" \"));\n    const avisosArt48=(d.pagos||[]).filter(p=>Number(p.valor)>0).map(p=>({\n      pago:p,especial:motor.tasaEspecial(p.tipo,p.fecha,{vencimientos:d.vencimientos,valorPago:p.valor})\n    })).filter(x=>x.especial?.aplicacionAutomaticaArt48);\n    if(avisosArt48.length)alert(\"APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\\n\\n\"+\n      avisosArt48.map(x=>fechaVisible(x.pago.fecha)+\": \"+(x.especial.porCuota?\"TASA IBC SEGÚN CUOTA\":(x.especial.tasa*100).toFixed(2)+\"% EA\")).join(\"\\n\")+\n      \"\\n\\nSe usa el interés bancario corriente certificado para pagos dentro del 14/09/2021 al 31/03/2022 en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y requisitos de favorabilidad del expediente.\\n\\nPulse ACEPTAR para continuar.\");"
+    ]
+  ],
+  "js/tdj-core-16.33.143.js": [
+    [
+      "  \"ART. 48 LEY 2155\",TIPO_688_50,",
+      "  TIPO_688_50,"
+    ],
+    [
+      "import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from \"./tdj-tasas-203.js?v=16.33.267\";",
+      "import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from \"./tdj-tasas-203.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.267\";",
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.267\";",
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.268\";"
+    ],
+    [
+      "    if(!(base.detalle||[]).length)push([\"NO HAY PAGOS REGISTRADOS.\"]);",
+      "    (base.detalle||[]).filter(d=>String(d.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\")).forEach(d=>push([\"ART. 48 LEY 2155 — PAGO AUTOMÁTICO\",d.pago?.fecha||\"\",\"TASA IBC\",d.tasaVisible==null?\"SEGÚN CUOTA\":Number(d.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",d.notaBeneficio]));\n    if(!(base.detalle||[]).length)push([\"NO HAY PAGOS REGISTRADOS.\"]);"
+    ],
+    [
+      "      if(String(d?.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")){",
+      "      if(String(d?.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\"))push([\"ART. 48 LEY 2155 — TDJ AUTOMÁTICO\",a.fecha||\"\",\"TASA IBC\",d.tasaVisible==null?\"SEGÚN CUOTA\":Number(d.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",d.notaBeneficio]);\n      if(String(d?.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")){"
+    ],
+    [
+      "",
+      "    const avisos48=obligaciones.flatMap(o=>[\n      ...(o.pagos||[]).map(p=>({o,p,tipo:p.tipo||\"TASA DIAN\"})),\n      ...titulos.map(t=>({o,p:t,tipo:tipoTasaTDJ(t,o)}))\n    ].filter(x=>Number(x.p?.valor)>0).map(x=>({...x,especial:motor.tasaEspecial(x.tipo,x.p.fecha,{vencimientos:o.vencimientos,valorPago:x.p.valor})}))\n      .filter(x=>x.especial?.aplicacionAutomaticaArt48));\n    if(avisos48.length)alert(\"APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\\n\\n\"+\n      [...new Set(avisos48.map(x=>\"OBLIGACIÓN \"+x.o.numero+\" / \"+fechaVisible(x.p.fecha)+\": \"+(x.especial.porCuota?\"TASA IBC SEGÚN CUOTA\":(x.especial.tasa*100).toFixed(2)+\"% EA\")))].join(\"\\n\")+\n      \"\\n\\nIBC certificado para pagos y títulos del 14/09/2021 al 31/03/2022, únicamente en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y demás requisitos de favorabilidad del expediente.\\n\\nPulse ACEPTAR para continuar.\");\n"
+    ]
+  ],
+  "js/tdj-visual-beneficios.js": [
+    [
+      "    \"ART. 48 LEY 2155\",\n    TIPO_688_50,",
+      "    TIPO_688_50,"
+    ],
+    [
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.267\";",
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";"
+    ]
+  ],
+  "js/motor-liquidacion-oficial.js": [
+    [
+      "      if(sancionHabilitadaPorFecha&&!primerBeneficio1419Usado&&especial.reduceSancion&&String(pago.tipo||\"\").toUpperCase().includes(\"DECRETO 1419\")&&saldoSancion>0){",
+      "      if(sancionHabilitadaPorFecha&&!primerBeneficio1419Usado&&especial.reduceSancion&&\n         (String(pago.tipo||\"\").toUpperCase().includes(\"DECRETO 1419\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\"))&&saldoSancion>0){"
+    ],
+    [
+      "        const anioMinima=Number(fechaSancion.slice(0,4))||Number(datos.anio||0);",
+      "        const esArt45=String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\");\n        const anioMinima=esArt45?2021:(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));"
+    ],
+    [
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.267\";",
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.268\";"
+    ]
+  ],
+  "js/tdj.js": [
+    [
+      "import(\"./tdj-core-16.33.143.js?v=16.33.267\");",
+      "import(\"./tdj-core-16.33.143.js?v=16.33.268\");"
+    ],
+    [
+      "import(\"./tdj-visual-beneficios.js?v=16.33.267\");",
+      "import(\"./tdj-visual-beneficios.js?v=16.33.268\");"
+    ]
+  ],
+  "js/motor-liquidacion.js": [
+    [
+      "import {MotorLiquidacion as MotorLiquidacionBase} from \"./motor-liquidacion-base.js?v=16.33.267\";",
+      "import {MotorLiquidacion as MotorLiquidacionBase} from \"./motor-liquidacion-base.js?v=16.33.268\";"
+    ]
+  ],
+  "index.html": [
+    [
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.267\">",
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.268\">"
+    ],
+    [
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.267'\">ABRIR LIQUIDADOR →</button></div>",
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.268'\">ABRIR LIQUIDADOR →</button></div>"
+    ],
+    [
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.267'\">ABRIR TÍTULOS / TDJ →</button></div>",
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.268'\">ABRIR TÍTULOS / TDJ →</button></div>"
+    ]
+  ],
+  "liquidacion.html": [
+    [
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.267\">",
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.268\">"
+    ],
+    [
+      "<footer>Liquidador — versión 16.33.267, con TIM e IPC centralizados y alertas informativas</footer>",
+      "<footer>Liquidador — versión 16.33.268, con TIM e IPC centralizados y alertas informativas</footer>"
+    ],
+    [
+      "<script type=\"module\" src=\"js/app.js?v=16.33.267\"></script>",
+      "<script type=\"module\" src=\"js/app.js?v=16.33.268\"></script>"
+    ]
+  ],
+  "titulos.html": [
+    [
+      "<!-- TDJ UI DEPLOY 16.33.267 -->",
+      "<!-- TDJ UI DEPLOY 16.33.268 -->"
+    ],
+    [
+      "    if(v && v!==\"16.33.267\"){",
+      "    if(v && v!==\"16.33.268\"){"
+    ],
+    [
+      "      u.searchParams.set(\"v\",\"16.33.267\");",
+      "      u.searchParams.set(\"v\",\"16.33.268\");"
+    ],
+    [
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.267\">",
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.268\">"
+    ],
+    [
+      "<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.267\" media=\"screen and (max-width:650px)\">",
+      "<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.268\" media=\"screen and (max-width:650px)\">"
+    ],
+    [
+      "<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.267</footer>",
+      "<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.268</footer>"
+    ],
+    [
+      "    window.location.href=\"titulos.html?v=16.33.267&reinicio=\"+Date.now();",
+      "    window.location.href=\"titulos.html?v=16.33.268&reinicio=\"+Date.now();"
+    ],
+    [
+      "<script type=\"module\" src=\"js/tdj.js?v=16.33.267\"></script>",
+      "<script type=\"module\" src=\"js/tdj.js?v=16.33.268\"></script>"
+    ]
+  ],
+  "datos/beneficios.json": [
+    [
+      "  {\n    \"id\": \"LEY2155_ART48\",\n    \"nombre\": \"ART. 48 LEY 2155\",\n    \"estado\": \"HISTORICO_CERRADO\",\n    \"fuente\": \"Hoja Tasa de Interés del Liquidador V9.5.2\",\n    \"formula\": \"(TIM + 2%) / 1,5\"\n  },",
+      "  {\n    \"id\": \"LEY2155_ART48\",\n    \"nombre\": \"ART. 48 LEY 2155\",\n    \"estado\": \"HISTORICO_CERRADO\",\n    \"vigenciaDesde\": \"2021-09-14\",\n    \"fechaPagoHasta\": \"2022-03-31\",\n    \"fechaCorteObligacion\": \"2021-06-30\",\n    \"seleccion\": \"AUTOMATICA_POR_PAGO_Y_VENCIMIENTO\",\n    \"formula\": \"IBC certificado SFC consumo y ordinario vigente a la fecha del pago\",\n    \"condiciones\": [\n      \"Obligacion con merito ejecutivo a cargo al 30/06/2021, por verificar con expediente\",\n      \"Pago real entre 14/09/2021 y 31/03/2022\",\n      \"El vencimiento exigible al 30/06/2021 es el criterio conservador usado por el motor\",\n      \"Verificar demas requisitos de favorabilidad en etapa de cobro\"\n    ],\n    \"fuente\": \"Ley 2155 de 2021 art. 48 paragrafo 2; DIAN Comunicado 041 de 2022; SFC IBC certificado 2021 y 2022\"\n  },"
+    ]
+  ]
+}

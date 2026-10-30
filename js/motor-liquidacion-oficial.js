@@ -1,5 +1,5 @@
 import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.122";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.267";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -267,8 +267,11 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         advertenciasSancion.push(...(act.advertencias||[]));
       }
 
-      if(sancionHabilitadaPorFecha&&!primerBeneficio1419Usado&&especial.reduceSancion&&String(pago.tipo||"").toUpperCase().includes("DECRETO 1419")&&saldoSancion>0){
-        const anioMinima=Number(fechaSancion.slice(0,4))||Number(datos.anio||0);
+      if(sancionHabilitadaPorFecha&&!primerBeneficio1419Usado&&especial.reduceSancion&&
+         (String(pago.tipo||"").toUpperCase().includes("DECRETO 1419") ||
+          String(pago.tipo||"").toUpperCase().includes("ART. 45 LEY 2155"))&&saldoSancion>0){
+        const esArt45=String(pago.tipo||"").toUpperCase().includes("ART. 45 LEY 2155");
+        const anioMinima=esArt45?2021:(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));
         const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
         const saldoAntes=Number(saldoSancion||0);
         const reducido=roundMil(saldoAntes*Number(especial.factorSancion||0.15));
