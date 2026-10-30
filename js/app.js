@@ -1,3 +1,4 @@
+import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
@@ -22,6 +23,7 @@ const TIPOS=[
   "ART. 91 LEY 2277",
   "ART. 93 LEY 2277 - OMISAS",
   "ART. 48 LEY 2155",
+  TIPO_688_50,
   "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
   "ART. 20 DECRETO 1474 DE 2025",
   "ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",

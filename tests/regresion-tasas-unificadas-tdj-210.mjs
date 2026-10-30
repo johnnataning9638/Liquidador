@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {TIPO_688_50,tasaIBC68850} from '../js/decreto-688-50.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {filaTimVisualTDJ} from '../js/tdj-tasa-vista-207.js';
@@ -19,7 +20,7 @@ const tasasSupabaseSimuladas=[
 const fechas=vista.slice(vista.indexOf('  function fechaISOVisual('),vista.indexOf('  function obtenerObligaciones('));
 const fnTasa=vista.slice(vista.indexOf('  function tasaPorFechaLocal('),vista.indexOf('  function mostrarTasa('));
 assert.ok(fechas.includes('function fechaISOVisual')&&fnTasa.includes('function tasaPorFechaLocal'));
-const contexto={filaTimVisualTDJ,tasasMoratorias:tasasSupabaseSimuladas};
+const contexto={TIPO_688_50,tasaIBC68850,filaTimVisualTDJ,tasasMoratorias:tasasSupabaseSimuladas};
 const prueba=`const upper=v=>String(v??"").trim().toUpperCase();${fechas}\n${fnTasa}\n[
  tasaPorFechaLocal('19/10/2026','TASA DIAN'),
  tasaPorFechaLocal('19/10/2026','ART. 45 LEY 2155'),

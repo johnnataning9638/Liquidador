@@ -1,3 +1,4 @@
+import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.255";
 import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
@@ -35,7 +36,7 @@ function calcularDvNITTDJ(nit){
 
 const TIPOS=[
   "TASA DIAN","ART. 45 LEY 2155","ART. 91 LEY 2277","ART. 93 LEY 2277 - OMISAS",
-  "ART. 48 LEY 2155","ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
+  "ART. 48 LEY 2155",TIPO_688_50,"ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
   "ART. 20 DECRETO 1474 DE 2025","ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",
   "ART. 3 DECRETO 0240 DE 2026","ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECION",
   TIPO_1419.ART9,TIPO_1419.ART10_OMISO,TIPO_1419.ART10_CORRECCION

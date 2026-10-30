@@ -1,11 +1,12 @@
 import fs from 'node:fs';
+import {TIPO_688_50,tasaIBC68850} from '../js/decreto-688-50.js';
 import vm from 'node:vm';
 import {filaTimVisualTDJ,referenciaTimTDJ} from '../js/tdj-tasa-vista-207.js';
 import assert from 'node:assert/strict';
 const source=fs.readFileSync('js/tdj-visual-beneficios.js','utf8');
 const start=source.indexOf('  function tasaPorFechaLocal('),end=source.indexOf('\n  function mostrarTasa(',start);
 const tasas=JSON.parse(fs.readFileSync('datos/tasas-moratorias.json','utf8'));
-const ctx=vm.createContext({filaTimVisualTDJ,tasasMoratorias:tasas,upper:s=>String(s).trim().toUpperCase(),fechaISOVisual:s=>s});
+const ctx=vm.createContext({TIPO_688_50,tasaIBC68850,filaTimVisualTDJ,tasasMoratorias:tasas,upper:s=>String(s).trim().toUpperCase(),fechaISOVisual:s=>s});
 vm.runInContext(source.slice(start,end),ctx);
 assert.equal(vm.runInContext("tasaPorFechaLocal('2026-03-31','TASA DIAN')",ctx),0.2352,'El 31 de marzo muestra la tasa disponible del mismo mes');
 

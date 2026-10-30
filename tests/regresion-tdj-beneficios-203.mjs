@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {TIPO_688_50} from '../js/decreto-688-50.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {MotorLiquidacion} from '../js/motor-liquidacion.js';
@@ -22,7 +23,7 @@ const document={readyState:'loading',querySelectorAll:()=>[],querySelector:()=>n
 }};
 let priority=prioridad;
 if(fs.existsSync('js/tdj-prioridad-203.js'))priority=await import('../js/tdj-prioridad-203.js');
-const ctx=vm.createContext({...util,...decreto,...priority,...tasas203,MotorLiquidacion,MotorLiquidacionOficial,document,
+const ctx=vm.createContext({TIPO_688_50,...util,...decreto,...priority,...tasas203,MotorLiquidacion,MotorLiquidacionOficial,document,
   window:{addEventListener(){}},console:{log(){},warn(){},error(){}},alert:m=>errors.push(m),CSS:{escape:s=>s},setTimeout(){},requestAnimationFrame(){},Blob,TextEncoder,TextDecoder,DataView,Uint8Array});
 vm.runInContext(src+`
 sincronizarPagosVisiblesTDJ=()=>{};sincronizarTitulosVisiblesTDJ=()=>{};sincronizarCapturaManualTDJ=()=>{};
@@ -45,6 +46,14 @@ test('Dos títulos agotan primera obligación y trasladan remanente a segunda',(
 test('Título insuficiente produce saldo, nunca endoso ficticio ni bloqueo',()=>{
   const r=run([obligation('O1',1)],[title('T1',600000)]);
   assert.equal(r.resumenTitulos[0].trazabilidad[0].aplicado,600000);assert.equal(r.endoso,0);
+});
+test('688 manual por obligación: mismo TDJ aplica 50% IBC solo donde se selecciona',()=>{
+  const os=[obligation('O1',1),obligation('O2',2)].map(o=>({...o,anio:2019,vencimientos:[{id:'V'+o.id,numero:1,fecha:'2020-01-01',impuesto:1000000}]}));
+  const r=run(os,[title('T1',2500000,'2020-06-01',{tasasPorObligacion:{O1:TIPO_688_50,O2:'TASA DIAN'}})]);
+  const a=r.resumenTitulos[0].trazabilidad;
+  assert.equal(a[0].tipoTasaObligacion,TIPO_688_50);assert.equal(a[0].aplicadoIntereses,38000);
+  assert.equal(a[1].tipoTasaObligacion,'TASA DIAN');assert.equal(a[1].aplicadoIntereses,75000);
+  assert.equal(r.endoso,387000,'Conserva capital, intereses y remanente');
 });
 test('Artículo 9 y DIAN independientes, con mismo concepto y año',()=>{
   const r=run([obligation('O1',1),obligation('O2',2)],[title('T1',5000000,'2026-08-09',{tasasPorObligacion:{O1:decreto.TIPO_1419.ART9,O2:'TASA DIAN'}})]);
