@@ -25,6 +25,7 @@ jobs:
           set -e
           python3 tests/ibc-certificado-265.py
           node tests/favorabilidad-2010-267.mjs
+          node tests/ley2155-art45-48-268.mjs
           node tests/alcance-favorabilidad-267.mjs
           node tests/decreto-688-50-266.mjs
           node tests/alcance-688-manual-266.mjs
