@@ -1,8 +1,9 @@
 import fs from 'node:fs';
+import {revertirCambios266} from './alcance-688-manual-266.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {importarDatosInteligente} from '../js/importador.js';
-const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n');
+const read=f=>revertirCambios266(fs.readFileSync(f,'utf8'),f);
 for(const f of ['js/motor-liquidacion.js','js/motor-liquidacion-base.js','js/motor-liquidacion-oficial.js','js/actualizacion-sancion.js','js/uvt-parametros.js','datos/uvt.json'])assert.equal(read(f),execFileSync('git',['show','36a90a5:'+f],{encoding:'utf8'}).replaceAll('\r\n','\n'),f+' conserva sus cálculos y datos');
 assert.doesNotMatch(read('liquidacion.html'),/id="(?:sancionMinima|beneficioSancion)"/);
 assert.doesNotMatch(read('js/app.js'),/actualizarSancionMinimaUI|beneficioSancion|estadoSancionUI\.beneficio/);

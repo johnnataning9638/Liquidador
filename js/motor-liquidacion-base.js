@@ -1,3 +1,4 @@
+import {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.122";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.122";
 
@@ -46,6 +47,12 @@ export class MotorLiquidacion{
     const regla=this.reglaObligacion(datos.concepto);
     const advertencias=[];
     const errores=[];
+    // Solo se valida la vigencia; la elegibilidad del contribuyente la decide el funcionario.
+    for(const pago of datos.pagos||[]){
+      if(esTipo68850(pago.tipo)&&Number(pago.valor)>0&&tasaIBC68850(fechaISO(pago.fecha))==null){
+        errores.push("DECRETO 688 — ART. 1 — 50% INTERÉS CORRIENTE: la fecha del pago debe estar entre 22/05/2020 y 30/11/2020. Se conserva la selección del funcionario; corrija la fecha o cambie el tipo.");
+      }
+    }
     const anio=Number(datos.anio||0);
     const vencimientos=this.normalizarVencimientos(datos);
     if(!regla){
@@ -355,8 +362,15 @@ export class MotorLiquidacion{
     // del 22/05 al 30/11/2020 se usa IBC consumo y ordinario certificado,
     // SIN alterar la tabla histórica de TIM. No aplica a fechas de corte sin pago.
     const f688=String(fechaPago||"").slice(0,10);
-    const ibc688={5:18.19,6:18.12,7:18.12,8:18.29,9:18.35,10:18.09,11:17.84};
+    const ibc688=IBC_688_POR_MES;
     const periodo688=f688>="2020-05-22"&&f688<="2020-11-30";
+    if(esTipo68850(t)){
+      const tasa=tasaIBC68850(f688);
+      return {tasa,factor:1,tasaFija:tasa,beneficio,
+        factorSancion:1,reduceSancion:false,requiereDato:tasa==null,aplicacionManual688:true,
+        nota:tasa==null?TIPO_688_50+": fecha fuera de vigencia 22/05/2020–30/11/2020"
+          :`${TIPO_688_50} · selección del funcionario · IBC ${ibc688[Number(f688.slice(5,7))].toFixed(2)}% E.A. × 50% = ${(tasa*100).toFixed(3)}% E.A. · pago ${f688}`};
+    }
     if(t==="TASA DIAN"&&periodo688){
       const porcentaje=ibc688[Number(f688.slice(5,7))];
       const tasa=porcentaje/100;

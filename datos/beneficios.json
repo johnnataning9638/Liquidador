@@ -151,5 +151,21 @@
       "Referencia observada en la hoja Tasa de Interés del Liquidador V9.5.2"
     ],
     "fuente": "Hoja Tasa de Interés del Liquidador V9.5.2 — nota ART. 93: SANCIONES OMISAS: 40% SANCION Y 40% INTERES"
+  },
+  {
+    "id": "DECRETO688_ART1_IBC50",
+    "nombre": "DECRETO 688 — ART. 1 — 50% INTERÉS CORRIENTE",
+    "estado": "HISTORICO_CERRADO",
+    "vigenciaDesde": "2020-05-22",
+    "fechaPagoHasta": "2020-11-30",
+    "efectoInteresFactorIBC": 0.5,
+    "efectoSancionFactor": 1,
+    "seleccion": "MANUAL_FUNCIONARIO",
+    "fuente": "Decreto Legislativo 688 de 2020, artículo 1, inciso segundo",
+    "fuente_url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_0688_2020.htm",
+    "condiciones": [
+      "Funcionario verifica condiciones del contribuyente; no se selecciona automáticamente",
+      "Pago entre 22/05/2020 y 30/11/2020, inclusive"
+    ]
   }
 ]

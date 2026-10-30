@@ -38,6 +38,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-uvt-263.mjs
       - name: Verificar retirada de controles y cuotas compactas DIAN TDJ
         run: TEST_SITE_DIR=dist node tests/navegador-retiro-campos-264.mjs
+      - name: Verificar selección manual 50% IBC DIAN TDJ PDF Excel y reimportación
+        run: TEST_SITE_DIR=dist node tests/navegador-688-50-266.mjs
       - name: Simular año nuevo central y caída de conexión sin desplegar
         run: TEST_SITE_DIR=dist node tests/navegador-futura-263.mjs
       - name: Probar importación, cálculo, PDF, Excel y limpieza

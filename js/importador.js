@@ -1,3 +1,4 @@
+import {TIPO_688_50,esTipo68850} from "./decreto-688-50.js?v=16.33.266";
 import {fechaISO,numeroDesdeTexto,truncarValorEntero} from "./utilidades.js";
 
 const norm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[º°]/g,"").replace(/[.\-_:]/g," ").replace(/\s+/g," ").trim();
@@ -211,6 +212,7 @@ function extraerTipoDesdeTexto(v){
   if(t.includes("ART. 91")||t.includes("ART 91"))return "ART. 91 LEY 2277";
   if(t.includes("ART. 93")||t.includes("ART 93"))return "ART. 93 LEY 2277 - OMISAS";
   if(t.includes("ART. 48")||t.includes("ART 48"))return "ART. 48 LEY 2155";
+  if(esTipo68850(t))return TIPO_688_50;
   if(t.includes("688 DE 2020"))return "ART. 1 DECRETO 688 DE 2020 - IBC";
   if(t.includes("0240")&&t.includes("ART. 4"))return "ART. 4 DECRETO 0240 DE 2026, OMISO- CORRECCION";
   if(t.includes("0240")&&t.includes("ART. 3"))return "ART. 3 DECRETO 0240 DE 2026";

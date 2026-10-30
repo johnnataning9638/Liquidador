@@ -1,3 +1,4 @@
+import {TIPO_688_50,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
 import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33.247';
 // TDJ v16.33.205 — TASAS INDIVIDUALES POR TÍTULO Y OBLIGACIÓN.
@@ -12,7 +13,7 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     "ART. 91 LEY 2277",
     "ART. 93 LEY 2277 - OMISAS",
     "ART. 48 LEY 2155",
-    "ART. 1 DECRETO 688 DE 2020 - IBC",
+    TIPO_688_50,
     "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
     "ART. 20 DECRETO 1474 DE 2025",
     "ART. 21 DECRETO 1474 DE 2025, OMISO- CORRECION",
@@ -137,6 +138,7 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     if(es("DECRETO 1474")&&es("ART. 21"))return 0;
     if(es("DECRETO 0240")&&es("ART. 3"))return 0.045;
     if(es("DECRETO 0240")&&es("ART. 4"))return 0;
+    if(t===TIPO_688_50)return tasaIBC68850(f);
     const row=filaTimVisualTDJ(f,tasasMoratorias);
     const tim=Number(row?.tasas?.["TASA DIAN"]);
     if(!Number.isFinite(tim))return null;

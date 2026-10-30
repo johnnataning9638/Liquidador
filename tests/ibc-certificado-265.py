@@ -54,11 +54,19 @@ def main():
         if index:
             assert dt.date.fromisoformat(rows[index-1]['hasta']) + dt.timedelta(days=1) == dt.date.fromisoformat(record['desde'])
 
-    # Integridad: esta incorporación de datos no modifica ningún motor ni tabla vigente.
+    # Neutralizar exclusivamente el beneficio manual autorizado 266 antes del control histórico.
+    patches = json.loads((ROOT / 'tests/fixtures/cambios-688-manual-266.json').read_text(encoding='utf-8'))
+    def historical(file):
+        text = (ROOT / file).read_text(encoding='utf-8')
+        for before, after in reversed(patches.get(file, [])):
+            assert text.count(after) == 1, file
+            text = text.replace(after, before, 1)
+        return text
+    # Integridad: la incorporación 265 no modificó ningún motor ni tabla vigente.
     for file in ['js/motor-liquidacion.js', 'js/motor-liquidacion-base.js', 'js/motor-liquidacion-oficial.js', 'datos/tasas-moratorias.json', 'datos/beneficios.json', 'datos/ipc.json', 'datos/uvt.json']:
         before = subprocess.check_output(['git', 'show', '9791324:' + file], cwd=ROOT).decode('utf-8').replace('\r\n', '\n')
-        assert (ROOT / file).read_text(encoding='utf-8') == before, file
-    code = (ROOT / 'js/motor-liquidacion-base.js').read_text(encoding='utf-8')
+        assert historical(file) == before, file
+    code = historical('js/motor-liquidacion-base.js')
     reduced = [Decimal(x) for x in re.search(r'const reducidas2021=\[([^]]+)', code).group(1).split(',')]
     ibc688 = {int(m): Decimal(v) for m, v in re.findall(r'(\d+):([\d.]+)', re.search(r'const ibc688=\{([^}]+)', code).group(1))}
     checked45 = checked688 = 0

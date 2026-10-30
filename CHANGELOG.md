@@ -1,3 +1,9 @@
+## 16.33.266 — 2026-10-29
+
+- Agregada opción manual DECRETO 688 — ART. 1 — 50% INTERÉS CORRIENTE en DIAN, pagos TDJ y títulos por obligación.
+- IBC certificado mensual × 50%, con precisión de 9,095% para mayo de 2020. Elegibilidad a cargo del funcionario; fechas válidas 22/05–30/11/2020.
+- Selección conservada al importar y exportar Excel; tipo y tasa visibles en PDF. Sin reducción de sanción ni aplicación automática del 50%; tratamiento general IBC, TIM y otros beneficios conservados.
+
 ## 16.33.265 — 2026-10-29
 
 - Incorporada tabla interna independiente de IBC de consumo y ordinario: 25 meses de diciembre de 2019 a diciembre de 2021, sin puntos adicionales ni descuentos.

@@ -1,7 +1,7 @@
 {
-  "version": "16.33.265",
-  "previousVersion": "16.33.264",
-  "baseCommit": "9791324b99e2c9a9683c1cb3809f943df15fce4a",
+  "version": "16.33.266",
+  "previousVersion": "16.33.265",
+  "baseCommit": "f5edb63e75a83e46e8bf32295426e948fd6e0cb6",
   "date": "2026-10-29",
-  "change": "Tabla interna IBC certificado: 25 meses 2019–2021 cotejados con SFC; motores y tratamientos actuales intactos"
+  "change": "Selección manual Decreto 688 art.1 al 50% del IBC en DIAN/TDJ; vigencia y recuperación Excel, sin reducción de sanción"
 }
