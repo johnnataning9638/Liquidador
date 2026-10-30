@@ -41,6 +41,10 @@
     [
       "    (r.detalle||[]).filter(x=>String(x.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")).forEach(x=>{",
       "    (r.detalle||[]).filter(x=>String(x.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\")).forEach(x=>{\n      push([\"ART. 48 LEY 2155 — PAGO AUTOMÁTICO\",x.pago?.fecha||\"\",\"TASA IBC\",x.tasaVisible==null?\"SEGÚN CUOTA\":Number(x.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",x.notaBeneficio]);\n    });\n    (r.detalle||[]).filter(x=>String(x.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")).forEach(x=>{"
+    ],
+    [
+      "    if(valid.errores.length)throw new Error(valid.errores.join(\" \"));",
+      "    if(valid.errores.length)throw new Error(valid.errores.join(\" \"));\n    const avisosArt48=(d.pagos||[]).filter(p=>Number(p.valor)>0).map(p=>({\n      pago:p,especial:motor.tasaEspecial(p.tipo,p.fecha,{vencimientos:d.vencimientos,valorPago:p.valor})\n    })).filter(x=>x.especial?.aplicacionAutomaticaArt48);\n    if(avisosArt48.length)alert(\"APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\\n\\n\"+\n      avisosArt48.map(x=>fechaVisible(x.pago.fecha)+\": \"+(x.especial.porCuota?\"TASA IBC SEGÚN CUOTA\":(x.especial.tasa*100).toFixed(2)+\"% EA\")).join(\"\\n\")+\n      \"\\n\\nSe usa el interés bancario corriente certificado para pagos dentro del 14/09/2021 al 31/03/2022 en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y requisitos de favorabilidad del expediente.\\n\\nPulse ACEPTAR para continuar.\");"
     ]
   ],
   "js/tdj-core-16.33.143.js": [
@@ -67,6 +71,10 @@
     [
       "      if(String(d?.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")){",
       "      if(String(d?.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\"))push([\"ART. 48 LEY 2155 — TDJ AUTOMÁTICO\",a.fecha||\"\",\"TASA IBC\",d.tasaVisible==null?\"SEGÚN CUOTA\":Number(d.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",d.notaBeneficio]);\n      if(String(d?.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")){"
+    ],
+    [
+      "    // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.",
+      "    const avisos48=obligaciones.flatMap(o=>[\n      ...(o.pagos||[]).map(p=>({o,p,tipo:p.tipo||\"TASA DIAN\"})),\n      ...titulos.map(t=>({o,p:t,tipo:tipoTasaTDJ(t,o)}))\n    ].filter(x=>Number(x.p?.valor)>0).map(x=>({...x,especial:motor.tasaEspecial(x.tipo,x.p.fecha,{vencimientos:o.vencimientos,valorPago:x.p.valor})}))\n      .filter(x=>x.especial?.aplicacionAutomaticaArt48)));\n    if(avisos48.length)alert(\"APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\\n\\n\"+\n      [...new Set(avisos48.map(x=>\"OBLIGACIÓN \"+x.o.numero+\" / \"+fechaVisible(x.p.fecha)+\": \"+(x.especial.porCuota?\"TASA IBC SEGÚN CUOTA\":(x.especial.tasa*100).toFixed(2)+\"% EA\")))].join(\"\\n\")+\n      \"\\n\\nIBC certificado para pagos y títulos del 14/09/2021 al 31/03/2022, únicamente en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y demás requisitos de favorabilidad del expediente.\\n\\nPulse ACEPTAR para continuar.\");\n    // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change."
     ]
   ],
   "js/tdj-visual-beneficios.js": [
