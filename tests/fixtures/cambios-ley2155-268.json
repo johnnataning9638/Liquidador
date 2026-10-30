@@ -25,18 +25,46 @@
     [
       "  \"ART. 48 LEY 2155\",\n  TIPO_688_50,\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\",",
       "  TIPO_688_50,\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\","
+    ],
+    [
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.267\";",
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.267\";",
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.267\";",
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.268\";"
     ]
   ],
   "js/tdj-core-16.33.143.js": [
     [
       "  \"ART. 48 LEY 2155\",TIPO_688_50,",
       "  TIPO_688_50,"
+    ],
+    [
+      "import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from \"./tdj-tasas-203.js?v=16.33.267\";",
+      "import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from \"./tdj-tasas-203.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.267\";",
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.268\";"
+    ],
+    [
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.267\";",
+      "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.268\";"
     ]
   ],
   "js/tdj-visual-beneficios.js": [
     [
       "    \"ART. 48 LEY 2155\",\n    TIPO_688_50,",
       "    TIPO_688_50,"
+    ],
+    [
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.267\";",
+      "import {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";"
     ]
   ],
   "js/motor-liquidacion-oficial.js": [
@@ -47,6 +75,26 @@
     [
       "        const anioMinima=Number(fechaSancion.slice(0,4))||Number(datos.anio||0);",
       "        const esArt45=String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\");\n        const anioMinima=esArt45?2021:(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));"
+    ],
+    [
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.267\";",
+      "import {MotorLiquidacion} from \"./motor-liquidacion.js?v=16.33.268\";"
+    ]
+  ],
+  "js/tdj.js": [
+    [
+      "import(\"./tdj-core-16.33.143.js?v=16.33.267\");",
+      "import(\"./tdj-core-16.33.143.js?v=16.33.268\");"
+    ],
+    [
+      "import(\"./tdj-visual-beneficios.js?v=16.33.267\");",
+      "import(\"./tdj-visual-beneficios.js?v=16.33.268\");"
+    ]
+  ],
+  "js/motor-liquidacion.js": [
+    [
+      "import {MotorLiquidacion as MotorLiquidacionBase} from \"./motor-liquidacion-base.js?v=16.33.267\";",
+      "import {MotorLiquidacion as MotorLiquidacionBase} from \"./motor-liquidacion-base.js?v=16.33.268\";"
     ]
   ]
 }
