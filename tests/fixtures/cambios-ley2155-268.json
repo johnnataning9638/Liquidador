@@ -7,6 +7,18 @@
     [
       "        const anioMinima=this.anioSancionParaMinima(datos,true);\n        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));",
       "        const esArt45=String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\");\n        const anioMinima=esArt45?2021:this.anioSancionParaMinima(datos,true);\n        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));"
+    ],
+    [
+      "import {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from \"./decreto-688-50.js?v=16.33.266\";",
+      "import {tasaArt48Automatico} from \"./ley2155-art48.js?v=16.33.268\";\nimport {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from \"./decreto-688-50.js?v=16.33.266\";"
+    ],
+    [
+      "    if(automatico?.aplicacionAutomatica2010)return {...automatico,factor:1,tasaFija:automatico.tasa,beneficio:null,factorSancion:1,reduceSancion:false};",
+      "    if(automatico?.aplicacionAutomatica2010)return {...automatico,factor:1,tasaFija:automatico.tasa,beneficio:null,factorSancion:1,reduceSancion:false};\n    const art48=tasaArt48Automatico(t,fechaPago,contexto);\n    if(art48?.aplicacionAutomaticaArt48)return {...art48,factor:1,tasaFija:art48.tasa,beneficio:null,factorSancion:1,reduceSancion:false};"
+    ],
+    [
+      "    if(es(\"ART. 48 LEY 2155\") || es(\"DECRETO 688 DE 2020\")){",
+      "    if(es(\"DECRETO 688 DE 2020\")){"
     ]
   ]
 }
