@@ -10,12 +10,12 @@ export function tasaArt48Automatico(tipo,fechaPago,contexto={}){
   const t=String(tipo||'TASA DIAN').trim().toUpperCase();
   if(t!=='TASA DIAN'&&t!=='ART. 48 LEY 2155')return null;
   const fecha=String(fechaPago||'').slice(0,10);
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fecha) || fecha<'2021-09-14'||fecha>'2022-03-31'||!(Number(contexto.valorPago)>0))return null;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha<'2021-09-14'||fecha>'2022-03-31'||!(Number(contexto.valorPago)>0))return null;
   const puntos=IBC_PUNTOS_BASICOS[fecha.slice(0,7)];
   if(!puntos)return null;
   const vencimientos=contexto.fechaVencimiento?[{fecha:contexto.fechaVencimiento,impuesto:1}]:
     (contexto.vencimientos||[]).filter(v=>Number(v.impuesto??v.saldo??0)>0);
-  const fechas=vencimientos.map(v=>String(v.fecha||'').slice(0,10)).filter(f=>/^\\d{4}-\\d{2}-\\d{2}$/.test(f));
+  const fechas=vencimientos.map(v=>String(v.fecha||'').slice(0,10)).filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f));
   if(!fechas.length)return null;
   const elegibles=fechas.filter(f=>f<='2021-06-30');
   if(!elegibles.length)return null;
