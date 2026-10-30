@@ -170,5 +170,11 @@
       "<script type=\"module\" src=\"js/tdj.js?v=16.33.267\"></script>",
       "<script type=\"module\" src=\"js/tdj.js?v=16.33.268\"></script>"
     ]
+  ],
+  "datos/beneficios.json": [
+    [
+      "  {\n    \"id\": \"LEY2155_ART48\",\n    \"nombre\": \"ART. 48 LEY 2155\",\n    \"estado\": \"HISTORICO_CERRADO\",\n    \"fuente\": \"Hoja Tasa de Interés del Liquidador V9.5.2\",\n    \"formula\": \"(TIM + 2%) / 1,5\"\n  },",
+      "  {\n    \"id\": \"LEY2155_ART48\",\n    \"nombre\": \"ART. 48 LEY 2155\",\n    \"estado\": \"HISTORICO_CERRADO\",\n    \"vigenciaDesde\": \"2021-09-14\",\n    \"fechaPagoHasta\": \"2022-03-31\",\n    \"fechaCorteObligacion\": \"2021-06-30\",\n    \"seleccion\": \"AUTOMATICA_POR_PAGO_Y_VENCIMIENTO\",\n    \"formula\": \"IBC certificado SFC consumo y ordinario vigente a la fecha del pago\",\n    \"condiciones\": [\n      \"Obligacion con merito ejecutivo a cargo al 30/06/2021, por verificar con expediente\",\n      \"Pago real entre 14/09/2021 y 31/03/2022\",\n      \"El vencimiento exigible al 30/06/2021 es el criterio conservador usado por el motor\",\n      \"Verificar demas requisitos de favorabilidad en etapa de cobro\"\n    ],\n    \"fuente\": \"Ley 2155 de 2021 art. 48 paragrafo 2; DIAN Comunicado 041 de 2022; SFC IBC certificado 2021 y 2022\"\n  },"
+    ]
   ]
 }
