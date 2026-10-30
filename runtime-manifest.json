@@ -67,7 +67,7 @@
     "js/importador-excel.js": "07646b3a040312e2efe13e95ceab0643b703a5555c4f4eb7970ebc80a047c785",
     "js/importador-obligacion.js": "6d4e18e5b790d21ed5ea252ade93ad91fcae7d753c467e077ec3290dbc81672f",
     "js/importador.js": "787baa1e68f0d4e8c3377486f1c452e195d6e0ae7995250692498224308bc955",
-    "js/motor-liquidacion-base.js": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a",
+    "js/motor-liquidacion-base.js": "896e549c12032a12533b5a55d4d90a8c1922c2a6247a534425c9d5982a39ba7e",
     "js/motor-liquidacion-oficial.js": "7f890dc816ab8dae1b1b723489862e006d99817ed89d4503fb7466c621c3b496",
     "js/motor-liquidacion.js": "d1f114a79beeceaef6b6c65779f079d7b142787c29c739e21641a5a3b584c151",
     "js/motor-normativo-historico.js": "a9b985ddfbe85aa9a470769a39c0e2cc1ae5b07b4290ccc53a47d168c1f96044",
@@ -145,9 +145,8 @@
       "previousReleaseHash": "9c1307bb6b59983c11d6ff63eeb948143de729636f917a76f1ba7c998611e75d"
     },
     "js/motor-liquidacion-base.js": {
-      "baselineHash": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "369804e07a7087b368f09599877b389011f26c6101f1e07493fb3f9fd6876677"
+      "baselineHash": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a",
+      "reason": "Corrección artículo 45 Ley 2155 (solo inclusión en reducción una vez; sanción mínima 2021) con fixture reversible y control de versión"
     },
     "js/motor-liquidacion-oficial.js": {
       "baselineHash": "7d6d51053cd4fc89c6d89253e499269f85750b9156dcce4a724763831ae6035a",
