@@ -1015,7 +1015,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       ...(o.pagos||[]).map(p=>({o,p,tipo:p.tipo||"TASA DIAN"})),
       ...titulos.map(t=>({o,p:t,tipo:tipoTasaTDJ(t,o)}))
     ].filter(x=>Number(x.p?.valor)>0).map(x=>({...x,especial:motor.tasaEspecial(x.tipo,x.p.fecha,{vencimientos:o.vencimientos,valorPago:x.p.valor})}))
-      .filter(x=>x.especial?.aplicacionAutomaticaArt48)));
+      .filter(x=>x.especial?.aplicacionAutomaticaArt48));
     if(avisos48.length)alert("APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\n\n"+
       [...new Set(avisos48.map(x=>"OBLIGACIÓN "+x.o.numero+" / "+fechaVisible(x.p.fecha)+": "+(x.especial.porCuota?"TASA IBC SEGÚN CUOTA":(x.especial.tasa*100).toFixed(2)+"% EA")))].join("\n")+
       "\n\nIBC certificado para pagos y títulos del 14/09/2021 al 31/03/2022, únicamente en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y demás requisitos de favorabilidad del expediente.\n\nPulse ACEPTAR para continuar.");
