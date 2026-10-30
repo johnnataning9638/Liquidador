@@ -69,7 +69,7 @@
     "js/importador-obligacion.js": "6d4e18e5b790d21ed5ea252ade93ad91fcae7d753c467e077ec3290dbc81672f",
     "js/importador.js": "787baa1e68f0d4e8c3377486f1c452e195d6e0ae7995250692498224308bc955",
     "js/motor-liquidacion-base.js": "310debcf20cd867075573c363ee68379f16c9cb5b749678f1a9aceaca89a852f",
-    "js/motor-liquidacion-oficial.js": "7f890dc816ab8dae1b1b723489862e006d99817ed89d4503fb7466c621c3b496",
+    "js/motor-liquidacion-oficial.js": "e11a890288430c39aba1d32b8503cccc8dc6c4383ea6c47614c7a6d447f2ccdf",
     "js/motor-liquidacion.js": "d1f114a79beeceaef6b6c65779f079d7b142787c29c739e21641a5a3b584c151",
     "js/motor-normativo-historico.js": "a9b985ddfbe85aa9a470769a39c0e2cc1ae5b07b4290ccc53a47d168c1f96044",
     "js/prioridad-tdj-v132.js": "3a8fda712cc0d4b145f2256bf0e44afae213e310aade155e1be88899c9169233",
@@ -152,8 +152,8 @@
     },
     "js/motor-liquidacion-oficial.js": {
       "baselineHash": "7d6d51053cd4fc89c6d89253e499269f85750b9156dcce4a724763831ae6035a",
-      "reason": "16.33.267: contexto de vencimiento y pago para IBC+2 automático; cálculo por cuota y vistas coherentes, cambios reversibles",
-      "previousReleaseHash": "2246dc0df98420dc367293c1ab0f5ea533b9b188e9342377e6d5e16f9f32fac9"
+      "reason": "16.33.268: Art.45 Ley 2155 sanción 20% oficial, mínima 2021; alcance reversible",
+      "previousReleaseHash": "7f890dc816ab8dae1b1b723489862e006d99817ed89d4503fb7466c621c3b496"
     },
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
