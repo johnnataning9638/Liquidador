@@ -1,7 +1,7 @@
 {
-  "version": "16.33.264",
-  "previousVersion": "16.33.263",
-  "baseCommit": "36a90a5b3ce1af4b834ff50e276f9c7668f98a29",
+  "version": "16.33.265",
+  "previousVersion": "16.33.264",
+  "baseCommit": "9791324b99e2c9a9683c1cb3809f943df15fce4a",
   "date": "2026-10-29",
-  "change": "Retirada de campos auxiliares de sanción en DIAN y TDJ; cuotas compactas, compatibilidad Excel y motores conservados"
+  "change": "Tabla interna IBC certificado: 25 meses 2019–2021 cotejados con SFC; motores y tratamientos actuales intactos"
 }

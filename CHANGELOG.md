@@ -1,3 +1,10 @@
+## 16.33.265 — 2026-10-29
+
+- Incorporada tabla interna independiente de IBC de consumo y ordinario: 25 meses de diciembre de 2019 a diciembre de 2021, sin puntos adicionales ni descuentos.
+- Cotejo exacto con certificado histórico oficial SFC: tasas, vigencias, fechas y resoluciones; huella SHA-256 y filas de origen conservadas.
+- Conciliadas 7 tasas IBC del Decreto 688 y 11 tasas reducidas del artículo 45 de la Ley 2155 con su redondeo vigente.
+- Motores y parámetros existentes sin cambios; esta versión no activa las nuevas reglas automáticas ni la selección del 50%. Supabase sin modificaciones.
+
 ## 16.33.264 — 2026-10-29
 
 - DIAN: retirados Sanción mínima del año y Beneficio sanción.
