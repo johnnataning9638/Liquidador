@@ -1,3 +1,4 @@
+import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
 import {TIPO_688_50,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
 import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33.247';
@@ -127,7 +128,7 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     });
   }
 
-  function tasaPorFechaLocal(fecha,tipo){
+  function tasaPorFechaLocal(fecha,tipo,contexto={}){
     const f=fechaISOVisual(fecha);
     const t=upper(tipo||"TASA DIAN");
     const es=needle=>t.includes(needle);
@@ -139,6 +140,8 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     if(es("DECRETO 0240")&&es("ART. 3"))return 0.045;
     if(es("DECRETO 0240")&&es("ART. 4"))return 0;
     if(t===TIPO_688_50)return tasaIBC68850(f);
+    const auto=favorabilidadAutomatica(t,f,contexto);
+    if(auto)return auto.tasa;
     const row=filaTimVisualTDJ(f,tasasMoratorias);
     const tim=Number(row?.tasas?.["TASA DIAN"]);
     if(!Number.isFinite(tim))return null;
@@ -171,7 +174,11 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
       actualizarMapaGlobal(titleId,index,tipo);
       box.title="TDJ fuera de ventanas Decreto 1419: hasta 09/08/2026 o 17/09/2026–19/11/2026. Se aplica TASA DIAN.";
     }
-    const tasa=tasaPorFechaLocal(fecha,tipo);
+    const card=obtenerObligaciones()[index];
+    const vencimientos=[...(card?.querySelectorAll('.cuotas-mini tbody tr')||[])].map(tr=>({fecha:fechaISOVisual(tr.querySelector('.fecha-campo')?.value),impuesto:Number(String(tr.querySelector('[data-v="impuesto"]')?.value||'').replace(/[^0-9-]/g,''))}));
+    const contexto={vencimientos,valorPago:Number(String(fila?.querySelector('[data-t="valor"]')?.value||'').replace(/[^0-9-]/g,''))};
+    const tasa=tasaPorFechaLocal(fecha,tipo,contexto);
+    if(favorabilidadAutomatica(tipo,fecha,contexto)?.porCuota){box.textContent="TASA: SEGÚN CUOTA";box.classList.remove("sin-datos");return;}
     // Solo referencia visual, nunca interés oficial inventado para meses no parametrizados.
     if(tasa==null && tipo==="TASA DIAN" && fecha){
       const ultima=referenciaTimTDJ(fecha,tasasMoratorias);

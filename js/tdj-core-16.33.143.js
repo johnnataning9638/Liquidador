@@ -2,12 +2,12 @@ import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.255";
 import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
-import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.205";
+import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.267";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.267";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.231";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.267";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.161";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
@@ -111,7 +111,7 @@ function campoFecha(id,value=""){
   const iso=fechaISO(value);
   return `<div class="fecha-dual"><input id="${esc(id)}" class="fecha-campo" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/aa o dd/mm/aaaa" value="${esc(fechaVisible(iso))}"><input id="${esc(id)}Picker" class="fecha-native" type="date" tabindex="-1" aria-label="Abrir calendario" title="Abrir calendario" value="${esc(iso)}"></div>`;
 }
-function tasaVisibleObligacionTDJ(tipo,fechaReferencia=""){
+function tasaVisibleObligacionTDJ(tipo,fechaReferencia="",o=null){
   const t=upper(tipo||"");
   if(!t){
     return {texto:"",tasa:null,nota:"SELECCIONE TASA"};
@@ -122,7 +122,9 @@ function tasaVisibleObligacionTDJ(tipo,fechaReferencia=""){
   }
   try{
     let tasa=null;
-    const especial=motor?.tasaEspecial(t,fecha);
+    const hayPago=[...(o?.pagos||[]),...titulos].some(p=>fechaISO(p.fecha)===fecha&&Number(p.valor)>0);
+    const especial=motor?.tasaEspecial(t,fecha,{vencimientos:o?.vencimientos,valorPago:hayPago?1:0});
+    if(especial?.porCuota)return {texto:"SEGÚN CUOTA",tasa:null,nota:especial.nota};
     tasa=especial?.tasa;
     if(tasa==null)tasa=motor?.tasaPorFecha(fecha,t);
     if(tasa==null && t!=="TASA DIAN")tasa=motor?.tasaPorFecha(fecha,"TASA DIAN");
@@ -154,7 +156,7 @@ function actualizarTasaObligacionUI(sec,o,fechaReferencia=""){
     campo.setAttribute("aria-label","SELECCIONE TASA");
     return;
   }
-  const info=tasaVisibleObligacionTDJ(tipo,fechaReferencia);
+  const info=tasaVisibleObligacionTDJ(tipo,fechaReferencia,o);
   campo.value=info.texto;
   campo.title=info.nota;
   campo.setAttribute("aria-label",info.nota);
@@ -262,7 +264,7 @@ function normalizarTasaTDJ(valor){
   // pero si una fuente externa entrega 27.24, normalizamos a decimal.
   return n>1 ? n/100 : n;
 }
-function tasaParaPagoTDJ(p){
+function tasaParaPagoTDJ(p,o=null){
   if(!p)return null;
   try{
     const tipo=upper(p.tipo||"TASA DIAN");
@@ -276,7 +278,9 @@ function tasaParaPagoTDJ(p){
     if(!fecha && !esFijaSinFecha)return null;
     let tasa=null;
     if(motor){
-      const especial=motor.tasaEspecial(tipo,fecha||"");
+      const contexto=o||obligaciones.find(x=>x.pagos?.some(y=>y.id&&y.id===p.id));
+      const especial=motor.tasaEspecial(tipo,fecha||"",{vencimientos:contexto?.vencimientos,valorPago:p.valor});
+      if(especial?.porCuota)return null;
       tasa=especial?.tasa;
       if(tasa==null && fecha)tasa=motor.tasaPorFecha(fecha,tipo);
       if(tasa==null && fecha && tipo!=="TASA DIAN") tasa=motor.tasaPorFecha(fecha,"TASA DIAN");
@@ -284,10 +288,17 @@ function tasaParaPagoTDJ(p){
     return normalizarTasaTDJ(tasa);
   }catch{return null;}
 }
+function textoTasaPagoTDJ(p,o=null){
+  const contexto=o||obligaciones.find(x=>x.pagos?.some(y=>y.id&&y.id===p?.id));
+  const info=motor?.tasaEspecial(p?.tipo,p?.fecha,{vencimientos:contexto?.vencimientos,valorPago:p?.valor});
+  if(info?.porCuota)return "SEGÚN CUOTA";
+  const tasa=tasaParaPagoTDJ(p,contexto);
+  return tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%";
+}
 function refrescarTasasPagos(){
   document.querySelectorAll('.pago-obligacion-card').forEach(sec=>{
     const o=obligaciones.find(x=>x.id===sec.dataset.id);if(!o)return;
-    sec.querySelectorAll('tbody tr').forEach((tr,i)=>{const p=o.pagos[i];if(!p)return;const celda=tr.querySelector('.tasa-pago');const tasa=tasaParaPagoTDJ(p);if(celda)celda.textContent=tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%";});
+    sec.querySelectorAll('tbody tr').forEach((tr,i)=>{const p=o.pagos[i];if(!p)return;const celda=tr.querySelector('.tasa-pago');const tasa=tasaParaPagoTDJ(p);if(celda)celda.textContent=textoTasaPagoTDJ(p,o);});
   });
 }
 
@@ -537,7 +548,7 @@ function renderPagosEn(sec,o){
   o.pagos.forEach((p,i)=>{
     const tr=document.createElement('tr');
     const tasa=tasaParaPagoTDJ(p);
-    tr.innerHTML=`<td class="numero-fila">${i+1}</td><td><input data-p="recibo" value="${esc(p.recibo||"")}" inputmode="numeric" placeholder="Nº RECIBO"></td><td>${campoFecha(`pago-${p.id}`,p.fecha)}</td><td><input data-p="valor" class="money" inputmode="numeric" value="${p.valor?dinero(p.valor):""}" placeholder="$ 0"></td><td><select data-p="tipo" tabindex="-1">${opcionesTipoTDJ(p.tipo||"TASA DIAN")}</select></td><td class="tasa-pago">${tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%"}</td><td><input data-p="observacion" value="${esc(upper(p.observacion||""))}" placeholder="OBSERVACIÓN" tabindex="-1"></td><td><button class="peligro" data-pdel tabindex="-1">Eliminar</button></td>`;
+    tr.innerHTML=`<td class="numero-fila">${i+1}</td><td><input data-p="recibo" value="${esc(p.recibo||"")}" inputmode="numeric" placeholder="Nº RECIBO"></td><td>${campoFecha(`pago-${p.id}`,p.fecha)}</td><td><input data-p="valor" class="money" inputmode="numeric" value="${p.valor?dinero(p.valor):""}" placeholder="$ 0"></td><td><select data-p="tipo" tabindex="-1">${opcionesTipoTDJ(p.tipo||"TASA DIAN")}</select></td><td class="tasa-pago">${textoTasaPagoTDJ(p,o)}</td><td><input data-p="observacion" value="${esc(upper(p.observacion||""))}" placeholder="OBSERVACIÓN" tabindex="-1"></td><td><button class="peligro" data-pdel tabindex="-1">Eliminar</button></td>`;
     tr.querySelectorAll('[data-p]').forEach(el=>el.addEventListener('change',()=>{
       const k=el.dataset.p;
       invalidarResultadoTDJ();
@@ -551,8 +562,14 @@ function renderPagosEn(sec,o){
       if(k==='tipo'){ordenarPagosCronologicamente(o);renderPagos();renderObligaciones();}
       else if(k==='recibo'||k==='observacion')p[k]=k==='observacion'?upper(el.value):String(el.value||'');
       if(k==='observacion')el.value=p[k];
+      if(k==='valor'){const celda=tr.querySelector('.tasa-pago');if(celda)celda.textContent=textoTasaPagoTDJ(p,o);}
     }));
-    montarFechaDual(tr.querySelector(`#pago-${p.id}`).parentElement,v=>{invalidarResultadoTDJ();p.fecha=v;if(esTipoDecreto1419(p.tipo))rechazarTipo1419TDJ(p.tipo,p,tr.querySelector('[data-p="tipo"]'),o);ordenarPagosCronologicamente(o);const tasaActual=tasaParaPagoTDJ(p);const celda=tr.querySelector('.tasa-pago');if(celda)celda.textContent=tasaActual==null?"SIN DATOS":(tasaActual*100).toFixed(3)+"%";});
+    tr.querySelector('[data-p="valor"]').addEventListener('input',e=>{
+      p.valor=truncarValorEntero(numeroDesdeTexto(e.target.value));
+      invalidarResultadoTDJ();
+      const celda=tr.querySelector('.tasa-pago');if(celda)celda.textContent=textoTasaPagoTDJ(p,o);
+    });
+    montarFechaDual(tr.querySelector(`#pago-${p.id}`).parentElement,v=>{invalidarResultadoTDJ();p.fecha=v;if(esTipoDecreto1419(p.tipo))rechazarTipo1419TDJ(p.tipo,p,tr.querySelector('[data-p="tipo"]'),o);ordenarPagosCronologicamente(o);const tasaActual=tasaParaPagoTDJ(p);const celda=tr.querySelector('.tasa-pago');if(celda)celda.textContent=textoTasaPagoTDJ(p,o);});
     tr.querySelector('[data-pdel]').addEventListener('click',()=>{invalidarResultadoTDJ();o.pagos=o.pagos.filter(x=>x.id!==p.id);ordenarPagosCronologicamente(o);renderPagos();});
     tbody.appendChild(tr);
     configurarTabPago(tr,tbody);
@@ -1766,7 +1783,7 @@ function construirFilasExcelTDJ(){
   push([]);
   push(["TASAS TDJ POR OBLIGACIÓN"],{title:true});
   push(["REGISTRO","Nº TDJ","TDJ","OBLIGACIÓN","ID OBLIGACIÓN","TIPO","TASA"],{header:true});
-  filasTasasTDJ(titulos,obligaciones,(tipo,fecha)=>tasaParaPagoTDJ({tipo,fecha})).forEach(r=>push(r,{percent:[7]}));
+  filasTasasTDJ(titulos,obligaciones,(tipo,fecha,o,t)=>tasaParaPagoTDJ({tipo,fecha,valor:t.valor},o)).forEach(r=>push(r,{percent:[7]}));
   push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
   push([]);
   push(["TÍTULOS / TDJ — CONTROL FINAL"],{title:true});push(["Nº","TDJ","FECHA","VALOR ORIGINAL","OBSERVACIÓN","APLICADO","SOBRANTE / ENDOSO"],{header:true});
@@ -2473,7 +2490,7 @@ function renderPanelesTasasIPC(){
     const filas=[...tasas].sort((a,b)=>String(a.desde||"").localeCompare(String(b.desde||"")));
     tbodyT.innerHTML=filas.map(t=>{
       const tasa=normalizarTasaTDJ(t?.tasas?.["TASA DIAN"]);
-      return `<tr><td>${esc(fechaVisible(t.desde||""))}</td><td>${esc(fechaVisible(t.hasta||""))}</td><td>${tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%"}</td><td>${esc(t.fuente||"LOCAL")}</td><td>${esc(t.norma||"—")}</td></tr>`;
+      return `<tr><td>${esc(fechaVisible(t.desde||""))}</td><td>${esc(fechaVisible(t.hasta||""))}</td><td>${textoTasaPagoTDJ(p,o)}</td><td>${esc(t.fuente||"LOCAL")}</td><td>${esc(t.norma||"—")}</td></tr>`;
     }).join("") || `<tr><td colspan="5">NO HAY TASAS DISPONIBLES.</td></tr>`;
   }
   if(tbodyI){

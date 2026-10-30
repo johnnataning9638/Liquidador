@@ -22,7 +22,7 @@ const app=fs.readFileSync('js/app.js','utf8');
 assert.match(app,/import \{esTituloDian,ajustarBeneficioTituloDian,tipoEfectivoTituloDian,filtrarReglasFechaTitulo1419\}/);
 assert.match(app,/sincronizarPagosDesdeDOM\(\)/);
 assert.match(app,/if\(ajustarBeneficioTituloDian\(p\)\)/);
-assert.match(app,/motor\.tasaEspecial\(tipoEfectivoTituloDian\(p\),p\.fecha\)/);
+assert.match(app,/motor\.tasaEspecial\(tipoEfectivoTituloDian\(p\),p\.fecha,\{vencimientos:obligacionVencimientos,valorPago:p\.valor\}\)/);
 assert.match(app,/filtrarReglasFechaTitulo1419\(validarSeleccion1419\(/);
 const html=fs.readFileSync('liquidacion.html','utf8');
 assert.match(html, /js\/app\.js\?v=16\.33\.(?:2(?:0[7-9]|[1-9][0-9])|[3-9][0-9]{2})/, 'La página DIAN debe cargar una versión 207 o superior');

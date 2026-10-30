@@ -1,10 +1,11 @@
+import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.231";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.267";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.267";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
@@ -549,14 +550,15 @@ function renderCalendario(){
 
 function tasaParaPago(p){
   if(!motor||!p.fecha)return null;
-  return motor.tasaEspecial(tipoEfectivoTituloDian(p),p.fecha)?.tasa??null;
+  return motor.tasaEspecial(tipoEfectivoTituloDian(p),p.fecha,{vencimientos:obligacionVencimientos,valorPago:p.valor})?.tasa??null;
 }
 function actualizarTasaVisiblePago(tr,p){
   if(!tr)return;
   const celda=tr.children?.[6];
   if(!celda)return;
   const tasa=tasaParaPago(p);
-  celda.textContent=tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%";
+  const auto=favorabilidadAutomatica(tipoEfectivoTituloDian(p),p.fecha,{vencimientos:obligacionVencimientos,valorPago:p.valor});
+  celda.textContent=auto?.porCuota?"SEGÚN CUOTA":tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%";
 }
 function renderPagos(){
   const tbody=$("tablaPagos").querySelector("tbody");tbody.innerHTML="";
@@ -569,6 +571,7 @@ function renderPagos(){
         const k=el.dataset.k;
         if(k==="valor"){
           p.valor=truncarValorEntero(numeroDesdeTexto(el.value));
+          actualizarTasaVisiblePago(tr,p);
         }
         else if(k==="tipo"){
           const tipoNuevo=upper(el.value);

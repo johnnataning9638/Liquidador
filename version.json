@@ -1,7 +1,7 @@
 {
-  "version": "16.33.266",
-  "previousVersion": "16.33.265",
-  "baseCommit": "f5edb63e75a83e46e8bf32295426e948fd6e0cb6",
+  "version": "16.33.267",
+  "previousVersion": "16.33.266",
+  "baseCommit": "7a1bf116454b2239d4163e3690e75bc06e5e5032",
   "date": "2026-10-29",
-  "change": "Selección manual Decreto 688 art.1 al 50% del IBC en DIAN/TDJ; vigencia y recuperación Excel, sin reducción de sanción"
+  "change": "Favorabilidad Ley 2010 IBC+2 automática por pago y vencimiento; tasa 20,91% en caso abc, coherencia UI/PDF/Excel y Decreto 688"
 }

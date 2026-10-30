@@ -1,3 +1,4 @@
+import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
 import {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.122";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.122";
@@ -352,12 +353,14 @@ export class MotorLiquidacion{
    * fuera de la ventana legal, porque este formulario permite hacer una
    * liquidación bajo el criterio escogido por el liquidador.
    */
-  tasaEspecial(tipo,fechaPago){
+  tasaEspecial(tipo,fechaPago,contexto={}){
     const t=String(tipo||"TASA DIAN").trim().toUpperCase();
     const tim=this.tasaPorFecha(fechaPago,"TASA DIAN");
     const beneficio=this.beneficioPorTipo(t);
     const redondear4=n=>Math.round(Number(n)*10000)/10000;
     const es=needle=>t.includes(needle);
+    const automatico=favorabilidadAutomatica(t,fechaPago,contexto);
+    if(automatico?.aplicacionAutomatica2010)return {...automatico,factor:1,tasaFija:automatico.tasa,beneficio:null,factorSancion:1,reduceSancion:false};
     // Decreto 688/2020, art. 1: para pagos normales con TASA DIAN dentro
     // del 22/05 al 30/11/2020 se usa IBC consumo y ordinario certificado,
     // SIN alterar la tabla histórica de TIM. No aplica a fechas de corte sin pago.
@@ -810,7 +813,7 @@ export class MotorLiquidacion{
 
         if(v.saldo>0 && pago.fecha>v.fecha){
           const tipoInteres=String(pago.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419")&&String(v.fecha)>"2026-08-10"?"TASA DIAN":pago.tipo;
-          const especial=this.tasaEspecial(tipoInteres,pago.fecha);
+          const especial=this.tasaEspecial(tipoInteres,pago.fecha,{fechaVencimiento:v.fecha,valorPago:pago.valor});
 
           if(especial.requiereDato){
             tramoVto=[{
@@ -976,7 +979,7 @@ export class MotorLiquidacion{
     }
 
     for(const pago of pagos){
-      const especial=this.tasaEspecial(pago.tipo,pago.fecha);
+      const especial=this.tasaEspecial(pago.tipo,pago.fecha,{vencimientos:this.normalizarVencimientos(datos),valorPago:pago.valor});
       // Trazabilidad de actualización de sanción específica de este pago.
       // Se conserva separada del acumulado general para que PDF y Excel
       // puedan mostrar exactamente dónde, cuándo y cuánto se actualizó.
@@ -1256,7 +1259,7 @@ export class MotorLiquidacion{
         detalle.push({
           pago,
           tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,
-          tasaVisible:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,
+          tasaVisible:especial.porCuota?null:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,
           tipoAplicado:pago.tipo||"TASA DIAN",
           beneficio:especial.beneficio?.id||null,
           notaBeneficio:especial.nota,
@@ -1460,7 +1463,7 @@ export class MotorLiquidacion{
         tasa:especial.tasa==null
           ?this.tasaPorFecha(pago.fecha,"TASA DIAN")
           :especial.tasa,
-        tasaVisible:especial.tasa==null
+        tasaVisible:especial.porCuota?null:especial.tasa==null
           ?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100
           :Number(especial.tasa)*100,
         tipoAplicado:pago.tipo||"TASA DIAN",

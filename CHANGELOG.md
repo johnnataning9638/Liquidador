@@ -1,3 +1,9 @@
+## 16.33.267 — 2026-10-29
+
+- Aplicación automática Ley 2010 art.120 par.2: pagos reales 27/12/2019–21/05/2020 sobre vencimientos anteriores al 27/12/2019, usando IBC certificado + 2 puntos.
+- Caso abc: 20,910%, intereses 352.000 y excedente 2.648.000; redondeo e imputación conservados.
+- Vista TDJ alineada con IBC general del Decreto 688; se conserva el 50% exclusivamente manual. Tasas por cuota en obligaciones mixtas, sin inferir elegibilidad por el año gravable.
+
 ## 16.33.266 — 2026-10-29
 
 - Agregada opción manual DECRETO 688 — ART. 1 — 50% INTERÉS CORRIENTE en DIAN, pagos TDJ y títulos por obligación.

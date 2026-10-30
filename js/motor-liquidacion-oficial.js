@@ -1,5 +1,5 @@
 import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.122";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.231";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.267";
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -188,7 +188,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         let valor=0,tramoVto=[];
         if(v.saldo>0&&pago.fecha>v.fecha){
           const tipoInteres=String(pago.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419")&&String(v.fecha)>"2026-08-10"?"TASA DIAN":pago.tipo;
-          const especial=this.tasaEspecial(tipoInteres,pago.fecha);
+          const especial=this.tasaEspecial(tipoInteres,pago.fecha,{fechaVencimiento:v.fecha,valorPago:pago.valor});
           if(especial.requiereDato){
             tramoVto=[{vto:v.id,base:Number(v.saldo||0),valor:null,metodologia:"BENEFICIO_REQUIERE_IBC",advertencia:"El tratamiento seleccionado requiere IBC histórico; no se sustituye por la TIM."}];
           }else if(especial.tasa!=null&&Number(especial.tasa)===0){
@@ -232,7 +232,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     }
 
     for(const pago of pagos){
-      const especial=this.tasaEspecial(pago.tipo,pago.fecha);
+      const especial=this.tasaEspecial(pago.tipo,pago.fecha,{vencimientos:this.normalizarVencimientos(datos),valorPago:pago.valor});
       const actualizacionSancionPago={aplicada:false,fechaPago:pago.fecha,saldoAntes:roundMil(saldoSancion),saldoDespues:roundMil(saldoSancion),actualizacionTotal:0,tramos:[],eventos:[]};
       const intCalc=calcularInteresesAntesPago(pago);
       // REGLA DE IMPUTACIÓN DE SANCIÓN — RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS):
@@ -351,7 +351,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
         detalle.push({
           pago,
           tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,
-          tasaVisible:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,
+          tasaVisible:especial.porCuota?null:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,
           tipoAplicado:pago.tipo||"TASA DIAN",
           beneficio:especial.beneficio?.id||null,
           notaBeneficio:especial.nota,
@@ -416,7 +416,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const aplicado={impuesto:Math.round(aplicadoImpuesto),intereses:Math.round(aplicadoIntereses),sancion:Math.round(aplicadoSancion),total:Math.round(aplicadoImpuesto+aplicadoIntereses+aplicadoSancion),excedente:0,porcentaje:Number(aplicacionGlobal.porcentaje||0),tipoProporcion:aplicacionGlobal.tipoProporcion||"POR VENCIMIENTO"};
       const excedente=Math.max(0,Number(pago.valor||0)-aplicado.total);excedenteTotal+=excedente;aplicado.excedente=excedente;
       actualizacionSancionPago.saldoDespues=roundMil(saldoSancion);
-      detalle.push({pago,tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,tasaVisible:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,tipoAplicado:pago.tipo||"TASA DIAN",beneficio:especial.beneficio?.id||null,notaBeneficio:especial.nota,interesGenerado:intCalc.liquidado,interesLiquidado:intCalc.liquidado,tramosInteres:intCalc.tramos,interesesPorCuota,deudaAntes,aplicado,excedente,aplicacionesVto,actualizacionSancion:actualizacionSancionPago,saldo:{impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0)+saldoIntereses+Math.max(0,saldoSancion)}});
+      detalle.push({pago,tasa:especial.tasa==null?this.tasaPorFecha(pago.fecha,"TASA DIAN"):especial.tasa,tasaVisible:especial.porCuota?null:especial.tasa==null?Number(this.tasaPorFecha(pago.fecha,"TASA DIAN")||0)*100:Number(especial.tasa)*100,tipoAplicado:pago.tipo||"TASA DIAN",beneficio:especial.beneficio?.id||null,notaBeneficio:especial.nota,interesGenerado:intCalc.liquidado,interesLiquidado:intCalc.liquidado,tramosInteres:intCalc.tramos,interesesPorCuota,deudaAntes,aplicado,excedente,aplicacionesVto,actualizacionSancion:actualizacionSancionPago,saldo:{impuesto:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0),intereses:saldoIntereses,sancion:Math.max(0,saldoSancion),total:saldosVto.reduce((a,v)=>a+Math.max(0,v.saldo),0)+saldoIntereses+Math.max(0,saldoSancion)}});
     }
 
     let detalleFechaCorte=null;

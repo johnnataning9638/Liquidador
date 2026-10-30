@@ -58,6 +58,10 @@ def main():
     patches = json.loads((ROOT / 'tests/fixtures/cambios-688-manual-266.json').read_text(encoding='utf-8'))
     def historical(file):
         text = (ROOT / file).read_text(encoding='utf-8')
+        patches267 = json.loads((ROOT / 'tests/fixtures/cambios-favorabilidad-267.json').read_text(encoding='utf-8'))
+        for before, after in reversed(patches267.get(file, [])):
+            assert text.count(after) == 1, file
+            text = text.replace(after, before, 1)
         for before, after in reversed(patches.get(file, [])):
             assert text.count(after) == 1, file
             text = text.replace(after, before, 1)
