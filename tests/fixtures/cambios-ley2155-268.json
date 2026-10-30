@@ -23,8 +23,8 @@
   ],
   "js/app.js": [
     [
-      "  \"ART. 48 LEY 2155\",\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\",",
-      "  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\","
+      "  \"ART. 48 LEY 2155\",\n  TIPO_688_50,\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\",",
+      "  TIPO_688_50,\n  \"ART. 120 LEY 2010 2018 PARAG 3- IBC+2\","
     ]
   ],
   "js/tdj-core-16.33.143.js": [
