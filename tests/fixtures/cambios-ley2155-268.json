@@ -96,5 +96,67 @@
       "import {MotorLiquidacion as MotorLiquidacionBase} from \"./motor-liquidacion-base.js?v=16.33.267\";",
       "import {MotorLiquidacion as MotorLiquidacionBase} from \"./motor-liquidacion-base.js?v=16.33.268\";"
     ]
+  ],
+  "index.html": [
+    [
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.267\">",
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.268\">"
+    ],
+    [
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.267'\">ABRIR LIQUIDADOR →</button></div>",
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.268'\">ABRIR LIQUIDADOR →</button></div>"
+    ],
+    [
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.267'\">ABRIR TÍTULOS / TDJ →</button></div>",
+      "        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.268'\">ABRIR TÍTULOS / TDJ →</button></div>"
+    ]
+  ],
+  "liquidacion.html": [
+    [
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.267\">",
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.268\">"
+    ],
+    [
+      "<footer>Liquidador — versión 16.33.267, con TIM e IPC centralizados y alertas informativas</footer>",
+      "<footer>Liquidador — versión 16.33.268, con TIM e IPC centralizados y alertas informativas</footer>"
+    ],
+    [
+      "<script type=\"module\" src=\"js/app.js?v=16.33.267\"></script>",
+      "<script type=\"module\" src=\"js/app.js?v=16.33.268\"></script>"
+    ]
+  ],
+  "titulos.html": [
+    [
+      "<!-- TDJ UI DEPLOY 16.33.267 -->",
+      "<!-- TDJ UI DEPLOY 16.33.268 -->"
+    ],
+    [
+      "    if(v && v!==\"16.33.267\"){",
+      "    if(v && v!==\"16.33.268\"){"
+    ],
+    [
+      "      u.searchParams.set(\"v\",\"16.33.267\");",
+      "      u.searchParams.set(\"v\",\"16.33.268\");"
+    ],
+    [
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.267\">",
+      "<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.268\">"
+    ],
+    [
+      "<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.267\" media=\"screen and (max-width:650px)\">",
+      "<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.268\" media=\"screen and (max-width:650px)\">"
+    ],
+    [
+      "<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.267</footer>",
+      "<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.268</footer>"
+    ],
+    [
+      "    window.location.href=\"titulos.html?v=16.33.267&reinicio=\"+Date.now();",
+      "    window.location.href=\"titulos.html?v=16.33.268&reinicio=\"+Date.now();"
+    ],
+    [
+      "<script type=\"module\" src=\"js/tdj.js?v=16.33.267\"></script>",
+      "<script type=\"module\" src=\"js/tdj.js?v=16.33.268\"></script>"
+    ]
   ]
 }
