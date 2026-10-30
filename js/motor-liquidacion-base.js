@@ -1074,8 +1074,10 @@ export class MotorLiquidacion{
       if(!primerBeneficioDecretoUsado && especial.reduceSancion &&
          (String(pago.tipo||"").toUpperCase().includes("ART. 20 DECRETO 1474") ||
           String(pago.tipo||"").toUpperCase().includes("ART. 3 DECRETO 0240") ||
+          String(pago.tipo||"").toUpperCase().includes("ART. 45 LEY 2155") ||
           String(pago.tipo||"").toUpperCase().includes("ART. 9 DECRETO 1419")) && saldoSancion>0){
-        const anioMinima=this.anioSancionParaMinima(datos,true);
+        const esArt45=String(pago.tipo||"").toUpperCase().includes("ART. 45 LEY 2155");
+        const anioMinima=esArt45?2021:this.anioSancionParaMinima(datos,true);
         const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));
         const saldoActualizado=Number(saldoSancion||0);
         const reducido=roundMil(saldoActualizado*Number(especial.factorSancion||0.15));
