@@ -184,7 +184,7 @@ function montarFechaDual(root,onChange=()=>{}){
 function nuevoVto(numero=1){return {id:uid("VTO"),numero,periodo:numero,fecha:"",impuesto:0};}
 function nuevaObligacion(numero){
   return {
-    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"",tipoTasaConfirmada:false,
+    id:uid("OBL"),numero,concepto:"",anio:"",periodo:"",tipoLiquidacion:"PRIVADA",fechaAutoAdmisorio:"",fechaProvidenciaDefinitiva:"",tieneSancion:"NO",valorSancion:0,fechaSancion:"",beneficioTributario:"NINGUNO",tipoTasa:"",tipoTasaConfirmada:false,
     vencimientos:[nuevoVto(1)],pagos:[],importacion:""
   };
 }
@@ -335,33 +335,6 @@ function rechazarTipo1419TDJ(tipo,pago,select,o,{esTitulo=false}={}){
   return true;
 }
 
-function valorSancionConBeneficioTDJ(o){
-  const base=Math.max(0,Number(o?.valorSancion||0));
-  if(upper(o?.beneficioSancion)!=="CON BENEFICIO"||!base)return 0;
-  const pagos=[...(o?.pagos||[])].filter(p=>p?.tipo).sort((a,b)=>String(a.fecha||"9999-12-31").localeCompare(String(b.fecha||"9999-12-31")));
-  // Si todavía no existe un pago con tratamiento especial, mostrar de inmediato
-  // el valor base. Así el campo "VALOR SANCIÓN CON BENEFICIO" nunca queda vacío
-  // al seleccionar CON BENEFICIO. Cuando exista el pago aplicable, se calcula la
-  // reducción y se respeta la sanción mínima correspondiente.
-  for(const p of pagos){
-    try{
-      const esp=motor?.tasaEspecial(p.tipo,p.fecha||hoyISO());
-      if(esp?.reduceSancion){
-        const minima=Math.max(0,Number(motor?.sancionMinima(Number((o.fechaSancion||o.vencimientos?.[0]?.fecha||"").slice(0,4))||o.anio)||0));
-        return Math.min(base,Math.max(Math.round(base*Number(esp.factorSancion||1)/1000)*1000,minima));
-      }
-    }catch{}
-  }
-  return base;
-}
-function actualizarValorBeneficioUI(sec,o){
-  const el=sec?.querySelector('[data-k="valorSancionBeneficio"]');
-  if(!el)return;
-  const v=valorSancionConBeneficioTDJ(o);
-  el.value=v?dinero(v):"";
-  el.disabled=upper(o?.beneficioSancion)!=="CON BENEFICIO";
-}
-
 function actualizarSelectoresImportacion(){
   const selects=[$("destinoImportacionObligacion"),$("destinoImportacionPagos")].filter(Boolean);
   selects.forEach(sel=>{
@@ -384,8 +357,6 @@ function renderObligaciones(){
         <label>SANCIÓN<select data-k="tieneSancion"><option value="NO">NO</option><option value="SI">SÍ</option></select></label>
         <label>VALOR SANCIÓN<input data-k="valorSancion" class="money" inputmode="numeric" value="${o.valorSancion?dinero(o.valorSancion):""}" placeholder="$ 0"></label>
         <label>FECHA SANCIÓN ${campoFecha(`fs-${o.id}`,o.fechaSancion)}</label>
-        <label>BENEFICIO SANCIÓN<select data-k="beneficioSancion"><option value="">SELECCIONE...</option><option>CON BENEFICIO</option><option>SIN BENEFICIO</option></select></label>
-        <label>VALOR SANCIÓN CON BENEFICIO<input data-k="valorSancionBeneficio" class="money" readonly value="" placeholder="$ 0"></label>
         <label class="tdj-tasa-obligacion" hidden>TIPO DE TASA<select data-k="tipoTasa">${opcionTipoObligacionTDJ(o.tipoTasa||"TASA DIAN")}</select></label>
         <label class="tdj-tasa-obligacion" hidden>TASA<input data-tasa-obligacion class="money" readonly value="" placeholder="SELECCIONE TASA"></label>
       </div>
@@ -395,22 +366,21 @@ function renderObligaciones(){
     root.appendChild(sec);
     sec.querySelector('[data-k="concepto"]').value=o.concepto||"";
     sec.querySelector('[data-k="tieneSancion"]').value=o.tieneSancion||"NO";
-    sec.querySelector('[data-k="beneficioSancion"]').value=o.beneficioSancion||"";
     sec.querySelector('[data-k="tipoTasa"]').value=o.tipoTasa||"";
     sec.querySelectorAll('[data-k]').forEach(el=>el.addEventListener("change",()=>{
-      syncObligacion(sec,o);actualizarValorBeneficioUI(sec,o);invalidarResultadoTDJ();
+      syncObligacion(sec,o);invalidarResultadoTDJ();
       if(el.dataset.k==="tipoTasa"){
         o.tipoTasaConfirmada=true;
         refrescarTasasObligacionesTDJ();
       }
     }));
     const campoValorSancion=sec.querySelector('[data-k="valorSancion"]');
-    campoValorSancion.addEventListener("input",e=>{o.valorSancion=numeroDesdeTexto(e.target.value);actualizarValorBeneficioUI(sec,o);});
-    campoValorSancion.addEventListener("blur",e=>{o.valorSancion=numeroDesdeTexto(e.target.value);e.target.value=o.valorSancion?dinero(o.valorSancion):"";actualizarValorBeneficioUI(sec,o);});
+    campoValorSancion.addEventListener("input",e=>{o.valorSancion=numeroDesdeTexto(e.target.value);});
+    campoValorSancion.addEventListener("blur",e=>{o.valorSancion=numeroDesdeTexto(e.target.value);e.target.value=o.valorSancion?dinero(o.valorSancion):"";});
     const fs=sec.querySelector(`#fs-${o.id}`); if(fs) montarFechaDual(fs.parentElement,v=>o.fechaSancion=v);
     sec.querySelector('[data-action="eliminar"]').addEventListener("click",()=>{if(obligaciones.length===1)return alert("Debe existir al menos una obligación.");obligaciones=obligaciones.filter(x=>x.id!==o.id);renderObligaciones();renderPagos();});
     sec.querySelector('[data-action="agregar-cuota"]').addEventListener("click",()=>{o.vencimientos.push(nuevoVto(o.vencimientos.length+1));renderObligaciones();});
-    renderCuotasEn(sec,o);actualizarCamposSancion(sec,o);actualizarValorBeneficioUI(sec,o);actualizarTasaObligacionUI(sec,o);actualizarVisibilidadTasasObligacionesTDJ();
+    renderCuotasEn(sec,o);actualizarCamposSancion(sec,o);actualizarTasaObligacionUI(sec,o);actualizarVisibilidadTasasObligacionesTDJ();
   });
   actualizarSelectoresImportacion();
 }
@@ -428,7 +398,7 @@ function renderPagos(){
   actualizarSelectoresImportacion();
 }
 function syncObligacion(sec,o){sec.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;if(k==="valorSancion")o[k]=numeroDesdeTexto(el.value);else o[k]=k==="anio"?Number(el.value||0):upper(el.value);});actualizarCamposSancion(sec,o);}
-function actualizarCamposSancion(sec,o){const si=sec.querySelector('[data-k="tieneSancion"]')?.value==="SI";["valorSancion","fechaSancion","beneficioSancion"].forEach(k=>{const el=sec.querySelector(`[data-k="${k}"]`)||sec.querySelector(`#fs-${o.id}`);if(el)el.disabled=!si;});}
+function actualizarCamposSancion(sec,o){const si=sec.querySelector('[data-k="tieneSancion"]')?.value==="SI";["valorSancion","fechaSancion"].forEach(k=>{const el=sec.querySelector(`[data-k="${k}"]`)||sec.querySelector(`#fs-${o.id}`);if(el)el.disabled=!si;});}
 function configurarTabCuota(tr,tbody){
   // FLUJO DE CAPTURA SOLICITADO:
   // FECHA VENCIMIENTO -> IMPORTE/IMPUESTO -> FECHA VENCIMIENTO SIGUIENTE -> IMPORTE/IMPUESTO...
@@ -608,7 +578,7 @@ async function importarObligacionGlobal(){
     if(obj.concepto)o.concepto=CONCEPTOS.find(x=>upper(x)===upper(obj.concepto))||"OTROS";if(obj.anio)o.anio=Number(obj.anio);if(obj.periodo&&Number(obj.periodo)>=1&&Number(obj.periodo)<=12)o.periodo=String(Number(obj.periodo));
     if(obj.nit&&!$("nitGlobal").value)$("nitGlobal").value=obj.nit;if(obj.razonSocial&&!$("razonGlobal").value)$("razonGlobal").value=upper(obj.razonSocial);
     if(Array.isArray(obj.cuotas)&&obj.cuotas.length)o.vencimientos=obj.cuotas.map((x,i)=>({id:uid("VTO"),numero:i+1,periodo:String(i+1),fecha:fechaISO(x.fecha)||"",impuesto:Number(x.impuesto||0)}));
-    if(obj.tieneSancion)o.tieneSancion=upper(obj.tieneSancion);if(obj.valorSancion!=null)o.valorSancion=Number(obj.valorSancion||0);if(obj.fechaSancion)o.fechaSancion=fechaISO(obj.fechaSancion);if(obj.beneficioSancion)o.beneficioSancion=upper(obj.beneficioSancion);
+    if(obj.tieneSancion)o.tieneSancion=upper(obj.tieneSancion);if(obj.valorSancion!=null)o.valorSancion=Number(obj.valorSancion||0);if(obj.fechaSancion)o.fechaSancion=fechaISO(obj.fechaSancion);
     $("resultadoImportacionObligacionTDJ").textContent=`Importación asignada a OBLIGACIÓN ${o.numero}${obj.cuotas?.length?` · ${obj.cuotas.length} cuota(s) reconocida(s)`:""}.`;$("importarObligacionTexto").value="";renderObligaciones();
   }catch(e){setStatus("LISTO","ok");alert(e.message||"No fue posible procesar la importación.");}
 }
@@ -878,7 +848,7 @@ function conceptoMotor(concepto){
 }
 function datosMotor(o,pagos,fechaCorte,opciones={}){
   const fechaSancion=o.fechaSancion||o.vencimientos[0]?.fecha||"";
-  return {__tdjContextoExplicito203:true,obligacionId:o.id,__tdjObligacionId:o.id,__tdjObligacionIndex:obligaciones.findIndex(x=>x.id===o.id),nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:upper($("razonGlobal").value),anio:Number(o.anio),concepto:conceptoMotor(o.concepto),periodo:o.periodo,tipoLiquidacion:upper(o.tipoLiquidacion||"PRIVADA"),fechaAutoAdmisorio:o.fechaAutoAdmisorio||"",fechaProvidenciaDefinitiva:o.fechaProvidenciaDefinitiva||"",fechaCorte:fechaCorte||hoyISO(),vencimientos:o.vencimientos,tieneSancion:o.tieneSancion,valorSancion:Number(o.valorSancion||0),fechaSancion,fechaPresentacionDeclaracion1419:fechaSancion,beneficioSancion:o.beneficioSancion||"",beneficioTributario:o.beneficioTributario||"NINGUNO",permitirBeneficioFueraVigencia:Boolean(opciones.permitirBeneficioFueraVigencia),pagos};
+  return {__tdjContextoExplicito203:true,obligacionId:o.id,__tdjObligacionId:o.id,__tdjObligacionIndex:obligaciones.findIndex(x=>x.id===o.id),nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:upper($("razonGlobal").value),anio:Number(o.anio),concepto:conceptoMotor(o.concepto),periodo:o.periodo,tipoLiquidacion:upper(o.tipoLiquidacion||"PRIVADA"),fechaAutoAdmisorio:o.fechaAutoAdmisorio||"",fechaProvidenciaDefinitiva:o.fechaProvidenciaDefinitiva||"",fechaCorte:fechaCorte||hoyISO(),vencimientos:o.vencimientos,tieneSancion:o.tieneSancion,valorSancion:Number(o.valorSancion||0),fechaSancion,fechaPresentacionDeclaracion1419:fechaSancion,beneficioTributario:o.beneficioTributario||"NINGUNO",permitirBeneficioFueraVigencia:Boolean(opciones.permitirBeneficioFueraVigencia),pagos};
 }
 function motorParaObligacion(o){
   return upper(o?.tipoLiquidacion||"PRIVADA")==="OFICIAL" && motorOficial ? motorOficial : motor;
@@ -1697,8 +1667,8 @@ function construirFilasExcelTDJ(){
     push([`OBLIGACIÓN ${idx+1} — LIQUIDACIÓN NORMAL`],{title:true});
     push(["TIPO DE LIQUIDACIÓN","FECHA AUTO ADMISORIO","FECHA PROVIDENCIA DEFINITIVA"],{header:true});
     push([upper(o.tipoLiquidacion||"PRIVADA"),o.fechaAutoAdmisorio||"",o.fechaProvidenciaDefinitiva||""]);
-    push(["CONCEPTO","AÑO","PERÍODO","SANCIÓN","VALOR SANCIÓN","BENEFICIO SANCIÓN","FECHA SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
-    push([upper(o.concepto),o.anio,o.periodo||"",o.tieneSancion||"NO",o.valorSancion||0,o.beneficioSancion||"",o.fechaSancion||"",o.beneficioTributario||"NINGUNO"],{money:[5]});push([]);
+    push(["CONCEPTO","AÑO","PERÍODO","SANCIÓN","VALOR SANCIÓN","RESERVADO","FECHA SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
+    push([upper(o.concepto),o.anio,o.periodo||"",o.tieneSancion||"NO",o.valorSancion||0,"",o.fechaSancion||"",o.beneficioTributario||"NINGUNO"],{money:[5]});push([]);
     push(["VENCIMIENTOS / SALDOS"],{title:true});push(["Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO","SALDO FINAL BASE"],{header:true});
     (base.vencimientos||o.vencimientos||[]).forEach((v,i)=>push([i+1,v.periodo||i+1,v.fecha,v.impuesto||0,v.saldo||0],{money:[4,5]}));push([]);
     push(["PAGOS REGISTRADOS — LIQUIDACIÓN NORMAL"],{title:true});push(["Nº","RECIBO","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
@@ -1783,8 +1753,8 @@ function construirFilasExcelTDJ(){
   push(["FORMATO","TDJ_RECOVERY_V1"]);
   obligaciones.forEach((o,oi)=>{
     push(["OBLIGACIÓN",oi+1,"TIPO DE LIQUIDACIÓN",upper(o.tipoLiquidacion||"PRIVADA"),"FECHA AUTO ADMISORIO",o.fechaAutoAdmisorio||"","FECHA PROVIDENCIA DEFINITIVA",o.fechaProvidenciaDefinitiva||""]);
-    push(["DATOS OBLIGACIÓN","CONCEPTO","AÑO","PERÍODO","TIENE SANCIÓN","VALOR SANCIÓN","FECHA SANCIÓN","BENEFICIO SANCIÓN","BENEFICIO TRIBUTARIO","TIPO DE TASA"],{header:true});
-    push(["",upper(o.concepto||""),o.anio||"",o.periodo??"",upper(o.tieneSancion||"NO"),truncarValorEntero(o.valorSancion||0),o.fechaSancion||"",upper(o.beneficioSancion||""),upper(o.beneficioTributario||"NINGUNO"),upper(o.tipoTasa||"TASA DIAN")],{money:[6]});
+    push(["DATOS OBLIGACIÓN","CONCEPTO","AÑO","PERÍODO","TIENE SANCIÓN","VALOR SANCIÓN","FECHA SANCIÓN","RESERVADO","BENEFICIO TRIBUTARIO","TIPO DE TASA"],{header:true});
+    push(["",upper(o.concepto||""),o.anio||"",o.periodo??"",upper(o.tieneSancion||"NO"),truncarValorEntero(o.valorSancion||0),o.fechaSancion||"","",upper(o.beneficioTributario||"NINGUNO"),upper(o.tipoTasa||"TASA DIAN")],{money:[6]});
     push(["VENCIMIENTOS","Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO"],{header:true});
     (o.vencimientos||[]).forEach((v,i)=>push(["",i+1,v.periodo??i+1,v.fecha||"",truncarValorEntero(v.impuesto||0)],{money:[5]}));
     push(["PAGOS","Nº","TDJ Nº","RECIBO Nº","FECHA","VALOR","TIPO","OBSERVACIÓN"],{header:true});
@@ -2759,7 +2729,6 @@ async function importarExcelTDJ(){
           o.periodo=v[2]??"";
           o.tieneSancion=upper(v[3]||"NO").startsWith("SI")?"SI":"NO";
           o.valorSancion=truncarValorEntero(numExcel(v[4]));
-          o.beneficioSancion=upper(v[5]||"");
           o.fechaSancion=fechaCampoTDJImport(v[6]);
           o.beneficioTributario=upper(v[7]||"NINGUNO");
 

@@ -1,7 +1,7 @@
 {
-  "version": "16.33.263",
-  "previousVersion": "16.33.262",
-  "baseCommit": "b4a66480a66ced8797eacb5e2b87238a214df43a",
-  "date": "2026-10-28",
-  "change": "UVT y sanciones mínimas centrales 1988–2026; actualización anual automática DIAN, cron seguro y respaldo verificado"
+  "version": "16.33.264",
+  "previousVersion": "16.33.263",
+  "baseCommit": "36a90a5b3ce1af4b834ff50e276f9c7668f98a29",
+  "date": "2026-10-29",
+  "change": "Retirada de campos auxiliares de sanción en DIAN y TDJ; cuotas compactas, compatibilidad Excel y motores conservados"
 }

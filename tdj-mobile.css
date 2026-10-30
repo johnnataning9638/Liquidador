@@ -504,7 +504,7 @@
   }
 
   /* CONCEPTO / IMPUESTO, AÑO, PERÍODO, SANCIÓN, VALOR SANCIÓN,
-     FECHA SANCIÓN, BENEFICIO Y VALOR CON BENEFICIO quedan separados. */
+     FECHA SANCIÓN quedan separados. */
 
   /* Los dos campos de tasa TAMBIÉN se muestran y quedan uno debajo del otro. */
   .obligation-fields > label.tdj-tasa-obligacion,

@@ -25,8 +25,8 @@ try{
  for(const cached of [false,true]){
   offline=cached;
   await p.goto('http://127.0.0.1:26300/liquidacion.html',{waitUntil:'networkidle'});
-  await p.locator('#tieneSancion').selectOption('SI');await p.locator('#beneficioSancion').selectOption('CON BENEFICIO');await set('#anio','2027');
-  assert.equal((await p.locator('#sancionMinima').inputValue()).replace(/\D/g,''),'551000',cached?'Respaldo de UVT verificada':'Año nuevo desde tabla central sin desplegar');
+  await p.locator('#tieneSancion').selectOption('SI');await set('#anio','2027');
+  assert.equal(await p.evaluate(async()=>{const {cargarUVTConRespaldo}=await import('./js/uvt-parametros.js');return (await cargarUVTConRespaldo()).find(x=>x.anio===2027)?.sancionMinima;}),551000,cached?'Respaldo de UVT verificada':'Año nuevo desde tabla central sin desplegar');
  }
  assert.ok(calls>=2);assert.deepEqual(errors,[]);
  console.log('UVT FUTURA 263 OK: año 2027 simulado desde Supabase, activación por fecha y caché ante caída; sin agregar datos ficticios a producción');

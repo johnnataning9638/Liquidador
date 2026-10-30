@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {importarDatosInteligente} from '../js/importador.js';
+const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n');
+for(const f of ['js/motor-liquidacion.js','js/motor-liquidacion-base.js','js/motor-liquidacion-oficial.js','js/actualizacion-sancion.js','js/uvt-parametros.js','datos/uvt.json'])assert.equal(read(f),execFileSync('git',['show','36a90a5:'+f],{encoding:'utf8'}).replaceAll('\r\n','\n'),f+' conserva sus cálculos y datos');
+assert.doesNotMatch(read('liquidacion.html'),/id="(?:sancionMinima|beneficioSancion)"/);
+assert.doesNotMatch(read('js/app.js'),/actualizarSancionMinimaUI|beneficioSancion|estadoSancionUI\.beneficio/);
+assert.doesNotMatch(read('js/tdj-core-16.33.143.js'),/valorSancionConBeneficioTDJ|actualizarValorBeneficioUI|beneficioSancion|valorSancionBeneficio/);
+assert.doesNotMatch(read('js/importador.js'),/beneficioSancion/);
+const legacy=importarDatosInteligente('NIT: 900000001\nAño gravable: 2023\nConcepto: RENTA\nTiene sanción: SI\nValor sanción: 2500000\nFecha sanción: 01/01/2023\nBeneficio sanción: CON BENEFICIO');
+assert.equal(legacy.obligacion?.valorSancion??legacy.valorSancion,2500000,'Dato anterior de sanción conserva valor');
+assert.equal('beneficioSancion' in (legacy.obligacion??legacy),false,'El dato retirado se ignora al importar');
+console.log('RETIRO 264 OK: campos y lógica exclusiva eliminados; motores, actualización IPC y UVT idénticos a 263');

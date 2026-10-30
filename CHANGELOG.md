@@ -1,3 +1,10 @@
+## 16.33.264 — 2026-10-29
+
+- DIAN: retirados Sanción mínima del año y Beneficio sanción.
+- TDJ: retirados Beneficio sanción y Valor sanción con beneficio; cuotas inmediatamente debajo de los campos principales.
+- Eliminadas funciones, eventos y estado exclusivos de estos controles. Los archivos Excel conservan las posiciones heredadas mediante columnas reservadas vacías e ignoran el dato retirado al importar.
+- Sin cambios en motores, reglas por pago, IPC, TIM ni datos y actualización automática UVT en Supabase.
+
 ## 16.33.263 — 2026-10-28
 
 - Histórico oficial de sanción mínima ampliado de 21 a 39 años (1988–2026), con los 21 importes previos idénticos y sin inventar UVT anteriores a 2006.

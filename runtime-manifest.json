@@ -1,5 +1,5 @@
 {
-  "version": "16.33.263",
+  "version": "16.33.264",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -57,13 +57,13 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "dd3d7d4bc504ed3db58c0ca32eead71b33188713f0b2a153f67b90784d3427e2",
+    "js/app.js": "2cdab5b518375ea52e62552fadeb9d8e4016c786431777dee8773ce31cd15975",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
     "js/importador-excel.js": "07646b3a040312e2efe13e95ceab0643b703a5555c4f4eb7970ebc80a047c785",
     "js/importador-obligacion.js": "6d4e18e5b790d21ed5ea252ade93ad91fcae7d753c467e077ec3290dbc81672f",
-    "js/importador.js": "33bb0580f7bdb8ecd6afcda22821aefca9fc080dcd57519665a4da811fecb38a",
+    "js/importador.js": "5d5bc127dd2cd6f7dcc692f34c96bcc1e5d7a98043d564341000579578963754",
     "js/motor-liquidacion-base.js": "9324e17a5e627a4f43bb7ac399abe69d921e6ebebd90d3d3b3a2999449efafdf",
     "js/motor-liquidacion-oficial.js": "2246dc0df98420dc367293c1ab0f5ea533b9b188e9342377e6d5e16f9f32fac9",
     "js/motor-liquidacion.js": "9c1307bb6b59983c11d6ff63eeb948143de729636f917a76f1ba7c998611e75d",
@@ -72,7 +72,7 @@
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "1c2f25ba88b1e3adf1a0488a29ba8aabe4e08ad47f91bae78717d242b1db6c28",
+    "js/tdj-core-16.33.143.js": "7801aea2b2a5c89cdf69a2ae6247664a880a1e44bfbbf814ca44f84fb4b38bb4",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",
@@ -95,13 +95,13 @@
   "authorizedPresentationChanges": {
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.263: fuente central UVT con respaldo y control de año faltante; pruebas reversibles, motores intactos",
-      "previousReleaseHash": "e8fc14ba91785dfc876f42b5e9ce44e808d334300e7459e7da52a388e1b3f68e"
+      "reason": "16.33.264: retirada autorizada de controles de sanción y vista previa; motores y parámetros intactos",
+      "previousReleaseHash": "dd3d7d4bc504ed3db58c0ca32eead71b33188713f0b2a153f67b90784d3427e2"
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
-      "reason": "16.33.263: fuente central UVT con respaldo y control de año faltante; pruebas reversibles, motores intactos",
-      "previousReleaseHash": "5e3f8f63a4f5c7188892ba970c61616f6017338629890cb3d223078a256730ce"
+      "reason": "16.33.264: retirada autorizada de controles de sanción y vista previa; motores y parámetros intactos",
+      "previousReleaseHash": "1c2f25ba88b1e3adf1a0488a29ba8aabe4e08ad47f91bae78717d242b1db6c28"
     },
     "js/tdj-pegado-unico-209.js": {
       "baselineHash": "f2633e7de992c4825ed13d0b7dbfbdedbcd036584652829b35f0182b488db785",
@@ -122,6 +122,10 @@
     "js/tdj-pdf-cierre-16.33.189.js": {
       "baselineHash": "81201dabb9997d5221f6556bf2569d5ca11c5066e6bce3b3d68e642f87f848f8",
       "reason": "16.33.249: cierre PDF TDJ sin titulos ni movimientos, saldos existentes y cache de presentacion; sin cambios en motores"
+    },
+    "js/importador.js": {
+      "baselineHash": "33bb0580f7bdb8ecd6afcda22821aefca9fc080dcd57519665a4da811fecb38a",
+      "reason": "16.33.264: ignorar el campo retirado al importar; conservar fechas, valores y beneficios por pago"
     }
   },
   "authorizedCalculationChanges": {
