@@ -1,4 +1,4 @@
-import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.231";
+import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.267";
 
 const iso=v=>String(v||"").slice(0,10);
 const n=v=>Math.max(0,Number(v||0));
@@ -45,8 +45,8 @@ export class MotorLiquidacion extends MotorLiquidacionBase{
     try{return super.calcular(datos);}
     finally{this._tdjSancionContext=null;this._art9PendingByKey=null;this._art9Minima=0;this._art9Prepass=false;}
   }
-  tasaEspecial(tipo,fechaPago){
-    const especial=super.tasaEspecial(tipo,fechaPago);
+  tasaEspecial(tipo,fechaPago,contexto={}){
+    const especial=super.tasaEspecial(tipo,fechaPago,contexto);
     if(!esArt9(tipo))return especial;
     if(this._art9Prepass){
       return {...especial,reduceSancion:false,factorSancion:1,

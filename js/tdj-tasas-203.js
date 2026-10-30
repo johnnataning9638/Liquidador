@@ -24,7 +24,7 @@ export function tipoTasaTDJ(t,o){
 export function filasTasasTDJ(titulos,obligaciones,tasaPara){
   return titulos.flatMap(t=>obligaciones.map(o=>{
     const tipo=tipoTasaTDJ(t,o);
-    return ['TASA TDJ',t.numero,t.tdj,o.numero,o.id,tipo,tasaPara(tipo,t.fecha)];
+    return ['TASA TDJ',t.numero,t.tdj,o.numero,o.id,tipo,tasaPara(tipo,t.fecha,o,t)];
   }));
 }
 export function recuperarTasasTDJ(rows,titulos,obligaciones){
