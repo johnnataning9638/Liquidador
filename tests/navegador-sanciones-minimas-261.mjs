@@ -33,24 +33,15 @@ try{
   assert.equal(new URL(p.url()).searchParams.get('v'),version,'Guardia conserva la versión publicada');
   const loaded=await p.evaluate(async()=>{const r=await fetch('datos/uvt.json',{cache:'no-store'});if(!r.ok)throw Error('UVT HTTP '+r.status);return (await r.json()).filter(x=>x.anio>=2006).map(x=>[x.anio,x.sancionMinima]);});
   assert.deepEqual(loaded,valores,'Datos reales cargados por '+(tdj?'TDJ':'DIAN'));
-  if(tdj){
-   await p.locator('[data-k="tieneSancion"]').selectOption('SI');await set('[data-k="valorSancion"]','1000000');await p.locator('[data-k="beneficioSancion"]').selectOption('CON BENEFICIO');
-   await p.locator('[data-tab="pagos"]').click();if(!await p.locator('.pagos-mini tbody tr').count())await p.locator('[data-action="agregar-pago"]').click();
-   await set('.pagos-mini .fecha-campo','15/03/2026');await p.locator('[data-p="tipo"]').selectOption('ART. 3 DECRETO 0240 DE 2026');
-   await p.locator('[data-tab="datos"]').click();
-  }else{
-   await p.locator('#tieneSancion').selectOption('SI');await p.locator('#beneficioSancion').selectOption('CON BENEFICIO');
-  }
+  const minimas=await p.evaluate(async()=>{const {MotorLiquidacion}=await import('./js/motor-liquidacion.js');const {cargarUVTConRespaldo}=await import('./js/uvt-parametros.js');const uvt=await cargarUVTConRespaldo();const motor=new MotorLiquidacion({uvt});return Object.fromEntries(uvt.map(x=>[x.anio,motor.sancionMinima(x.anio)]));});
   for(const [year,expected]of valores){
-   if(tdj){await set('.obligacion-card .compact-grid .fecha-campo',`01/01/${year}`);await set('[data-k="anio"]',String(year));}
-   else await set('#anio',String(year));
-   const actual=money(await p.locator(tdj?'[data-k="valorSancionBeneficio"]':'#sancionMinima').inputValue());
-   assert.equal(actual,expected,`${tdj?'TDJ beneficio':'DIAN mínima'} ${year}`);
+   const actual=minimas[year];
+   assert.equal(actual,expected,`${tdj?'TDJ':'DIAN'} mínima interna ${year}`);
    results.push({module:tdj?'TDJ':'DIAN',year,value:actual});
   }
   await p.screenshot({path:path.join(output,tdj?'tdj-2026.png':'dian-2026.png'),fullPage:true});
  }
  assert.deepEqual(errors,[],'Sin errores JavaScript');assert.deepEqual(dialogs,[],'Sin alertas inesperadas');
  await fs.writeFile(path.join(output,'resultado.json'),JSON.stringify({version,base,results,errors,dialogs},null,2));
- console.log(JSON.stringify({estado:'OK',version,controlesUI:results.length,errors}));
+ console.log(JSON.stringify({estado:'OK',version,controlesMotor:results.length,errors}));
 }finally{await b.close();}

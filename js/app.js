@@ -43,7 +43,7 @@ let ultimaLiquidacion=null;
 let obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
 let limpiando=false;
 // Estado de interfaz: conserva sanción y pagos mientras el funcionario navega entre pestañas.
-let estadoSancionUI={tiene:"",valor:"",fecha:"",beneficio:""};
+let estadoSancionUI={tiene:"",valor:"",fecha:""};
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const upper=v=>String(v??"").trim().toUpperCase();
@@ -418,7 +418,6 @@ function leerFormulario(){
     valorSancion:numeroDesdeTexto($("valorSancion").value),
     fechaSancion:fechaISO($("fechaSancion").value),
     fechaPresentacionDeclaracion1419:fechaISO($("fechaSancion").value||""),
-    beneficioSancion:upper($("beneficioSancion").value),
     beneficioTributario:upper($("beneficioTributario")?.value||"NINGUNO"),
     beneficioEscenario:upper($("beneficioTributario")?.value||"").replace("D0240_ART4_","").replace("_"," "),
     fechaActuacionBeneficio:fechaISO($("fechaActuacionBeneficio")?.value),
@@ -614,8 +613,7 @@ function capturarSancionUI(){
   estadoSancionUI={
     tiene:tiene.value||"",
     valor:$("valorSancion")?.value||"",
-    fecha:$("fechaSancion")?.value||"",
-    beneficio:$("beneficioSancion")?.value||""
+    fecha:$("fechaSancion")?.value||""
   };
 }
 function restaurarSancionUI(){
@@ -625,29 +623,6 @@ function restaurarSancionUI(){
   if($("valorSancion") && estadoSancionUI.valor)$("valorSancion").value=estadoSancionUI.valor;
   if($("fechaSancion") && estadoSancionUI.fecha)$("fechaSancion").value=estadoSancionUI.fecha;
   if($("fechaSancionPicker") && estadoSancionUI.fecha){const iso=fechaISO(estadoSancionUI.fecha);if(iso)$("fechaSancionPicker").value=iso;}
-  if($("beneficioSancion"))$("beneficioSancion").value=estadoSancionUI.beneficio;
-}
-function actualizarSancionMinimaUI(){
-  const campo=$("sancionMinima");
-  if(!campo)return;
-  const tiene=upper($("tieneSancion")?.value||"");
-  const beneficio=upper($("beneficioSancion")?.value||"");
-  const anio=Number($("anio")?.value||0);
-  const fechaS=fechaISO($("fechaSancion")?.value||"");
-  const usaAnioFechaSancion=(pagos||[]).some(p=>{
-    const t=upper(p?.tipo||"");
-    return t.includes("ART. 20 DECRETO 1474")||t.includes("ART. 3 DECRETO 0240");
-  });
-  const anioMinimo=(usaAnioFechaSancion && Number(fechaS.slice(0,4))) || anio;
-  // Para Art. 20 D.1474 y Art. 3 D.0240, la sanción mínima se consulta
-  // con el año de la fecha de sanción. Para los demás tratamientos se
-  // conserva el año gravable de la obligación.
-  if(motor && tiene==="SI" && beneficio==="CON BENEFICIO" && Number.isInteger(anioMinimo) && anioMinimo>0){
-    const v=Number(motor.sancionMinima(anioMinimo)||0);
-    campo.value=v?dinero(v):"";
-  }else{
-    campo.value="";
-  }
 }
 function sincronizarTipoLiquidacionConSancion(){
   const tiene=upper($("tieneSancion")?.value||"");
@@ -671,7 +646,6 @@ function sincronizarTipoLiquidacionConSancion(){
   }
 
   actualizarCamposTipoLiquidacion();
-  actualizarSancionMinimaUI();
 }
 
 function habilitarSancion(){
@@ -684,9 +658,7 @@ function habilitarSancion(){
     const el=$(id);
     if(el)el.disabled=!haySancion;
   });
-  if($("beneficioSancion"))$("beneficioSancion").disabled=false;
   sincronizarTipoLiquidacionConSancion();
-  actualizarSancionMinimaUI();
   capturarSancionUI();
 }
 
@@ -1260,8 +1232,8 @@ function exportarExcel(){
     push(["OBLIGACIÓN 1 — LIQUIDACIÓN NORMAL"],{title:true});
     push(["TIPO DE LIQUIDACIÓN","FECHA AUTO ADMISORIO","FECHA PROVIDENCIA DEFINITIVA"],{header:true});
     push([upper(d.tipoLiquidacion||"PRIVADA"),d.fechaAutoAdmisorio||"",d.fechaProvidenciaDefinitiva||""]);
-    push(["CONCEPTO","AÑO","PERÍODO","SANCIÓN","VALOR SANCIÓN","BENEFICIO SANCIÓN","FECHA SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
-    push([upper(d.concepto||""),d.anio||"",d.periodo??"",upper(d.tieneSancion||"NO"),truncarValorEntero(d.valorSancion||0),upper(d.beneficioSancion||""),d.fechaSancion||"",upper(d.beneficioTributario||"NINGUNO")],{money:[5]});
+    push(["CONCEPTO","AÑO","PERÍODO","SANCIÓN","VALOR SANCIÓN","RESERVADO","FECHA SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
+    push([upper(d.concepto||""),d.anio||"",d.periodo??"",upper(d.tieneSancion||"NO"),truncarValorEntero(d.valorSancion||0),"",d.fechaSancion||"",upper(d.beneficioTributario||"NINGUNO")],{money:[5]});
     push(["VENCIMIENTOS / SALDOS"],{title:true});
     push(["Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO","SALDO FINAL BASE"],{header:true});
     (Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]).forEach((v,i)=>{
@@ -1294,8 +1266,8 @@ function exportarExcel(){
     push(["RECUPERACIÓN COMPLETA — DATOS DE TRABAJO (NO MODIFICAR)"],{title:true});
     push(["FORMATO","LIQUIDADOR_RECOVERY_V1"]);
     push(["OBLIGACIÓN",1,"TIPO DE LIQUIDACIÓN",d.tipoLiquidacion||"PRIVADA","FECHA AUTO ADMISORIO",d.fechaAutoAdmisorio||"","FECHA PROVIDENCIA DEFINITIVA",d.fechaProvidenciaDefinitiva||""]);
-    push(["DATOS OBLIGACIÓN","NIT","RAZÓN SOCIAL","AÑO GRAVABLE","CONCEPTO","PERÍODO","FECHA VENCIMIENTO PARA DECLARAR","TIENE SANCIÓN","VALOR SANCIÓN","FECHA SANCIÓN","BENEFICIO SANCIÓN","BENEFICIO TRIBUTARIO"],{header:true});
-    push(["",d.nit||"",d.razonSocial||"",d.anio||"",d.concepto||"",d.periodo??"",d.fechaVencimientoDeclarar||"",d.tieneSancion||"NO",truncarValorEntero(d.valorSancion||0),d.fechaSancion||"",d.beneficioSancion||"",d.beneficioTributario||"NINGUNO"],{money:[9]});
+    push(["DATOS OBLIGACIÓN","NIT","RAZÓN SOCIAL","AÑO GRAVABLE","CONCEPTO","PERÍODO","FECHA VENCIMIENTO PARA DECLARAR","TIENE SANCIÓN","VALOR SANCIÓN","FECHA SANCIÓN","RESERVADO","BENEFICIO TRIBUTARIO"],{header:true});
+    push(["",d.nit||"",d.razonSocial||"",d.anio||"",d.concepto||"",d.periodo??"",d.fechaVencimientoDeclarar||"",d.tieneSancion||"NO",truncarValorEntero(d.valorSancion||0),d.fechaSancion||"","",d.beneficioTributario||"NINGUNO"],{money:[9]});
     push(["VENCIMIENTOS","Nº","PERÍODO","FECHA VENCIMIENTO","IMPUESTO DECLARADO"],{header:true});
     (Array.isArray(obligacionVencimientos)?obligacionVencimientos:[]).forEach((v,i)=>push(["",i+1,v.periodo??i+1,v.fecha||"",truncarValorEntero(v.impuesto||0)],{money:[5]}));
     push(["PAGOS","Nº","TDJ Nº","RECIBO Nº","FECHA","VALOR","TIPO","OBSERVACIÓN"],{header:true});
@@ -1820,7 +1792,7 @@ async function limpiarDatosPestanaNormal(){
   if(limpiando)return;
   limpiando=true;
   try{
-    estadoSancionUI={tiene:"",valor:"",fecha:"",origen:"",beneficio:""};
+    estadoSancionUI={tiene:"",valor:"",fecha:"",origen:""};
     const sancion=$("tieneSancion");
     if(sancion){sancion.value="";delete sancion.dataset.tabValue;}
     document.querySelectorAll('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea').forEach(el=>{
@@ -1830,7 +1802,6 @@ async function limpiarDatosPestanaNormal(){
       else if(!el.readOnly)el.value="";
     });
     obligacionVencimientos=[{id:"VTO-1",numero:1,periodo:1,fecha:"",impuesto:0}];
-    if($("sancionMinima"))$("sancionMinima").value="";
     renderMetadatosConcepto();renderVencimientos();habilitarSancion();renderCalendario();renderBeneficio();
   }finally{limpiando=false;}
 }
@@ -1857,7 +1828,7 @@ async function limpiar(){
   // estado usado por las pestañas: HTMLFormElement.reset() o limpiar
   // valores no restablece por sí solo la propiedad disabled de los controles.
   // Esto evita que una obligación anterior deje bloqueados los campos de sanción.
-  estadoSancionUI={tiene:"",valor:"",fecha:"",origen:"",beneficio:""};
+  estadoSancionUI={tiene:"",valor:"",fecha:"",origen:""};
   const sancion=$("tieneSancion");
   if(sancion){sancion.value="";delete sancion.dataset.tabValue;}
   document.querySelectorAll("input,select,textarea").forEach(el=>{
@@ -1867,7 +1838,6 @@ async function limpiar(){
   });
   // Estado inicial: el funcionario puede elegir SI o NO. Al elegir SI,
   // habilitarSancion() sincroniza el bloqueo con la selección de sanción.
-  if($("sancionMinima"))$("sancionMinima").value="";
   renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("detalleCalculo").innerHTML="";
   ["rSaldoImpuestoIndicador","rSaldoSancionIndicador","rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotalFooter"].forEach(id=>{const el=$(id);if(el)el.textContent=dinero(0);});
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
@@ -1893,7 +1863,6 @@ function aplicarImportacion(obj){
   if(obj.tieneSancion)$("tieneSancion").value=upper(obj.tieneSancion)==="SI"?"SI":"NO";
   if(obj.valorSancion)$("valorSancion").value=dinero(obj.valorSancion);
   if(obj.fechaSancion){const iso=fechaISO(obj.fechaSancion);$("fechaSancion").value=fechaVisible(iso);if($("fechaSancionPicker"))$("fechaSancionPicker").value=iso;}
-  if(obj.beneficioSancion)$("beneficioSancion").value=upper(obj.beneficioSancion);
   if(obj.beneficioTributario&&$("beneficioTributario"))$("beneficioTributario").value=upper(obj.beneficioTributario);
   if(obj.fechaActuacionBeneficio&&$("fechaActuacionBeneficio"))$("fechaActuacionBeneficio").value=fechaVisible(obj.fechaActuacionBeneficio);
   if(obj.fechaDeclaracionOriginal&&$("fechaDeclaracionOriginal"))$("fechaDeclaracionOriginal").value=fechaVisible(obj.fechaDeclaracionOriginal);
@@ -2083,7 +2052,7 @@ async function importarExcelNormal(){
       const end=marcas.length>1?marcas[1]:rows.length;
       const seg=start>=0?rows.slice(start+1,end):rows;
       const info=seg.findIndex(r=>normExcel(r?.[0])==="CONCEPTO");
-      if(info>=0){const v=seg[info+1]||[];if(v[0])$("concepto").value=upper(v[0]);if(v[1])$("anio").value=String(v[1]).replace(/\D/g,"");if(v[2]!=null)$("periodo").value=String(v[2]);if(v[3])$("tieneSancion").value=upper(v[3]).startsWith("SI")?"SI":"NO";if(v[4]!=null)$("valorSancion").value=dinero(truncarValorEntero(numExcel(v[4])));if(v[5])$("beneficioSancion").value=upper(v[5]);if(v[6])establecerFechaCampoExcel("fechaSancion",v[6]);if(v[7]&&$("beneficioTributario"))$("beneficioTributario").value=upper(v[7]);if(v[8]&&$("tipoTasa"))$("tipoTasa").value=upper(v[8]);}
+      if(info>=0){const v=seg[info+1]||[];if(v[0])$("concepto").value=upper(v[0]);if(v[1])$("anio").value=String(v[1]).replace(/\D/g,"");if(v[2]!=null)$("periodo").value=String(v[2]);if(v[3])$("tieneSancion").value=upper(v[3]).startsWith("SI")?"SI":"NO";if(v[4]!=null)$("valorSancion").value=dinero(truncarValorEntero(numExcel(v[4])));if(v[6])establecerFechaCampoExcel("fechaSancion",v[6]);if(v[7]&&$("beneficioTributario"))$("beneficioTributario").value=upper(v[7]);if(v[8]&&$("tipoTasa"))$("tipoTasa").value=upper(v[8]);}
       const vh=seg.findIndex(r=>normExcel(r?.[0])==="Nº"&&normExcel(r?.[2])==="FECHA VENCIMIENTO"&&normExcel(r?.[3])==="IMPUESTO DECLARADO");
       const venc=[];if(vh>=0){for(let i=vh+1;i<seg.length;i++){const r=seg[i],srow=normExcel(r.filter(Boolean).join(" | "));if(!srow)break;if(/^(PAGOS REGISTRADOS|IMPUTACION POR|DETALLE DE INTERESES|ACTUALIZACION DE SANCION)/.test(srow))break;const f=fechaExcel(r[2]),imp=truncarValorEntero(numExcel(r[3]));if(f&&imp>0)venc.push({id:`VTO-IMP-${i}`,numero:Number(r[0])||venc.length+1,periodo:r[1]??venc.length+1,fecha:f,impuesto:imp});}}
       const ph=seg.findIndex(r=>normExcel(r?.[0])==="Nº"&&normExcel(r?.[1])==="RECIBO"&&normExcel(r?.[2])==="FECHA"&&normExcel(r?.[3])==="VALOR"&&normExcel(r?.[4])==="TIPO");
@@ -2204,7 +2173,6 @@ async function importarExcelNormal(){
           periodo: ix("PERÍODO","PERIODO","PERÍODO / CUOTA","PERIODO / CUOTA")>=0?v[ix("PERÍODO","PERIODO","PERÍODO / CUOTA","PERIODO / CUOTA")]:"",
           tieneSancion: ix("SANCIÓN","SANCION","TIENE SANCIÓN","TIENE SANCION")>=0?v[ix("SANCIÓN","SANCION","TIENE SANCIÓN","TIENE SANCION")]:"",
           valorSancion: ix("VALOR SANCIÓN","VALOR SANCION")>=0?v[ix("VALOR SANCIÓN","VALOR SANCION")]:"",
-          beneficioSancion: ix("BENEFICIO SANCIÓN","BENEFICIO SANCION")>=0?v[ix("BENEFICIO SANCIÓN","BENEFICIO SANCION")]:"",
           fechaSancion: ix("FECHA SANCIÓN","FECHA SANCION")>=0?v[ix("FECHA SANCIÓN","FECHA SANCION")]:"",
           beneficioTributario: ix("BENEFICIO TRIBUTARIO")>=0?v[ix("BENEFICIO TRIBUTARIO")]:""
         };
@@ -2229,9 +2197,7 @@ async function importarExcelNormal(){
     else if(get("FECHA SANCIÓN"))establecerFechaCampoExcel("fechaSancion",get("FECHA SANCIÓN"));
     if(get("FECHA AUTO ADMISORIO"))establecerFechaCampoExcel("fechaAutoAdmisorio",get("FECHA AUTO ADMISORIO"));
     if(get("FECHA PROVIDENCIA DEFINITIVA"))establecerFechaCampoExcel("fechaProvidenciaDefinitiva",get("FECHA PROVIDENCIA DEFINITIVA"));
-    const beneficioSancionImport=datosCanonicos?.beneficioSancion||get("BENEFICIO SANCIÓN");
     const beneficioTributarioImport=datosCanonicos?.beneficioTributario||get("BENEFICIO TRIBUTARIO");
-    if(beneficioSancionImport)$("beneficioSancion").value=upper(beneficioSancionImport);
     if(beneficioTributarioImport&&$("beneficioTributario"))$("beneficioTributario").value=upper(beneficioTributarioImport);
     const vh=buscarHeaderFlexibleNormal(rows,[
       ["FECHA VENCIMIENTO","VENCIMIENTO","FECHA DE VENCIMIENTO"],
@@ -2255,15 +2221,14 @@ async function importarExcelNormal(){
 function configurarBase(){
   ["razonSocial"].forEach(id=>$(id).addEventListener("input",e=>{const pos=e.target.selectionStart;e.target.value=e.target.value.toUpperCase();try{e.target.setSelectionRange(pos,pos)}catch{}}));
   $("nit").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"");renderCalendario();});
-  $("anio").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"");habilitarSancion();actualizarSancionMinimaUI();renderCalendario();});
+  $("anio").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"");habilitarSancion();renderCalendario();});
   $("concepto").addEventListener("change",()=>{renderMetadatosConcepto();renderVencimientos();renderCalendario();});
   $("periodo").addEventListener("change",renderCalendario);
-  $("tipoLiquidacion").addEventListener("change",()=>{seleccionarMotorPorTipo();actualizarCamposTipoLiquidacion();actualizarSancionMinimaUI();});
+  $("tipoLiquidacion").addEventListener("change",()=>{seleccionarMotorPorTipo();actualizarCamposTipoLiquidacion();});
   $("tieneSancion").addEventListener("change",()=>{estadoSancionUI.tiene=$("tieneSancion").value;habilitarSancion();});
   $("valorSancion").addEventListener("input",()=>{estadoSancionUI.valor=$("valorSancion").value;});
   $("valorSancion").addEventListener("blur",()=>{dineroCampo("valorSancion");capturarSancionUI();});
-  $("fechaSancion").addEventListener("blur",()=>{fechaCampo("fechaSancion");capturarSancionUI();actualizarSancionMinimaUI();});
-  $("beneficioSancion").addEventListener("change",()=>{capturarSancionUI();actualizarSancionMinimaUI();});
+  $("fechaSancion").addEventListener("blur",()=>{fechaCampo("fechaSancion");capturarSancionUI();});
   sincronizarFechaDual("fechaSancion","fechaSancionPicker",()=>{});
   sincronizarFechaDual("fechaAutoAdmisorio","fechaAutoAdmisorioPicker",()=>{});
   sincronizarFechaDual("fechaProvidenciaDefinitiva","fechaProvidenciaDefinitivaPicker",()=>{});

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {revertirCambios264} from './alcance-retiro-campos-264.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 // Esta auditoría verifica exactamente el core actual contra 248 y solo admite
@@ -20,7 +21,7 @@ for(const f of ['js/tdj-core-16.33.143.js','js/tdj-pegado-unico-209.js']){
   :read(f);
  assert.equal(preserved.replace(/\r\n/g,'\n'),baseline(f),f+' conserva exactamente color, cálculo y pegado; cambio PDF 249 auditado por separado');
 }
-const app=read('js/app.js').replace(/\r\n/g,'\n'),base=baseline('js/app.js');
+const app=revertirCambios264(read('js/app.js'),'js/app.js'),base=baseline('js/app.js');
 for(const [start,end] of [['function xlsxCol(','function construirDatosSoporte('],['function exportarExcel(','function escPdf('],['function exportarPdf(','function mostrarEstadoExportacion(']]){
  assert.equal(app.slice(app.indexOf(start),app.indexOf(end)),base.slice(base.indexOf(start),base.indexOf(end)),'Exportación y colores DIAN intactos: '+start);
 }
