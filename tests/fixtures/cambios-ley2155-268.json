@@ -38,5 +38,15 @@
       "    \"ART. 48 LEY 2155\",\n    TIPO_688_50,",
       "    TIPO_688_50,"
     ]
+  ],
+  "js/motor-liquidacion-oficial.js": [
+    [
+      "      if(sancionHabilitadaPorFecha&&!primerBeneficio1419Usado&&especial.reduceSancion&&String(pago.tipo||\"\").toUpperCase().includes(\"DECRETO 1419\")&&saldoSancion>0){",
+      "      if(sancionHabilitadaPorFecha&&!primerBeneficio1419Usado&&especial.reduceSancion&&\n         (String(pago.tipo||\"\").toUpperCase().includes(\"DECRETO 1419\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\"))&&saldoSancion>0){"
+    ],
+    [
+      "        const anioMinima=Number(fechaSancion.slice(0,4))||Number(datos.anio||0);",
+      "        const esArt45=String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\");\n        const anioMinima=esArt45?2021:(Number(fechaSancion.slice(0,4))||Number(datos.anio||0));"
+    ]
   ]
 }
