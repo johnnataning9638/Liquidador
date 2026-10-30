@@ -20,5 +20,23 @@
       "    if(es(\"ART. 48 LEY 2155\") || es(\"DECRETO 688 DE 2020\")){",
       "    if(es(\"DECRETO 688 DE 2020\")){"
     ]
+  ],
+  "js/app.js": [
+    [
+      "  \"ART. 48 LEY 2155\",\n",
+      ""
+    ]
+  ],
+  "js/tdj-core-16.33.143.js": [
+    [
+      "  \"ART. 48 LEY 2155\",TIPO_688_50,",
+      "  TIPO_688_50,"
+    ]
+  ],
+  "js/tdj-visual-beneficios.js": [
+    [
+      "    \"ART. 48 LEY 2155\",\n",
+      ""
+    ]
   ]
 }
