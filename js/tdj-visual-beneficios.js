@@ -1,4 +1,4 @@
-import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
+import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
 import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33.247';
