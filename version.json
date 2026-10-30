@@ -1,7 +1,7 @@
 {
-  "version": "16.33.267",
-  "previousVersion": "16.33.266",
-  "baseCommit": "7a1bf116454b2239d4163e3690e75bc06e5e5032",
+  "version": "16.33.268",
+  "previousVersion": "16.33.267",
+  "baseCommit": "92aa1572a49b6e0f69c325c1e2ceb1ceb10ca31f",
   "date": "2026-10-29",
-  "change": "Favorabilidad Ley 2010 IBC+2 automática por pago y vencimiento; tasa 20,91% en caso abc, coherencia UI/PDF/Excel y Decreto 688"
+  "change": "Ley 2155: Art.45 sanción al 20% con mínima 2021 en DIAN/TDJ; Art.48 IBC automático Sep 2021–Mar 2022 por vencimiento exigible; controles de integridad y regresión"
 }
