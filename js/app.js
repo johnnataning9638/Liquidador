@@ -1765,6 +1765,12 @@ function calcular(){
     motor=motorCalculo;
     const valid=motor.validarObligacion(d);
     if(valid.errores.length)throw new Error(valid.errores.join(" "));
+    const avisosArt48=(d.pagos||[]).filter(p=>Number(p.valor)>0).map(p=>({
+      pago:p,especial:motor.tasaEspecial(p.tipo,p.fecha,{vencimientos:d.vencimientos,valorPago:p.valor})
+    })).filter(x=>x.especial?.aplicacionAutomaticaArt48);
+    if(avisosArt48.length)alert("APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\n\n"+
+      avisosArt48.map(x=>fechaVisible(x.pago.fecha)+": "+(x.especial.porCuota?"TASA IBC SEGÚN CUOTA":(x.especial.tasa*100).toFixed(2)+"% EA")).join("\n")+
+      "\n\nSe usa el interés bancario corriente certificado para pagos dentro del 14/09/2021 al 31/03/2022 en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y requisitos de favorabilidad del expediente.\n\nPulse ACEPTAR para continuar.");
 
     // PRIORIDAD CRONOLÓGICA TDJ/PAGOS — MISMA LÓGICA DEL MÓDULO TDJ.
     // Cuando existe un título antes de uno o más pagos normales posteriores,
