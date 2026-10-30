@@ -37,6 +37,10 @@
     [
       "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.267\";",
       "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.268\";"
+    ],
+    [
+      "    (r.detalle||[]).filter(x=>String(x.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")).forEach(x=>{",
+      "    (r.detalle||[]).filter(x=>String(x.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\")).forEach(x=>{\n      push([\"ART. 48 LEY 2155 — PAGO AUTOMÁTICO\",x.pago?.fecha||\"\",\"TASA IBC\",x.tasaVisible==null?\"SEGÚN CUOTA\":Number(x.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",x.notaBeneficio]);\n    });\n    (r.detalle||[]).filter(x=>String(x.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")).forEach(x=>{"
     ]
   ],
   "js/tdj-core-16.33.143.js": [
@@ -55,6 +59,14 @@
     [
       "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.267\";",
       "import {MotorLiquidacionOficial} from \"./motor-liquidacion-oficial.js?v=16.33.268\";"
+    ],
+    [
+      "    if(!(base.detalle||[]).length)push([\"NO HAY PAGOS REGISTRADOS.\"]);",
+      "    (base.detalle||[]).filter(d=>String(d.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\")).forEach(d=>push([\"ART. 48 LEY 2155 — PAGO AUTOMÁTICO\",d.pago?.fecha||\"\",\"TASA IBC\",d.tasaVisible==null?\"SEGÚN CUOTA\":Number(d.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",d.notaBeneficio]));\n    if(!(base.detalle||[]).length)push([\"NO HAY PAGOS REGISTRADOS.\"]);"
+    ],
+    [
+      "      if(String(d?.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")){",
+      "      if(String(d?.notaBeneficio||\"\").includes(\"LEY 2155 DE 2021 ART. 48\"))push([\"ART. 48 LEY 2155 — TDJ AUTOMÁTICO\",a.fecha||\"\",\"TASA IBC\",d.tasaVisible==null?\"SEGÚN CUOTA\":Number(d.tasaVisible).toFixed(2)+\"% EA\",\"FUNDAMENTO\",d.notaBeneficio]);\n      if(String(d?.tipoAplicado||\"\").includes(\"ART. 45 LEY 2155\")){"
     ]
   ],
   "js/tdj-visual-beneficios.js": [
