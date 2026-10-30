@@ -1,4 +1,5 @@
 import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.267";
+import {tasaArt48Automatico} from "./ley2155-art48.js?v=16.33.268";
 import {TIPO_688_50,IBC_688_POR_MES,esTipo68850,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {diasEntre,roundMil,fechaISO} from "./utilidades.js?v=16.33.122";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.122";
@@ -361,6 +362,8 @@ export class MotorLiquidacion{
     const es=needle=>t.includes(needle);
     const automatico=favorabilidadAutomatica(t,fechaPago,contexto);
     if(automatico?.aplicacionAutomatica2010)return {...automatico,factor:1,tasaFija:automatico.tasa,beneficio:null,factorSancion:1,reduceSancion:false};
+    const art48=tasaArt48Automatico(t,fechaPago,contexto);
+    if(art48?.aplicacionAutomaticaArt48)return {...art48,factor:1,tasaFija:art48.tasa,beneficio:null,factorSancion:1,reduceSancion:false};
     // Decreto 688/2020, art. 1: para pagos normales con TASA DIAN dentro
     // del 22/05 al 30/11/2020 se usa IBC consumo y ordinario certificado,
     // SIN alterar la tabla histórica de TIM. No aplica a fechas de corte sin pago.
@@ -462,7 +465,7 @@ export class MotorLiquidacion{
           ?`ART. 45 Ley 2155/2021 · IBC de referencia aproximado ${ibc.toFixed(2)}% EA · porcentaje aplicado 20% (reducción 80%) · tasa final ${(tasa*100).toFixed(2)}% EA · pago ${f}`
           :"ART. 45 Ley 2155/2021: falta IBC reducido para la fecha de pago; NO se reemplaza por tasa DIAN"};
     }
-    if(es("ART. 48 LEY 2155") || es("DECRETO 688 DE 2020")){
+    if(es("DECRETO 688 DE 2020")){
       const tasa=tim==null?null:redondear4((Number(tim)+0.02)/1.5);
       return {tasa,factor:1,tasaFija:tasa,beneficio,
         factorSancion:1,reduceSancion:false,
