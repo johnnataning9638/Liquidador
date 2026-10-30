@@ -1,0 +1,12 @@
+{
+  "js/motor-liquidacion-base.js": [
+    [
+      "          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 3 DECRETO 0240\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 9 DECRETO 1419\")) && saldoSancion>0){",
+      "          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 3 DECRETO 0240\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\") ||\n          String(pago.tipo||\"\").toUpperCase().includes(\"ART. 9 DECRETO 1419\")) && saldoSancion>0){"
+    ],
+    [
+      "        const anioMinima=this.anioSancionParaMinima(datos,true);\n        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));",
+      "        const esArt45=String(pago.tipo||\"\").toUpperCase().includes(\"ART. 45 LEY 2155\");\n        const anioMinima=esArt45?2021:this.anioSancionParaMinima(datos,true);\n        const minima=Math.max(0,Number(this.sancionMinima(anioMinima)||0));"
+    ]
+  ]
+}
