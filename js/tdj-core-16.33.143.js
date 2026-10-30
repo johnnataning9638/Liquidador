@@ -1691,6 +1691,7 @@ function construirFilasExcelTDJ(){
     (base.vencimientos||o.vencimientos||[]).forEach((v,i)=>push([i+1,v.periodo||i+1,v.fecha,v.impuesto||0,v.saldo||0],{money:[4,5]}));push([]);
     push(["PAGOS REGISTRADOS — LIQUIDACIÓN NORMAL"],{title:true});push(["Nº","RECIBO","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
     (base.detalle||[]).forEach((d,i)=>push([i+1,d.pago?.recibo||"",d.pago?.fecha||"",d.pago?.valor||0,d.tipoAplicado||"TASA DIAN",d.tasaVisible??"",d.pago?.observacion||"",d.interesGenerado||0,d.aplicado?.impuesto||0,d.aplicado?.intereses||0,d.aplicado?.sancion||0,d.aplicado?.total||0,d.excedente||0],{money:[4,7,8,9,10,11,12],percent:[6]}));
+    (base.detalle||[]).filter(d=>String(d.notaBeneficio||"").includes("LEY 2155 DE 2021 ART. 48")).forEach(d=>push(["ART. 48 LEY 2155 — PAGO AUTOMÁTICO",d.pago?.fecha||"","TASA IBC",d.tasaVisible==null?"SEGÚN CUOTA":Number(d.tasaVisible).toFixed(2)+"% EA","FUNDAMENTO",d.notaBeneficio]));
     if(!(base.detalle||[]).length)push(["NO HAY PAGOS REGISTRADOS."]);
     if((base.detalle||[]).length){
       push(["IMPUTACIÓN POR VENCIMIENTO — PAGOS NORMALES"],{title:true});
@@ -1710,6 +1711,7 @@ function construirFilasExcelTDJ(){
       const d=detallePDFDesdeAplicacionTDJ(a,o);
       push([`DETALLE TDJ ${a.titulo} — APLICACIÓN ${j+1}`],{title:true});
       push(["DOCUMENTO","FECHA","VALOR DEL TÍTULO","TIPO","TASA"],{header:true});push([a.titulo,a.fecha,a.valorAntes||0,d?.tipoAplicado||"TASA DIAN",d?.tasaVisible??""],{money:[3],percent:[5]});
+      if(String(d?.notaBeneficio||"").includes("LEY 2155 DE 2021 ART. 48"))push(["ART. 48 LEY 2155 — TDJ AUTOMÁTICO",a.fecha||"","TASA IBC",d.tasaVisible==null?"SEGÚN CUOTA":Number(d.tasaVisible).toFixed(2)+"% EA","FUNDAMENTO",d.notaBeneficio]);
       if(String(d?.tipoAplicado||"").includes("ART. 45 LEY 2155")){
         const esp=motor?.tasaEspecial(d.tipoAplicado,a.fecha);
         push(["ART. 45 LEY 2155","FECHA TDJ",a.fecha,"IBC REFERENCIA APROX. EA",esp?.ibcOriginal==null?"":esp.ibcOriginal.toFixed(2)+"%","REDUCCIÓN IBC","80%","TASA FINAL",esp?.tasa==null?"NO DISPONIBLE":(esp.tasa*100).toFixed(2)+"%"]);
