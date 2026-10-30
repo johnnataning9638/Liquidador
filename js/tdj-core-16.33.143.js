@@ -1011,6 +1011,14 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
     if(!motor)throw new Error("El motor de liquidación todavía no está listo.");
     const pagos688=obligaciones.flatMap(o=>(o.pagos||[]).filter(p=>Number(p.valor||0)>0&&String(p.tipo||"TASA DIAN").trim().toUpperCase()==="TASA DIAN"&&fechaISO(p.fecha)>="2020-05-22"&&fechaISO(p.fecha)<="2020-11-30").map(p=>`OBLIGACIÓN ${o.numero}: ${fechaVisible(p.fecha)}`));
     if(pagos688.length)alert("APLICACIÓN AUTOMÁTICA — DECRETO 688 DE 2020, ARTÍCULO 1\n\n"+pagos688.join("\n")+"\n\nLas fechas indicadas se liquidarán con el interés bancario corriente de consumo y ordinario certificado por la Superintendencia Financiera para el mes de cada pago (22/05/2020 al 30/11/2020). Las tasas moratorias históricas no cambian.\n\nPulse ACEPTAR para continuar.");
+    const avisos48=obligaciones.flatMap(o=>[
+      ...(o.pagos||[]).map(p=>({o,p,tipo:p.tipo||"TASA DIAN"})),
+      ...titulos.map(t=>({o,p:t,tipo:tipoTasaTDJ(t,o)}))
+    ].filter(x=>Number(x.p?.valor)>0).map(x=>({...x,especial:motor.tasaEspecial(x.tipo,x.p.fecha,{vencimientos:o.vencimientos,valorPago:x.p.valor})}))
+      .filter(x=>x.especial?.aplicacionAutomaticaArt48)));
+    if(avisos48.length)alert("APLICACIÓN AUTOMÁTICA — LEY 2155 DE 2021, ARTÍCULO 48, PARÁGRAFO 2\n\n"+
+      [...new Set(avisos48.map(x=>"OBLIGACIÓN "+x.o.numero+" / "+fechaVisible(x.p.fecha)+": "+(x.especial.porCuota?"TASA IBC SEGÚN CUOTA":(x.especial.tasa*100).toFixed(2)+"% EA")))].join("\n")+
+      "\n\nIBC certificado para pagos y títulos del 14/09/2021 al 31/03/2022, únicamente en vencimientos exigibles al 30/06/2021. Verifique mérito ejecutivo y demás requisitos de favorabilidad del expediente.\n\nPulse ACEPTAR para continuar.");
     // Invalidar siempre la liquidación anterior, aun si no se detectó un evento change.
     resultado=null;
     resultadoDesactualizado=true;
