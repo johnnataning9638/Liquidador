@@ -33,7 +33,6 @@ for(const Engine of [MotorLiquidacion,MotorLiquidacionOficial]){
  for(const [base,expected] of [[3000000,600000],[1000000,363000]]){
   const r=m.calcular(pay(base));
   assert.equal(r.detalle.length,1);
-  console.log('DEBUG ART45',Engine.name,base,JSON.stringify({tipo:r.detalle[0].tipoAplicado,antes:r.detalle[0].deudaAntes,sancion:r.sancion,nota:r.detalle[0].notaBeneficio,act:r.detalle[0].actualizacionSancion}));
   const eventos=r.detalle[0].actualizacionSancion.eventos.filter(x=>x.tipo==='REDUCCION POR BENEFICIO');
   assert.equal(eventos.length,1,'Una reducción por pago');
   assert.equal(eventos[0].saldoDespues,expected,'Sanción reducida con piso mínima 2021');
