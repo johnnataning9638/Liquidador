@@ -145,8 +145,9 @@
       "previousReleaseHash": "9c1307bb6b59983c11d6ff63eeb948143de729636f917a76f1ba7c998611e75d"
     },
     "js/motor-liquidacion-base.js": {
-      "baselineHash": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a",
-      "reason": "Corrección artículo 45 Ley 2155 (solo inclusión en reducción una vez; sanción mínima 2021) con fixture reversible y control de versión"
+      "baselineHash": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
+      "reason": "16.33.268: activar reducción art.45 Ley 2155 con mínima y evitar doble reducción; fixture histórico reversible",
+      "previousReleaseHash": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a"
     },
     "js/motor-liquidacion-oficial.js": {
       "baselineHash": "7d6d51053cd4fc89c6d89253e499269f85750b9156dcce4a724763831ae6035a",
