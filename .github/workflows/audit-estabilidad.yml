@@ -23,6 +23,7 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
+          python3 tests/ibc-certificado-265.py
           node tests/uvt-automatico-263.mjs
           node tests/uvt-cliente-263.mjs
           node tests/retiro-campos-sancion-264.mjs

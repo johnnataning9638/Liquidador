@@ -1,5 +1,5 @@
 {
-  "version": "16.33.264",
+  "version": "16.33.265",
   "files": [
     "datos/beneficios.json",
     "datos/calendario.json",
@@ -53,7 +53,8 @@
     "tdj-mobile.css",
     "titulos.html",
     "version.json",
-    "js/uvt-parametros.js"
+    "js/uvt-parametros.js",
+    "datos/interes-bancario-corriente.json"
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",

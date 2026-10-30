@@ -4,6 +4,8 @@ import {execFileSync} from 'node:child_process';
 const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-retiro-campos-264.json',import.meta.url),'utf8'));
 export function revertirCambios264(source,file){
  source=source.replaceAll('\r\n','\n');
+ // 265 solo incorpora datos IBC; neutralizar la identificación de versión.
+ if(['index.html','liquidacion.html','titulos.html','js/tdj.js'].includes(file))source=source.replaceAll('16.33.265','16.33.264');
  for(const [before,after] of [...(patches[file]||[])].reverse()){
   assert.equal(source.split(after).length-1,1,file+': retirada delimitada');
   source=source.replace(after,before);
