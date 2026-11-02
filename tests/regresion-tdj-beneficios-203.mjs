@@ -8,9 +8,10 @@ import * as util from '../js/utilidades.js';
 import * as decreto from '../js/decreto-1419.js';
 import * as tasas203 from '../js/tdj-tasas-203.js';
 import * as prioridad from '../js/prioridad-tdj-v132.js';
+import {revertirImportacion273} from './revertir-importacion-273.mjs';
 
 const file='js/tdj-core-16.33.143.js';
-const src=fs.readFileSync(file,'utf8').replace(/^import .*;\s*$/gm,'')
+const src=revertirImportacion273(fs.readFileSync(file,'utf8'),file).replace(/^import .*;\s*$/gm,'')
   .replace('throw new Error(`INCONSISTENCIA TDJ:', 'globalThis.debug203={resumenObligaciones,resumenTitulos};throw new Error(`INCONSISTENCIA TDJ:')
   .replace(/if\(document.readyState==="loading"\)document.addEventListener\("DOMContentLoaded",init\);else init\(\);/,'');
 const config={uvt:[],ipc:[],intereses:[{desde:'2026-01-01',hasta:'2026-12-31',metodologia:'INTERES_SIMPLE_DIARIO',tasas:{'TASA DIAN':0.365}}],reglasObligaciones:[],beneficios:[],sanciones:[]};

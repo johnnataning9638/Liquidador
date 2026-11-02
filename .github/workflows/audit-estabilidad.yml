@@ -24,6 +24,8 @@ jobs:
         run: |
           set -e
           node tests/catalogo-beneficios-269.mjs
+          node tests/importacion-web-pdf-273.mjs
+          node tests/alcance-importacion-273.mjs
           node tests/alcance-panel-tasas-271.mjs
           python3 tests/ibc-certificado-265.py
           node tests/favorabilidad-2010-267.mjs

@@ -1,0 +1,2 @@
+# Conservar exactamente los bytes verificados del proveedor PDF.js.
+vendor/pdfjs/* -text

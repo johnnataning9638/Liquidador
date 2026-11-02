@@ -128,7 +128,7 @@ try {
   await page.locator('[data-tab="resultados"]').click();
   assert.equal(await page.locator('.soporte-panel').count(),0,'DIAN elimina el recuadro de soportes');
   assert.deepEqual(await page.locator('[data-pane="resultados"] .botonera button').allTextContents(),
-    ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],
+    ['Importar web - PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],
     'DIAN reúne las exportaciones después de Importar Excel');
   await captureExports(page.locator('#btnExportarPdf'),page.locator('#btnExportarExcel'),'dian',900000);
   const dianDesktop=await buttonStyles('[data-pane="resultados"] .botonera button');
@@ -140,7 +140,7 @@ try {
     await page.locator(`[data-tab="${pane}"]`).click();
     const bar=`[data-pane="${pane}"] .botonera`;
     assert.deepEqual(await page.locator(bar+' button').allTextContents(),
-      ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Cinco acciones DIAN ${pane}`);
+      ['Importar web - PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Seis acciones DIAN ${pane}`);
     assert.deepEqual(await buttonStyles(bar+' button'),dianDesktop,`Diseño DIAN ${pane}`);
     await captureExports(page.locator(bar+' .btn-exportar-pdf'),page.locator(bar+' .btn-exportar-excel'),'dian-'+pane,900000);
   }
@@ -159,12 +159,12 @@ try {
   await page.locator('[data-pane="resultados"] .botonera').screenshot({path:path.join(output,'dian-botonera-movil.png')});
   await page.setViewportSize({width:1365,height:950});
   const fields=async(selector)=>page.locator(selector).evaluateAll(els=>els.map(el=>({id:el.id,value:el.value,disabled:el.disabled})));
-  const datosAntesDeLimpiar=await fields('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea');
+  const datosAntesDeLimpiar=await fields('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea,#pegarDatosObligacion');
   const saldoAntesDeLimpiar=await page.locator('#rSaldoImpuesto').textContent();
   await page.locator('[data-tab="pagos"]').click();
   await page.locator('[data-pane="pagos"] .btn-limpiar-normal').click();
   assert.equal(await page.locator('#tablaPagos tbody tr').count(), 0);
-  assert.deepEqual(await fields('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea'),datosAntesDeLimpiar,'Limpiar Pagos conserva datos y vencimientos');
+  assert.deepEqual(await fields('[data-pane="datos"] input,[data-pane="datos"] select,[data-pane="datos"] textarea,#pegarDatosObligacion'),datosAntesDeLimpiar,'Limpiar Pagos conserva datos y vencimientos');
   assert.equal(await page.locator('#rSaldoImpuesto').textContent(),saldoAntesDeLimpiar,'Limpiar Pagos conserva resultado previo');
   await page.locator('#pegarDatos').fill(payment);await page.locator('#btnProcesarPegado').click();
   const pagosAntesDeLimpiar=await fields('#tablaPagos input,#tablaPagos select,#pegarDatos');
@@ -204,7 +204,7 @@ try {
       await page.locator(`[data-tab="${pane}"]`).click();
       const bar=`[data-pane="${pane}"] .tdj-sheet-actions`;
       assert.deepEqual(await page.locator(bar+' button').allTextContents(),
-        ['Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Orden TDJ ${pane}`);
+        ['Importar web - PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Orden TDJ ${pane}`);
       assert.deepEqual(await buttonStyles(bar+' button'),reference,`Diseño DIAN en TDJ ${pane} a ${width}px`);
       await page.locator(bar).screenshot({path:path.join(output,`tdj-botonera-${pane}-${width}.png`)});
     }

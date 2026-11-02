@@ -2339,3 +2339,28 @@ window.addEventListener("DOMContentLoaded",async()=>{
     alert("No se pudieron cargar los parámetros históricos. Verifique que el proyecto se esté ejecutando mediante un servidor local.");
   }
 });
+
+// BEGIN IMPORTACION WEB PDF 273 — adaptador de campos; motores e importadores previos intactos.
+import {prepararImportacion as prepararWebPDF273} from './importacion-web-pdf/modelo.js';
+let procedenciaWebPDF273=null;
+export function contextoImportacionWebPDF273(){
+ const meta=procedenciaWebPDF273?.vencimientos===obligacionVencimientos?procedenciaWebPDF273:{};
+ return {nit:$("nit").value.replace(/\D/g,''),razonSocial:$("razonSocial").value,concepto:$("concepto").value,anio:$("anio").value,periodo:$("periodo").value,
+  tieneSancion:$("tieneSancion").value,valorSancion:numeroDesdeTexto($("valorSancion").value),fechaSancion:fechaISO($("fechaSancion").value)||'',
+  vencimientos:structuredClone(obligacionVencimientos),pagos:structuredClone(pagos),numeroObligacion:meta.numeroObligacion||'',sancionFuente:meta.sancionFuente||null};
+}
+export function aplicarImportacionWebPDF273(fuente){
+ if(!motor||!calendarioMotor)throw Error('Espere a que termine la carga de parámetros antes de importar.');
+ const {datos:d,resumen}=prepararWebPDF273(contextoImportacionWebPDF273(),fuente);
+ if(![...$("concepto").options].some(o=>o.value===d.concepto))throw Error('Este impuesto no está disponible en el liquidador.');
+ ['nit','razonSocial','concepto','anio','periodo','tieneSancion'].forEach(k=>$(k).value=String(d[k]??''));
+ $("valorSancion").value=d.valorSancion?dinero(d.valorSancion):'';
+ $("fechaSancion").value=fechaVisible(d.fechaSancion||'');$("fechaSancionPicker").value=d.fechaSancion||'';
+ obligacionVencimientos=d.vencimientos.map((v,i)=>({...v,id:v.id||`WPDF-VTO-${i+1}`,periodo:v.periodo||String(v.numero)}));
+ pagos=d.pagos.map((p,i)=>({...p,id:p.id||`WPDF-PAGO-${Date.now()}-${i}`,observacion:p.observacion||'',tdj:p.tdj||''}));
+ procedenciaWebPDF273={vencimientos:obligacionVencimientos,numeroObligacion:d.numeroObligacion,sancionFuente:d.sancionFuente};
+ ultimaLiquidacion=null;
+ renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();
+ return resumen;
+}
+// END IMPORTACION WEB PDF 273

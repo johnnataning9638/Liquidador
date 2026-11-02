@@ -1,3 +1,11 @@
+## 16.33.273 — Importación independiente web y PDF (2026-11-02)
+
+- Botón azul claro Importar web - PDF en las seis pestañas DIAN/TDJ, reutilizando los recuadros existentes.
+- Generador 1116 leído localmente: identificación, impuesto, año, período, cuotas y sanción; fechas del PDF prioritarias, solo sanción sin cuota ficticia.
+- Complemento opcional para leer la obligación abierta DIAN al pulsar el botón: recibos de Documentos Fuente sin descargas, duplicados ni mezcla de contribuyentes.
+- Archivo transitorio liberado al importar; Importar habitual lo descarta. Motores, reglas, texto/Excel y Supabase intactos.
+- Validación de identidad, destinos TDJ, importes y fechas; errores sin aplicar lecturas parciales. Documentación y límites en docs/importacion-web-pdf-273.md.
+
 ## 16.33.272 — Orden cronológico de beneficios (2026-11-02)
 
 - Consulta DIAN y TDJ ordenada por fecha de inicio de aplicación, del más reciente al más antiguo.

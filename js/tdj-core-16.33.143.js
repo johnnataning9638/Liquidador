@@ -3215,3 +3215,22 @@ function init(){
   normalizarDatosLocal().then(()=>{renderPagos();renderObligaciones();refrescarTasasPagos();renderPanelesTasasIPC();setStatus("MOTOR DE LIQUIDACIÓN DISPONIBLE","ok");cargarSupabase();}).catch(e=>{console.error(e);setStatus("ERROR CARGANDO PARÁMETROS","error");});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+
+// BEGIN IMPORTACION WEB PDF 273 — adaptador de campos; motores e importadores previos intactos.
+import {prepararImportacion as prepararWebPDF273,elegirDestino as elegirDestinoWebPDF273,validarEntrada as validarWebPDF273} from './importacion-web-pdf/modelo.js';
+export function contextoImportacionWebPDF273(){
+ return {obligaciones:structuredClone(obligaciones),nit:$("nitGlobal").value.replace(/\D/g,''),razonSocial:$("razonGlobal").value};
+}
+export function aplicarImportacionWebPDF273(entrada,preferido=''){
+ if(!motor)throw Error('Espere a que termine la carga de parámetros antes de importar.');
+ const fuente=validarWebPDF273(entrada),contexto=contextoImportacionWebPDF273(),destino=elegirDestinoWebPDF273(contexto,fuente,preferido);
+ const {datos:d,resumen}=prepararWebPDF273({...destino,nit:contexto.nit,razonSocial:contexto.razonSocial},fuente);
+ if(!CONCEPTOS.includes(d.concepto))throw Error('Este impuesto no está disponible en el liquidador.');
+ d.vencimientos=d.vencimientos.map(v=>({...v,id:v.id||uid('VTO'),periodo:v.periodo||String(v.numero)}));
+ d.pagos=d.pagos.map(p=>({...p,id:p.id||uid('PAGO'),observacion:p.observacion||''}));
+ obligaciones=obligaciones.map(o=>o.id===destino.id?d:o);
+ $("nitGlobal").value=d.nit;$("razonGlobal").value=d.razonSocial;
+ invalidarResultadoTDJ();renderObligaciones();renderPagos();
+ return resumen;
+}
+// END IMPORTACION WEB PDF 273
