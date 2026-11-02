@@ -1,0 +1,8 @@
+.botonera .wpdf-trigger{background:#dceffc!important;color:#164f75!important;border:1px solid #86bfe1!important}
+.botonera .wpdf-trigger:hover{background:#c4e5fa!important}
+.wpdf-trigger:focus-visible,.wpdf-quitar:focus-visible{outline:3px solid #1976b7;outline-offset:3px}
+.wpdf-ayuda{padding:10px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:#33576b}
+.wpdf-estado{flex:1 1 300px}.wpdf-error{color:#a52a2a}
+.wpdf-ayuda a{color:#165d8a}.wpdf-quitar[hidden]{display:none}
+textarea[data-pdf-adjunto]{background:#edf7ff;border:2px dashed #4b96c6}
+@media print{.wpdf-ayuda,.wpdf-trigger{display:none!important}}
