@@ -1,3 +1,10 @@
+## 16.33.275 — Fórmula de sanción oficial (2026-11-02)
+
+- Opción Oficial: SA = VS × (1 + IPC/365)^n, sin redondear la tasa diaria, con redondeo monetario al millar por actualización.
+- Mantiene Fecha sanción como base y aplica el 1 de enero siguiente. Primer tramo hasta el 31 de diciembre, excluyendo el día inicial; siguientes años completos de 365/366 días.
+- Conserva IPC del año anterior, saldos, exclusión de años ya aplicados, sanción mínima, beneficios y suspensión de intereses.
+- PDF y Excel muestran fórmula, período y días reales. Motor privado intacto. No representa un cambio de fecha base ni una nueva interpretación normativa.
+
 ## 16.33.274 — Importación exclusivamente PDF (2026-11-02)
 
 - Botón Importar PDF en las seis pestañas DIAN/TDJ; se exige adjuntar el Generador de Cuotas y se mantiene el azul claro.

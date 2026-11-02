@@ -7,7 +7,7 @@ for(const Clase of [MotorLiquidacion,MotorLiquidacionOficial])for(const vencimie
  const m=new Clase(cfg),tipoLiquidacion=Clase===MotorLiquidacion?'PRIVADA':'OFICIAL';
  const datos={concepto:'RENTA',anio:2022,periodo:1,tieneSancion:'SI',valorSancion:2500000,fechaSancion,tipoLiquidacion,vencimientos,pagos:[...pagos,{fecha:'2026-01-21',valor:''}]};
  const r=m.calcular(datos);assert.equal(r.impuesto,0);assert.equal(r.intereses,0);assert.equal(r.vencimientos.length,0,'No crear cuota ni fecha ficticia');
- const saldoInicial=fechaSancion==='2026-01-01'?2500000:tipoLiquidacion==='PRIVADA'?2763000:2894000;
+ const saldoInicial=fechaSancion==='2026-01-01'?2500000:tipoLiquidacion==='PRIVADA'?2763000:2905000;
  assert.equal(r.sancion,saldoInicial-pagos.reduce((a,p)=>a+p.valor,0),'Sanción desde fecha propia y pago descontado una vez');
  assert.equal(r.total,r.sancion);
  for(const d of r.detalle){assert.equal(d.aplicado.impuesto,0);assert.equal(d.aplicado.intereses,0);assert.equal(d.saldo.sancion,d.deudaAntes.sancion-d.aplicado.sancion);}

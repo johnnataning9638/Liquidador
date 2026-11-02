@@ -1,7 +1,7 @@
 {
-  "version": "16.33.274",
-  "previousVersion": "16.33.273",
-  "baseCommit": "af66656edbc3fd17ee8a33b3e2b803512879f579",
+  "version": "16.33.275",
+  "previousVersion": "16.33.274",
+  "baseCommit": "dcccc20",
   "date": "2026-11-02",
-  "change": "Importar PDF exclusivamente en DIAN y TDJ, sin conexión web ni complementos"
+  "change": "Fórmula diaria de actualización de sanción oficial; conserva Fecha sanción y aplicación anual"
 }

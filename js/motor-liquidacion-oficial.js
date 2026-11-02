@@ -122,10 +122,11 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     const tramos=[]; const advertencias=[];
     if(!saldo||!base||!corte||corte<=base)return {saldoInicial:roundMil(saldoInicial||0),valor:roundMil(saldo),actualizacion:0,fechaBase:base,fechaCorte:corte,tramos,advertencias};
     const excl=new Set((aniosAplicados||[]).map(Number));
-    // LIQUIDACIÓN OFICIAL — ART. 867-1 E.T.: la actualización se aplica
-    // el 1 de enero siguiente a la firmeza y luego cada 1 de enero,
-    // acumulativamente, con el 100 % del IPC del año inmediatamente anterior.
-    // No se usa la lógica de aniversario de la liquidación privada.
+    // Fórmula solicitada: SA = VS * (1 + IPC/365)^n, aplicada cada 1 de enero.
+    // Se conserva fechaSancion como base por instrucción del usuario.
+    // Primer tramo: días transcurridos desde esa fecha hasta el 31 de diciembre
+    // (sin contar el día inicial). Después: años completos de 365 o 366 días.
+    // El divisor es siempre 365 y la tasa diaria no se redondea.
     const primerAnio=Number(base.slice(0,4))+1;
     const ultimoAnio=Number(corte.slice(0,4));
     for(let anio=primerAnio;anio<=ultimoAnio;anio++){
@@ -135,13 +136,17 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
       const fila=this.actualizadorSancion.ipcPorAnio(anio-1);
       const ipc=Number(fila?.inflacion??fila?.inflacionTotal3??0);
       const antes=saldo;
+      const inicioPeriodo=anio===primerAnio?base:`${anio-1}-01-01`;
+      const finPeriodo=`${anio-1}-12-31`;
+      const dias=anio===primerAnio?diasEntre(base,finPeriodo):diasEntre(inicioPeriodo,fechaAplicacion);
+      const formula={metodologia:"OFICIAL_CAPITALIZACION_DIARIA_275",fechaAplicacion,inicioPeriodo,finPeriodo,dias,tasaDiaria:ipc/365};
       if(ipc>0){
-        const actualizacion=roundMil(antes*ipc);
-        saldo=roundMil(antes+actualizacion);
-        tramos.push({anio,desde:fechaAplicacion,hasta:`${anio}-12-31`,ipc,ipcPorcentaje:ipc*100,saldoInicial:antes,actualizacion,saldoFinal:saldo,disponible:true,aplicado:true,anioInflacion:anio-1});
+        saldo=roundMil(antes*Math.pow(1+ipc/365,dias));
+        const actualizacion=saldo-antes;
+        tramos.push({anio,desde:fechaAplicacion,hasta:`${anio}-12-31`,ipc,ipcPorcentaje:ipc*100,saldoInicial:antes,actualizacion,saldoFinal:saldo,disponible:true,aplicado:true,anioInflacion:anio-1,...formula});
       }else{
         advertencias.push(`No existe IPC cargado para ${anio-1}; no se actualizó la sanción oficial en ${anio}.`);
-        tramos.push({anio,desde:fechaAplicacion,hasta:`${anio}-12-31`,ipc:0,ipcPorcentaje:0,saldoInicial:antes,actualizacion:0,saldoFinal:saldo,disponible:false,aplicado:false,anioInflacion:anio-1});
+        tramos.push({anio,desde:fechaAplicacion,hasta:`${anio}-12-31`,ipc:0,ipcPorcentaje:0,saldoInicial:antes,actualizacion:0,saldoFinal:saldo,disponible:false,aplicado:false,anioInflacion:anio-1,...formula});
       }
     }
     return {saldoInicial:roundMil(saldoInicial||0),valor:roundMil(saldo),actualizacion:roundMil(saldo-(Number(saldoInicial)||0)),fechaBase:base,fechaCorte:corte,tramos,advertencias};
@@ -261,7 +266,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
           act.tramos.forEach(t=>aniosActualizacionSancionAplicados.add(Number(t.anio)));
           detalleActualizacionSancion.push({fechaPago:pago.fecha,...act});
           actualizacionSancionPago.aplicada=act.tramos.some(t=>t.aplicado);
-          actualizacionSancionPago.tramos=act.tramos.map(t=>({anio:Number(t.anio),desde:t.desde,hasta:t.hasta,dias:365,saldoAntes:roundMil(t.saldoInicial||0),actualizacion:roundMil(t.actualizacion||0),saldoDespues:roundMil(t.saldoFinal||0),ipc:Number(t.ipc||0),ipcPorcentaje:Number(t.ipcPorcentaje||0),disponible:t.disponible!==false}));
+          actualizacionSancionPago.tramos=act.tramos.map(t=>({...t,saldoAntes:roundMil(t.saldoInicial||0),saldoDespues:roundMil(t.saldoFinal||0)}));
           actualizacionSancionPago.actualizacionTotal=roundMil(actualizacionSancionPago.tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0));
         }
         advertenciasSancion.push(...(act.advertencias||[]));
