@@ -1,7 +1,7 @@
 {
-  "version": "16.33.273",
-  "previousVersion": "16.33.272",
-  "baseCommit": "49004d29ed19de99bc4832d55c34c5556725b585",
+  "version": "16.33.274",
+  "previousVersion": "16.33.273",
+  "baseCommit": "af66656edbc3fd17ee8a33b3e2b803512879f579",
   "date": "2026-11-02",
-  "change": "Importación independiente web/PDF en las tres pestañas DIAN/TDJ; PDF local prioritario, pagos únicos y conexión DIAN mediante complemento"
+  "change": "Importar PDF exclusivamente en DIAN y TDJ, sin conexión web ni complementos"
 }

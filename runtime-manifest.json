@@ -1,5 +1,5 @@
 {
-  "version": "16.33.273",
+  "version": "16.33.274",
   "files": [
     "beneficios.css",
     "datos/beneficios.json",
@@ -11,7 +11,6 @@
     "datos/sanciones.json",
     "datos/tasas-moratorias.json",
     "datos/uvt.json",
-    "descargas/puente-dian-273.zip",
     "estilos.css",
     "importacion-web-pdf.css",
     "index.html",
@@ -25,10 +24,8 @@
     "js/export-dian-tdj-control-16.33.178.js",
     "js/favorabilidad-2010.js",
     "js/importacion-web-pdf/modelo.js",
-    "js/importacion-web-pdf/muisca.js",
     "js/importacion-web-pdf/pdf.js",
     "js/importacion-web-pdf/ui.js",
-    "js/importacion-web-pdf/web.js",
     "js/importador-excel.js",
     "js/importador-obligacion.js",
     "js/importador.js",

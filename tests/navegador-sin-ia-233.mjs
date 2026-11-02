@@ -128,7 +128,7 @@ try {
   await page.locator('[data-tab="resultados"]').click();
   assert.equal(await page.locator('.soporte-panel').count(),0,'DIAN elimina el recuadro de soportes');
   assert.deepEqual(await page.locator('[data-pane="resultados"] .botonera button').allTextContents(),
-    ['Importar web - PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],
+    ['Importar PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],
     'DIAN reúne las exportaciones después de Importar Excel');
   await captureExports(page.locator('#btnExportarPdf'),page.locator('#btnExportarExcel'),'dian',900000);
   const dianDesktop=await buttonStyles('[data-pane="resultados"] .botonera button');
@@ -140,7 +140,7 @@ try {
     await page.locator(`[data-tab="${pane}"]`).click();
     const bar=`[data-pane="${pane}"] .botonera`;
     assert.deepEqual(await page.locator(bar+' button').allTextContents(),
-      ['Importar web - PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Seis acciones DIAN ${pane}`);
+      ['Importar PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Seis acciones DIAN ${pane}`);
     assert.deepEqual(await buttonStyles(bar+' button'),dianDesktop,`Diseño DIAN ${pane}`);
     await captureExports(page.locator(bar+' .btn-exportar-pdf'),page.locator(bar+' .btn-exportar-excel'),'dian-'+pane,900000);
   }
@@ -204,7 +204,7 @@ try {
       await page.locator(`[data-tab="${pane}"]`).click();
       const bar=`[data-pane="${pane}"] .tdj-sheet-actions`;
       assert.deepEqual(await page.locator(bar+' button').allTextContents(),
-        ['Importar web - PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Orden TDJ ${pane}`);
+        ['Importar PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Orden TDJ ${pane}`);
       assert.deepEqual(await buttonStyles(bar+' button'),reference,`Diseño DIAN en TDJ ${pane} a ${width}px`);
       await page.locator(bar).screenshot({path:path.join(output,`tdj-botonera-${pane}-${width}.png`)});
     }

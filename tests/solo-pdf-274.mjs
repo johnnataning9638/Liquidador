@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {validarEntrada,prepararImportacion} from '../js/importacion-web-pdf/modelo.js';
+const ui=fs.readFileSync('js/importacion-web-pdf/ui.js','utf8');
+assert.doesNotMatch(ui,/leerWeb|postMessage|puente-dian|complemento|Importar web|obligación abierta/i);
+assert.match(ui,/boton.textContent='Importar PDF'/);
+assert.match(ui,/if\(!archivo\)/,'sin adjunto pide PDF antes de leer fuentes');
+for(const file of ['extension-dian/manifest.json','extension-dian/worker.js','extension-dian/puente.js','js/importacion-web-pdf/web.js','js/importacion-web-pdf/muisca.js','descargas/puente-dian-273.zip','scripts/empaquetar-puente-dian.py'])assert.equal(fs.existsSync(file),false,file+' retirado');
+assert.throws(()=>validarEntrada({fuente:'WEB_MUISCA'}),/Origen/);
+const fuente={fuente:'PDF_1116',nit:'900123456',razonSocial:'PRUEBA',concepto:'RENTA',anio:2024,periodo:1,cuotas:[{numero:1,fecha:'2025-09-19',impuesto:200000}]};
+const pagos=[{id:'P1',recibo:'4900000000001',fecha:'2025-09-20',valor:84000}];
+assert.deepEqual(prepararImportacion({pagos},fuente).datos.pagos,pagos,'el PDF conserva los pagos ya capturados');
+const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
+assert.equal(manifest.version,'16.33.274');assert.ok(!manifest.files.some(f=>/puente-dian|muisca\.js|\/web\.js/.test(f)));
+for(const file of Object.keys(manifest.protected))assert.equal(fs.readFileSync(file,'utf8').replaceAll('\r\n','\n'),execFileSync('git',['show','af66656edbc3fd17ee8a33b3e2b803512879f579:'+file],{encoding:'utf8'}).replaceAll('\r\n','\n'),file+': motores y adaptadores conservados');
+assert.equal(fs.readFileSync('js/importacion-web-pdf/pdf.js','utf8').replaceAll('\r\n','\n'),execFileSync('git',['show','af66656edbc3fd17ee8a33b3e2b803512879f579:js/importacion-web-pdf/pdf.js'],{encoding:'utf8'}).replaceAll('\r\n','\n'),'lector PDF conservado');
+console.log('SOLO PDF 274 OK: sin conexión web ni complemento, exige adjunto y conserva pagos y cálculos');
