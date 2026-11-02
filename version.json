@@ -1,7 +1,7 @@
 {
-  "version": "16.33.271",
-  "previousVersion": "16.33.270",
-  "baseCommit": "b5ba6969eafab9174ecd23aac8d7f6946857c685",
+  "version": "16.33.272",
+  "previousVersion": "16.33.271",
+  "baseCommit": "2ac02726434699a6fdf85c9481d3c1539069b108",
   "date": "2026-11-02",
-  "change": "Corregir render del panel de tasas TDJ: usar la TIM de cada fila para completar la carga de parámetros; fórmulas intactas"
+  "change": "Orden cronológico descendente de beneficios DIAN y TDJ por fecha de inicio; filtros y registro automático conservados"
 }

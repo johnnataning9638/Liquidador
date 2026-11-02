@@ -5,8 +5,8 @@ import {revertirPanelTasas271} from './alcance-panel-tasas-271.mjs';
 const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-catalogo-269.json',import.meta.url),'utf8'));
 export function revertirCambios269(source,file){
  source=revertirPanelTasas271(source,file);
- // 270 únicamente actualiza la identificación de versión de estas vistas.
- if(['index.html','liquidacion.html','titulos.html','js/tdj.js'].includes(file))source=source.replace(/16\.33\.(270|271)/g,'16.33.269');
+ // Versiones posteriores: identificación de versión de estas vistas.
+ if(['index.html','liquidacion.html','titulos.html','js/tdj.js'].includes(file))source=source.replace(/16\.33\.(270|271|272)/g,'16.33.269');
  for(const [before,after] of [...(patches[file]||[])].reverse()){
   assert.equal(source.split(after).length-1,1,file+': catálogo 269 delimitado');source=source.replace(after,before);
  }

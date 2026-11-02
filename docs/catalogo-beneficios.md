@@ -4,6 +4,8 @@ La consulta se genera desde `datos/beneficios.json`. Ambos módulos usan el mism
 
 Cada apertura reinicia la búsqueda y selecciona Todos, mostrando el catálogo completo desde el inicio, independientemente de cómo se cerró la ventana.
 
+La tabla se ordena por fecha de inicio de aplicación, de la más reciente a la más antigua, sin separar las reglas automáticas del resto. Los filtros conservan ese orden. Una variante histórica sin fecha propia comparte la referencia temporal documentada de su beneficio; los registros sin fecha se muestran al final. Los empates mantienen su orden en el registro.
+
 ## Agregar un beneficio
 
 Al incorporar un beneficio en el sistema, registrarlo en `datos/beneficios.json`, que ya alimenta la configuración de los motores. El catálogo incluye cada registro automáticamente; no hay una segunda lista de filas en el componente visual. Las reglas automáticas también deben tener un registro en este archivo.

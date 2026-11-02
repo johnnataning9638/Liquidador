@@ -43,6 +43,12 @@ try{
   assert.equal(await p.locator('#buscarBeneficios').evaluate(x=>x===document.activeElement),true);
   assert.equal(await dialog.locator('thead th').count(),4);
   assert.equal(await dialog.locator('[data-beneficio-id]').count(),15);
+  assert.deepEqual(await dialog.locator('[data-beneficio-id]').evaluateAll(xs=>xs.map(x=>x.dataset.beneficioId)),[
+   'D1419_ART9','D1419_ART10_OMISAS','D1419_ART10_CORRECCIONES',
+   'D0240_ART3','D0240_ART4','D1474_ART20','D1474_ART21',
+   'LEY2277_ART91','LEY2277_ART93','LEY2155_ART45','LEY2155_ART48',
+   'D688_ART1','DECRETO688_ART1_IBC50','LEY2010_ART120_AUTO','LEY2010_ART120_PAR3'
+  ],'Orden cronológico descendente visible en '+file);
   assert.equal(await dialog.locator('.beneficios-tabla').evaluate(x=>getComputedStyle(x).fontWeight),'400');
   await p.screenshot({path:path.join(output,file+'-tabla.png'),fullPage:false});
   await p.locator('[data-filtro="automaticos"]').click();assert.equal(await dialog.locator('[data-beneficio-id]').count(),3);

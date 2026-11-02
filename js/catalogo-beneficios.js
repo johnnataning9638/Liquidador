@@ -15,6 +15,7 @@ export function crearCatalogo(registro,opciones=[],hoy=hoyColombia()){
  for(const b of registro){
   conocidos.add(normalizar(b.nombre));
   const ficha=b.consulta||{};
+  const inicioReferencia=(ficha.variantes||[]).map(v=>v.desde).filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f||'')).sort()[0]||'';
   for(const alias of ficha.aliases||[])conocidos.add(normalizar(alias));
   for(const [i,detalle] of (ficha.variantes||[ficha]).entries()){
    const desde=detalle.desde??b.vigenciaDesde??'',hasta=detalle.hasta??b.fechaPagoHasta??b.fechaSuspension??'';
@@ -23,7 +24,7 @@ export function crearCatalogo(registro,opciones=[],hoy=hoyColombia()){
    const periodo=detalle.periodo||(desde||hasta?`${fechaVisible(desde)||'Inicio por documentar'} – ${fechaVisible(hasta)||'Sin fecha final registrada'}`:'Período pendiente de documentar');
    filas.push({id:detalle.id||b.id+(i?'-'+i:''),norma:detalle.norma||b.nombre,
     beneficio:detalle.beneficio||efectoRegistrado(b),aplica:detalle.aplica||['Según norma'],activacion,
-    desde,hasta,periodo,condiciones:detalle.condiciones||b.condiciones||['Condiciones pendientes de documentar.'],
+    desde,hasta,periodo,fechaOrden:desde||inicioReferencia,condiciones:detalle.condiciones||b.condiciones||['Condiciones pendientes de documentar.'],
     fuente:detalle.fuente||b.fuente||'Fuente pendiente de documentar',url:detalle.url||b.fuente_url||'',
     grupo:vigente?'actuales':activacion==='Automático'?'automaticos':'historicos',vigente});
   }
@@ -36,7 +37,7 @@ export function crearCatalogo(registro,opciones=[],hoy=hoyColombia()){
    condiciones:['Ficha informativa pendiente de completar en el registro de beneficios.'],
    fuente:'Opción disponible en el liquidador',url:'',grupo:'historicos',vigente:false});
  }
- return filas;
+ return filas.sort((a,b)=>(b.fechaOrden||'').localeCompare(a.fechaOrden||''));
 }
 export function filtrarCatalogo(filas,busqueda='',filtro='todos'){
  const q=normalizar(busqueda);
@@ -55,7 +56,7 @@ export function instalarCatalogo(){
  dialog.setAttribute('aria-labelledby','beneficiosTitulo');dialog.setAttribute('aria-describedby','beneficiosDescripcion');
  const cabecera=elemento('div','beneficios-cabecera'),titulos=elemento('div');
  const titulo=elemento('h2',null,'Beneficios incluidos en el liquidador');titulo.id='beneficiosTitulo';
- const descripcion=elemento('p',null,'Consulta común para DIAN y TDJ · Opciones seleccionables y reglas automáticas');descripcion.id='beneficiosDescripcion';
+ const descripcion=elemento('p',null,'Consulta común para DIAN y TDJ · Del más reciente al más antiguo');descripcion.id='beneficiosDescripcion';
  titulos.append(titulo,descripcion);
  const cerrar=elemento('button','beneficios-cerrar','×');cerrar.type='button';cerrar.setAttribute('aria-label','Cerrar consulta de beneficios');
  cabecera.append(titulos,cerrar);
@@ -70,7 +71,7 @@ export function instalarCatalogo(){
  const scroll=elemento('div','beneficios-scroll');scroll.tabIndex=0;scroll.setAttribute('role','region');scroll.setAttribute('aria-label','Tabla de beneficios; desplazamiento horizontal y vertical');
  const tabla=elemento('table','beneficios-tabla'),caption=elemento('caption','beneficios-solo-lector','Beneficios incorporados y sus condiciones de aplicación');
  const thead=elemento('thead'),head=elemento('tr');
- for(const t of ['Norma y artículo','Beneficio incorporado','Aplica / Activación','Período y condiciones']){const th=elemento('th',null,t);th.scope='col';head.append(th);}
+ for(const t of ['Norma y artículo','Beneficio incorporado','Aplica / Activación','Período y condiciones']){const th=elemento('th',null,t);th.scope='col';if(t==='Período y condiciones'){th.setAttribute('aria-sort','descending');th.title='Orden por fecha de inicio: más reciente primero';}head.append(th);}
  thead.append(head);const tbody=elemento('tbody');tabla.append(caption,thead,tbody);scroll.append(tabla);
  const pie=elemento('div','beneficios-pie');
  pie.append(elemento('p',null,'IBC: interés bancario corriente · TIM: tasa de interés moratoria.'),elemento('p',null,'La activación matemática no sustituye la verificación de requisitos legales.'));
@@ -80,10 +81,7 @@ export function instalarCatalogo(){
   filas=crearCatalogo(registro,opcionesActuales());const visibles=filtrarCatalogo(filas,buscar.value,filtro);tbody.replaceChildren();
   if(!cargado)return;
   estado.textContent=`${visibles.length} de ${filas.length} tratamientos · Consulta al ${fechaVisible(hoyColombia())}`;
-  for(const [grupo,nombre] of [['actuales','Con plazo vigente'],['automaticos','Reglas automáticas · Operan con TASA DIAN según pago y obligación'],['historicos','Otros tratamientos seleccionables · Históricos y referencias']]){
-   const lista=visibles.filter(r=>r.grupo===grupo);if(!lista.length)continue;
-   const seccion=elemento('tr','beneficios-grupo'),th=elemento('th',null,nombre);th.colSpan=4;th.scope='rowgroup';seccion.append(th);tbody.append(seccion);
-   for(const r of lista){
+  for(const r of visibles){
     const tr=elemento('tr');tr.dataset.beneficioId=r.id;
     const norma=elemento('td'),nombreNorma=elemento('span','beneficios-norma',r.norma);norma.append(nombreNorma);
     const detalles=elemento('details','beneficios-detalles'),summary=elemento('summary',null,'Ver condiciones');detalles.append(summary);
@@ -94,7 +92,6 @@ export function instalarCatalogo(){
     const periodo=elemento('td');periodo.append(elemento('span',null,r.periodo));
     if(r.condiciones[0])periodo.append(elemento('p','beneficios-condicion',r.condiciones[0]));
     tr.append(norma,elemento('td',null,r.beneficio),aplica,periodo);tbody.append(tr);
-   }
   }
   if(!visibles.length){const tr=elemento('tr'),td=elemento('td','beneficios-vacio','No hay beneficios que coincidan con la búsqueda.');td.colSpan=4;tr.append(td);tbody.append(tr);}
  }

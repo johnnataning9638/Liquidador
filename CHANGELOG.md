@@ -1,3 +1,10 @@
+## 16.33.272 — Orden cronológico de beneficios (2026-11-02)
+
+- Consulta DIAN y TDJ ordenada por fecha de inicio de aplicación, del más reciente al más antiguo.
+- Orden único para seleccionables y automáticos; los filtros y los beneficios futuros conservan el mismo criterio.
+- Variantes sin fecha propia usan la referencia documentada del mismo beneficio; registros sin fecha al final, sin inventar vigencias. Empates estables.
+- Sin cambios en el registro normativo, fórmulas, tasas, cálculos ni Supabase.
+
 ## 16.33.271 — Carga de parámetros TDJ (2026-11-02)
 
 - Corrige el ReferenceError al dibujar el panel de tasas TDJ: se presenta la TIM de cada fila, sin consultar un pago u obligación inexistentes.
