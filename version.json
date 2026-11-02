@@ -1,7 +1,7 @@
 {
-  "version": "16.33.269",
-  "previousVersion": "16.33.268",
-  "baseCommit": "b2032278f1617cf9b6f1fcc445abefc764b13829",
+  "version": "16.33.270",
+  "previousVersion": "16.33.269",
+  "baseCommit": "ac9c0099b42eb4514dced809f46994d3462d0196",
   "date": "2026-11-02",
-  "change": "Consulta compartida de beneficios DIAN/TDJ: botón junto al indicador, catálogo dinámico con fuentes y condiciones; cálculos intactos"
+  "change": "Reiniciar búsqueda y filtros de Beneficios al abrir la consulta en DIAN y TDJ; cálculo intacto"
 }

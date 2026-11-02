@@ -52,6 +52,20 @@ try{
   await dialog.locator('summary').first().click();assert.equal(await dialog.locator('details[open]').count(),1);
   assert.ok((await dialog.locator('a').first().getAttribute('href')).startsWith('https://normograma.dian.gov.co/'));
   await p.keyboard.press('Escape');assert.equal(await dialog.evaluate(x=>x.open),false);assert.equal(await trigger.evaluate(x=>x===document.activeElement),true);
+  for(const cierre of ['boton','escape','fondo']){
+   await trigger.click();await p.locator('[data-filtro="automaticos"]').click();await p.locator('#buscarBeneficios').fill('corriente');
+   assert.equal(await dialog.locator('[data-beneficio-id]').count(),3);
+   if(cierre==='boton')await dialog.locator('.beneficios-cerrar').click();
+   else if(cierre==='escape'){await dialog.locator('.beneficios-cerrar').focus();await p.keyboard.press('Escape');}
+   else await p.mouse.click(1,1);
+   await p.waitForFunction(()=>!document.querySelector('#catalogoBeneficios').open);
+   await trigger.click();
+   assert.equal(await p.locator('#buscarBeneficios').inputValue(),'','Búsqueda limpia después de cerrar con '+cierre);
+   assert.equal(await p.locator('[data-filtro="todos"]').getAttribute('aria-pressed'),'true','Todos seleccionado después de '+cierre);
+   assert.equal(await p.locator('.beneficios-filtros [aria-pressed="true"]').count(),1);
+   assert.equal(await dialog.locator('[data-beneficio-id]').count(),15,'Catálogo completo al reabrir');
+   await p.keyboard.press('Escape');
+  }
   assert.deepEqual(await p.locator('main input,main select').evaluateAll(xs=>xs.map(x=>[x.id,x.value])),state,'Consulta no cambia datos de liquidación');
   for(const width of [390,360]){
    await p.setViewportSize({width,height:844});await trigger.click();await p.waitForFunction(()=>document.querySelectorAll('[data-beneficio-id]').length===15);
@@ -70,7 +84,7 @@ try{
    fail=false;await p.locator('.beneficios-reintentar').click();await p.waitForFunction(()=>document.querySelectorAll('[data-beneficio-id]').length===15);
    await p.keyboard.press('Escape');
   }
-  resultados.push({modulo:file,filas:15,automaticos:3,teclado:true,movil:[390,360],datosIntactos:true});
+  resultados.push({modulo:file,filas:15,automaticos:3,teclado:true,movil:[390,360],reinicioFiltros:['boton','escape','fondo'],datosIntactos:true});
  }
  if(!process.env.TEST_BASE_URL){
   // Falla inicial y recuperación, sin afirmar que un catálogo vacío está completo.

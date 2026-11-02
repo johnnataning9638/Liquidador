@@ -120,6 +120,11 @@ export function instalarCatalogo(){
  cerrar.addEventListener('click',()=>dialog.close());
  dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
  dialog.addEventListener('close',()=>{boton.setAttribute('aria-expanded','false');document.body.classList.remove('beneficios-abiertos');boton.focus({preventScroll:true});});
- boton.addEventListener('click',()=>{dialog.showModal();document.body.classList.add('beneficios-abiertos');boton.setAttribute('aria-expanded','true');buscar.focus({preventScroll:true});cargar();});
+ boton.addEventListener('click',()=>{
+  buscar.value='';filtro='todos';
+  for(const b of filtros.children)b.setAttribute('aria-pressed',String(b.dataset.filtro==='todos'));
+  pintar();scroll.scrollTop=0;scroll.scrollLeft=0;
+  dialog.showModal();document.body.classList.add('beneficios-abiertos');boton.setAttribute('aria-expanded','true');buscar.focus({preventScroll:true});cargar();
+ });
 }
 if(typeof document!=='undefined')instalarCatalogo();

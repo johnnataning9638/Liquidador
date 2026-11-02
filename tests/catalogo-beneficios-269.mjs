@@ -35,6 +35,6 @@ for(const file of Object.keys(manifest.protected))assert.equal(read(file),execFi
 for(const file of ['liquidacion.html','titulos.html']){
  const html=read(file);
  assert.match(html,/id="btnBeneficios"/);
- assert.match(html,/js\/catalogo-beneficios\.js\?v=16\.33\.269/);
+ assert.ok(html.includes('js/catalogo-beneficios.js?v='+JSON.parse(read('version.json')).version));
 }
 console.log('CATÁLOGO 269 OK: 15 fichas, filtros, incorporación futura, alias y cálculos intactos');
