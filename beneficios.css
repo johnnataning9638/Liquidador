@@ -1,0 +1,56 @@
+/* Consulta compartida. Selectores aislados de formularios, resultados y exportaciones. */
+.topbar-liquidacion .beneficios-acciones{display:flex;align-items:center;justify-self:end;gap:16px;grid-column:3;grid-row:1}
+.beneficios-boton{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #d2e1eb;border-radius:5px;background:#f4f9fc;color:#173f58;font:400 13px Arial,Helvetica,sans-serif;cursor:pointer;white-space:nowrap}
+.beneficios-boton svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;flex-shrink:0}
+.beneficios-boton:hover{background:#e4f3fa}
+.beneficios-boton:focus-visible,.beneficios-dialog :focus-visible{outline:3px solid #0084ad;outline-offset:3px}
+body.beneficios-abiertos{overflow:hidden}
+.beneficios-dialog{box-sizing:border-box;width:min(1180px,calc(100% - 32px));max-width:none;max-height:calc(100dvh - 40px);padding:0;border:1px solid #cfdfeb;border-radius:10px;box-shadow:0 18px 70px #003b5c40;background:#fff;color:#23435b;font:400 14px/1.45 Arial,Helvetica,sans-serif;overflow:hidden}
+.beneficios-dialog[open]{display:flex;flex-direction:column}
+.beneficios-dialog::backdrop{background:#082a4680}
+.beneficios-dialog *{box-sizing:border-box;font-weight:400}
+.beneficios-cabecera{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px 8px;flex-shrink:0}
+.beneficios-cabecera h2{font-size:23px;margin:0;color:#153b59;line-height:1.25}
+.beneficios-cabecera p{margin:6px 0 0;font-size:13px}
+.beneficios-cerrar{border:0;background:transparent;color:#284e69;font:400 30px/1 Arial;cursor:pointer;min-width:36px;min-height:36px}
+.beneficios-aviso{padding:9px 12px;margin:6px 22px 10px;border:1px solid #efcd85;border-radius:5px;background:#fff8e9;color:#805000;font-size:13px;flex-shrink:0}
+.beneficios-controles{padding:0 22px;flex-shrink:0}
+.beneficios-buscador{display:block;font-size:12px}
+.beneficios-buscador input{display:block;width:100%;margin:4px 0 10px;padding:11px 12px;border:1px solid #b9cddd;border-radius:5px;color:#23435b;background:#fff;font:400 14px Arial}
+.beneficios-filtros{display:flex;gap:7px;flex-wrap:wrap}
+.beneficios-filtros button,.beneficios-reintentar{border:1px solid transparent;border-radius:5px;padding:8px 12px;background:#eaf2f7;color:#23435b;font:400 13px Arial;cursor:pointer;min-height:36px}
+.beneficios-filtros button{flex:1}
+.beneficios-filtros button[aria-pressed=true]{background:#007eaa;color:#fff}
+.beneficios-filtros button:hover{border-color:#007eaa}
+.beneficios-estado{font-size:12px;min-height:18px;margin:9px 0;color:#506b80}
+.beneficios-reintentar{margin:0 0 10px;border-color:#b9cddd}
+.beneficios-scroll{margin:0 22px;overflow:auto;min-height:90px;overscroll-behavior:contain;border:1px solid #cddce7;border-radius:5px}
+.beneficios-tabla{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:13px}
+.beneficios-tabla th,.beneficios-tabla td{padding:11px 10px;text-align:left;vertical-align:top;border-right:1px solid #dbe5ee;border-bottom:1px solid #dbe5ee;overflow-wrap:anywhere}
+.beneficios-tabla th:last-child,.beneficios-tabla td:last-child{border-right:0}
+.beneficios-tabla thead th{position:sticky;top:0;background:#edf4f9;color:#173f58;z-index:1}
+.beneficios-tabla thead th:nth-child(1){width:24%}.beneficios-tabla thead th:nth-child(2){width:28%}.beneficios-tabla thead th:nth-child(3){width:18%}.beneficios-tabla thead th:nth-child(4){width:30%}
+.beneficios-tabla .beneficios-grupo th{background:#dceef7;color:#164f70;padding:8px 10px}
+.beneficios-norma{display:block}
+.beneficios-detalles summary{color:#007caa;cursor:pointer;margin-top:4px;list-style-position:inside}
+.beneficios-detalles ul{padding-left:17px;margin:8px 0}
+.beneficios-detalles p{font-size:12px;margin:8px 0}
+.beneficios-detalles a{color:#007caa;text-decoration:underline}
+.beneficios-modo{display:table;font-size:11px;margin-top:6px;padding:2px 7px;border-radius:10px;background:#edf2f6;color:#4b6475}
+.beneficios-auto{background:#e0f3ed;color:#25634f}
+.beneficios-condicion{font-size:12px;color:#526b7b;margin:5px 0 0}
+.beneficios-tabla .beneficios-vacio{text-align:center;padding:35px 12px}
+.beneficios-pie{padding:10px 22px 14px;flex-shrink:0;font-size:12px;color:#526b7b}
+.beneficios-pie p{margin:2px 0}
+.beneficios-solo-lector{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-width:1200px){.topbar-liquidacion .beneficios-acciones{grid-column:2;grid-row:1}}
+@media(max-width:650px){
+ .topbar.topbar-liquidacion{column-gap:10px;padding:12px}
+ .beneficios-acciones{gap:10px!important}.beneficios-boton{padding:8px;font-size:12px;gap:5px}
+ .beneficios-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 16px)}
+ .beneficios-cabecera{padding:14px 12px 6px}.beneficios-cabecera h2{font-size:19px}
+ .beneficios-aviso{margin:6px 12px 9px;font-size:12px}.beneficios-controles{padding:0 12px}
+ .beneficios-scroll{margin:0 12px}.beneficios-pie{padding:9px 12px;font-size:11px}
+ .beneficios-filtros button{flex:1 0 28%;padding:8px 6px}.beneficios-tabla{min-width:850px}
+}
+@media print{.beneficios-acciones,.beneficios-dialog{display:none!important}}

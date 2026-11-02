@@ -1,7 +1,7 @@
 {
-  "version": "16.33.268",
-  "previousVersion": "16.33.267",
-  "baseCommit": "92aa1572a49b6e0f69c325c1e2ceb1ceb10ca31f",
-  "date": "2026-10-29",
-  "change": "Ley 2155: Art.45 sanción al 20% con mínima 2021 en DIAN/TDJ; Art.48 IBC automático Sep 2021–Mar 2022 por vencimiento exigible; controles de integridad y regresión"
+  "version": "16.33.269",
+  "previousVersion": "16.33.268",
+  "baseCommit": "b2032278f1617cf9b6f1fcc445abefc764b13829",
+  "date": "2026-11-02",
+  "change": "Consulta compartida de beneficios DIAN/TDJ: botón junto al indicador, catálogo dinámico con fuentes y condiciones; cálculos intactos"
 }

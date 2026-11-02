@@ -34,6 +34,8 @@ jobs:
           pdftotext -v
       - name: Verificar sanciones mínimas DIAN 2006–2026 en ambos módulos
         run: TEST_SITE_DIR=dist node tests/navegador-sanciones-minimas-261.mjs
+      - name: Verificar catálogo compartido de beneficios y nuevos registros DIAN TDJ
+        run: TEST_SITE_DIR=dist node tests/navegador-beneficios-269.mjs
       - name: Verificar histórico completo 1988–2026 en ambos módulos
         run: TEST_SITE_DIR=dist node tests/navegador-uvt-263.mjs
       - name: Verificar retirada de controles y cuotas compactas DIAN TDJ
@@ -68,4 +70,6 @@ jobs:
         if: always()
         with:
           name: importacion-sin-ia
-          path: test-results/sin-ia-233
+          path: |
+            test-results/sin-ia-233
+            test-results/beneficios-269

@@ -1,3 +1,11 @@
+## 16.33.269 — Consulta de beneficios DIAN y TDJ (2026-11-02)
+
+- Botón Beneficios a la izquierda del indicador de parámetros en ambos liquidadores; ventana con búsqueda, filtros, cuatro columnas, fuentes oficiales y condiciones.
+- Catálogo generado desde datos/beneficios.json: 12 opciones seleccionables y 3 tratamientos automáticos. Incluye la opción histórica IBC + 2 identificada como el mismo beneficio.
+- Cada registro nuevo aparece automáticamente en la consulta. Una opción nueva del selector sin ficha también se muestra con sus condiciones pendientes; las reglas automáticas nuevas deben registrarse en la misma fuente.
+- Metadatos de consulta separados de las propiedades de cálculo; motores, tasas, importadores, exportaciones, datos de liquidación y Supabase intactos.
+- Consulta accesible por teclado, cierre con Escape y retorno de foco, desplazamiento móvil y reintento de carga.
+
 ## 16.33.268 — Ley 2155 artículos 45 y 48 (2026-10-29)
 
 - Art. 45: activar reducción del 20 % de sanción con piso mínimo legal 2021 en liquidación privada y oficial, una sola vez por obligación; preserva el cálculo previo de interés IBC reducido.

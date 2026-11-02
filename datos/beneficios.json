@@ -13,7 +13,19 @@
       "incumplimiento ocasionado o agravado por COVID-19",
       "pago o facilidad hasta 31/12/2021"
     ],
-    "fuente": "Ley 2155 de 2021 art.45; Resolución DIAN 126 de 2021; Oficio DIAN 913636 de 2021"
+    "fuente": "Ley 2155 de 2021 art.45; Resolución DIAN 126 de 2021; Oficio DIAN 913636 de 2021",
+    "consulta": {
+      "norma": "Ley 2155/2021 · Art. 45",
+      "beneficio": "Interés al 20% del IBC. Sanción al 20%, con mínimo.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Mora al 30/06/2021 e incumplimiento ocasionado o agravado por COVID-19.",
+        "Pago o facilidad dentro del plazo legal. La reducción de sanción se aplica una sola vez, con piso mínimo."
+      ],
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/ley_2155_2021.htm"
+    }
   },
   {
     "id": "LEY2277_ART91",
@@ -27,7 +39,19 @@
       "pago total hasta 30/06/2023 o facilidad suscrita hasta esa fecha",
       "solicitud de facilidad a más tardar 15/05/2023"
     ],
-    "fuente": "Ley 2277 de 2022 art.91; doctrina DIAN sobre aplicación de la tasa al momento del pago"
+    "fuente": "Ley 2277 de 2022 art.91; doctrina DIAN sobre aplicación de la tasa al momento del pago",
+    "consulta": {
+      "norma": "Ley 2277/2022 · Art. 91",
+      "beneficio": "Tasa de interés moratoria al 50%.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Pago total o facilidad suscrita hasta el 30/06/2023.",
+        "Solicitud de facilidad a más tardar el 15/05/2023."
+      ],
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/ley_2277_2022.htm"
+    }
   },
   {
     "id": "D1474_ART20",
@@ -42,7 +66,21 @@
       "obligacion en mora al 31/12/2025",
       "cumplimiento total de requisitos mientras el decreto produjo efectos"
     ],
-    "fuente": "Decreto 1474 de 2025 art.20; Sentencia C-079 de 2026; Concepto DIAN 7375 de 2026"
+    "fuente": "Decreto 1474 de 2025 art.20; Sentencia C-079 de 2026; Concepto DIAN 7375 de 2026",
+    "consulta": {
+      "norma": "D. 1474/2025 · Art. 20",
+      "beneficio": "Interés: 4,5% anual. Sanción y actualización al 15%, con mínimo.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Solo situaciones jurídicas consolidadas durante los efectos del decreto, hasta el 28/01/2026.",
+        "Verificar el cumplimiento total de requisitos antes de la suspensión del 29/01/2026."
+      ],
+      "hasta": "2026-01-28",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/oficio_dian_7375_2026.htm",
+      "fuente": "Decreto 1474/2025, arts. 20 y 21; Concepto DIAN 7375/2026; Sentencia C-079/2026"
+    }
   },
   {
     "id": "D1474_ART21",
@@ -54,7 +92,22 @@
     "condiciones": [
       "cumplimiento de requisitos durante vigencia efectiva del decreto"
     ],
-    "fuente": "Decreto 1474 de 2025 art.21; Sentencia C-079 de 2026; Concepto DIAN 7375 de 2026"
+    "fuente": "Decreto 1474 de 2025 art.21; Sentencia C-079 de 2026; Concepto DIAN 7375 de 2026",
+    "consulta": {
+      "norma": "D. 1474/2025 · Art. 21",
+      "beneficio": "Sin intereses. Sanción declarada al 15%; no se reduce de nuevo.",
+      "aplica": [
+        "Omisos",
+        "Corrección"
+      ],
+      "condiciones": [
+        "Solo situaciones jurídicas consolidadas durante los efectos del decreto, hasta el 28/01/2026.",
+        "Verificar el cumplimiento total de requisitos antes de la suspensión del 29/01/2026."
+      ],
+      "hasta": "2026-01-28",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/oficio_dian_7375_2026.htm",
+      "fuente": "Decreto 1474/2025, arts. 20 y 21; Concepto DIAN 7375/2026; Sentencia C-079/2026"
+    }
   },
   {
     "id": "D0240_ART3",
@@ -69,7 +122,20 @@
       "obligacion exigible y en mora al 31/12/2025",
       "pago dentro del término legal"
     ],
-    "fuente": "Decreto 0240 de 2026 art.3; Concepto DIAN 7491 de 2026"
+    "fuente": "Decreto 0240 de 2026 art.3; Concepto DIAN 7491 de 2026",
+    "consulta": {
+      "norma": "D. 0240/2026 · Art. 3",
+      "beneficio": "Interés: 4,5% anual. Sanción y actualización al 15%, con mínimo.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Mora al 31/12/2025; pago y requisitos legales.",
+        "La sanción reducida no puede ser inferior a la mínima aplicable."
+      ],
+      "desde": "2026-03-13",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_0240_2026.htm"
+    }
   },
   {
     "id": "D0240_ART4",
@@ -83,7 +149,21 @@
       "omiso/corrección dentro de los supuestos legales",
       "pago total del capital para el beneficio"
     ],
-    "fuente": "Decreto 0240 de 2026 art.4; Concepto DIAN 7491 de 2026"
+    "fuente": "Decreto 0240 de 2026 art.4; Concepto DIAN 7491 de 2026",
+    "consulta": {
+      "norma": "D. 0240/2026 · Art. 4",
+      "beneficio": "Sin intereses. Sanción declarada al 15%; no se reduce de nuevo.",
+      "aplica": [
+        "Omisos",
+        "Corrección"
+      ],
+      "condiciones": [
+        "Omisión o corrección dentro de los supuestos del artículo; verificar los requisitos y el pago correspondiente.",
+        "Para omisos/corrección se conserva la sanción ya declarada, sin aplicar otra reducción sobre ella."
+      ],
+      "desde": "2026-03-13",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_0240_2026.htm"
+    }
   },
   {
     "id": "D1419_ART9",
@@ -95,7 +175,19 @@
     "fechaCorteTituloAntesDe": "2026-08-10",
     "efectoInteresAnual": 0.045,
     "efectoSancionFactor": 0.15,
-    "fuente": "Decreto Legislativo 1419 de 2026, artículo 9"
+    "fuente": "Decreto Legislativo 1419 de 2026, artículo 9",
+    "consulta": {
+      "norma": "D. 1419/2026 · Art. 9",
+      "beneficio": "Interés: 4,5% anual. Sanción y actualización al 15%, con mínimo.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Obligación en mora al 10/08/2026; pago total dentro del plazo.",
+        "En TDJ se verifican las reglas de fecha de constitución y aplicación del título; el artículo 9 contempla títulos constituidos antes del 10/08/2026."
+      ],
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_1419_2026.htm"
+    }
   },
   {
     "id": "D1419_ART10_OMISAS",
@@ -106,7 +198,20 @@
     "fechaPagoHasta": "2026-11-19",
     "efectoInteresAnual": 0.045,
     "efectoSancionFactor": 0.15,
-    "fuente": "Decreto Legislativo 1419 de 2026, artículo 10, obligaciones tributarias omitidas"
+    "fuente": "Decreto Legislativo 1419 de 2026, artículo 10, obligaciones tributarias omitidas",
+    "consulta": {
+      "norma": "D. 1419/2026 · Art. 10 · Omisos",
+      "beneficio": "Interés: 4,5% anual. Sanción declarada al 15%; no se reduce de nuevo.",
+      "aplica": [
+        "Omisos"
+      ],
+      "condiciones": [
+        "Omisión configurada al 10/08/2026.",
+        "Presentar y pagar dentro del plazo legal. En retenciones ineficaces, verificar pago el mismo día de la presentación.",
+        "La sanción ingresada debe corresponder a la declarada; no se vuelve a reducir en el cálculo."
+      ],
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_1419_2026.htm"
+    }
   },
   {
     "id": "D1419_ART10_CORRECCIONES",
@@ -117,7 +222,20 @@
     "fechaPagoHasta": "2026-11-19",
     "efectoInteresFactor": 0,
     "efectoSancionFactor": 0.15,
-    "fuente": "Decreto Legislativo 1419 de 2026, artículo 10, correcciones tributarias"
+    "fuente": "Decreto Legislativo 1419 de 2026, artículo 10, correcciones tributarias",
+    "consulta": {
+      "norma": "D. 1419/2026 · Art. 10 · Correcciones",
+      "beneficio": "Sin intereses. Sanción declarada al 15%; no se reduce de nuevo.",
+      "aplica": [
+        "Corrección"
+      ],
+      "condiciones": [
+        "Declaración presentada al 10/08/2026; corregir y pagar dentro del plazo legal.",
+        "Corrección que incrementa el valor a pagar o disminuye el saldo a favor o las pérdidas líquidas, según los supuestos legales.",
+        "La sanción ingresada debe corresponder a la declarada; no se vuelve a reducir en el cálculo."
+      ],
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_1419_2026.htm"
+    }
   },
   {
     "id": "LEY2155_ART48",
@@ -134,21 +252,93 @@
       "El vencimiento exigible al 30/06/2021 es el criterio conservador usado por el motor",
       "Verificar demas requisitos de favorabilidad en etapa de cobro"
     ],
-    "fuente": "Ley 2155 de 2021 art. 48 paragrafo 2; DIAN Comunicado 041 de 2022; SFC IBC certificado 2021 y 2022"
+    "fuente": "Ley 2155 de 2021 art. 48 paragrafo 2; DIAN Comunicado 041 de 2022; SFC IBC certificado 2021 y 2022",
+    "consulta": {
+      "norma": "Ley 2155/2021 · Art. 48, par. 2",
+      "beneficio": "Interés bancario corriente certificado; evaluación por cuota.",
+      "aplica": [
+        "Mora",
+        "Cobro"
+      ],
+      "condiciones": [
+        "Exigible al 30/06/2021; verificar mérito ejecutivo y requisitos de favorabilidad en cobro.",
+        "Pago real entre 14/09/2021 y 31/03/2022; las obligaciones mixtas se evalúan por cuota.",
+        "La automatización de la tasa no aplica reducciones adicionales de sanción por favorabilidad."
+      ],
+      "activacion": "Automático",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/ley_2155_2021.htm"
+    }
   },
   {
     "id": "D688_ART1",
     "nombre": "ART. 1 DECRETO 688 DE 2020 - IBC",
     "estado": "HISTORICO_CERRADO",
     "fuente": "Hoja Tasa de Interés del Liquidador V9.5.2",
-    "formula": "(TIM + 2%) / 1,5"
+    "formula": "(TIM + 2%) / 1,5",
+    "consulta": {
+      "norma": "D. 688/2020 · Art. 1 · Regla general",
+      "beneficio": "Interés bancario corriente certificado. Sin reducción de sanción.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Según el mes del pago; requiere pago real con TASA DIAN.",
+        "No se selecciona el tratamiento especial del 50% de manera automática."
+      ],
+      "desde": "2020-05-22",
+      "hasta": "2020-11-30",
+      "activacion": "Automático",
+      "fuente": "Decreto Legislativo 688/2020, artículo 1, inciso primero",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_0688_2020.htm",
+      "aliases": [
+        "DECRETO 688 DE 2020"
+      ]
+    }
   },
   {
     "id": "LEY2010_ART120_PAR3",
     "nombre": "ART. 120 LEY 2010 2018 PARAG 3- IBC+2",
     "estado": "HISTORICO_CERRADO",
     "fuente": "Hoja Tasa de Interés del Liquidador V9.5.2",
-    "formula": "(TIM + 2%) / 1,5 + 2%"
+    "formula": "(TIM + 2%) / 1,5 + 2%",
+    "consulta": {
+      "variantes": [
+        {
+          "id": "LEY2010_ART120_AUTO",
+          "norma": "Ley 2010/2019 · Art. 120, par. 2",
+          "beneficio": "Interés bancario corriente + 2 puntos porcentuales.",
+          "aplica": [
+            "Mora"
+          ],
+          "activacion": "Automático",
+          "desde": "2019-12-27",
+          "hasta": "2020-05-21",
+          "periodo": "27/12/2019 – 21/05/2020 · Ventana automática del motor",
+          "condiciones": [
+            "Vencimiento anterior al 27/12/2019; requiere pago real con TASA DIAN.",
+            "Se aplica por vencimiento en obligaciones mixtas. El período indicado corresponde al automatismo del motor, no a todos los plazos legales de favorabilidad."
+          ],
+          "fuente": "Ley 2010 de 2019, artículo 120, parágrafo 2; Decreto 688/2020, arts. 1 y 3",
+          "url": "https://normograma.dian.gov.co/dian/compilacion/docs/ley_2010_2019.htm"
+        },
+        {
+          "id": "LEY2010_ART120_PAR3",
+          "norma": "Ley 2010/2019 · Art. 120 · Opción histórica IBC + 2",
+          "beneficio": "Fórmula de la opción: (TIM + 2%) / 1,5 + 2%.",
+          "aplica": [
+            "Mora"
+          ],
+          "activacion": "Seleccionable",
+          "periodo": "Según pago o acuerdo histórico",
+          "condiciones": [
+            "Rótulo heredado por depurar; corresponde al mismo beneficio IBC + 2, no a un beneficio adicional.",
+            "La opción histórica estima la tasa a partir de TIM. Verificar el pago, el acuerdo y los plazos en el expediente. No sustituye el IBC certificado de la regla automática."
+          ],
+          "fuente": "Ley 2010/2019, artículo 120, parágrafos 2 y 3; fórmula histórica conservada en el selector",
+          "url": "https://normograma.dian.gov.co/dian/compilacion/docs/ley_2010_2019.htm"
+        }
+      ]
+    }
   },
   {
     "id": "LEY2277_ART93",
@@ -160,7 +350,24 @@
     "condiciones": [
       "Referencia observada en la hoja Tasa de Interés del Liquidador V9.5.2"
     ],
-    "fuente": "Hoja Tasa de Interés del Liquidador V9.5.2 — nota ART. 93: SANCIONES OMISAS: 40% SANCION Y 40% INTERES"
+    "fuente": "Hoja Tasa de Interés del Liquidador V9.5.2 — nota ART. 93: SANCIONES OMISAS: 40% SANCION Y 40% INTERES",
+    "consulta": {
+      "norma": "Ley 2277/2022 · Art. 93",
+      "beneficio": "Interés y sanción al 40%: reducción del 60%.",
+      "aplica": [
+        "Omisos",
+        "Corrección"
+      ],
+      "condiciones": [
+        "Presentar antes del 31/05/2023. Acuerdo antes del 30/06/2023; revisar requisitos.",
+        "Para omisos, verificar la omisión al 31/12/2022. El parágrafo 2 contempla correcciones con inexactitudes."
+      ],
+      "desde": "2022-12-13",
+      "hasta": "2023-05-30",
+      "periodo": "Presentar antes del 31/05/2023; acuerdos antes del 30/06/2023.",
+      "fuente": "Ley 2277/2022, artículo 93 y parágrafo 2",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/ley_2277_2022.htm"
+    }
   },
   {
     "id": "DECRETO688_ART1_IBC50",
@@ -176,6 +383,19 @@
     "condiciones": [
       "Funcionario verifica condiciones del contribuyente; no se selecciona automáticamente",
       "Pago entre 22/05/2020 y 30/11/2020, inclusive"
-    ]
+    ],
+    "consulta": {
+      "norma": "D. 688/2020 · Art. 1, inciso 2",
+      "beneficio": "50% del interés bancario corriente.",
+      "aplica": [
+        "Mora"
+      ],
+      "condiciones": [
+        "Actividades especialmente afectadas por la emergencia sanitaria; verificar condiciones.",
+        "Selección manual del funcionario. Pago entre el 22/05/2020 y el 30/11/2020."
+      ],
+      "activacion": "Selección manual",
+      "url": "https://normograma.dian.gov.co/dian/compilacion/docs/decreto_0688_2020.htm"
+    }
   }
 ]

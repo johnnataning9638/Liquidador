@@ -23,6 +23,7 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
+          node tests/catalogo-beneficios-269.mjs
           python3 tests/ibc-certificado-265.py
           node tests/favorabilidad-2010-267.mjs
           node tests/ley2155-art45-48-268.mjs
