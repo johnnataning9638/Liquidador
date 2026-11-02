@@ -1,7 +1,7 @@
 {
-  "version": "16.33.270",
-  "previousVersion": "16.33.269",
-  "baseCommit": "ac9c0099b42eb4514dced809f46994d3462d0196",
+  "version": "16.33.271",
+  "previousVersion": "16.33.270",
+  "baseCommit": "b5ba6969eafab9174ecd23aac8d7f6946857c685",
   "date": "2026-11-02",
-  "change": "Reiniciar búsqueda y filtros de Beneficios al abrir la consulta en DIAN y TDJ; cálculo intacto"
+  "change": "Corregir render del panel de tasas TDJ: usar la TIM de cada fila para completar la carga de parámetros; fórmulas intactas"
 }

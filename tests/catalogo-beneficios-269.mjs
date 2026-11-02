@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
+import {revertirPanelTasas271} from './alcance-panel-tasas-271.mjs';
 const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n');
 assert.ok(fs.existsSync('js/catalogo-beneficios.js'),'Debe existir el catálogo compartido DIAN/TDJ');
 const {crearCatalogo,filtrarCatalogo}=await import('../js/catalogo-beneficios.js');
@@ -31,7 +32,7 @@ const base='b2032278f1617cf9b6f1fcc445abefc764b13829';
 const before=JSON.parse(execFileSync('git',['show',base+':datos/beneficios.json'],{encoding:'utf8'}));
 assert.deepEqual(data.map(({consulta,...regla})=>regla),before,'Registro de cálculo intacto');
 const manifest=JSON.parse(read('runtime-manifest.json'));
-for(const file of Object.keys(manifest.protected))assert.equal(read(file),execFileSync('git',['show',base+':'+file],{encoding:'utf8'}).replaceAll('\r\n','\n'),file+' intacto');
+for(const file of Object.keys(manifest.protected))assert.equal(revertirPanelTasas271(read(file),file),execFileSync('git',['show',base+':'+file],{encoding:'utf8'}).replaceAll('\r\n','\n'),file+' intacto salvo panel TIM 271 delimitado');
 for(const file of ['liquidacion.html','titulos.html']){
  const html=read(file);
  assert.match(html,/id="btnBeneficios"/);
