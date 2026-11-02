@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
+import {revertirCambios269} from './alcance-catalogo-269.mjs';
 const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-favorabilidad-267.json',import.meta.url),'utf8'));
 const patches268=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-ley2155-268.json',import.meta.url),'utf8'));
 export function revertirCambios267(source,file){
- source=source.replaceAll('\r\n','\n');
+ source=revertirCambios269(source,file);
  for(const [before,after] of [...(patches268[file]||[])].reverse()){
   assert.equal(source.split(after).length-1,1,file+': artículo 45 delimitado');source=source.replace(after,before);
  }
