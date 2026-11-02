@@ -1,3 +1,10 @@
+## 16.33.274 — Importación exclusivamente PDF (2026-11-02)
+
+- Botón Importar PDF en las seis pestañas DIAN/TDJ; se exige adjuntar el Generador de Cuotas y se mantiene el azul claro.
+- Retirada completa del lector web DIAN, complemento, descarga y mensajes relacionados. Sin instalaciones adicionales.
+- Lectura PDF local de identificación, impuesto, cuotas y sanción; conserva los pagos existentes, los importadores habituales y los cálculos.
+- Documento sin impuesto permite solo sanción sin cuota ficticia. Se conserva la limpieza del adjunto y la selección de destino TDJ.
+
 ## 16.33.273 — Importación independiente web y PDF (2026-11-02)
 
 - Botón azul claro Importar web - PDF en las seis pestañas DIAN/TDJ, reutilizando los recuadros existentes.

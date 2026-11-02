@@ -34,10 +34,8 @@ jobs:
           pdftotext -v
       - name: Verificar sanciones mínimas DIAN 2006–2026 en ambos módulos
         run: TEST_SITE_DIR=dist node tests/navegador-sanciones-minimas-261.mjs
-      - name: Importación web PDF aislada desde las seis pestañas
+      - name: Importación PDF aislada desde las seis pestañas
         run: TEST_SITE_DIR=dist node tests/navegador-importacion-273.mjs
-      - name: Complemento real DIAN en navegador aislado con datos sintéticos
-        run: TEST_SITE_DIR=dist node tests/navegador-extension-273.mjs
       - name: Verificar catálogo compartido de beneficios y nuevos registros DIAN TDJ
         run: TEST_SITE_DIR=dist node tests/navegador-beneficios-269.mjs
       - name: Verificar carga real de parámetros, indicador verde y panel TIM IPC de TDJ

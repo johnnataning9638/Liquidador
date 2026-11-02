@@ -14,7 +14,6 @@ try{
   if(name==='js/supabase-config.js')return route.fulfill({contentType:'text/javascript',body:'export const SUPABASE_URL="";export const SUPABASE_ANON_KEY="";'});
   try{return route.fulfill({contentType:/\.(mjs|js)$/.test(name)?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.json')?'application/json':name.endsWith('.zip')?'application/zip':'text/html',body:await fs.readFile(file)});}catch{return route.fulfill({status:404,body:''});}
  });
- const src={fuente:'WEB_MUISCA',nit:'900123456',razonSocial:'PRUEBA S.A.S.',concepto:'RENTA',anio:2024,periodo:1,numeroObligacion:'100100000000001',fechaDeclarar:'2025-08-01',pagos:[{recibo:'4900000000001',fecha:'2025-10-20',valor:84000}]};
  const drop=async(p,selector,bytes,pegar=false)=>{
   const dt=await p.evaluateHandle(({b})=>{const d=new DataTransfer();d.items.add(new File([new Uint8Array(b)],'generador.pdf',{type:'application/pdf'}));return d;},{b:[...bytes]});
   if(pegar)await p.evaluate(({dt,selector})=>document.querySelector(selector).dispatchEvent(new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true,composed:true})),{dt,selector});
@@ -24,9 +23,9 @@ try{
   const filename=tdj?'titulos.html':'liquidacion.html',campo=tdj?'#importarObligacionTexto':'#pegarDatosObligacion',nit=tdj?'#nitGlobal':'#nit',mod=tdj?'tdj-core-16.33.143.js':'app.js';
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(filename+': '+e.message));p.on('dialog',d=>d.accept());
   const abrir=async()=>{await p.goto(base+'/'+filename,{waitUntil:'networkidle'});await p.waitForFunction(()=>document.querySelectorAll('.wpdf-trigger').length===3);};
-  const snapshot=()=>p.evaluate(async mod=>(await import('/js/'+mod+'?v=16.33.273')).contextoImportacionWebPDF273(),mod);
+  const snapshot=()=>p.evaluate(async mod=>(await import('/js/'+mod+'?v=16.33.274')).contextoImportacionWebPDF273(),mod);
   const datos=s=>tdj?s.obligaciones[0]:s;
-  await abrir();assert.equal(await p.locator('.wpdf-trigger').count(),3);
+  await abrir();assert.equal(await p.locator('.wpdf-trigger').count(),3);assert.deepEqual(await p.locator('.wpdf-trigger').allTextContents(),Array(3).fill('Importar PDF'));assert.equal(await p.locator('a[download]').count(),0);
   const initial=await snapshot();await drop(p,campo,generadorPDF());assert.deepEqual(await snapshot(),initial,'arrastrar no importa');
   await p.locator(tdj?'#btnImportarObligacionTDJ':'#btnProcesarDatosObligacion').click();assert.equal(await p.locator(campo).inputValue(),'');assert.deepEqual(await snapshot(),initial,'importar habitual descarta PDF');
   await drop(p,campo,generadorPDF());await p.locator(`.tab-btn[data-tab="${tdj?'titulos':'resultados'}"]`).click();await p.locator('.tab-pane.active .wpdf-trigger').click();await p.waitForFunction(()=>document.querySelector('.tab-pane.active .wpdf-estado')?.textContent.startsWith('Importación lista'));assert.equal(datos(await snapshot()).vencimientos.length,2,'el adjunto se comparte al cambiar de pestaña');
@@ -36,17 +35,20 @@ try{
    await drop(p,dropCampo,generadorPDF({mixto:true}),tab!=='datos');
    await p.locator('.tab-pane.active .wpdf-trigger').click();
    await p.waitForFunction(()=>document.querySelector('.tab-pane.active .wpdf-estado')?.textContent.startsWith('Importación lista')).catch(async e=>{console.log(filename,tab,await p.locator('.tab-pane.active .wpdf-estado').innerText(),await p.locator(dropCampo).inputValue());throw e;});
-   const d=datos(await snapshot());assert.equal(await p.locator(nit).inputValue(),src.nit);assert.deepEqual(d.vencimientos.filter(v=>v.fecha).map(v=>v.impuesto),[200000,300000]);assert.equal(d.valorSancion,524000);assert.equal(d.fechaSancion,'2025-09-18');
+   const d=datos(await snapshot());assert.equal(await p.locator(nit).inputValue(),'900123456');assert.deepEqual(d.vencimientos.filter(v=>v.fecha).map(v=>v.impuesto),[200000,300000]);assert.equal(d.valorSancion,524000);assert.equal(d.fechaSancion,'2025-09-18');
    assert.equal(await p.locator(dropCampo).inputValue(),'');assert.equal(await p.locator('[data-pdf-adjunto]').count(),0);
    assert.equal(d.pagos.length,0);if(tdj)assert.equal(await p.locator('#tablaTitulos tbody tr').count(),0);
    if(!tdj)assert.equal(await p.locator('#rDeudaImpuesto').innerText(),'$ 0','importar no ejecuta una liquidación');
-   // Simula exclusivamente el canal del complemento, con los mismos controles de nonce y origen.
-   await p.evaluate(src=>window.addEventListener('message',e=>{if(e.data?.tipo==='LIQUIDADOR_MUISCA_SOLICITUD_273')window.postMessage({tipo:'LIQUIDADOR_MUISCA_RESPUESTA_273',id:e.data.id,datos:src},location.origin);}),src);
-   for(let i=0;i<2;i++){await p.locator('.tab-pane.active .wpdf-trigger').click();await p.waitForFunction(()=>document.querySelector('.tab-pane.active .wpdf-estado')?.textContent.startsWith('Importación lista'));}
-   const merged=datos(await snapshot());assert.equal(merged.vencimientos[0].fecha,'2025-09-19');assert.equal(merged.pagos.length,1);assert.equal(merged.pagos[0].valor,84000);
+   const antes=await snapshot();
+   await p.locator('.tab-pane.active .wpdf-trigger').click();await p.locator('.tab-pane.active .wpdf-error').waitFor();assert.deepEqual(await snapshot(),antes,'sin adjunto no lee la web ni cambia datos');
    assert.equal(await p.evaluate(()=>Object.values(localStorage).some(v=>v.includes('900123456')||v.includes('PRUEBA S.A.S.'))),false,'sin persistir contribuyente');
-   results.push(filename+': '+tab+' PDF mixto y web idempotente');
+   results.push(filename+': '+tab+' PDF mixto y rechazo sin adjunto');
   }
+  await abrir();await p.locator('.tab-btn[data-tab="pagos"]').click();
+  const campoPagos=tdj?'#importarPagosTexto':'#pegarDatos';
+  await p.locator(campoPagos).fill('RECIBO\tFECHA\tVALOR\n4900000000001\t20/10/2025\t84.000');await p.locator(tdj?'#btnImportarPagosTDJ':'#btnProcesarPegado').click();
+  const pagosAntes=datos(await snapshot()).pagos;assert.equal(pagosAntes.length,1);
+  await drop(p,campoPagos,generadorPDF());await p.locator('.tab-pane.active .wpdf-trigger').click();await p.waitForFunction(()=>document.querySelector('.tab-pane.active .wpdf-estado')?.textContent.startsWith('Importación lista'));assert.deepEqual(datos(await snapshot()).pagos,pagosAntes,'importar PDF conserva los pagos existentes');
   await abrir();await drop(p,campo,generadorPDF({soloSancion:true}));await p.locator('.tab-pane.active .wpdf-trigger').click();await p.waitForFunction(()=>document.querySelector('.wpdf-estado')?.textContent.startsWith('Importación lista'));
   const solo=datos(await snapshot());assert.equal(solo.valorSancion,524000);assert.equal(solo.fechaSancion,'2026-09-30');assert.equal(solo.vencimientos.filter(v=>v.fecha||v.impuesto).length,0,'solo sanción sin cuota inventada');
   const before=await snapshot();await drop(p,campo,Buffer.from('%PDF-1.4\nINVALIDO'));await p.locator('.tab-pane.active .wpdf-trigger').click();await p.locator('.wpdf-error').first().waitFor();assert.deepEqual(await snapshot(),before,'PDF inválido no modifica datos');
