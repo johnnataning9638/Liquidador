@@ -5,7 +5,13 @@ import {leerWeb} from './web.js';
 let adjunto=null, revision=0,ocupado=false;
 const esTDJ=location.pathname.endsWith('/titulos.html');
 const campos=[...(esTDJ?document.querySelectorAll('#importarObligacionTexto,#importarPagosTexto,#importarTitulosTexto'):document.querySelectorAll('#pegarDatosObligacion,#pegarDatos'))];
-const bridge=()=>esTDJ?import('../tdj-core-16.33.143.js?v=16.33.273'):import('../app.js?v=16.33.273');
+const bridge=()=>{
+ const script=document.querySelector(esTDJ?'script[src^="js/tdj.js?"]':'script[src^="js/app.js?"]');
+ const version=script&&new URL(script.src).searchParams.get('v');
+ if(!version)throw Error('No se identificó la versión del liquidador. Recargue la página.');
+ // Compartir la misma instancia del módulo actual, también en versiones futuras.
+ return import(new URL(`../${esTDJ?'tdj-core-16.33.143.js':'app.js'}?v=${encodeURIComponent(version)}`,import.meta.url).href);
+};
 function estado(texto,error=false){
  document.querySelectorAll('.wpdf-estado').forEach(el=>{el.textContent=texto;el.classList.toggle('wpdf-error',error);});
 }
