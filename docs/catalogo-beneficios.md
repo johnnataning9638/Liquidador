@@ -2,6 +2,8 @@
 
 La consulta se genera desde `datos/beneficios.json`. Ambos módulos usan el mismo componente, `js/catalogo-beneficios.js`, y la misma presentación, `beneficios.css`.
 
+Cada apertura reinicia la búsqueda y selecciona Todos, mostrando el catálogo completo desde el inicio, independientemente de cómo se cerró la ventana.
+
 ## Agregar un beneficio
 
 Al incorporar un beneficio en el sistema, registrarlo en `datos/beneficios.json`, que ya alimenta la configuración de los motores. El catálogo incluye cada registro automáticamente; no hay una segunda lista de filas en el componente visual. Las reglas automáticas también deben tener un registro en este archivo.

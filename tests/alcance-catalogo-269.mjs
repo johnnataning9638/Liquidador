@@ -4,6 +4,8 @@ import {execFileSync} from 'node:child_process';
 const patches=JSON.parse(fs.readFileSync(new URL('./fixtures/cambios-catalogo-269.json',import.meta.url),'utf8'));
 export function revertirCambios269(source,file){
  source=source.replaceAll('\r\n','\n');
+ // 270 únicamente actualiza la identificación de versión de estas vistas.
+ if(['index.html','liquidacion.html','titulos.html','js/tdj.js'].includes(file))source=source.replaceAll('16.33.270','16.33.269');
  for(const [before,after] of [...(patches[file]||[])].reverse()){
   assert.equal(source.split(after).length-1,1,file+': catálogo 269 delimitado');source=source.replace(after,before);
  }

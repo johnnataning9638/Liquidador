@@ -1,3 +1,9 @@
+## 16.33.270 — Reinicio de filtros de Beneficios (2026-11-02)
+
+- Al reabrir la consulta en DIAN y TDJ, se borra la búsqueda, se selecciona Todos y se muestra el catálogo completo desde el inicio.
+- Verificado al cerrar con el botón, Escape o el fondo de la ventana.
+- Sin cambios en beneficios, cálculos, importaciones, exportaciones ni Supabase.
+
 ## 16.33.269 — Consulta de beneficios DIAN y TDJ (2026-11-02)
 
 - Botón Beneficios a la izquierda del indicador de parámetros en ambos liquidadores; ventana con búsqueda, filtros, cuatro columnas, fuentes oficiales y condiciones.
