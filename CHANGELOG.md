@@ -1,3 +1,10 @@
+## 16.33.271 — Carga de parámetros TDJ (2026-11-02)
+
+- Corrige el ReferenceError al dibujar el panel de tasas TDJ: se presenta la TIM de cada fila, sin consultar un pago u obligación inexistentes.
+- La inicialización puede completar los paneles TIM/IPC y mostrar el indicador verde; los fallos reales de carga conservan su estado de error.
+- Prueba de navegador del estado del indicador, excepciones atrapadas, histórico de tasas completo, IPC y cálculo TDJ; comparación con DIAN.
+- Fórmulas, motores, fuentes de parámetros, beneficios y Supabase intactos. Cambio de presentación trazable y reversible.
+
 ## 16.33.270 — Reinicio de filtros de Beneficios (2026-11-02)
 
 - Al reabrir la consulta en DIAN y TDJ, se borra la búsqueda, se selecciona Todos y se muestra el catálogo completo desde el inicio.

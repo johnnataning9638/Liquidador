@@ -1,0 +1,8 @@
+{
+  "js/tdj-core-16.33.143.js": [
+    [
+      "      return `<tr><td>${esc(fechaVisible(t.desde||\"\"))}</td><td>${esc(fechaVisible(t.hasta||\"\"))}</td><td>${textoTasaPagoTDJ(p,o)}</td><td>${esc(t.fuente||\"LOCAL\")}</td><td>${esc(t.norma||\"—\")}</td></tr>`;\n",
+      "      return `<tr><td>${esc(fechaVisible(t.desde||\"\"))}</td><td>${esc(fechaVisible(t.hasta||\"\"))}</td><td>${tasa==null?\"SIN DATOS\":(tasa*100).toFixed(3)+\"%\"}</td><td>${esc(t.fuente||\"LOCAL\")}</td><td>${esc(t.norma||\"—\")}</td></tr>`;\n"
+    ]
+  ]
+}

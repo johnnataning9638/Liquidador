@@ -2500,7 +2500,7 @@ function renderPanelesTasasIPC(){
     const filas=[...tasas].sort((a,b)=>String(a.desde||"").localeCompare(String(b.desde||"")));
     tbodyT.innerHTML=filas.map(t=>{
       const tasa=normalizarTasaTDJ(t?.tasas?.["TASA DIAN"]);
-      return `<tr><td>${esc(fechaVisible(t.desde||""))}</td><td>${esc(fechaVisible(t.hasta||""))}</td><td>${textoTasaPagoTDJ(p,o)}</td><td>${esc(t.fuente||"LOCAL")}</td><td>${esc(t.norma||"—")}</td></tr>`;
+      return `<tr><td>${esc(fechaVisible(t.desde||""))}</td><td>${esc(fechaVisible(t.hasta||""))}</td><td>${tasa==null?"SIN DATOS":(tasa*100).toFixed(3)+"%"}</td><td>${esc(t.fuente||"LOCAL")}</td><td>${esc(t.norma||"—")}</td></tr>`;
     }).join("") || `<tr><td colspan="5">NO HAY TASAS DISPONIBLES.</td></tr>`;
   }
   if(tbodyI){
