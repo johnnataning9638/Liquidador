@@ -1,3 +1,10 @@
+## 16.33.279 — Pegado y destino de importación (2026-11-03)
+
+- DIAN y TDJ: pegado de texto o tablas de Excel en todos los recuadros, incluso al sustituir un PDF pendiente; se conserva arrastrar/pegar PDF.
+- TDJ: PDF en Datos/Pagos respeta el selector de cada pestaña; Títulos tiene selector PDF propio cuando hay varias obligaciones.
+- Una obligación: asignación automática. Dos o más: elección explícita obligatoria; sin asignación automática por coincidencia.
+- Sin cambios a motores, beneficios, cálculos, PDF de resultados, exportaciones ni Supabase.
+
 ## 16.33.278 — PDF sin rótulo DIAN (2026-11-03)
 
 - Eliminado el rótulo DIAN del extremo izquierdo de los encabezados PDF: detalle, cortes, solo sanción, resúmenes, excedentes y cierre TDJ.
