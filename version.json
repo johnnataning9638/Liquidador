@@ -1,7 +1,7 @@
 {
-  "version": "16.33.280",
-  "previousVersion": "16.33.279",
-  "baseCommit": "76b0e07c985c056d99535a3c3c774eb3c5297723",
+  "version": "16.33.281",
+  "previousVersion": "16.33.280",
+  "baseCommit": "366396b0311e631ff642c215f95de6117bc2eecc",
   "date": "2026-11-03",
-  "change": "Reconocer RETENCIÓN como saldo tributario en PDF 1116 únicamente para retención en la fuente"
+  "change": "Sincronizar visual de tasa TDJ Art. 45 Ley 2155 con tabla reducida del motor y distinguir falta de fecha"
 }

@@ -1,3 +1,9 @@
+## 16.33.281 — Art. 45 Ley 2155: tasa visible TDJ (2026-11-03)
+
+- Títulos TDJ muestran la tasa final exacta de la tabla reducida de 2021 que ya usa el motor, con dos decimales y sin recalcularla desde TIM.
+- Si falta fecha TDJ se solicita ingresarla; si la fecha no tiene tasa parametrizada se informa claramente, sin usar tasa DIAN como sustituto.
+- Prueba cruzada de los once meses contra el motor vigente; cálculos, beneficios, sanciones, pagos y exportaciones intactos.
+
 ## 16.33.280 — Equivalencia RETENCIÓN en importación PDF (2026-11-03)
 
 - Los generadores de cuotas 1116 de retención en la fuente admiten filas con descripción IMPUESTO o RETENCIÓN para capturar el valor del tributo.

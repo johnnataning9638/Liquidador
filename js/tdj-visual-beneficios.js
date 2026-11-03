@@ -1,3 +1,4 @@
+import {tasaArt45Reducida2021} from "./ley2155-art45-vista.js?v=16.33.281";
 import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50,tasaIBC68850} from "./decreto-688-50.js?v=16.33.266";
 import {esBeneficio1419TDJ,fechaElegible1419TDJ} from './tdj-tasas-203.js?v=16.33.205';
@@ -141,13 +142,15 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     if(t===TIPO_688_50)return tasaIBC68850(f);
     const auto=favorabilidadAutomatica(t,f,contexto);
     if(auto)return auto.tasa;
+    // Art. 45: mostrar exactamente las tasas mensuales del motor, NO recalcular
+    // a partir de TIM ni de una aproximación de IBC.
+    if(es("LEY 2155")&&es("ART. 45"))return tasaArt45Reducida2021(f);
     const row=filaTimVisualTDJ(f,tasasMoratorias);
     const tim=Number(row?.tasas?.["TASA DIAN"]);
     if(!Number.isFinite(tim))return null;
     const r4=n=>Math.round(Number(n)*10000)/10000;
     if(es("LEY 2277")&&es("ART. 91"))return r4(tim*0.5);
     if(es("LEY 2277")&&es("ART. 93"))return r4(tim*0.4);
-    if(es("LEY 2155")&&es("ART. 45"))return r4(((tim+0.02)/1.5)*0.20);
     if(es("ART. 48 LEY 2155")||es("DECRETO 688 DE 2020"))return r4((tim+0.02)/1.5);
     if(es("ART. 120 LEY 2010"))return r4(((tim+0.02)/1.5)+0.02);
     const directo=Number(row?.tasas?.[t]);
@@ -177,6 +180,14 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     const vencimientos=[...(card?.querySelectorAll('.cuotas-mini tbody tr')||[])].map(tr=>({fecha:fechaISOVisual(tr.querySelector('.fecha-campo')?.value),impuesto:Number(String(tr.querySelector('[data-v="impuesto"]')?.value||'').replace(/[^0-9-]/g,''))}));
     const contexto={vencimientos,valorPago:Number(String(fila?.querySelector('[data-t="valor"]')?.value||'').replace(/[^0-9-]/g,''))};
     const tasa=tasaPorFechaLocal(fecha,tipo,contexto);
+    if(tipo==="ART. 45 LEY 2155"&&tasa==null){
+      box.textContent=fecha?"TASA ART. 45: FUERA DE TABLA":"TASA ART. 45: INGRESE FECHA TDJ";
+      box.classList.add("sin-datos");
+      box.title=fecha
+        ?"El motor tiene tasas reducidas del Art. 45 únicamente para febrero a diciembre de 2021. No se inventa ni se sustituye por TIM."
+        :"Ingrese la fecha del título para consultar la tabla reducida del Art. 45.";
+      return;
+    }
     if(favorabilidadAutomatica(tipo,fecha,contexto)?.porCuota){box.textContent="TASA: SEGÚN CUOTA";box.classList.remove("sin-datos");return;}
     // Solo referencia visual, nunca interés oficial inventado para meses no parametrizados.
     if(tasa==null && tipo==="TASA DIAN" && fecha){
@@ -197,7 +208,11 @@ import {referenciaTimTDJ,filaTimVisualTDJ} from './tdj-tasa-vista-207.js?v=16.33
     }else{
       box.textContent=`TASA: ${tasa==null?"SIN DATOS":(Number(tasa)*100).toFixed(3)+"%"}`;box.classList.toggle("sin-datos",tasa==null);
     }
-    if(!fueraDeVentana)box.title=`${tipo} · FECHA TDJ ${fecha||"PENDIENTE"}`;
+    if(tipo==="ART. 45 LEY 2155"&&tasa!=null){
+      box.textContent="TASA: "+(tasa*100).toFixed(2)+"% EA";
+      box.classList.remove("sin-datos");
+      box.title="ART. 45 LEY 2155 · FECHA TDJ "+fecha+" · tasa reducida parametrizada al 20% del IBC";
+    }else if(!fueraDeVentana)box.title=`${tipo} · FECHA TDJ ${fecha||"PENDIENTE"}`;
   }
 
   // Texto idéntico al aviso ya aprobado en el Liquidador DIAN.
