@@ -1,6 +1,6 @@
 import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.122";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.276";
-import {requiereProyeccionBeneficio,calcularConProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.276';
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.277";
+import {requiereProyeccionBeneficio,calcularConProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL

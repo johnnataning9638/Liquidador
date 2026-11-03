@@ -1,3 +1,9 @@
+## 16.33.277 — Beneficio en el cuadro principal (2026-11-02)
+
+- Fecha y beneficio con valor vacío/cero se reflejan directamente en deuda y saldo, con aplicado cero, como con $1 sin descontar ese peso.
+- DIAN privada, oficial y TDJ usan el mismo resultado en pantalla, PDF y Excel; eliminado el resumen adicional de beneficio.
+- Consultas independientes y pagos/títulos reales preservados; no cambia la fórmula oficial 275 ni los parámetros.
+
 ## 16.33.276 — Proyección con beneficio sin abono (2026-11-02)
 
 - Fecha y beneficio con valor cero o vacío generan una proyección independiente de impuesto, intereses, sanción y total a pagar.

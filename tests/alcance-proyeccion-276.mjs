@@ -1,8 +1,9 @@
+import {revertirCuadro277} from './revertir-cuadro-277.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {revertirProyeccion276} from './revertir-proyeccion-276.mjs';
-const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n'),base='8fead04';
+const read=f=>revertirCuadro277(fs.readFileSync(f,'utf8'),f),base='8fead04';
 const before=f=>execFileSync('git',['show',base+':'+f],{encoding:'utf8',maxBuffer:20000000}).replaceAll('\r\n','\n');
 const manifest=JSON.parse(read('runtime-manifest.json'));
 assert.equal(manifest.version,'16.33.276');assert.equal(JSON.parse(read('version.json')).version,manifest.version);
