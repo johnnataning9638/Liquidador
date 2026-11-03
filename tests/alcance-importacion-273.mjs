@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {revertirSancionOficial275} from './revertir-sancion-oficial-275.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
@@ -9,7 +10,7 @@ for(const file of Object.keys(patches))assert.equal(revertirImportacion273(read(
 const manifest=JSON.parse(read('runtime-manifest.json'));
 for(const file of Object.keys(manifest.protected)){
  if(['js/app.js','js/tdj-core-16.33.143.js'].includes(file))continue;
- assert.equal(read(file),execFileSync('git',['show',base+':'+file],{encoding:'utf8'}).replaceAll('\r\n','\n'),file+': motores y reglas intactos');
+ assert.equal(revertirSancionOficial275(read(file),file),execFileSync('git',['show',base+':'+file],{encoding:'utf8'}).replaceAll('\r\n','\n'),file+': motores y reglas intactos tras neutralizar cambio oficial 275');
 }
 const provenance=JSON.parse(read('vendor/pdfjs/procedencia.json'));
 for(const [file,sha] of Object.entries(provenance.sha256))assert.equal(crypto.createHash('sha256').update(fs.readFileSync('vendor/pdfjs/'+file)).digest('hex'),sha);

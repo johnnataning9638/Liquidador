@@ -5,7 +5,7 @@ import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.268";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.275";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
@@ -1030,6 +1030,12 @@ function filasActualizacionSancionExport(r){
   return filas;
 }
 
+function detalleFormulaSancionOficialPdf(tramos){
+  const oficiales=tramos.filter(t=>t.metodologia==="OFICIAL_CAPITALIZACION_DIARIA_275");
+  if(!oficiales.length)return "";
+  return `<div class="pdf-actualizacion-descripcion">Fórmula oficial: SA = VS × (1 + IPC/365)^n. Primer tramo desde Fecha sanción; siguientes años completos. IPC expresado como decimal, tasa diaria sin redondeo y resultado al millar.</div><table><thead><tr><th>APLICACIÓN</th><th>INICIO DEL PERÍODO</th><th>FIN DEL PERÍODO</th><th>DÍAS (n)</th></tr></thead><tbody>${oficiales.map(t=>`<tr><td>${escPdf(fechaVisible(t.fechaAplicacion))}</td><td>${escPdf(fechaVisible(t.inicioPeriodo))}</td><td>${escPdf(fechaVisible(t.finPeriodo))}</td><td>${Number(t.dias||0)}</td></tr>`).join("")}</tbody></table>`;
+}
+
 function bloqueActualizacionSancionPdf(x,i){
   const tramos=Array.isArray(x.actualizacionSancion?.tramos)?x.actualizacionSancion.tramos:[];
   const eventos1419=(x.actualizacionSancion?.eventos||[]).filter(e=>String(e.beneficio||"").toUpperCase().includes("DECRETO 1419"));
@@ -1038,7 +1044,7 @@ function bloqueActualizacionSancionPdf(x,i){
   const total=tramos.reduce((a,t)=>a+Number(t.actualizacion||0),0);
   const tablaActualizacion=tramos.length?`<table><thead><tr><th>AÑO DE ACTUALIZACIÓN</th><th>FECHA DE APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE ESTE PAGO</th><th>${dinero(total)}</th><th></th></tr></tfoot></table>`:"<div class='pdf-actualizacion-descripcion'>No hubo actualización anual de sanción en este pago.</div>";
   const tablaReduccion=eventos1419.length?`<h3>REDUCCIÓN DE SANCIÓN — DECRETO 1419 — PAGO ${Number(i)+1}</h3><table><thead><tr><th>SANCIÓN ANTES DE REDUCIR</th><th>ACTUALIZACIÓN PREVIA</th><th>PORCENTAJE A PAGAR</th><th>VALOR AL 15 %</th><th>SANCIÓN MÍNIMA</th><th>SANCIÓN APLICADA</th></tr></thead><tbody>${eventos1419.map(e=>{const antes=Number(e.saldoAntesReduccion??e.saldoAntes??0),final=Number(e.saldoDespuesReduccion??e.saldoDespues??0);return `<tr><td>${dinero(antes)}</td><td>${dinero(e.actualizacionPrevia||0)}</td><td>${Number(e.porcentajeReduccion??e.porcentaje??15).toFixed(2)}%</td><td>${dinero(e.valorReducido??(antes*Number(e.porcentajeReduccion??e.porcentaje??15)/100))}</td><td>${dinero(e.sancionMinima||0)}</td><td>${dinero(final)}</td></tr>`;}).join("")}</tbody></table>`:"";
-  return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica el 1 de enero de cada vigencia que corresponda, utilizando el 100 % del IPC del año inmediatamente anterior. No se prorratea por días. La fecha mostrada corresponde a la fecha efectiva de aplicación y el año IPC identifica la inflación utilizada.</div>${tablaActualizacion}${tablaReduccion}</div>`;
+  return `<div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — PAGO ${Number(i)+1}</h3><div class="pdf-actualizacion-descripcion">${tramos.some(t=>t.metodologia==="OFICIAL_CAPITALIZACION_DIARIA_275")?"La actualización oficial se aplica cada 1 de enero con el IPC del año anterior y los días del período detallado.":"La actualización se aplica el 1 de enero de cada vigencia que corresponda, utilizando el 100 % del IPC del año inmediatamente anterior. No se prorratea por días. La fecha mostrada corresponde a la fecha efectiva de aplicación y el año IPC identifica la inflación utilizada."}</div>${detalleFormulaSancionOficialPdf(tramos)}${tablaActualizacion}${tablaReduccion}</div>`;
 }
 function bloqueSancionDeclaracion1419Pdf(x,d){
   const tipo=String(x?.tipoAplicado||x?.pago?.tipo||"").toUpperCase();
@@ -1212,7 +1218,7 @@ function exportarExcel(){
         push([]);
       });
     }else{
-      const tramos=(r.sancionActualizacion?.tramos||[]).flatMap(x=>Array.isArray(x.tramos)?x.tramos:[]);
+      const tramos=(r.sancionActualizacion?.tramos||[]).flatMap(x=>Array.isArray(x.tramos)?x.tramos:(r.tipoLiquidacion==="OFICIAL"?[x]:[]));
       if(tramos.length){
         huboActualizacionExcel=true;
         push(["ACTUALIZACIÓN DE SANCIÓN — LIQUIDACIÓN SIN PAGOS",r.fechaCorte||d.fechaCorte||""],{title:true});
@@ -1223,6 +1229,12 @@ function exportarExcel(){
       }
     }
     if(!huboActualizacionExcel)push(["NO SE REALIZARON ACTUALIZACIONES DE SANCIÓN."]);
+    if(d.tipoLiquidacion==="OFICIAL"){
+      const tramos=(r.sancionActualizacion?.tramos||[]).flatMap(x=>Array.isArray(x.tramos)?x.tramos:[x]).filter(t=>t.metodologia==="OFICIAL_CAPITALIZACION_DIARIA_275");
+      push(["FÓRMULA OFICIAL","SA = VS × (1 + IPC/365)^n; IPC decimal, tasa diaria sin redondeo, resultado al millar."]);
+      push(["APLICACIÓN","INICIO DEL PERÍODO","FIN DEL PERÍODO","DÍAS (n)"],{header:true});
+      tramos.forEach(t=>push([t.fechaAplicacion,t.inicioPeriodo,t.finPeriodo,t.dias]));
+    }
 
     push([]);
     push(["RESUMEN FINAL"],{title:true});
@@ -1283,7 +1295,7 @@ function exportarExcel(){
     tdjDesdePagos.forEach((p,i)=>push(["",i+1,p.tdj||"",p.fecha||"",truncarValorEntero(p.valor||0),upper(p.tipo||"TASA DIAN"),upper(p.observacion||"")],{money:[5]}));
     push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
     push([]);
-    push(["OBSERVACIÓN","Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se aplica el 1 de enero de cada vigencia que corresponda con el IPC anual del año anterior, sin prorrateo por días. Se muestra por pago y se consolida al final."]);
+    push(["OBSERVACIÓN",d.tipoLiquidacion==="OFICIAL"?"La sanción oficial se actualiza cada 1 de enero: SA = VS × (1 + IPC/365)^n. Primer tramo desde Fecha sanción hasta 31 de diciembre; siguientes años completos. Los intereses se calculan sobre capital.":"Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se aplica el 1 de enero de cada vigencia que corresponda con el IPC anual del año anterior, sin prorrateo por días. Se muestra por pago y se consolida al final."]);
     const fechaGeneracion=new Date().toISOString();
     const files=[
       {name:"[Content_Types].xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`},
@@ -1538,7 +1550,7 @@ function bloquePdfSinPagos(d,r){
     <div class="pdf-obligacion"><div class="pdf-fila"><div class="pdf-celda"><b>IMPUESTO</b><strong>${dinero(r.impuesto||0)}</strong></div><div class="pdf-celda"><b>SANCIÓN ACTUALIZADA</b><strong>${dinero(r.sancion||0)}</strong></div><div class="pdf-celda"><b>INTERESES A FECHA DE CORTE</b><strong>${dinero(r.intereses||0)}</strong></div><div class="pdf-celda"><b>TOTAL OBLIGACIÓN</b><strong>${dinero(r.total||0)}</strong></div></div><div class="pdf-fila"><div class="pdf-celda"><b>VALOR PAGO</b><strong>${dinero(0)}</strong></div><div class="pdf-celda"><b>RECIBO DE PAGO</b><strong></strong></div><div class="pdf-celda"><b>DÍAS TOTALES DE INTERÉS</b><strong>${diasInteres}</strong></div><div class="pdf-celda"><b>TASAS UTILIZADAS</b><strong>${escPdf(tasas)}</strong></div></div></div>
     <div class="pdf-beneficio"><b>CONDICIÓN:</b> LIQUIDACIÓN INFORMATIVA A LA FECHA DE CORTE, SIN PAGOS REGISTRADOS. EL IMPUESTO SE CONSERVA ÍNTEGRAMENTE; SE ACTUALIZAN SANCIÓN E INTERESES CON LAS REGLAS NORMALES DEL LIQUIDADOR.</div>
     <div class="pdf-intereses"><h3>CÁLCULO DE INTERESES — DESGLOSE COMPLETO</h3><div class="pdf-actualizacion-descripcion">Los intereses se calculan desde cada fecha de vencimiento hasta la fecha de corte, sobre el capital correspondiente. Días: ${diasInteres}. Tasa(s) utilizada(s): ${escPdf(tasas)}.</div><table><thead><tr><th>CUOTA / VTO.</th><th>CAPITAL BASE</th><th>DESDE</th><th>HASTA</th><th>DÍAS</th><th>TASA</th><th>INTERÉS</th><th>METODOLOGÍA</th></tr></thead><tbody>${filasInteres}</tbody><tfoot><tr><th colspan="6">TOTAL INTERESES A LA FECHA DE CORTE</th><th>${dinero(r.intereses||0)}</th><th></th></tr></tfoot></table></div>
-    <div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — DETALLE COMPLETO</h3><div class="pdf-actualizacion-descripcion">La actualización se aplica conforme a la lógica normativa vigente del liquidador, identificando cada vigencia, fecha de aplicación, año del IPC utilizado, valor anterior, porcentaje de IPC, actualización y valor resultante.</div><table><thead><tr><th>AÑO</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${filasSancion}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE SANCIÓN</th><th>${dinero(totalAct)}</th><th>${dinero(r.sancion||0)}</th></tr></tfoot></table></div>
+    <div class="pdf-actualizacion-sancion"><h3>ACTUALIZACIÓN DE SANCIÓN — DETALLE COMPLETO</h3>${detalleFormulaSancionOficialPdf(tramosSancion)}<div class="pdf-actualizacion-descripcion">La actualización se aplica conforme a la lógica normativa vigente del liquidador, identificando cada vigencia, fecha de aplicación, año del IPC utilizado, valor anterior, porcentaje de IPC, actualización y valor resultante.</div><table><thead><tr><th>AÑO</th><th>FECHA APLICACIÓN</th><th>AÑO IPC</th><th>VALOR ANTERIOR</th><th>IPC</th><th>ACTUALIZACIÓN</th><th>VALOR DESPUÉS</th></tr></thead><tbody>${filasSancion}</tbody><tfoot><tr><th colspan="5">TOTAL ACTUALIZACIÓN DE SANCIÓN</th><th>${dinero(totalAct)}</th><th>${dinero(r.sancion||0)}</th></tr></tfoot></table></div>
     <div class="pdf-pago"><div class="pdf-pago-titulo">RESUMEN DE LA OBLIGACIÓN A LA FECHA DE CORTE</div><table class="pdf-tabla"><thead><tr><th>CONCEPTO</th><th>VALOR</th></tr></thead><tbody><tr><td>IMPUESTO</td><td>${dinero(r.impuesto||0)}</td></tr><tr><td>INTERESES</td><td>${dinero(r.intereses||0)}</td></tr><tr><td>SANCIÓN ACTUALIZADA</td><td>${dinero(r.sancion||0)}</td></tr><tr class="total"><td>TOTAL OBLIGACIÓN</td><td>${dinero(r.total||0)}</td></tr></tbody></table></div>
     <div class="pdf-aplicaciones"><h3>PAGOS REGISTRADOS</h3><table><thead><tr><th>ESTADO</th><th>VALOR</th><th>RECIBO</th></tr></thead><tbody><tr><td>SIN PAGOS REGISTRADOS</td><td>${dinero(0)}</td><td></td></tr></tbody></table></div>
     <div class="pdf-nota">Nota: esta liquidación determina el valor total de la obligación a la fecha de corte indicada. No representa un pago registrado ni crea un recibo de pago.</div>

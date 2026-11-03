@@ -27,6 +27,8 @@ jobs:
           done
       - name: Existing mathematical regression
         run: |
+          node tests/sancion-oficial-formula-275.mjs
+          node tests/alcance-sancion-oficial-275.mjs
           node tests/regresion-matematica.mjs
           node tests/sancion-corte-253.mjs
           node tests/solo-sancion-sin-cuotas-254.mjs

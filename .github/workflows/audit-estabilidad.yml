@@ -23,6 +23,8 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
+          node tests/sancion-oficial-formula-275.mjs
+          node tests/alcance-sancion-oficial-275.mjs
           node tests/catalogo-beneficios-269.mjs
           node tests/importacion-web-pdf-273.mjs
           node tests/solo-pdf-274.mjs

@@ -29,9 +29,9 @@ for(const Clase of [MotorLiquidacion,MotorLiquidacionOficial])for(const n of [1,
 for(const Clase of [MotorLiquidacion,MotorLiquidacionOficial]){
  const m=new Clase(cfg),tipoLiquidacion=Clase===MotorLiquidacion?'PRIVADA':'OFICIAL';
  const d={concepto:'VENTAS',anio:2026,tipoLiquidacion,tieneSancion:'SI',valorSancion:1000000,fechaSancion:'2023-06-15',vencimientos:[{id:'V',fecha:'2023-06-15',impuesto:0}],pagos:[{fecha:'2026-01-21',valor:0}]};
- const r=m.calcular(d);assert.equal(r.impuesto,0);assert.equal(r.intereses,0);assert.equal(r.sancion,tipoLiquidacion==='PRIVADA'?1081000:1103000,'Actualización vigente: privada capitalizada por tramos; oficial IPC anual');cases++;
+ const r=m.calcular(d);assert.equal(r.impuesto,0);assert.equal(r.intereses,0);assert.equal(r.sancion,tipoLiquidacion==='PRIVADA'?1081000:1105000,'Actualización vigente: oficial con fórmula diaria 275 y privada preservada');cases++;
  d.pagos=[{fecha:'2025-02-01',valor:50000,tipo:'TASA DIAN'},{fecha:'2026-01-21',valor:''}];
- const paid=m.calcular(d);assert.equal(paid.sancion,tipoLiquidacion==='PRIVADA'?1028000:1050000,'No repetir IPC aplicado antes del pago');assert.equal(paid.intereses,0);cases++;
+ const paid=m.calcular(d);assert.equal(paid.sancion,tipoLiquidacion==='PRIVADA'?1028000:1052000,'No repetir IPC aplicado antes del pago');assert.equal(paid.intereses,0);cases++;
  const p={...d,fechaSancion:'2026-01-01',pagos:[{fecha:'2026-01-05',valor:0},{fecha:'2026-01-20',valor:1000000,tipo:'TASA DIAN'}]};
  const zero=m.calcular(p);assert.equal(zero.fechaCorte,'2026-01-20','Corte anterior no descarta pago posterior');assert.equal(zero.total,0);assert.equal(zero.excedente,0);cases++;
 }

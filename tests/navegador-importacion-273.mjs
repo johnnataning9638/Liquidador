@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from './browser-runtime.mjs';
 import {generadorPDF} from './fixtures/generador-273.mjs';
 const root=path.resolve(process.env.TEST_SITE_DIR||fileURLToPath(new URL('..',import.meta.url))),base='http://127.0.0.1:27300';
+const {version}=JSON.parse(await fs.readFile(path.join(root,'version.json'),'utf8'));
 const browser=await chromium.launch({headless:true}),errors=[],results=[];
 try{
  const ctx=await browser.newContext({viewport:{width:1440,height:1000}});
@@ -23,7 +24,7 @@ try{
   const filename=tdj?'titulos.html':'liquidacion.html',campo=tdj?'#importarObligacionTexto':'#pegarDatosObligacion',nit=tdj?'#nitGlobal':'#nit',mod=tdj?'tdj-core-16.33.143.js':'app.js';
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(filename+': '+e.message));p.on('dialog',d=>d.accept());
   const abrir=async()=>{await p.goto(base+'/'+filename,{waitUntil:'networkidle'});await p.waitForFunction(()=>document.querySelectorAll('.wpdf-trigger').length===3);};
-  const snapshot=()=>p.evaluate(async mod=>(await import('/js/'+mod+'?v=16.33.274')).contextoImportacionWebPDF273(),mod);
+  const snapshot=()=>p.evaluate(async({mod,version})=>(await import('/js/'+mod+'?v='+version)).contextoImportacionWebPDF273(),{mod,version});
   const datos=s=>tdj?s.obligaciones[0]:s;
   await abrir();assert.equal(await p.locator('.wpdf-trigger').count(),3);assert.deepEqual(await p.locator('.wpdf-trigger').allTextContents(),Array(3).fill('Importar PDF'));assert.equal(await p.locator('a[download]').count(),0);
   const initial=await snapshot();await drop(p,campo,generadorPDF());assert.deepEqual(await snapshot(),initial,'arrastrar no importa');
@@ -58,7 +59,13 @@ try{
    const anteriores=await snapshot();await p.locator('.tab-btn[data-tab="titulos"]').click();await drop(p,'#importarTitulosTexto',generadorPDF());await p.locator('.tab-pane.active .wpdf-trigger').click();
    await p.waitForFunction(()=>document.querySelector('.tab-pane.active .wpdf-estado')?.textContent.startsWith('Importación lista'));
    const varios=await snapshot();assert.deepEqual(varios.obligaciones[0],anteriores.obligaciones[0],'la obligación no elegida permanece intacta');assert.equal(varios.obligaciones[1].vencimientos.length,2,'Títulos respeta el destino elegido en Datos');
-   await p.locator('.tab-btn[data-tab="pagos"]').click();await p.locator('#destinoImportacionPagos').selectOption({index:1});await p.locator('.tab-btn[data-tab="titulos"]').click();await drop(p,'#importarTitulosTexto',generadorPDF());await p.locator('.tab-pane.active .wpdf-trigger').click();await p.locator('.tab-pane.active .wpdf-error').waitFor();assert.deepEqual(await snapshot(),varios,'destinos contradictorios se rechazan sin cambios');
+   // El redibujado de Pagos limpia los destinos. Preparar expresamente el estado
+   // contradictorio que debe rechazar el guard, sin depender de esa selección previa.
+   await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   await p.locator('.tab-btn[data-tab="titulos"]').click();await p.waitForFunction(()=>document.querySelector('.tab-pane.active')?.dataset.pane==='titulos');
+   const destinos=await p.evaluate(()=>{const a=document.getElementById('destinoImportacionObligacion'),b=document.getElementById('destinoImportacionPagos');a.value=a.options[2].value;b.value=b.options[1].value;return [a.value,b.value];});
+   assert.ok(destinos.every(Boolean));assert.notEqual(...destinos,'Preparar dos destinos no vacíos y distintos antes de probar el rechazo');
+   await drop(p,'#importarTitulosTexto',generadorPDF());await p.locator('[data-pane="titulos"] .wpdf-trigger').click();await p.locator('[data-pane="titulos"] .wpdf-error').waitFor();assert.deepEqual(await snapshot(),varios,'destinos contradictorios se rechazan sin cambios');
   }
   await p.close();
  }
