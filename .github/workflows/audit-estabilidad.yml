@@ -23,7 +23,8 @@ jobs:
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
-          node tests/proyeccion-beneficio-cero-276.mjs
+          node tests/beneficio-cuadro-principal-277.mjs
+          node tests/alcance-cuadro-277.mjs
           node tests/alcance-proyeccion-276.mjs
           node tests/sancion-oficial-formula-275.mjs
           node tests/alcance-sancion-oficial-275.mjs

@@ -1,5 +1,5 @@
-import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.276";
-import {requiereProyeccionBeneficio,calcularConProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.276';
+import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.277";
+import {requiereProyeccionBeneficio,calcularConProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
 
 const iso=v=>String(v||"").slice(0,10);
 const n=v=>Math.max(0,Number(v||0));
