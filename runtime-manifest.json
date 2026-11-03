@@ -1,5 +1,5 @@
 {
-  "version": "16.33.275",
+  "version": "16.33.276",
   "files": [
     "beneficios.css",
     "datos/beneficios.json",
@@ -36,6 +36,7 @@
     "js/motor-normativo-historico.js",
     "js/prioridad-tdj-v132.js",
     "js/prioridad-tdj.js",
+    "js/proyeccion-beneficio-276.js",
     "js/supabase-config.js",
     "js/tdj-beneficio-contexto-16.33.194.js",
     "js/tdj-core-16.33.143.js",
@@ -71,22 +72,22 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "ee71767170f768a785e225423ebdd817fd266e0b4505b3f6a79ec2c78c70b780",
+    "js/app.js": "5166eb55e85c02685e1b27bff2b3f999730f316e05ee61cb723a12db7e8401be",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
     "js/importador-excel.js": "07646b3a040312e2efe13e95ceab0643b703a5555c4f4eb7970ebc80a047c785",
     "js/importador-obligacion.js": "6d4e18e5b790d21ed5ea252ade93ad91fcae7d753c467e077ec3290dbc81672f",
     "js/importador.js": "787baa1e68f0d4e8c3377486f1c452e195d6e0ae7995250692498224308bc955",
-    "js/motor-liquidacion-base.js": "310debcf20cd867075573c363ee68379f16c9cb5b749678f1a9aceaca89a852f",
-    "js/motor-liquidacion-oficial.js": "c826d0a99012cb6595ada150561753750795a880fbcc999b0a028bdc76bd2d6a",
-    "js/motor-liquidacion.js": "d2725f1485705399811463faaaab2356485490de7d35331f25a067a57b551993",
+    "js/motor-liquidacion-base.js": "44877d3befef25b1dc4fa00e4dc8b3e77e441721e154731d87758586e74fd0b8",
+    "js/motor-liquidacion-oficial.js": "daa61f087172ce982b5a99ddf16102add08c637bf3838314dd21719b3cb689d2",
+    "js/motor-liquidacion.js": "963cdff87e3079cf041b2a0bb1ea157bb8d630ef6daa225b3c6d3bd8a17be9e4",
     "js/motor-normativo-historico.js": "a9b985ddfbe85aa9a470769a39c0e2cc1ae5b07b4290ccc53a47d168c1f96044",
     "js/prioridad-tdj-v132.js": "3a8fda712cc0d4b145f2256bf0e44afae213e310aade155e1be88899c9169233",
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "c16fe8f35e738d822b5ed81fcb6694788299fb8d0eba30f0cb4a587dfea68d90",
+    "js/tdj-core-16.33.143.js": "75cb38d1b566a4b04550a5c9ec47a6f52f42e4eade0c18bcfc249dbbeb39b7db",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",
@@ -152,28 +153,28 @@
   "authorizedCalculationChanges": {
     "js/motor-liquidacion.js": {
       "baselineHash": "601604752e4ba8840c5c8d5840a4f1f07da7b47b75db49d22ac99daad76b11fe",
-      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
-      "previousReleaseHash": "d1f114a79beeceaef6b6c65779f079d7b142787c29c739e21641a5a3b584c151"
+      "reason": "16.33.276: proyecciones aisladas sin abono; reversión exacta contra 275",
+      "previousReleaseHash": "d2725f1485705399811463faaaab2356485490de7d35331f25a067a57b551993"
     },
     "js/motor-liquidacion-base.js": {
       "baselineHash": "0dd491fad6a30104d15b26dc2d218256325294b427aab9307fc51d45e23c3ff5",
-      "reason": "16.33.268: Ley 2155 art45 y art48, versión visible, integridad con reversión trazable",
-      "previousReleaseHash": "5434375e05f584908b26d74bbb53ca39770fb89cc14f5fad3663a8f516fe209a"
+      "reason": "16.33.276: proyecciones aisladas sin abono; reversión exacta contra 275",
+      "previousReleaseHash": "310debcf20cd867075573c363ee68379f16c9cb5b749678f1a9aceaca89a852f"
     },
     "js/motor-liquidacion-oficial.js": {
       "baselineHash": "7d6d51053cd4fc89c6d89253e499269f85750b9156dcce4a724763831ae6035a",
-      "reason": "16.33.275: fórmula de sanción oficial autorizada; cambios reversibles contra 274",
-      "previousReleaseHash": "d2f1d64355ac97ee32eedaba87378511093a488901e736facb0bf166c976ee78"
+      "reason": "16.33.276: proyecciones aisladas sin abono; reversión exacta contra 275",
+      "previousReleaseHash": "c826d0a99012cb6595ada150561753750795a880fbcc999b0a028bdc76bd2d6a"
     },
     "js/app.js": {
       "baselineHash": "d4dfeae9b52c795081c0dde7f0053a8ccd9aaf6326350367e3239c26e9205436",
-      "reason": "16.33.275: fórmula de sanción oficial autorizada; cambios reversibles contra 274",
-      "previousReleaseHash": "8355ef1bdf506885212e9e41026ce147dbc79483ed1cea7f56e9ea829caa21f9"
+      "reason": "16.33.276: proyecciones aisladas sin abono; reversión exacta contra 275",
+      "previousReleaseHash": "ee71767170f768a785e225423ebdd817fd266e0b4505b3f6a79ec2c78c70b780"
     },
     "js/tdj-core-16.33.143.js": {
       "baselineHash": "7ff00afcf2b554545da639987031ad31ce4e45cdd19978d893c9c9601e966336",
-      "reason": "16.33.275: fórmula de sanción oficial autorizada; cambios reversibles contra 274",
-      "previousReleaseHash": "a559c1f19f13f5098d323fd8bb422d34ce85590219e5d18898cd5c032aba3449"
+      "reason": "16.33.276: proyecciones aisladas sin abono; reversión exacta contra 275",
+      "previousReleaseHash": "c16fe8f35e738d822b5ed81fcb6694788299fb8d0eba30f0cb4a587dfea68d90"
     }
   }
 }

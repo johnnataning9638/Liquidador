@@ -21,13 +21,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Obligaciones — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.275">
+<link rel="stylesheet" href="estilos.css?v=16.33.276">
 <style>
 .topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
 @media(max-width:650px){.topbar .ruta-modulo,.topbar .btn-inicio{width:100%}.topbar .btn-inicio{min-height:38px}}
 </style>
-<link rel="stylesheet" href="beneficios.css?v=16.33.275">
-<link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.275">
+<link rel="stylesheet" href="beneficios.css?v=16.33.276">
+<link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.276">
 </head>
 <body>
 <header class="topbar topbar-liquidacion">
@@ -142,6 +142,7 @@
 <section class="panel informe-panel">
   <div class="informe-cabecera"><div><div class="informe-subtitulo">RESULTADO DE LA LIQUIDACIÓN</div><div class="saldos-desglosados" style="display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center"><div class="valor-pago"><span>SALDO TOTAL IMPUESTO</span><strong id="rSaldoImpuestoIndicador">$ 0</strong></div><div class="valor-pago"><span>SALDO TOTAL SANCIÓN</span><strong id="rSaldoSancionIndicador">$ 0</strong></div></div><div id="rExcedenteBox" class="excedente-box" hidden><span>EXCEDENTE</span><strong id="rExcedente">$ 0</strong></div></div><div class="informe-meta"><div><span>Último pago</span><strong id="rFechaPago">—</strong></div><div><span>Tasa utilizada</span><strong id="rTasa">—</strong></div></div></div>
   <div class="tabla-informe-wrap"><table class="tabla-informe"><thead><tr><th>CONCEPTO</th><th>DEUDA</th><th>APLICADO</th><th>SALDO</th></tr></thead><tbody><tr><td>Impuesto</td><td id="rDeudaImpuesto">$ 0</td><td id="rPropImpuesto">$ 0</td><td id="rSaldoImpuesto">$ 0</td></tr><tr><td>Intereses</td><td id="rDeudaIntereses">$ 0</td><td id="rPropIntereses">$ 0</td><td id="rSaldoIntereses">$ 0</td></tr><tr><td>Sanción</td><td id="rDeudaSancion">$ 0</td><td id="rPropSancion">$ 0</td><td id="rSaldoSancion">$ 0</td></tr></tbody><tfoot><tr><th>TOTALES</th><th id="rDeudaTotal">$ 0</th><th id="rPropTotal">$ 0</th><th id="rSaldoTotalFooter">$ 0</th></tr></tfoot></table></div>
+  <div id="proyeccionesBeneficioNormal"></div>
   <div id="detalleCalculo" class="detalle"></div>
 </section>
 
@@ -186,7 +187,7 @@
 
 
 </main>
-<footer>Liquidador — versión 16.33.275, con TIM e IPC centralizados y alertas informativas</footer>
+<footer>Liquidador — versión 16.33.276, con TIM e IPC centralizados y alertas informativas</footer>
 <script>
 // DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
 (function(){
@@ -266,8 +267,8 @@
   else iniciar();
 })();
 </script>
-<script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.275"></script>
-<script type="module" src="js/app.js?v=16.33.275"></script>
+<script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.276"></script>
+<script type="module" src="js/app.js?v=16.33.276"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
@@ -306,6 +307,6 @@
   else configurarPestanas();
 })();
 </script>
-<script type="module" src="js/catalogo-beneficios.js?v=16.33.275"></script>
+<script type="module" src="js/catalogo-beneficios.js?v=16.33.276"></script>
 </body>
 </html>

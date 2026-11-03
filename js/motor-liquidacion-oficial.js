@@ -1,5 +1,6 @@
 import {fechaISO,roundMil,diasEntre} from "./utilidades.js?v=16.33.122";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.276";
+import {requiereProyeccionBeneficio,calcularConProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.276';
 
 /**
  * MOTOR DE LIQUIDACIÓN OFICIAL
@@ -153,6 +154,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
   }
 
   calcular(datos){
+    if(requiereProyeccionBeneficio(datos))return calcularConProyeccionesBeneficio(this,datos);
     const validacion=this.validarObligacion(datos);
     if(validacion.errores.length)throw new Error(validacion.errores.join(" "));
 
@@ -160,7 +162,7 @@ export class MotorLiquidacionOficial extends MotorLiquidacion{
     const fechaCorte=this.resolverFechaCorte(datos);
     const pagos=[...(datos.pagos||[])]
       .map((p,i)=>({...p,fecha:fechaISO(p.fecha),valor:Number(p.valor||0),ordenOriginal:i}))
-      .filter(p=>p.fecha&&p.valor>0&&(fechaCorte?! (p.fecha>fechaCorte):true))
+      .filter(p=>p.fecha&&(p.valor>0||(datos._sinProyecciones276&&p.esConsultaBeneficio276===true))&&(fechaCorte?! (p.fecha>fechaCorte):true))
       .sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.ordenOriginal-b.ordenOriginal);
 
     const saldosVto=vencimientos.map((v,i)=>({...v,numero:Number(v.numero||i+1),saldo:Math.max(0,Number(v.impuesto||0))}));

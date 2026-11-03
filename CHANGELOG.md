@@ -1,3 +1,10 @@
+## 16.33.276 — Proyección con beneficio sin abono (2026-11-02)
+
+- Fecha y beneficio con valor cero o vacío generan una proyección independiente de impuesto, intereses, sanción y total a pagar.
+- Conserva aplicado y excedente en cero. No modifica saldos contables, pagos reales, títulos ni otras consultas.
+- DIAN privada, oficial y TDJ muestran la misma proyección en pantalla, PDF y Excel; los datos originales se conservan para reimportación.
+- Reutiliza las reglas vigentes de cada motor, incluidos actualización oficial 275, mínimos, beneficios y suspensión de intereses. Una consulta inválida se informa sin sustituir su beneficio por tasa DIAN.
+
 ## 16.33.275 — Fórmula de sanción oficial (2026-11-02)
 
 - Opción Oficial: SA = VS × (1 + IPC/365)^n, sin redondear la tasa diaria, con redondeo monetario al millar por actualización.

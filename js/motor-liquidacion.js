@@ -1,4 +1,5 @@
-import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.268";
+import {MotorLiquidacion as MotorLiquidacionBase} from "./motor-liquidacion-base.js?v=16.33.276";
+import {requiereProyeccionBeneficio,calcularConProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.276';
 
 const iso=v=>String(v||"").slice(0,10);
 const n=v=>Math.max(0,Number(v||0));
@@ -20,6 +21,7 @@ const esTDJMinimo= pago=>{
 const esArt9=t=>String(t||"").toUpperCase().includes("ART. 9 DECRETO 1419");
 export class MotorLiquidacion extends MotorLiquidacionBase{
   calcular(datos){
+    if(requiereProyeccionBeneficio(datos))return calcularConProyeccionesBeneficio(this,datos);
     const tieneArt9=(datos?.pagos||[]).some(p=>esArt9(p?.tipo));
     this._art9PendingByKey=null;this._art9Minima=0;
     if(tieneArt9&&String(datos?.tieneSancion||"").trim().toUpperCase()==="SI"){
