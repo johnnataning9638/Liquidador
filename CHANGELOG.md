@@ -1,3 +1,9 @@
+## 16.33.280 — Equivalencia RETENCIÓN en importación PDF (2026-11-03)
+
+- Los generadores de cuotas 1116 de retención en la fuente admiten filas con descripción IMPUESTO o RETENCIÓN para capturar el valor del tributo.
+- Se conservan la validación de naturaleza débito, cuotas, fecha, pesos, sanción, rechazo de conceptos no reconocidos y los destinos de importación.
+- Sin cambios a motores matemáticos, beneficios, pagos, títulos, exportaciones ni Supabase.
+
 ## 16.33.279 — Pegado y destino de importación (2026-11-03)
 
 - DIAN y TDJ: pegado de texto o tablas de Excel en todos los recuadros, incluso al sustituir un PDF pendiente; se conserva arrastrar/pegar PDF.

@@ -1,7 +1,7 @@
 {
-  "version": "16.33.279",
-  "previousVersion": "16.33.278",
-  "baseCommit": "e60b4a8dbf0a3ef5627be9bcd16e7b3bead126a3",
+  "version": "16.33.280",
+  "previousVersion": "16.33.279",
+  "baseCommit": "76b0e07c985c056d99535a3c3c774eb3c5297723",
   "date": "2026-11-03",
-  "change": "Restaurar pegado Excel/texto con PDF y exigir destino cuando TDJ tiene varias obligaciones"
+  "change": "Reconocer RETENCIÓN como saldo tributario en PDF 1116 únicamente para retención en la fuente"
 }
