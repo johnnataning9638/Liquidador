@@ -1,9 +1,15 @@
-import {normalizar,fechaISO,pesos,validarEntrada} from './modelo.js';
+import {normalizar,fechaISO,pesos,validarEntrada,conceptoDIAN} from './modelo.js';
 const texto=(items)=>items.slice().sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').trim();
 const digitos=items=>texto(items).replace(/\D/g,'');
 function etiqueta(pg,prefijo){return pg.items.find(i=>normalizar(i.s).startsWith(prefijo));}
 function banda(pg,y,x1,x2,delta=4){return pg.items.filter(i=>Math.abs(i.y-y)<=delta&&i.x>=x1&&i.x<x2);}
 function bajo(pg,label,x2,altura=25){if(!label)throw Error('Falta una cabecera del formulario 1116.');return pg.items.filter(i=>i.x>=label.x-1&&i.x<x2&&i.y<label.y-5&&i.y>label.y-altura&&i.h>=7);}
+// Equivalencia exclusiva del concepto de saldo para retención en la fuente.
+// No convierte sanciones, intereses ni otros tributos en impuesto.
+export function esFilaImpuestoGenerador(descripcion,concepto){
+ const saldo=normalizar(descripcion);
+ return saldo==='IMPUESTO'||(saldo==='RETENCION'&&conceptoDIAN(concepto)==='RETENCIÓN');
+}
 function identidad(pg){
  const nitLabel=etiqueta(pg,'18.'),dv=etiqueta(pg,'6.DV');if(!nitLabel||!dv)throw Error('No se identificaron las columnas de identificación del PDF.');
  const nit=digitos(bajo(pg,nitLabel,dv.x,22));
@@ -32,7 +38,7 @@ export function interpretarGenerador(paginas){
    const fecha=fechaISO(digitos(banda(pg,a.y,c38.x-5,c39.x-5)));const valor=pesos(texto(banda(pg,a.y,c39.x-5,c40.x-5)));
    if(naturaleza&&naturaleza!=='DEBITO')throw Error('El generador contiene créditos o movimientos que requieren revisión.');
    if(!naturaleza&&valor!==0)throw Error('Falta la naturaleza del movimiento en una fila del PDF.');
-   if(n==='IMPUESTO')out.cuotas.push({numero,fecha,impuesto:valor});
+   if(esFilaImpuestoGenerador(descripcion,out.concepto))out.cuotas.push({numero,fecha,impuesto:valor});
    else if(n.startsWith('SANCION'))sanciones.push({valor,fecha,descripcion,codigo:a.s});
    else throw Error('Concepto de saldo no soportado en el generador: '+descripcion);
   }
