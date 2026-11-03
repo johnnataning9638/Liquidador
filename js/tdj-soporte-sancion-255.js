@@ -34,7 +34,7 @@ function bloquePdfSinPagos(d,r){
   const tasas=[...new Set(detalle.filter(t=>t.tasa!=null).map(t=>tasaPdfArt45(null,Number(t.tasa)*100)))].join(" / ")||"TASA DIAN";
   const corte=r.fechaCorte||d.fechaCorte||hoyISO();
   return `<article class="pdf-liquidacion">
-    <div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>LIQUIDACIÓN A FECHA DE CORTE — SIN PAGOS</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>
+    <div class="pdf-marca"><div aria-hidden="true"></div><div class="pdf-titulo">LIQUIDADOR OBLIGACIONES<div>LIQUIDACIÓN A FECHA DE CORTE — SIN PAGOS</div></div><div class="pdf-generado">Generado: ${fechaVisible(hoyISO())}</div></div>
     <div class="pdf-datos">
       <div class="pdf-dato"><b>AÑO</b><strong>${escPdf(d.anio)}</strong></div><div class="pdf-dato"><b>CONCEPTO</b><strong>${escPdf(d.concepto)}</strong></div><div class="pdf-dato"><b>PERÍODO</b><strong>${escPdf(d.periodo)}</strong></div><div class="pdf-dato"><b>NIT</b><strong>${escPdf(d.nit)}</strong></div><div class="pdf-dato"><b>D.V.</b><strong>${escPdf(dvNIT(d.nit))}</strong></div>
       <div class="pdf-dato ancho-2"><b>RAZÓN SOCIAL</b><strong>${escPdf(d.razonSocial)}</strong></div><div class="pdf-dato"><b>TIPO DE LIQUIDACIÓN</b><strong>${escPdf(d.tipoLiquidacion||"")}</strong></div><div class="pdf-dato"><b>FECHA DE PRESENTACIÓN/SANCIÓN</b><strong>${escPdf(fechaVisible(d.fechaSancion))}</strong></div><div class="pdf-dato ancho-2"><b>FECHA VENCIMIENTO PARA DECLARAR</b><strong>${escPdf(fechaVisible(d.fechaVencimientoDeclarar))}</strong></div><div class="pdf-dato"><b>FECHA DE CORTE</b><strong>${escPdf(fechaVisible(corte))}</strong></div>

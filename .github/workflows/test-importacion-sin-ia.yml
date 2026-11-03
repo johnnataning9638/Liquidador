@@ -36,6 +36,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-sanciones-minimas-261.mjs
       - name: Verificar fórmula oficial, PDF, Excel y reimportación
         run: node tests/navegador-sancion-oficial-275.mjs
+      - name: PDF sin rótulo DIAN en ambos módulos y todas las modalidades
+        run: TEST_SITE_DIR=dist node tests/navegador-logo-278.mjs
       - name: Beneficio en cuadro principal sin abono en privada, oficial y TDJ
         run: TEST_SITE_DIR=dist node tests/navegador-cuadro-277.mjs
       - name: Importación PDF aislada desde las seis pestañas
@@ -84,4 +86,5 @@ jobs:
             test-results/parametros-271
             test-results/importacion-273/*.json
             test-results/importacion-273/*.png
+            test-results/logo-278
             test-results/cuadro-277
