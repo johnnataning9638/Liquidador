@@ -1,3 +1,9 @@
+## 16.33.278 — PDF sin rótulo DIAN (2026-11-03)
+
+- Eliminado el rótulo DIAN del extremo izquierdo de los encabezados PDF: detalle, cortes, solo sanción, resúmenes, excedentes y cierre TDJ.
+- Ambos módulos, SIMPLE/ordinario y privada/oficial. Se conservan títulos centrados, fecha y estructura de la página.
+- Sin cambios de cálculo, parámetros, beneficios, importación, Excel ni Supabase.
+
 ## 16.33.277 — Beneficio en el cuadro principal (2026-11-02)
 
 - Fecha y beneficio con valor vacío/cero se reflejan directamente en deuda y saldo, con aplicado cero, como con $1 sin descontar ese peso.

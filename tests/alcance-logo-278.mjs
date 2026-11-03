@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {revertirLogo278} from './revertir-logo-278.mjs';
+const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n');
+const before=f=>execFileSync('git',['show','e12160e:'+f],{encoding:'utf8',maxBuffer:20000000}).replaceAll('\r\n','\n');
+const m=JSON.parse(read('runtime-manifest.json'));assert.equal(m.version,'16.33.278');assert.equal(JSON.parse(read('version.json')).version,m.version);
+for(const f of m.files)assert.equal(revertirLogo278(read(f),f),before(f),f+': retirada visual reversible');
+for(const f of m.files.filter(f=>f.startsWith('datos/')||/motor-|proyeccion-beneficio|importador|supabase/.test(f)))assert.equal(read(f),before(f),f+': cálculo y parámetros idénticos');
+for(const f of ['js/app.js','js/tdj-pdf-cierre-16.33.188.js','js/tdj-soporte-sancion-255.js'])assert.equal(read(f),before(f).replaceAll('<div class="pdf-logo">DIAN</div>','<div aria-hidden="true"></div>'),f+': solo quitar rótulo');
+assert.equal(read('js/tdj-core-16.33.143.js'),before('js/tdj-core-16.33.143.js').replaceAll('<div class="pdf-logo">DIAN</div>','<div aria-hidden="true"></div>').replace('tdj-soporte-sancion-255.js?v=16.33.255','tdj-soporte-sancion-255.js?v=16.33.278'),'TDJ: solo rótulo y caché de su plantilla');
+console.log('ALCANCE 278 OK: cálculos, beneficios, parámetros, Excel e importadores idénticos; solo rótulo PDF, caché y versión');

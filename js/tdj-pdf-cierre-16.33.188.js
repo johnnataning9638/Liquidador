@@ -116,7 +116,7 @@
   function sectionPage(doc,title,body){
     const s=doc.createElement("section");
     s.className="pdf-hoja pdf-hoja-final-resumen pdf-hoja-final-tdj-188";
-    s.innerHTML=`<article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div class="pdf-logo">DIAN</div><div class="pdf-titulo">${title}</div><div class="pdf-generado">Generado: ${dateVisible()}</div></div>${body}</article>`;
+    s.innerHTML=`<article class="pdf-liquidacion pdf-resumen-final"><div class="pdf-marca"><div aria-hidden="true"></div><div class="pdf-titulo">${title}</div><div class="pdf-generado">Generado: ${dateVisible()}</div></div>${body}</article>`;
     return s;
   }
   function dateVisible(){

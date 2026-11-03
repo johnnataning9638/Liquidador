@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {revertirSancionOficial275} from './revertir-sancion-oficial-275.mjs';
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ} from '../js/tdj-soporte-sancion-255.js';
-const app=revertirSancionOficial275(fs.readFileSync('js/app.js','utf8'),'js/app.js'),module=fs.readFileSync('js/tdj-soporte-sancion-255.js','utf8').replace(/\r\n/g,'\n');
+const app=revertirSancionOficial275(fs.readFileSync('js/app.js','utf8'),'js/app.js').replaceAll('<div class="pdf-logo">DIAN</div>','<div aria-hidden="true"></div>'),module=fs.readFileSync('js/tdj-soporte-sancion-255.js','utf8').replace(/\r\n/g,'\n');
 const fn=app.slice(app.indexOf('function bloquePdfSinPagos('),app.indexOf('\nfunction exportarPdf('));
 const css=app.slice(app.indexOf('function estilosPdf('),app.indexOf('\nfunction bloquePdfSinPagos('));
 assert.ok(module.includes(fn),'Plantilla DIAN copiada literalmente');assert.ok(module.includes(css),'Estilos DIAN copiados literalmente');

@@ -1,8 +1,9 @@
+import {revertirLogo278} from './revertir-logo-278.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {revertirCuadro277} from './revertir-cuadro-277.mjs';
-const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n');
+const read=f=>revertirLogo278(fs.readFileSync(f,'utf8'),f);
 const manifest=JSON.parse(read('runtime-manifest.json'));
 assert.equal(manifest.version,'16.33.277');assert.equal(JSON.parse(read('version.json')).version,manifest.version);
 for(const f of manifest.files){

@@ -27,6 +27,8 @@ jobs:
           done
       - name: Existing mathematical regression
         run: |
+          node tests/pdf-sin-logo-278.mjs
+          node tests/alcance-logo-278.mjs
           node tests/beneficio-cuadro-principal-277.mjs
           node tests/alcance-cuadro-277.mjs
           node tests/alcance-proyeccion-276.mjs
