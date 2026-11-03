@@ -29,6 +29,13 @@ function adjuntar(file,campo){
 }
 async function importar(){
  if(ocupado)return;
+ if(esTDJ){
+  const pane=document.querySelector('.tab-pane.active')?.dataset.pane;
+  const id=pane==='pagos'?'destinoImportacionPagos':pane==='datos'?'destinoImportacionObligacion':'destinoImportacionPDFTitulos';
+  if(pane==='titulos')actualizarDestinosPDFTitulos();
+  const cantidad=document.getElementById('destinoImportacionObligacion')?.options.length-1||0;
+  if(cantidad>1&&!document.getElementById(id)?.value){estado('Seleccione la obligación de destino antes de importar el PDF.',true);document.getElementById(id)?.focus();return;}
+ }
  const turno=revision,archivo=adjunto?.file;
  if(!archivo){estado('Arrastre o pegue primero el PDF del Generador de Cuotas en «Pegue aquí».',true);return;}
  ocupado=true;document.querySelectorAll('.wpdf-trigger').forEach(b=>b.disabled=true);
@@ -38,30 +45,62 @@ async function importar(){
   if(turno!==revision)return;
   const api=await bridge();if(turno!==revision)return;
   const pane=document.querySelector('.tab-pane.active')?.dataset.pane;
-  const selector=pane==='pagos'?'destinoImportacionPagos':pane==='datos'?'destinoImportacionObligacion':null;
-  let destino=selector?document.getElementById(selector)?.value||'':'';
-  if(esTDJ&&!selector){
-   const elegidos=[...new Set(['destinoImportacionObligacion','destinoImportacionPagos'].map(id=>document.getElementById(id)?.value).filter(Boolean))];
-   if(elegidos.length>1)throw Error('Hay destinos distintos en Datos y Pagos. Seleccione la misma obligación antes de importar desde Títulos.');
-   destino=elegidos[0]||'';
-  }
+  const selector=pane==='pagos'?'destinoImportacionPagos':pane==='datos'?'destinoImportacionObligacion':'destinoImportacionPDFTitulos';
+  const destino=esTDJ?(document.getElementById(selector)?.value||''):'';
   const resumen=api.aplicarImportacionWebPDF273(fuente,destino);
   if(archivo)soltar();
   estado(`Importación lista: ${resumen.cuotas} cuota(s)${resumen.sancion?' y sanción reconocida':''}. Revise los datos antes de calcular.`);
  }catch(e){if(turno===revision)estado(e.message||'No se pudo importar la información.',true);}
  finally{ocupado=false;document.querySelectorAll('.wpdf-trigger').forEach(b=>b.disabled=false);}
 }
+// Títulos necesita un destino PDF propio; nunca hereda elecciones de otras pestañas.
+function actualizarDestinosPDFTitulos(){
+ const selector=document.getElementById('destinoImportacionPDFTitulos');
+ const base=document.getElementById('destinoImportacionObligacion');
+ if(!selector||!base)return;
+ const anterior=selector.value;
+ selector.innerHTML=base.innerHTML;
+ selector.value=[...selector.options].some(o=>o.value===anterior)?anterior:'';
+ selector.hidden=selector.options.length<=2;
+ if(selector.hidden)selector.value='';
+}
+if(esTDJ){
+ const pane=document.querySelector('[data-pane="titulos"]');
+ const selector=document.createElement('select');
+ selector.id='destinoImportacionPDFTitulos';
+ selector.className='import-destino';
+ selector.setAttribute('aria-label','Obligación destino del PDF en Títulos');
+ selector.hidden=true;
+ pane?.querySelector('.tdj-title-import')?.append(selector);
+ document.getElementById('destinoImportacionObligacion')?.addEventListener('change',actualizarDestinosPDFTitulos);
+ actualizarDestinosPDFTitulos();
+}
 campos.forEach(campo=>{
  campo.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('Files'))e.preventDefault();});
  campo.addEventListener('drop',e=>{if(!e.dataTransfer.files.length)return;e.preventDefault();e.stopImmediatePropagation();if(e.dataTransfer.files.length!==1){estado('Adjunte un PDF a la vez.',true);return;}adjuntar(e.dataTransfer.files[0],campo);},true);
  campo.placeholder+=' También puede arrastrar aquí el PDF del Generador de Cuotas y pulsar Importar PDF.';
 });
-// Antes del aislamiento de pegado de TDJ; los textos siguen su ruta habitual.
+// Captura única: archivo PDF o texto tabulado, sin interferir con los importadores.
 window.addEventListener('paste',e=>{
- if(!campos.includes(e.target))return;
- const files=e.clipboardData?.files;
- if(files?.length){e.preventDefault();e.stopImmediatePropagation();if(files.length===1)adjuntar(files[0],e.target);else estado('Adjunte un PDF a la vez.',true);}
- else if(e.target.hasAttribute('data-pdf-adjunto')){e.preventDefault();e.stopImmediatePropagation();estado('Retire primero el PDF para pegar texto.',true);}
+ const campo=e.target;
+ if(!campos.includes(campo))return;
+ const files=[...(e.clipboardData?.files||[])];
+ const pdfs=files.filter(f=>/\.pdf$/i.test(f.name)||f.type==='application/pdf');
+ if(pdfs.length){
+  e.preventDefault();e.stopImmediatePropagation();
+  if(files.length!==1){estado('Adjunte un PDF a la vez.',true);return;}
+  adjuntar(pdfs[0],campo);return;
+ }
+ const texto=e.clipboardData?.getData('text/plain');
+ if(typeof texto!=='string'||!texto.length)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ // Reemplaza el PDF pendiente y recupera la edición antes de escribir.
+ if(adjunto)soltar();
+ campo.readOnly=false;
+ campo.value=texto;
+ campo.setSelectionRange?.(texto.length,texto.length);
+ campo.dispatchEvent(new Event('input',{bubbles:true}));
+ estado('Texto pegado. Utilice el botón Importar de esta pestaña.');
 },true);
 document.querySelectorAll('.tab-pane').forEach(pane=>{
  const barra=pane.querySelector('.botonera');if(!barra)return;

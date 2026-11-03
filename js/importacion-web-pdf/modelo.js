@@ -62,8 +62,6 @@ export function prepararImportacion(actual,entrada){
 }
 export function elegirDestino(contexto,fuente,preferido=''){
  const lista=contexto.obligaciones||[];if(preferido){const o=lista.find(x=>x.id===preferido);if(!o)throw Error('La obligación destino ya no existe.');return o;}
- const matches=lista.filter(o=>normalizar(o.concepto)===normalizar(fuente.concepto)&&String(o.anio)===String(fuente.anio)&&String(o.periodo)===String(fuente.periodo));
- if(matches.length===1)return matches[0];
  if(lista.length===1)return lista[0];
- throw Error('Seleccione la obligación destino en Datos o Pagos antes de importar. Hay varias obligaciones posibles.');
+ throw Error('Seleccione explícitamente la obligación destino antes de importar el PDF.');
 }

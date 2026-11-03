@@ -1,7 +1,7 @@
 {
-  "version": "16.33.278",
-  "previousVersion": "16.33.277",
-  "baseCommit": "e12160e7df6b7df1d6a47c12fb38db76bb695fa8",
+  "version": "16.33.279",
+  "previousVersion": "16.33.278",
+  "baseCommit": "e60b4a8dbf0a3ef5627be9bcd16e7b3bead126a3",
   "date": "2026-11-03",
-  "change": "Retirar el rótulo DIAN de todos los encabezados PDF en ambos liquidadores, conservando títulos, estructura y cálculos"
+  "change": "Restaurar pegado Excel/texto con PDF y exigir destino cuando TDJ tiene varias obligaciones"
 }
