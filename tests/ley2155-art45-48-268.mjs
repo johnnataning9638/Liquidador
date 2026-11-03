@@ -1,3 +1,4 @@
+import {tasaArt45Reducida2021} from '../js/ley2155-art45-vista.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {tasaArt48Automatico} from '../js/ley2155-art48.js';
@@ -39,3 +40,14 @@ for(const Engine of [MotorLiquidacion,MotorLiquidacionOficial]){
  }
 }
 console.log('LEY 2155 268 OK: límites Art48, IBC 2021–2022, exclusión beneficios manuales y sanción Art45 20%/mínima ambos motores');
+
+const art45Motor=new MotorLiquidacion({tasasMoratorias:tasas,uvt});
+for(let mes=2;mes<=12;mes++){
+ const fecha=`2021-${String(mes).padStart(2,'0')}-15`;
+ assert.equal(tasaArt45Reducida2021(fecha),art45Motor.tasaEspecial('ART. 45 LEY 2155',fecha).tasa,
+   'TDJ visual y motor deben coincidir en el Art. 45: '+fecha);
+}
+for(const fecha of ['', '2021-01-15','2022-01-15','2026-11-03']){
+ assert.equal(tasaArt45Reducida2021(fecha),null,'No mostrar tasa no parametrizada: '+fecha);
+}
+console.log('ART45 VISTA TDJ 281 OK: 11 meses coinciden con motor y fechas no parametrizadas se rechazan');

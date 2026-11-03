@@ -1,5 +1,5 @@
 {
-  "version": "16.33.280",
+  "version": "16.33.281",
   "files": [
     "beneficios.css",
     "datos/beneficios.json",
@@ -29,6 +29,7 @@
     "js/importador-excel.js",
     "js/importador-obligacion.js",
     "js/importador.js",
+    "js/ley2155-art45-vista.js",
     "js/ley2155-art48.js",
     "js/motor-liquidacion-base.js",
     "js/motor-liquidacion-oficial.js",
