@@ -58,6 +58,10 @@ def main():
     patches = json.loads((ROOT / 'tests/fixtures/cambios-688-manual-266.json').read_text(encoding='utf-8'))
     def historical(file):
         text = (ROOT / file).read_text(encoding='utf-8')
+        patches276 = json.loads((ROOT / 'tests/fixtures/cambios-proyeccion-276.json').read_text(encoding='utf-8'))
+        for before, after in reversed(patches276.get(file, [])):
+            assert text.count(after) == 1, file
+            text = text.replace(after, before, 1)
         # Neutralizar solo la fórmula oficial 275 antes de cotejar el IBC histórico.
         patches275 = json.loads((ROOT / 'tests/fixtures/cambios-sancion-oficial-275.json').read_text(encoding='utf-8'))
         for before, after in reversed(patches275.get(file, [])):

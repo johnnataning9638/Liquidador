@@ -36,6 +36,8 @@ jobs:
         run: TEST_SITE_DIR=dist node tests/navegador-sanciones-minimas-261.mjs
       - name: Verificar fórmula oficial, PDF, Excel y reimportación
         run: node tests/navegador-sancion-oficial-275.mjs
+      - name: Proyección con beneficio sin abono en privada, oficial y TDJ
+        run: TEST_SITE_DIR=dist node tests/navegador-proyeccion-276.mjs
       - name: Importación PDF aislada desde las seis pestañas
         run: TEST_SITE_DIR=dist node tests/navegador-importacion-273.mjs
       - name: Verificar catálogo compartido de beneficios y nuevos registros DIAN TDJ
@@ -82,3 +84,4 @@ jobs:
             test-results/parametros-271
             test-results/importacion-273/*.json
             test-results/importacion-273/*.png
+            test-results/proyeccion-276

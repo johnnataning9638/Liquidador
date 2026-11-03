@@ -1,7 +1,7 @@
 {
-  "version": "16.33.275",
-  "previousVersion": "16.33.274",
-  "baseCommit": "dcccc20",
+  "version": "16.33.276",
+  "previousVersion": "16.33.275",
+  "baseCommit": "8fead04eb5590d0ddb56d07aefed388152919812",
   "date": "2026-11-02",
-  "change": "Fórmula diaria de actualización de sanción oficial; conserva Fecha sanción y aplicación anual"
+  "change": "Proyección con beneficio, fecha y valor cero en DIAN privada/oficial y TDJ, sin abono ni cambio del saldo contable"
 }

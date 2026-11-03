@@ -1,11 +1,12 @@
+import {esConsultaBeneficio,htmlProyeccionesBeneficio,pintarProyeccionesBeneficio,filasProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.276';
 import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {resultadoExcedentesSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {dinero,numeroDesdeTexto,truncarValorEntero,fechaISO,fechaVisible} from "./utilidades.js?v=16.33.161";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.275";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.276";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.276";
 import {ActualizadorSancion} from "./actualizacion-sancion.js?v=16.33.161";
 import {CalendarioTributario} from "./calendario-tributario.js?v=16.33.161";
 import {MotorNormativoHistorico} from "./motor-normativo-historico.js?v=16.33.161";
@@ -694,6 +695,7 @@ function pintarInforme(r){
     :"";
   const adv=[...new Set(r.advertencias||[])].join(" | ");
   $("detalleCalculo").innerHTML=detalle+resumenSancion+(adv?`<div class="detalle-alerta">⚠ ${esc(adv)}</div>`:"")||"Sin pagos procesados.";
+  pintarProyeccionesBeneficio("proyeccionesBeneficioNormal",r.proyeccionesBeneficio||[]);
   renderResultadoBeneficio(r);
 }
 
@@ -1178,9 +1180,10 @@ function exportarExcel(){
     push(["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO / CORTE","VALOR PAGO","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
     if((r.detalle||[]).length){
       (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.tdj||"",x.pago?.recibo||"",x.pago?.fecha||"",x.pago?.valor||0,x.tipoAplicado||"TASA DIAN",x.tasaVisible??"",x.pago?.observacion||"",x.interesGenerado||0,x.aplicado?.impuesto||0,x.aplicado?.intereses||0,x.aplicado?.sancion||0,x.aplicado?.total||0,x.excedente||0],{money:[5,9,10,11,12,13,14],percent:[7]}));
-    }else{
+    }else if(!r.proyeccionesBeneficio?.length){
       push([0,"","",r.fechaCorte||d.fechaCorte||"",0,"TASA DIAN","","",r.intereses||0, r.impuesto||0, r.intereses||0, r.sancion||0, r.total||0,0],{money:[5,9,10,11,12,13,14],percent:[7]});
     }
+    (r.proyeccionesBeneficio||[]).forEach(q=>push([q.fila,"","",q.fecha,0,q.tipo,q.tasaVisible??"","CONSULTA SIN ABONO",q.intereses??0,0,0,0,0,0],{money:[5,9,10,11,12,13,14],percent:[7]}));
     push([]);
 
     push(["DETALLE DE INTERESES POR CUOTA Y POR FECHA DE CORTE"],{title:true});
@@ -1237,6 +1240,7 @@ function exportarExcel(){
     }
 
     push([]);
+    filasProyeccionesBeneficio(r.proyeccionesBeneficio||[]).forEach((row,i)=>push(row,{title:i===1,header:i===2,money:i>=3?[3,4,5,6,7]:[]}));
     push(["RESUMEN FINAL"],{title:true});
     push(["SALDO TOTAL FINAL",r.total||0,"SANCIÓN FINAL",r.sancion||0],{money:[2,4]});
     push(["CONSOLIDACIÓN DE EXCEDENTES POR PAGO"],{title:true});
@@ -1574,6 +1578,7 @@ function exportarPdf(){
         paginas.push(`<section class="pdf-hoja"><div class="pdf-pagina">${bloquePdfPago(bloques[i],i,d,r)}</div></section>`);
       }
     }
+    if(r.proyeccionesBeneficio?.length)paginas.unshift(`<section class="pdf-hoja"><div class="pdf-pagina">${htmlProyeccionesBeneficio(r.proyeccionesBeneficio)}</div></section>`);
     const resumenFinal=resumenFinalPdf(r);
     const resumenExcedentes=resumenExcedentesPagosPdf(r);
     const resumenEndoso=resumenEndosoTDJNormalPdf(d,r);
@@ -1791,17 +1796,18 @@ function calcular(){
     // respeta las fechas reales y, por tanto, procesa PAGO -> TDJ -> PAGO.
     // Si no existen TDJ con pagos posteriores, la función devuelve los datos
     // sin alterarlos. No se modifica la interfaz ni el valor nominal digitado.
+    const consultasBeneficio=(d.pagos||[]).filter(esConsultaBeneficio);
     const datosBase={...d,pagos:(d.pagos||[]).filter(p=>Number(p?.valor||0)>0)};
     const datosCalculo=ajustarTDJParaPagosPosteriores(motor,datosBase);
     datosCalculo.pagos=ordenarMovimientosCronologicos(
-      (datosCalculo.pagos||[]).map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)}))
+      [...(datosCalculo.pagos||[]),...consultasBeneficio].map((p,i)=>({...p,__ordenOriginal:Number(p.__ordenOriginal??i)}))
     ).map(p=>{
       const q={...p};
       delete q.__ordenOriginal;
       return q;
     });
     let r=motor.calcular(datosCalculo);
-    if(d.pagos.some(p=>esTipoDecreto1419(p.tipo))&&Number(r.total||0)>1){
+    if(d.pagos.some(p=>Number(p.valor||0)>0&&esTipoDecreto1419(p.tipo))&&Number(r.total||0)>1){
       const saldoFaltanteBeneficio=Math.max(0,Number(r.total||0));
       const articulos=[...new Set(d.pagos.filter(p=>esTipoDecreto1419(p.tipo)).map(p=>String(p.tipo).match(/ART\.\s*\d+/i)?.[0]?.toUpperCase()).filter(Boolean))].join(" / ");
       r.observacionesBeneficio1419=[`El pago no cubrió el total de la obligación para completar el beneficio del Decreto 1419${articulos?` (${articulos})`:""}. Faltó ${dinero(saldoFaltanteBeneficio)}. La liquidación conserva el tipo de tasa/beneficio seleccionado por el funcionario y aplica el pago; el detalle muestra su distribución entre impuesto, intereses y sanción y el saldo pendiente.`];

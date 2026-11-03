@@ -51,7 +51,7 @@ export class MotorLiquidacion{
     const errores=[];
     // Solo se valida la vigencia; la elegibilidad del contribuyente la decide el funcionario.
     for(const pago of datos.pagos||[]){
-      if(esTipo68850(pago.tipo)&&Number(pago.valor)>0&&tasaIBC68850(fechaISO(pago.fecha))==null){
+      if(esTipo68850(pago.tipo)&&(Number(pago.valor)>0||pago.esConsultaBeneficio276===true)&&tasaIBC68850(fechaISO(pago.fecha))==null){
         errores.push("DECRETO 688 — ART. 1 — 50% INTERÉS CORRIENTE: la fecha del pago debe estar entre 22/05/2020 y 30/11/2020. Se conserva la selección del funcionario; corrija la fecha o cambie el tipo.");
       }
     }
@@ -717,7 +717,7 @@ export class MotorLiquidacion{
     const fechaCorte=this.resolverFechaCorte(datos);
     const pagos=[...(datos.pagos||[])]
       .map((p,i)=>({...p,fecha:fechaISO(p.fecha),valor:Number(p.valor||0),ordenOriginal:i}))
-      .filter(p=>p.fecha&&p.valor>0&&(fechaCorte?! (p.fecha>fechaCorte):true))
+      .filter(p=>p.fecha&&(p.valor>0||(datos._sinProyecciones276&&p.esConsultaBeneficio276===true))&&(fechaCorte?! (p.fecha>fechaCorte):true))
       .sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.ordenOriginal-b.ordenOriginal);
 
     /*

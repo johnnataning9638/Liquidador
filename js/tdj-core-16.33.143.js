@@ -1,13 +1,14 @@
+import {esConsultaBeneficio,htmlProyeccionesBeneficio,pintarProyeccionesBeneficio,filasProyeccionesBeneficio} from './proyeccion-beneficio-276.js?v=16.33.276';
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.255";
 import {titulosSinAplicacionSoporte} from "./excedentes-soporte.js?v=16.33.240";
 import {tipoTasaTDJ,filasTasasTDJ,recuperarTasasTDJ,claveTasaTDJ,fechaElegible1419TDJ} from "./tdj-tasas-203.js?v=16.33.268";
 import {dinero, numeroDesdeTexto, truncarValorEntero, fechaISO, fechaVisible} from "./utilidades.js?v=16.33.161";
-import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.268";
+import {MotorLiquidacion} from "./motor-liquidacion.js?v=16.33.276";
 import {importarDatosInteligente} from "./importador.js?v=16.33.161";
 import {importarDatosObligacionInteligente} from "./importador-obligacion.js?v=16.33.161";
-import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.275";
+import {MotorLiquidacionOficial} from "./motor-liquidacion-oficial.js?v=16.33.276";
 import {SUPABASE_URL,SUPABASE_ANON_KEY} from "./supabase-config.js?v=16.33.161";
 import {leerXlsxPrimeraHoja,numExcel,fechaExcel,norm as normImportacionTDJ} from "./importador-excel.js?v=16.33.161";
 import {TIPO_1419,esTipoDecreto1419,validarSeleccion1419} from "./decreto-1419.js?v=16.33.161";
@@ -1335,7 +1336,7 @@ function aplicarTitulos(observacionesBeneficio1419=[]){
       try{
         const motorFinal=motorParaObligacion(o)||motor;
         estadoFinal=motorFinal?.calcular(
-          datosMotor(o,movimientosFinales,fechaCorteFinal,{permitirBeneficioFueraVigencia:true})
+          datosMotor(o,[...movimientosFinales,...(o.pagos||[]).filter(esConsultaBeneficio)],fechaCorteFinal,{permitirBeneficioFueraVigencia:true})
         );
       }catch{
         estadoFinal=null;
@@ -1508,6 +1509,7 @@ function pintarResultado(r){
   if($("resSaldoImpuesto"))$("resSaldoImpuesto").textContent=dinero(saldosTDJ.impuesto);
   if($("resSaldoSancion"))$("resSaldoSancion").textContent=dinero(saldosTDJ.sancion);
   if($("resTotalTitulos"))$("resTotalTitulos").textContent=dinero(totalTitulos);if($("resAplicado"))$("resAplicado").textContent=dinero(totalAplicado);if($("resEndoso"))$("resEndoso").textContent=dinero(r.endoso);if($("resSaldo"))$("resSaldo").textContent=dinero(totalSaldo);
+  pintarProyeccionesBeneficio("proyeccionesBeneficioTDJ",r.resumenObligaciones.flatMap(x=>(x.estadoFinal?.proyeccionesBeneficio||[]).map(q=>({...q,tipo:`Obligación ${x.obligacion.numero} — ${q.tipo}`}))));
   const otbody=$("tablaResultadoObligaciones")?.querySelector("tbody");
   if(otbody){
     otbody.innerHTML="";
@@ -1666,6 +1668,7 @@ function construirFilasExcelTDJ(){
   const nit=$("nitGlobal")?.value||"SIN_NIT";
   push(["LIQUIDADOR DIAN — LIQUIDACIÓN DE TÍTULOS / TDJ"],{title:true});
   push(["SOPORTE COMPLETO — LIQUIDACIÓN NORMAL + APLICACIÓN SECUENCIAL DE TÍTULOS"],{title:true});push([]);
+  filasProyeccionesBeneficio(resultado.resumenObligaciones.flatMap(x=>(x.estadoFinal?.proyeccionesBeneficio||[]).map(q=>({...q,tipo:`Obligación ${x.obligacion.numero} — ${q.tipo}`})))).forEach((row,i)=>push(row,{title:i===1,header:i===2,money:i>=3?[3,4,5,6,7]:[]}));
   push(["NIT",nit,"DV",calcularDvNITTDJ(nit),"RAZÓN SOCIAL",upper($("razonGlobal")?.value||"")]);
   // METADATOS DE ENCABEZADO PARA RECUPERACIÓN COMPLETA DEL EXCEL
   // Se conservan como pares ETIQUETA/VALOR para que tanto el importador
@@ -1699,6 +1702,7 @@ function construirFilasExcelTDJ(){
     (base.vencimientos||o.vencimientos||[]).forEach((v,i)=>push([i+1,v.periodo||i+1,v.fecha,v.impuesto||0,v.saldo||0],{money:[4,5]}));push([]);
     push(["PAGOS REGISTRADOS — LIQUIDACIÓN NORMAL"],{title:true});push(["Nº","RECIBO","FECHA","VALOR","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
     (base.detalle||[]).forEach((d,i)=>push([i+1,d.pago?.recibo||"",d.pago?.fecha||"",d.pago?.valor||0,d.tipoAplicado||"TASA DIAN",d.tasaVisible??"",d.pago?.observacion||"",d.interesGenerado||0,d.aplicado?.impuesto||0,d.aplicado?.intereses||0,d.aplicado?.sancion||0,d.aplicado?.total||0,d.excedente||0],{money:[4,7,8,9,10,11,12],percent:[6]}));
+    (x.estadoFinal?.proyeccionesBeneficio||[]).forEach(q=>push([q.fila,"",q.fecha,0,q.tipo,q.tasaVisible??"","CONSULTA SIN ABONO",q.intereses??0,0,0,0,0,0],{money:[4,8,9,10,11,12,13],percent:[6]}));
     (base.detalle||[]).filter(d=>String(d.notaBeneficio||"").includes("LEY 2155 DE 2021 ART. 48")).forEach(d=>push(["ART. 48 LEY 2155 — PAGO AUTOMÁTICO",d.pago?.fecha||"","TASA IBC",d.tasaVisible==null?"SEGÚN CUOTA":Number(d.tasaVisible).toFixed(2)+"% EA","FUNDAMENTO",d.notaBeneficio]));
     if(!(base.detalle||[]).length)push(["NO HAY PAGOS REGISTRADOS."]);
     if((base.detalle||[]).length){
@@ -2325,6 +2329,8 @@ async function exportarPdfTDJ(){
     obligacionesConProyeccion.forEach(x=>{
       paginas.push(`<section class="pdf-hoja">${bloqueProyeccionFechaCorteTDJ(x)}</section>`);
     });
+
+    resultado.resumenObligaciones.forEach(x=>{const q=x.estadoFinal?.proyeccionesBeneficio||[];if(q.length)paginas.push(`<section class="pdf-hoja"><article class="pdf-liquidacion">${htmlProyeccionesBeneficio(q,`Cuánto pagar con el beneficio — Obligación ${x.obligacion.numero}`)}</article></section>`);});
 
     // Soporte de saldos para toda obligación ordinaria, también sin movimientos.
     const hayTitulosAplicados=totalAplicado>0;
