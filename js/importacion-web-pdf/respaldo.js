@@ -284,7 +284,9 @@ async function imagenCompacta(page){
   for(let i=0;i<fnArray.length;i++){
     if(fnArray[i]!==OPS.paintImageXObject)continue;
     const [id,width,height]=argsArray[i];
-    if(width!==510||height!==590)continue;
+    const columnas=ancho+2*marco,filas=alto+2*marco;
+    if(width<columnas*2||height<filas*2||width>1024||height>1200||
+       Math.abs(width/height-columnas/filas)>.025)continue;
     const objetos=id.startsWith('g_')?page.commonObjs:page.objs;
     const img=await new Promise(resolve=>objetos.get(id,resolve));
     if(!img)continue;
@@ -302,7 +304,7 @@ async function imagenCompacta(page){
       ctx.putImageData(rgba,0,0);
     }else continue;
     const datos={data:ctx.getImageData(0,0,width,height).data,width,height};
-    const respaldo=await interpretarCompacto(datos);
+    const respaldo=await interpretarCompacto(datos,{izquierda:0,derecha:width-1,arriba:0,abajo:height-1});
     if(respaldo)return respaldo;
   }
   return null;
@@ -331,9 +333,9 @@ async function leerCompacto(page){
   return interpretarCompacto(recorte);
 }
 
-async function interpretarCompacto(imagen){
+async function interpretarCompacto(imagen,marcoImagen=localizarMarco(imagen)){
   const {data,width}=imagen;
-  const {izquierda,derecha,arriba,abajo}=localizarMarco(imagen);
+  const {izquierda,derecha,arriba,abajo}=marcoImagen;
   const dx=(derecha-izquierda+1)/(ancho+2*marco),dy=(abajo-arriba+1)/(alto+2*marco);
   if(dx<2||dy<2||Math.abs(dx/dy-1)>.08)return null;
   const bloque=new Uint8Array(tamBloque);

@@ -44,6 +44,16 @@ try{
   assert.equal(await codigo.evaluate(el=>el.style.width),'12mm');
   assert.equal(await preview.locator('a[id^="liq-respaldo-v1-"]').count(),0,'el respaldo visual se prueba sin referencias internas');
   assert.equal(await preview.locator('.pdf-hoja').count(),1,'el código no añade una hoja');
+  // Simula la reducción y recompresión del código al imprimir en Windows.
+  await codigo.evaluate(async img=>{
+    await img.decode();
+    const canvas=document.createElement('canvas');
+    canvas.width=215;canvas.height=248;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    img.src=canvas.toDataURL('image/jpeg',.88);
+    await img.decode();
+  });
   const generado=await preview.pdf({format:'A4',printBackground:true});
   const pdf=process.env.PDF_PRUEBA?await fs.readFile(process.env.PDF_PRUEBA):generado;
   if(process.env.GUARDAR_PDF_PRUEBA)await fs.writeFile(process.env.GUARDAR_PDF_PRUEBA,pdf);

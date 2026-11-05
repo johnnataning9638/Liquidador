@@ -2,65 +2,65 @@
   "index.html": [
     [
       "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidadores DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.278\">\n<style>\n/* INICIO UI 16.33.122 — FONDO FINANCE-TECH\n",
-      "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidadores DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.284\">\n<style>\n/* INICIO UI 16.33.122 — FONDO FINANCE-TECH\n"
+      "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidadores DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.285\">\n<style>\n/* INICIO UI 16.33.122 — FONDO FINANCE-TECH\n"
     ],
     [
       "                  </div>\n        <span class=\"modulo-estado\">MÓDULO 1</span>\n        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.278'\">ABRIR LIQUIDADOR →</button></div>\n      </article>\n      <article class=\"modulo-item titulos\">\n",
-      "                  </div>\n        <span class=\"modulo-estado\">MÓDULO 1</span>\n        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.284'\">ABRIR LIQUIDADOR →</button></div>\n      </article>\n      <article class=\"modulo-item titulos\">\n"
+      "                  </div>\n        <span class=\"modulo-estado\">MÓDULO 1</span>\n        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='liquidacion.html?v=16.33.285'\">ABRIR LIQUIDADOR →</button></div>\n      </article>\n      <article class=\"modulo-item titulos\">\n"
     ],
     [
       "                  </div>\n        <span class=\"modulo-estado\">MÓDULO 2</span>\n        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.278'\">ABRIR TÍTULOS / TDJ →</button></div>\n      </article>\n\n",
-      "                  </div>\n        <span class=\"modulo-estado\">MÓDULO 2</span>\n        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.284'\">ABRIR TÍTULOS / TDJ →</button></div>\n      </article>\n\n"
+      "                  </div>\n        <span class=\"modulo-estado\">MÓDULO 2</span>\n        <div class=\"modulo-accion\"><button type=\"button\" class=\"primario\" onclick=\"window.location.href='titulos.html?v=16.33.285'\">ABRIR TÍTULOS / TDJ →</button></div>\n      </article>\n\n"
     ]
   ],
   "liquidacion.html": [
     [
       "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidación de Obligaciones — DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.278\">\n<style>\n.topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}\n@media(max-width:650px){.topbar .ruta-modulo,.topbar .btn-inicio{width:100%}.topbar .btn-inicio{min-height:38px}}\n</style>\n<link rel=\"stylesheet\" href=\"beneficios.css?v=16.33.278\">\n<link rel=\"stylesheet\" href=\"importacion-web-pdf.css?v=16.33.278\">\n</head>\n<body>\n",
-      "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidación de Obligaciones — DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.284\">\n<style>\n.topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}\n@media(max-width:650px){.topbar .ruta-modulo,.topbar .btn-inicio{width:100%}.topbar .btn-inicio{min-height:38px}}\n</style>\n<link rel=\"stylesheet\" href=\"beneficios.css?v=16.33.284\">\n<link rel=\"stylesheet\" href=\"importacion-web-pdf.css?v=16.33.284\">\n</head>\n<body>\n"
+      "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidación de Obligaciones — DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.285\">\n<style>\n.topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}\n@media(max-width:650px){.topbar .ruta-modulo,.topbar .btn-inicio{width:100%}.topbar .btn-inicio{min-height:38px}}\n</style>\n<link rel=\"stylesheet\" href=\"beneficios.css?v=16.33.285\">\n<link rel=\"stylesheet\" href=\"importacion-web-pdf.css?v=16.33.285\">\n</head>\n<body>\n"
     ],
     [
       "\n</main>\n<footer>Liquidador — versión 16.33.278, con TIM e IPC centralizados y alertas informativas</footer>\n<script>\n// DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.\n",
-      "\n</main>\n<footer>Liquidador — versión 16.33.284, con TIM e IPC centralizados y alertas informativas</footer>\n<script>\n// DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.\n"
+      "\n</main>\n<footer>Liquidador — versión 16.33.285, con TIM e IPC centralizados y alertas informativas</footer>\n<script>\n// DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.\n"
     ],
     [
       "})();\n</script>\n<script type=\"module\" src=\"js/importacion-web-pdf/ui.js?v=16.33.278\"></script>\n<script type=\"module\" src=\"js/app.js?v=16.33.278\"></script>\n<script>\n(function(){\n",
-      "})();\n</script>\n<script type=\"module\" src=\"js/importacion-web-pdf/ui.js?v=16.33.284\"></script>\n<script type=\"module\" src=\"js/app.js?v=16.33.284\"></script>\n<script>\n(function(){\n"
+      "})();\n</script>\n<script type=\"module\" src=\"js/importacion-web-pdf/ui.js?v=16.33.285\"></script>\n<script type=\"module\" src=\"js/app.js?v=16.33.285\"></script>\n<script>\n(function(){\n"
     ],
     [
       "})();\n</script>\n<script type=\"module\" src=\"js/catalogo-beneficios.js?v=16.33.278\"></script>\n</body>\n</html>\n",
-      "})();\n</script>\n<script type=\"module\" src=\"js/catalogo-beneficios.js?v=16.33.284\"></script>\n</body>\n</html>\n"
+      "})();\n</script>\n<script type=\"module\" src=\"js/catalogo-beneficios.js?v=16.33.285\"></script>\n</body>\n</html>\n"
     ]
   ],
   "titulos.html": [
     [
       "</script>\n\n<!-- TDJ UI DEPLOY 16.33.278 -->\n<script id=\"tdj-version-guard\">\n(function(){\n",
-      "</script>\n\n<!-- TDJ UI DEPLOY 16.33.284 -->\n<script id=\"tdj-version-guard\">\n(function(){\n"
+      "</script>\n\n<!-- TDJ UI DEPLOY 16.33.285 -->\n<script id=\"tdj-version-guard\">\n(function(){\n"
     ],
     [
       "    var u=new URL(window.location.href);\n    var v=u.searchParams.get(\"v\");\n    if(v && v!==\"16.33.278\"){\n      u.searchParams.set(\"v\",\"16.33.278\");\n      window.location.replace(u.toString());\n    }\n",
-      "    var u=new URL(window.location.href);\n    var v=u.searchParams.get(\"v\");\n    if(v && v!==\"16.33.284\"){\n      u.searchParams.set(\"v\",\"16.33.284\");\n      window.location.replace(u.toString());\n    }\n"
+      "    var u=new URL(window.location.href);\n    var v=u.searchParams.get(\"v\");\n    if(v && v!==\"16.33.285\"){\n      u.searchParams.set(\"v\",\"16.33.285\");\n      window.location.replace(u.toString());\n    }\n"
     ],
     [
       "<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidación de Títulos / TDJ — DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.278\">\n<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.278\" media=\"screen and (max-width:650px)\">\n<style>\n.compact-grid label[hidden]{display:none!important}\n",
-      "<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidación de Títulos / TDJ — DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.284\">\n<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.284\" media=\"screen and (max-width:650px)\">\n<style>\n.compact-grid label[hidden]{display:none!important}\n"
+      "<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Liquidación de Títulos / TDJ — DIAN</title>\n<link rel=\"stylesheet\" href=\"estilos.css?v=16.33.285\">\n<link rel=\"stylesheet\" href=\"tdj-mobile.css?v=16.33.285\" media=\"screen and (max-width:650px)\">\n<style>\n.compact-grid label[hidden]{display:none!important}\n"
     ],
     [
       "@media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}\n</style>\n<link rel=\"stylesheet\" href=\"beneficios.css?v=16.33.278\">\n<link rel=\"stylesheet\" href=\"importacion-web-pdf.css?v=16.33.278\">\n</head>\n<body>\n",
-      "@media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}\n</style>\n<link rel=\"stylesheet\" href=\"beneficios.css?v=16.33.284\">\n<link rel=\"stylesheet\" href=\"importacion-web-pdf.css?v=16.33.284\">\n</head>\n<body>\n"
+      "@media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}\n</style>\n<link rel=\"stylesheet\" href=\"beneficios.css?v=16.33.285\">\n<link rel=\"stylesheet\" href=\"importacion-web-pdf.css?v=16.33.285\">\n</head>\n<body>\n"
     ],
     [
       "\n</main>\n<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.278</footer>\n<script id=\"tdj-global-clear-143\">\ndocument.addEventListener(\"DOMContentLoaded\",function(){\n",
-      "\n</main>\n<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.284</footer>\n<script id=\"tdj-global-clear-143\">\ndocument.addEventListener(\"DOMContentLoaded\",function(){\n"
+      "\n</main>\n<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.285</footer>\n<script id=\"tdj-global-clear-143\">\ndocument.addEventListener(\"DOMContentLoaded\",function(){\n"
     ],
     [
       "    e.stopImmediatePropagation();\n    if(!confirm(\"¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados.\"))return;\n    window.location.href=\"titulos.html?v=16.33.278&reinicio=\"+Date.now();\n  },true);\n});\n</script>\n<script type=\"module\" src=\"js/importacion-web-pdf/ui.js?v=16.33.278\"></script>\n<script type=\"module\" src=\"js/tdj.js?v=16.33.278\"></script>\n<script type=\"module\" src=\"js/catalogo-beneficios.js?v=16.33.278\"></script>\n</body></html>\n",
-      "    e.stopImmediatePropagation();\n    if(!confirm(\"¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados.\"))return;\n    window.location.href=\"titulos.html?v=16.33.284&reinicio=\"+Date.now();\n  },true);\n});\n</script>\n<script type=\"module\" src=\"js/importacion-web-pdf/ui.js?v=16.33.284\"></script>\n<script type=\"module\" src=\"js/tdj.js?v=16.33.284\"></script>\n<script type=\"module\" src=\"js/catalogo-beneficios.js?v=16.33.284\"></script>\n</body></html>\n"
+      "    e.stopImmediatePropagation();\n    if(!confirm(\"¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados.\"))return;\n    window.location.href=\"titulos.html?v=16.33.285&reinicio=\"+Date.now();\n  },true);\n});\n</script>\n<script type=\"module\" src=\"js/importacion-web-pdf/ui.js?v=16.33.285\"></script>\n<script type=\"module\" src=\"js/tdj.js?v=16.33.285\"></script>\n<script type=\"module\" src=\"js/catalogo-beneficios.js?v=16.33.285\"></script>\n</body></html>\n"
     ]
   ],
   "js/app.js": [
     [
       "import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';\nimport {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";\nimport {TIPO_688_50} from \"./decreto-688-50.js?v=16.33.266\";\n",
-      "import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';\nimport {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from \"./importacion-web-pdf/respaldo.js?v=16.33.284\";\nimport {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";\nimport {TIPO_688_50} from \"./decreto-688-50.js?v=16.33.266\";\n"
+      "import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';\nimport {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from \"./importacion-web-pdf/respaldo.js?v=16.33.285\";\nimport {favorabilidadAutomatica} from \"./favorabilidad-2010.js?v=16.33.268\";\nimport {TIPO_688_50} from \"./decreto-688-50.js?v=16.33.266\";\n"
     ],
     [
       "}\n\nfunction exportarPdf(){\n  try{\n    const {d,r}=construirDatosSoporte();\n",
@@ -78,17 +78,17 @@
   "js/tdj.js": [
     [
       "import \"./tdj-tasa-bridge-16.33.174.js?v=16.33.212\";\nimport \"./tdj-secuencia-guard-16.33.185.js?v=16.33.185\";\nimport \"./tdj-pdf-cierre-16.33.189.js?v=16.33.278\";\nimport \"./tdj-import-beneficio-16.33.192.js?v=16.33.210\";\nimport \"./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.193\";\n",
-      "import \"./tdj-tasa-bridge-16.33.174.js?v=16.33.212\";\nimport \"./tdj-secuencia-guard-16.33.185.js?v=16.33.185\";\nimport \"./tdj-pdf-cierre-16.33.189.js?v=16.33.284\";\nimport \"./tdj-import-beneficio-16.33.192.js?v=16.33.210\";\nimport \"./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.193\";\n"
+      "import \"./tdj-tasa-bridge-16.33.174.js?v=16.33.212\";\nimport \"./tdj-secuencia-guard-16.33.185.js?v=16.33.185\";\nimport \"./tdj-pdf-cierre-16.33.189.js?v=16.33.285\";\nimport \"./tdj-import-beneficio-16.33.192.js?v=16.33.210\";\nimport \"./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.193\";\n"
     ],
     [
       "// v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras\n// preserva los movimientos TDJ reales posteriores.\nimport(\"./tdj-core-16.33.143.js?v=16.33.278\");\n// Capa visual TDJ × OBLIGACIÓN.\nimport(\"./tdj-visual-beneficios.js?v=16.33.278\");\n",
-      "// v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras\n// preserva los movimientos TDJ reales posteriores.\nimport(\"./tdj-core-16.33.143.js?v=16.33.284\");\n// Capa visual TDJ × OBLIGACIÓN.\nimport(\"./tdj-visual-beneficios.js?v=16.33.284\");\n"
+      "// v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras\n// preserva los movimientos TDJ reales posteriores.\nimport(\"./tdj-core-16.33.143.js?v=16.33.285\");\n// Capa visual TDJ × OBLIGACIÓN.\nimport(\"./tdj-visual-beneficios.js?v=16.33.285\");\n"
     ]
   ],
   "js/tdj-core-16.33.143.js": [
     [
       "import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';\nimport {TIPO_688_50} from \"./decreto-688-50.js?v=16.33.266\";\nimport {cargarUVTConRespaldo,protegerMinimaUVT} from \"./uvt-parametros.js?v=16.33.263\";\n",
-      "import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';\nimport {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from \"./importacion-web-pdf/respaldo.js?v=16.33.284\";\nimport {TIPO_688_50} from \"./decreto-688-50.js?v=16.33.266\";\nimport {cargarUVTConRespaldo,protegerMinimaUVT} from \"./uvt-parametros.js?v=16.33.263\";\n"
+      "import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';\nimport {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from \"./importacion-web-pdf/respaldo.js?v=16.33.285\";\nimport {TIPO_688_50} from \"./decreto-688-50.js?v=16.33.266\";\nimport {cargarUVTConRespaldo,protegerMinimaUVT} from \"./uvt-parametros.js?v=16.33.263\";\n"
     ],
     [
       "    const win=window.open(\"\",\"_blank\",\"width=1200,height=1000\");\n    if(!win)throw new Error(\"El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.\");\n    win.document.open();\n    // Metadatos de presentación: conservar los saldos del resultado sin exigir\n    // la existencia de páginas de pago o de soporte de títulos.\n    const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);\n    win.document.write(`<!doctype html><html><head><meta charset=\"utf-8\"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():\"\"}</style></head><body><main class=\"pdf-soporte\" data-saldo-obligaciones=\"${saldoPendientePDF}\" data-saldo-sancion=\"${saldoSancionPDF}\">${paginas.join(\"\")}</main></body></html>`);\n    win.document.close();\n    const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);\n",
@@ -114,13 +114,13 @@
     ],
     [
       " return validarEntrada(out);\n}\nexport async function leerPDF(file){\n if(!file||file.size>20*1024*1024)throw Error('Seleccione un PDF de hasta 20 MB.');\n const bytes=new Uint8Array(await file.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('El archivo adjunto no es un PDF válido.');\n const pdfjs=await import('../../vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('../../vendor/pdfjs/pdf.worker.mjs',import.meta.url).href;\n const task=pdfjs.getDocument({data:bytes,isEvalSupported:false,disableFontFace:true,useSystemFonts:false,enableXfa:false,stopAtErrors:true});\n try{\n  const doc=await task.promise;if(doc.numPages>100)throw Error('El PDF supera el límite de 100 páginas.');\n  const paginas=[];for(let n=1;n<=doc.numPages;n++){const page=await doc.getPage(n),text=await page.getTextContent();paginas.push({width:page.view[2]-page.view[0],height:page.view[3]-page.view[1],items:text.items.filter(t=>t.str?.trim()).map(t=>({s:t.str.trim(),x:t.transform[4],y:t.transform[5],h:t.height}))});}\n  return interpretarGenerador(paginas);\n }catch(e){if(e.name==='PasswordException')throw Error('El PDF está protegido con contraseña.');throw e;}\n",
-      " return validarEntrada(out);\n}\nexport async function leerPDF(file,leerRespaldo){\n if(!file||file.size>20*1024*1024)throw Error('Seleccione un PDF de hasta 20 MB.');\n const bytes=new Uint8Array(await file.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('El archivo adjunto no es un PDF válido.');\n const pdfjs=await import('../../vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('./pdf-worker.mjs?v=16.33.284',import.meta.url).href;\n const task=pdfjs.getDocument({data:bytes,isEvalSupported:false,disableFontFace:true,useSystemFonts:false,enableXfa:false,stopAtErrors:true});\n try{\n  const doc=await task.promise;if(doc.numPages>100)throw Error('El PDF supera el límite de 100 páginas.');\n  const paginas=[];for(let n=1;n<=doc.numPages;n++){const page=await doc.getPage(n),text=await page.getTextContent();paginas.push({width:page.view[2]-page.view[0],height:page.view[3]-page.view[1],items:text.items.filter(t=>t.str?.trim()).map(t=>({s:t.str.trim(),x:t.transform[4],y:t.transform[5],h:t.height}))});}\n  if(leerRespaldo&&!paginas.some(pg=>pg.items.some(i=>normalizar(i.s).includes('GENERADOR DE CUOTAS')))){\n   const respaldo=await leerRespaldo(doc);\n   if(respaldo)return respaldo;\n  }\n  return interpretarGenerador(paginas);\n }catch(e){if(e.name==='PasswordException')throw Error('El PDF está protegido con contraseña.');throw e;}\n"
+      " return validarEntrada(out);\n}\nexport async function leerPDF(file,leerRespaldo){\n if(!file||file.size>20*1024*1024)throw Error('Seleccione un PDF de hasta 20 MB.');\n const bytes=new Uint8Array(await file.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('El archivo adjunto no es un PDF válido.');\n const pdfjs=await import('../../vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('./pdf-worker.mjs?v=16.33.285',import.meta.url).href;\n const task=pdfjs.getDocument({data:bytes,isEvalSupported:false,disableFontFace:true,useSystemFonts:false,enableXfa:false,stopAtErrors:true});\n try{\n  const doc=await task.promise;if(doc.numPages>100)throw Error('El PDF supera el límite de 100 páginas.');\n  const paginas=[];for(let n=1;n<=doc.numPages;n++){const page=await doc.getPage(n),text=await page.getTextContent();paginas.push({width:page.view[2]-page.view[0],height:page.view[3]-page.view[1],items:text.items.filter(t=>t.str?.trim()).map(t=>({s:t.str.trim(),x:t.transform[4],y:t.transform[5],h:t.height}))});}\n  if(leerRespaldo&&!paginas.some(pg=>pg.items.some(i=>normalizar(i.s).includes('GENERADOR DE CUOTAS')))){\n   const respaldo=await leerRespaldo(doc);\n   if(respaldo)return respaldo;\n  }\n  return interpretarGenerador(paginas);\n }catch(e){if(e.name==='PasswordException')throw Error('El PDF está protegido con contraseña.');throw e;}\n"
     ]
   ],
   "js/importacion-web-pdf/ui.js": [
     [
       "import {leerPDF} from './pdf.js';\n\n// Archivo transitorio compartido entre pestañas. Nunca se escribe en almacenamiento.\n",
-      "import {leerPDF} from './pdf.js?v=16.33.284';\nimport {leerRespaldoPDF} from './respaldo.js?v=16.33.284';\n\n// Archivo transitorio compartido entre pestañas. Nunca se escribe en almacenamiento.\n"
+      "import {leerPDF} from './pdf.js?v=16.33.285';\nimport {leerRespaldoPDF} from './respaldo.js?v=16.33.285';\n\n// Archivo transitorio compartido entre pestañas. Nunca se escribe en almacenamiento.\n"
     ],
     [
       "}\nfunction adjuntar(file,campo){\n if(!file||!(/\\.pdf$/i.test(file.name)||file.type==='application/pdf')){estado('Arrastre un Generador de Cuotas en PDF.',true);return;}\n if(file.size>20*1024*1024){estado('El PDF debe pesar como máximo 20 MB.',true);return;}\n soltar();adjunto={file,campo};campo.value='PDF adjunto: '+file.name+'\\nPulse Importar PDF para leerlo.';campo.readOnly=true;campo.dataset.pdfAdjunto='true';\n",
@@ -170,7 +170,7 @@
   "runtime-manifest.json": [
     [
       "{\n  \"version\": \"16.33.278\",\n  \"files\": [\n    \"beneficios.css\",\n",
-      "{\n  \"version\": \"16.33.284\",\n  \"files\": [\n    \"beneficios.css\",\n"
+      "{\n  \"version\": \"16.33.285\",\n  \"files\": [\n    \"beneficios.css\",\n"
     ],
     [
       "    \"js/importacion-web-pdf/modelo.js\",\n    \"js/importacion-web-pdf/pdf.js\",\n    \"js/importacion-web-pdf/ui.js\",\n    \"js/importador-excel.js\",\n    \"js/importador-obligacion.js\",\n    \"js/importador.js\",\n    \"js/ley2155-art48.js\",\n    \"js/motor-liquidacion-base.js\",\n",
@@ -178,11 +178,11 @@
     ],
     [
       "  \"protected\": {\n    \"js/actualizacion-sancion.js\": \"7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39\",\n    \"js/app.js\": \"15741fd6e5714075dcd3a6f1228255a50515edfa5e88e922d1f6a2d8326fb8fb\",\n    \"js/calendario-tributario.js\": \"ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3\",\n    \"js/decreto-1419.js\": \"048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85\",\n",
-      "  \"protected\": {\n    \"js/actualizacion-sancion.js\": \"7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39\",\n    \"js/app.js\": \"11d50db05950613f252087909564e9a6928b42460f4a1a4a0cdd08cb336327b7\",\n    \"js/calendario-tributario.js\": \"ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3\",\n    \"js/decreto-1419.js\": \"048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85\",\n"
+      "  \"protected\": {\n    \"js/actualizacion-sancion.js\": \"7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39\",\n    \"js/app.js\": \"c07e6301b01bc40f60899ba09c92cebc735d2457c33478c39c98660c7de8476f\",\n    \"js/calendario-tributario.js\": \"ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3\",\n    \"js/decreto-1419.js\": \"048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85\",\n"
     ],
     [
       "    \"js/supabase-config.js\": \"d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca\",\n    \"js/tdj-beneficio-contexto-16.33.194.js\": \"3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb\",\n    \"js/tdj-core-16.33.143.js\": \"e945d1b3c0069c3cec0d1c928398e5620b63d43e3f59a1492eabe1317d8a99a3\",\n    \"js/tdj-fecha-corte-sin-pagos-16.33.193.js\": \"35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6\",\n    \"js/tdj-fechas-dian-206.js\": \"513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55\",\n",
-      "    \"js/supabase-config.js\": \"d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca\",\n    \"js/tdj-beneficio-contexto-16.33.194.js\": \"3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb\",\n    \"js/tdj-core-16.33.143.js\": \"3b800048bf96b83a7f6da427bfd172f916c0bd5fd68bc724b13ebc45fe4b30ee\",\n    \"js/tdj-fecha-corte-sin-pagos-16.33.193.js\": \"35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6\",\n    \"js/tdj-fechas-dian-206.js\": \"513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55\",\n"
+      "    \"js/supabase-config.js\": \"d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca\",\n    \"js/tdj-beneficio-contexto-16.33.194.js\": \"3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb\",\n    \"js/tdj-core-16.33.143.js\": \"5a1fa3ef6ac456fec44879fb4c09b0764715d2c96d0750930b9e54192ab2f706\",\n    \"js/tdj-fecha-corte-sin-pagos-16.33.193.js\": \"35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6\",\n    \"js/tdj-fechas-dian-206.js\": \"513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55\",\n"
     ],
     [
       "    \"js/tdj-tasa-vista-207.js\": \"0e0bf240844b7943f8a6008b5b7bed493b5a38aa7a7ecf82700086602774fc32\",\n    \"js/tdj-tasas-203.js\": \"47dc793da713544b70c30ba5c42416539059ffd12c7fe3bbe6b41463a87c4cc5\",\n    \"js/tdj-visual-beneficios.js\": \"6cf3423826819a21cc8d834b34e970ec50d9241948804e4f81fee693f7a87ca8\",\n    \"js/utilidades.js\": \"2dd81359c5962e39c9936084a707f532426ad6143efe41a7ff8c77baf4d4d3bf\"\n  },\n",
@@ -196,7 +196,7 @@
   "version.json": [
     [
       "{\n  \"version\": \"16.33.278\",\n  \"previousVersion\": \"16.33.277\",\n  \"baseCommit\": \"e12160e7df6b7df1d6a47c12fb38db76bb695fa8\",\n  \"date\": \"2026-11-03\",\n  \"change\": \"Retirar el rótulo DIAN de todos los encabezados PDF en ambos liquidadores, conservando títulos, estructura y cálculos\"\n}\n",
-      "{\n  \"version\": \"16.33.284\",\n  \"previousVersion\": \"16.33.283\",\n  \"baseCommit\": \"4e47f9336696f89e93456f1586210652de69c40f\",\n  \"date\": \"2026-11-04\",\n  \"change\": \"Codigo compacto de recuperacion al final del PDF\"\n}\n"
+      "{\n  \"version\": \"16.33.285\",\n  \"previousVersion\": \"16.33.284\",\n  \"baseCommit\": \"686ffcaf2333ec9adc36d8e1f9c62c542b9042a2\",\n  \"date\": \"2026-11-04\",\n  \"change\": \"Lectura del codigo compacto reducido por Microsoft Print to PDF\"\n}\n"
     ]
   ]
 }

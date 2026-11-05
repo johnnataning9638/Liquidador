@@ -1,5 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
-import {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.284";
+import {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.285";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.278";

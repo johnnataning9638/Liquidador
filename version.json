@@ -1,7 +1,7 @@
 {
-  "version": "16.33.284",
-  "previousVersion": "16.33.283",
-  "baseCommit": "4e47f9336696f89e93456f1586210652de69c40f",
+  "version": "16.33.285",
+  "previousVersion": "16.33.284",
+  "baseCommit": "686ffcaf2333ec9adc36d8e1f9c62c542b9042a2",
   "date": "2026-11-04",
-  "change": "Codigo compacto de recuperacion al final del PDF"
+  "change": "Lectura del codigo compacto reducido por Microsoft Print to PDF"
 }
