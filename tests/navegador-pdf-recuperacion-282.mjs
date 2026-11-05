@@ -17,6 +17,10 @@ try{
     if(url.pathname==='/js/supabase-config.js')return route.fulfill({
       contentType:'text/javascript',body:'export const SUPABASE_URL="";export const SUPABASE_ANON_KEY="";'
     });
+    if(url.pathname==='/js/importacion-web-pdf/pdf-worker.mjs'){
+      const body=await fs.readFile(file,'utf8');
+      return route.fulfill({contentType:'text/javascript',body:'delete Map.prototype.getOrInsert;\n'+body});
+    }
     try{return await route.fulfill({body:await fs.readFile(file),contentType:tipos[path.extname(file)]});}
     catch{return route.fulfill({status:404,body:''});}
   });

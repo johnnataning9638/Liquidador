@@ -25,6 +25,7 @@
     "js/favorabilidad-2010.js",
     "js/importacion-web-pdf/modelo.js",
     "js/importacion-web-pdf/pdf.js",
+    "js/importacion-web-pdf/pdf-worker.mjs",
     "js/importacion-web-pdf/respaldo.js",
     "js/importacion-web-pdf/ui.js",
     "js/importador-excel.js",
