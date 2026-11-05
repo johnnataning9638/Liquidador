@@ -212,8 +212,9 @@ async function leerBloque(page){
 export async function leerRespaldoPDF(doc){
   // PDF.js usa este método al dibujar imágenes, incluso en navegadores
   // que ya pueden extraer el texto del formulario 1116 sin él.
-  if(typeof Map.prototype.getOrInsertComputed!=='function'){
-    Object.defineProperty(Map.prototype,'getOrInsertComputed',{
+  for(const {prototype} of [Map,WeakMap]){
+    if(typeof prototype.getOrInsertComputed==='function')continue;
+    Object.defineProperty(prototype,'getOrInsertComputed',{
       configurable:true,writable:true,
       value:function(clave,crear){
         if(this.has(clave))return this.get(clave);
