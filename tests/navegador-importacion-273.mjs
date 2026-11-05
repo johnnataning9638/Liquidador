@@ -55,7 +55,9 @@ try{
   const before=await snapshot();await drop(p,campo,Buffer.from('%PDF-1.4\nINVALIDO'));await p.locator('.tab-pane.active .wpdf-trigger').click();await p.locator('.wpdf-error').first().waitFor();assert.deepEqual(await snapshot(),before,'PDF inválido no modifica datos');
   if(tdj){
    await p.locator('.tab-pane.active .wpdf-quitar').click();await p.locator('#btnAgregarObligacion').click();
-   const anteriores=await snapshot();await p.locator('.tab-btn[data-tab="titulos"]').click();await p.locator('#destinoImportacionPDFTitulos').selectOption({index:2});await drop(p,'#importarTitulosTexto',generadorPDF());await p.locator('.tab-pane.active .wpdf-trigger').click();
+   const anteriores=await snapshot();await p.locator('.tab-btn[data-tab="titulos"]').click();await drop(p,'#importarTitulosTexto',generadorPDF());await p.locator('.tab-pane.active .wpdf-trigger').click();
+   await p.locator('.tab-pane.active .wpdf-error').waitFor();
+   await p.locator('#destinoImportacionPDFTitulos').selectOption({index:2});await p.locator('.tab-pane.active .wpdf-trigger').click();
    await p.waitForFunction(()=>document.querySelector('.tab-pane.active .wpdf-estado')?.textContent.startsWith('Importación lista'));
    const varios=await snapshot();assert.deepEqual(varios.obligaciones[0],anteriores.obligaciones[0],'la obligación no elegida permanece intacta');assert.equal(varios.obligaciones[1].vencimientos.length,2,'Títulos respeta su propio destino');
    // El redibujado de Pagos limpia los destinos. Preparar expresamente el estado
