@@ -1,5 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
-import {crearRespaldo,referenciasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.283";
+import {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.284";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.278";
@@ -2490,7 +2490,7 @@ async function exportarPdfTDJ(){
     const win=window.open("","_blank","width=1200,height=1000");
     if(!win)throw new Error("El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.");
     const identidad={nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:$("razonGlobal").value};
-    const respaldo=referenciasRespaldoSeguro(()=>crearRespaldo('TDJ',identidad,obligaciones,[
+    const respaldo=await respaldoPDFExportable(()=>crearRespaldo('TDJ',identidad,obligaciones,[
       ...titulos.map(t=>({...t,tiposObligacion:obligaciones.map(o=>t.tasasPorObligacion?.[o.id]||o.tipoTasa)})),
       ...obligaciones.flatMap(o=>o.pagos.filter(p=>p.tdj&&!titulos.some(t=>t.tdj===p.tdj)))
     ]));

@@ -163,14 +163,6 @@ export function referenciasRespaldo(datos){
   }).join('');
 }
 
-export function referenciasRespaldoSeguro(crear){
-  try{return referenciasRespaldo(crear());}
-  catch(error){
-    console.error('No se pudo incorporar el respaldo PDF',error);
-    return '';
-  }
-}
-
 async function leerReferencias(doc){
   const destinos=await doc.getDestinations();
   const nombres=destinos instanceof Map?[...destinos.keys()]:Object.keys(destinos||{});
@@ -186,6 +178,180 @@ async function leerReferencias(doc){
     return Uint8Array.from(atob(base64.replaceAll('-','+').replaceAll('_','/')),c=>c.charCodeAt(0));
   });
   return unirBloques(bloques);
+}
+
+const firmaCompacta=0x4c514131; // LQA1
+const marco=3;
+const colorMarco='#190034';
+
+async function convertirRespaldo(bytes,flujo,limite){
+  const lector=new Blob([bytes]).stream().pipeThrough(flujo).getReader();
+  const partes=[];
+  let largo=0;
+  try{
+    for(;;){
+      const {done,value}=await lector.read();
+      if(done)break;
+      largo+=value.length;
+      if(largo>limite){await lector.cancel();return null;}
+      partes.push(value);
+    }
+  }finally{lector.releaseLock();}
+  return new Uint8Array(await new Blob(partes).arrayBuffer());
+}
+
+export async function codigoRespaldoCompacto(datos){
+  const entrada=new TextEncoder().encode(JSON.stringify(datos));
+  const comprimido=await convertirRespaldo(entrada,new CompressionStream('deflate'),capacidad);
+  if(!comprimido)return '';
+  const bloque=new Uint8Array(tamBloque);
+  const vista=new DataView(bloque.buffer);
+  vista.setUint32(0,firmaCompacta);
+  vista.setUint16(8,comprimido.length);
+  vista.setUint32(12,suma(comprimido));
+  bloque.set(comprimido,cabecera);
+  // El relleno visual queda fuera de los datos y de su comprobación de integridad.
+  let relleno=suma(comprimido);
+  for(let i=cabecera+comprimido.length;i<bloque.length;i++){
+    relleno=(Math.imul(relleno,1664525)+1013904223)>>>0;
+    bloque[i]=relleno>>>24;
+  }
+  const canvas=document.createElement('canvas');
+  const pixel=5;
+  canvas.width=(ancho+2*marco)*pixel;
+  canvas.height=(alto+2*marco)*pixel;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle=colorMarco;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#fff';
+  ctx.fillRect(marco*pixel,marco*pixel,ancho*pixel,alto*pixel);
+  ctx.fillStyle='#000';
+  for(let bit=0;bit<ancho*alto;bit++){
+    if(bloque[bit>>3]&(128>>(bit%8)))ctx.fillRect((bit%ancho+marco)*pixel,(Math.floor(bit/ancho)+marco)*pixel,pixel,pixel);
+  }
+  // El cierre TDJ puede agregar sus resúmenes después de cargar la vista.
+  // Mantener el código después del contenido de la última sección real.
+  return `<img id="liq-codigo-a" alt="" style="display:none;width:12mm;height:auto;margin:3mm 0 0 auto;break-inside:avoid;image-rendering:pixelated" src="${canvas.toDataURL()}"><script>
+  (()=>{const codigo=document.getElementById('liq-codigo-a');
+  const main=document.querySelector('main.pdf-soporte');
+  if(!codigo||!main)return;
+  const ubicar=()=>{const ultima=main.querySelector(':scope > section:last-of-type');
+    const pagina=ultima?.querySelector(':scope > .pdf-pagina')||ultima;
+    if(pagina&&pagina.lastElementChild!==codigo)pagina.append(codigo);
+    if(pagina)codigo.style.display='block';
+  };
+  new MutationObserver(ubicar).observe(main,{childList:true,subtree:true});
+  ubicar();})();
+  </script>`;
+}
+
+export async function respaldoPDFExportable(crear){
+  const datos=crear();
+  const referencias=referenciasRespaldo(datos);
+  try{return referencias+await codigoRespaldoCompacto(datos);}
+  catch(error){
+    console.warn('No se pudo generar el código compacto del PDF',error);
+    return referencias;
+  }
+}
+
+async function dibujarFranja(page,escala,recorte){
+  const canvas=document.createElement('canvas');
+  const viewport=page.getViewport({scale:escala});
+  const {x,y,width,height}=recorte(viewport);
+  canvas.width=width;
+  canvas.height=height;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  await page.render({canvasContext:ctx,viewport,transform:[1,0,0,1,-x,-y]}).promise;
+  return {data:ctx.getImageData(0,0,width,height).data,width,height,x,y};
+}
+
+function localizarMarco({data,width,height}){
+  let izquierda=width,derecha=-1,arriba=height,abajo=-1;
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const p=(y*width+x)*4;
+    if(data[p]>=18&&data[p]<=42&&data[p+1]<13&&data[p+2]>=42&&data[p+2]<=73){
+      izquierda=Math.min(izquierda,x);derecha=Math.max(derecha,x);
+      arriba=Math.min(arriba,y);abajo=Math.max(abajo,y);
+    }
+  }
+  return {izquierda,derecha,arriba,abajo};
+}
+
+async function imagenCompacta(page){
+  const {OPS}=await import('../../vendor/pdfjs/pdf.mjs');
+  const {fnArray,argsArray}=await page.getOperatorList();
+  for(let i=0;i<fnArray.length;i++){
+    if(fnArray[i]!==OPS.paintImageXObject)continue;
+    const [id,width,height]=argsArray[i];
+    if(width!==510||height!==590)continue;
+    const objetos=id.startsWith('g_')?page.commonObjs:page.objs;
+    const img=await new Promise(resolve=>objetos.get(id,resolve));
+    if(!img)continue;
+    const canvas=document.createElement('canvas');
+    canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d');
+    if(img.bitmap)ctx.drawImage(img.bitmap,0,0);
+    else if(img.data?.length===width*height*4){
+      ctx.putImageData(new ImageData(new Uint8ClampedArray(img.data),width,height),0,0);
+    }else if(img.data?.length===width*height*3){
+      const rgba=ctx.createImageData(width,height);
+      for(let j=0,k=0;j<img.data.length;j+=3,k+=4){
+        rgba.data[k]=img.data[j];rgba.data[k+1]=img.data[j+1];rgba.data[k+2]=img.data[j+2];rgba.data[k+3]=255;
+      }
+      ctx.putImageData(rgba,0,0);
+    }else continue;
+    const datos={data:ctx.getImageData(0,0,width,height).data,width,height};
+    const respaldo=await interpretarCompacto(datos);
+    if(respaldo)return respaldo;
+  }
+  return null;
+}
+
+async function leerCompacto(page){
+  const imagen=await imagenCompacta(page);
+  if(imagen)return imagen;
+  const original=page.getViewport({scale:1});
+  const escala=Math.min(4,3000/Math.max(original.width,original.height));
+  const franja=await dibujarFranja(page,escala,viewport=>{
+    const x=Math.floor(viewport.width*.65);
+    return {x,y:0,width:Math.ceil(viewport.width)-x,height:Math.ceil(viewport.height)};
+  });
+  const zona=localizarMarco(franja);
+  const anchoZona=zona.derecha-zona.izquierda+1,altoZona=zona.abajo-zona.arriba+1;
+  if(anchoZona<10||altoZona<10||anchoZona/escala>40||altoZona/escala>46||
+     Math.abs(anchoZona/altoZona-(ancho+2*marco)/(alto+2*marco))>.09)return null;
+  const aumento=16/escala;
+  const recorte=await dibujarFranja(page,16,()=>({
+    x:Math.floor((franja.x+zona.izquierda)*aumento)-12,
+    y:Math.floor(zona.arriba*aumento)-12,
+    width:Math.ceil(anchoZona*aumento)+24,
+    height:Math.ceil(altoZona*aumento)+24
+  }));
+  return interpretarCompacto(recorte);
+}
+
+async function interpretarCompacto(imagen){
+  const {data,width}=imagen;
+  const {izquierda,derecha,arriba,abajo}=localizarMarco(imagen);
+  const dx=(derecha-izquierda+1)/(ancho+2*marco),dy=(abajo-arriba+1)/(alto+2*marco);
+  if(dx<2||dy<2||Math.abs(dx/dy-1)>.08)return null;
+  const bloque=new Uint8Array(tamBloque);
+  for(let y=0;y<alto;y++)for(let x=0;x<ancho;x++){
+    const p=(Math.floor(arriba+(y+marco+.5)*dy)*width+Math.floor(izquierda+(x+marco+.5)*dx))*4;
+    const bit=y*ancho+x;
+    if(data[p]+data[p+1]+data[p+2]<384)bloque[bit>>3]|=128>>(bit%8);
+  }
+  const vista=new DataView(bloque.buffer);
+  if(vista.getUint32(0)!==firmaCompacta)return null;
+  const largo=vista.getUint16(8);
+  const comprimido=bloque.subarray(cabecera,cabecera+largo);
+  if(!largo||largo>capacidad||vista.getUint32(12)!==suma(comprimido)){
+    throw Error('El código de recuperación del PDF está dañado.');
+  }
+  const bytes=await convertirRespaldo(comprimido,new DecompressionStream('deflate'),capacidad*maxBloques);
+  if(!bytes)throw Error('El código de recuperación supera el tamaño permitido.');
+  return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
 }
 
 async function leerBloque(page){
@@ -235,6 +401,8 @@ export async function leerRespaldoPDF(doc){
       }
     });
   }
+  const compacto=await leerCompacto(await doc.getPage(doc.numPages));
+  if(compacto)return compacto;
   const bloques=[];
   for(let n=doc.numPages;n>0&&bloques.length<maxBloques;n--){
     const bloque=await leerBloque(await doc.getPage(n));

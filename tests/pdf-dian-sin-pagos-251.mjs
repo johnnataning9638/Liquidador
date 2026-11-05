@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 const source=revertirCambios253(fs.readFileSync('js/app.js','utf8'),'js/app.js');
-const fn=source.slice(source.indexOf('function bloquePdfSinPagos('),source.indexOf('\nfunction exportarPdf('));
+const fn=source.slice(source.indexOf('function bloquePdfSinPagos('),source.search(/\n(?:async )?function exportarPdf\(/));
 const ctx=vm.createContext({escPdf:String,dinero:n=>`$ ${Number(n||0)}`,fechaVisible:String,dvNIT:()=>0,hoyISO:()=> '2026-10-26'});
 vm.runInContext(source.match(/const tasaPdfArt45=.*;/)[0]+fn,ctx);
 for(const tipoLiquidacion of ['PRIVADA','OFICIAL']){

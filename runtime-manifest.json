@@ -1,5 +1,5 @@
 {
-  "version": "16.33.283",
+  "version": "16.33.284",
   "files": [
     "beneficios.css",
     "datos/beneficios.json",
@@ -75,7 +75,7 @@
   ],
   "protected": {
     "js/actualizacion-sancion.js": "7f1a014970e1caf3debdb441ad6e1a113a2160e281eee7ab47e5286e30ebea39",
-    "js/app.js": "10e8cb815960ccf1bf76555e4dac00b6166e2839c4f579793507bd92fa60a4a8",
+    "js/app.js": "11d50db05950613f252087909564e9a6928b42460f4a1a4a0cdd08cb336327b7",
     "js/calendario-tributario.js": "ad61817b907f4dd83206cba41a1ffdb8392a73ca233cd67879db5858c4fb4ee3",
     "js/decreto-1419.js": "048cd31e60bb4742b2af201b3041a9736b4197c2375c0bf05c282653bd197c85",
     "js/export-dian-tdj-control-16.33.178.js": "89d6dea548cc7eb5da27c9bb47d82bdeb8be99eb058d54675bcb802e9fc5c26d",
@@ -90,7 +90,7 @@
     "js/prioridad-tdj.js": "9f430172543b0743197c44dcb758f0831a9ae5f14ed1549576821296f0765b97",
     "js/supabase-config.js": "d949cbcf5249a1407c8e69293ced4358d4d88844f19baf2446fb80c237ff7bca",
     "js/tdj-beneficio-contexto-16.33.194.js": "3ac01b1df2ed987e4c99539eaa594c164e628c20cee5913ba410197cc7dce2fb",
-    "js/tdj-core-16.33.143.js": "284b03dc6a3857868803d5c2b5b52e7451535f56e2d6b65de1ee440bdc9c57f3",
+    "js/tdj-core-16.33.143.js": "3b800048bf96b83a7f6da427bfd172f916c0bd5fd68bc724b13ebc45fe4b30ee",
     "js/tdj-fecha-corte-sin-pagos-16.33.193.js": "35a2f0dd46278a79295dbc26fd26fcf40e70f635768385bf60d34117682ddef6",
     "js/tdj-fechas-dian-206.js": "513e08e55c88907bb92f7027d1bb33b8ec0d48c244ed18a7fd7de98f8e59af55",
     "js/tdj-import-beneficio-16.33.192.js": "90f263a692a9985a96de492b2331a61b06cbdceccf756b062fe6f0df008a1912",

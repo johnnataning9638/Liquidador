@@ -1,7 +1,7 @@
 {
-  "version": "16.33.283",
-  "previousVersion": "16.33.282",
-  "baseCommit": "0d936211290cdd15901c0d4a727c9295ef60b09e",
+  "version": "16.33.284",
+  "previousVersion": "16.33.283",
+  "baseCommit": "4e47f9336696f89e93456f1586210652de69c40f",
   "date": "2026-11-04",
-  "change": "Respaldo interno PDF sin codigo visible"
+  "change": "Codigo compacto de recuperacion al final del PDF"
 }

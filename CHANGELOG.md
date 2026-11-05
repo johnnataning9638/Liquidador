@@ -1,3 +1,8 @@
+## 16.33.284 — Código compacto al final del PDF (2026-11-04)
+
+- Añade un código de recuperación de 12 mm a la derecha, después del último resumen de DIAN y TDJ, cuando los datos comprimidos caben en un código.
+- Conserva las referencias internas para los archivos de mayor tamaño y la lectura de los formatos de recuperación anteriores y del formulario 1116.
+
 ## 16.33.283 — Recuperación PDF sin código visible (2026-11-04)
 
 - Guardar como PDF desde Chromium conserva los datos de recuperación como referencias internas sin añadir páginas ni elementos visibles.
