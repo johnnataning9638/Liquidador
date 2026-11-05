@@ -151,33 +151,41 @@ export function unirBloques(bloques){
   return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
 }
 
-// La matriz se imprime como imagen. También sobrevive cuando la impresora
-// convierte toda la tipografía del soporte en trazos vectoriales.
-export function paginasRespaldoSeguro(crear){
-  try{return paginasRespaldo(crear());}
+const prefijoReferencia='liq-respaldo-v1-';
+
+// Chromium conserva los destinos de enlaces internos en «Guardar como PDF».
+// Un enlace vacío fuera del flujo no cambia el contenido ni la paginación.
+export function referenciasRespaldo(datos){
+  return codificarBloques(datos).map(bloque=>{
+    const base64=btoa(String.fromCharCode(...bloque)).replaceAll('+','-').replaceAll('/','_');
+    const destino=prefijoReferencia+base64;
+    return `<a id="${destino}" href="#${destino}" aria-hidden="true" tabindex="-1" style="position:absolute;top:0;left:0;width:1px;height:1px;display:block"></a>`;
+  }).join('');
+}
+
+export function referenciasRespaldoSeguro(crear){
+  try{return referenciasRespaldo(crear());}
   catch(error){
     console.error('No se pudo incorporar el respaldo PDF',error);
-    return '<section class="pdf-hoja"><p>El soporte se generó sin datos de recuperación. Use la exportación de Excel para conservar los datos editables.</p></section>';
+    return '';
   }
 }
 
-export function paginasRespaldo(datos){
-  const bloques=codificarBloques(datos);
-  return bloques.map((bloque,i)=>{
-    const canvas=document.createElement('canvas');
-    canvas.width=(ancho+2)*5;
-    canvas.height=(alto+2)*5;
-    const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#ff00ff';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#fff';
-    ctx.fillRect(5,5,ancho*5,alto*5);
-    ctx.fillStyle='#000';
-    for(let bit=0;bit<ancho*alto;bit++){
-      if(bloque[bit>>3]&(128>>(bit%8)))ctx.fillRect((bit%ancho+1)*5,(Math.floor(bit/ancho)+1)*5,5,5);
+async function leerReferencias(doc){
+  const destinos=await doc.getDestinations();
+  const nombres=destinos instanceof Map?[...destinos.keys()]:Object.keys(destinos||{});
+  const claves=nombres.map(nombre=>nombre.replace(/^\//,''))
+    .filter(nombre=>nombre.startsWith(prefijoReferencia));
+  if(!claves.length)return null;
+  if(claves.length>maxBloques)throw Error('El PDF contiene demasiados bloques de recuperación.');
+  const bloques=claves.map(clave=>{
+    const base64=clave.slice(prefijoReferencia.length);
+    if(base64.length!==Math.ceil(tamBloque/3)*4||!/^[A-Za-z0-9_-]+$/.test(base64)){
+      throw Error('El bloque de recuperación está incompleto o dañado.');
     }
-    return `<section class="pdf-hoja" style="text-align:center;color:#142d47"><h2>Recuperación de datos del Liquidador</h2><p>Bloque ${i+1} de ${bloques.length}. Conserve todas las páginas para volver a importar este PDF.</p><img alt="Bloque de recuperación" style="width:130mm;max-width:100%;height:auto" src="${canvas.toDataURL()}"></section>`;
-  }).join('');
+    return Uint8Array.from(atob(base64.replaceAll('-','+').replaceAll('_','/')),c=>c.charCodeAt(0));
+  });
+  return unirBloques(bloques);
 }
 
 async function leerBloque(page){
@@ -210,6 +218,9 @@ async function leerBloque(page){
 }
 
 export async function leerRespaldoPDF(doc){
+  const respaldo=await leerReferencias(doc);
+  if(respaldo)return respaldo;
+  // Compatibilidad con los PDF que ya se exportaron con la matriz visible.
   // PDF.js usa este método al dibujar imágenes, incluso en navegadores
   // que ya pueden extraer el texto del formulario 1116 sin él.
   for(const {prototype} of [Map,WeakMap]){

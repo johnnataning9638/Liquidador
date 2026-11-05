@@ -1,5 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
-import {crearRespaldo,paginasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.282";
+import {crearRespaldo,referenciasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.283";
 import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
@@ -1581,9 +1581,9 @@ function exportarPdf(){
     const resumenEndoso=resumenEndosoTDJNormalPdf(d,r);
     const advertencias=(r.advertencias||[]).length?`<section class="pdf-hoja pdf-hoja-advertencias"><div class="pdf-pagina"><div class='pdf-alerta'><b>Advertencias:</b> ${escPdf([...new Set(r.advertencias)].join(" | "))}</div></div></section>`:"";
     const entradas={...d,vencimientos:obligacionVencimientos,numeroObligacion:contextoImportacionWebPDF273().numeroObligacion};
-    const respaldo=paginasRespaldoSeguro(()=>crearRespaldo('DIAN',d,[entradas],d.pagos.filter(p=>p.tdj)));
+    const respaldo=referenciasRespaldoSeguro(()=>crearRespaldo('DIAN',d,[entradas],d.pagos.filter(p=>p.tdj)));
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}${respaldo}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main>${respaldo}</body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
