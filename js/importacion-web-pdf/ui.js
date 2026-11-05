@@ -1,5 +1,5 @@
-import {leerPDF} from './pdf.js?v=16.33.282';
-import {leerRespaldoPDF} from './respaldo.js?v=16.33.282';
+import {leerPDF} from './pdf.js?v=16.33.283';
+import {leerRespaldoPDF} from './respaldo.js?v=16.33.283';
 
 // Archivo transitorio compartido entre pestañas. Nunca se escribe en almacenamiento.
 let adjunto=null, revision=0,ocupado=false;

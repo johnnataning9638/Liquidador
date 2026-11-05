@@ -1,5 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
-import {crearRespaldo,paginasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.282";
+import {crearRespaldo,referenciasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.283";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.278";
@@ -2490,7 +2490,7 @@ async function exportarPdfTDJ(){
     const win=window.open("","_blank","width=1200,height=1000");
     if(!win)throw new Error("El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.");
     const identidad={nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:$("razonGlobal").value};
-    const respaldo=paginasRespaldoSeguro(()=>crearRespaldo('TDJ',identidad,obligaciones,[
+    const respaldo=referenciasRespaldoSeguro(()=>crearRespaldo('TDJ',identidad,obligaciones,[
       ...titulos.map(t=>({...t,tiposObligacion:obligaciones.map(o=>t.tasasPorObligacion?.[o.id]||o.tipoTasa)})),
       ...obligaciones.flatMap(o=>o.pagos.filter(p=>p.tdj&&!titulos.some(t=>t.tdj===p.tdj)))
     ]));
@@ -2498,7 +2498,7 @@ async function exportarPdfTDJ(){
     // Metadatos de presentación: conservar los saldos del resultado sin exigir
     // la existencia de páginas de pago o de soporte de títulos.
     const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}${respaldo}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main>${respaldo}</body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});

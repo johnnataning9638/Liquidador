@@ -1,7 +1,7 @@
 {
-  "version": "16.33.282",
-  "previousVersion": "16.33.281",
-  "baseCommit": "1eb8afb5ca3ed8cde6088a9f169520c87ca3f106",
+  "version": "16.33.283",
+  "previousVersion": "16.33.282",
+  "baseCommit": "0d936211290cdd15901c0d4a727c9295ef60b09e",
   "date": "2026-11-04",
-  "change": "Recuperacion de datos en PDF DIAN y TDJ"
+  "change": "Respaldo interno PDF sin codigo visible"
 }

@@ -18,14 +18,14 @@
 })();
 </script>
 
-<!-- TDJ UI DEPLOY 16.33.282 -->
+<!-- TDJ UI DEPLOY 16.33.283 -->
 <script id="tdj-version-guard">
 (function(){
   try{
     var u=new URL(window.location.href);
     var v=u.searchParams.get("v");
-    if(v && v!=="16.33.282"){
-      u.searchParams.set("v","16.33.282");
+    if(v && v!=="16.33.283"){
+      u.searchParams.set("v","16.33.283");
       window.location.replace(u.toString());
     }
   }catch(e){}
@@ -33,8 +33,8 @@
 </script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Títulos / TDJ — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.282">
-<link rel="stylesheet" href="tdj-mobile.css?v=16.33.282" media="screen and (max-width:650px)">
+<link rel="stylesheet" href="estilos.css?v=16.33.283">
+<link rel="stylesheet" href="tdj-mobile.css?v=16.33.283" media="screen and (max-width:650px)">
 <style>
 .compact-grid label[hidden]{display:none!important}
 /* AJUSTE TDJ v16.32.82: únicamente organización visual de pestañas y botones. Lógica sin cambios. */
@@ -130,8 +130,8 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 @media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}}
 @media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}
 </style>
-<link rel="stylesheet" href="beneficios.css?v=16.33.282">
-<link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.282">
+<link rel="stylesheet" href="beneficios.css?v=16.33.283">
+<link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.283">
 </head>
 <body>
 <header class="topbar topbar-liquidacion">
@@ -247,7 +247,7 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
   </section>
 
 </main>
-<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.282</footer>
+<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.283</footer>
 <script id="tdj-global-clear-143">
 document.addEventListener("DOMContentLoaded",function(){
   const b=document.getElementById("btnLimpiarTitulosGlobal");
@@ -255,11 +255,11 @@ document.addEventListener("DOMContentLoaded",function(){
   b.addEventListener("click",function(e){
     e.stopImmediatePropagation();
     if(!confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;
-    window.location.href="titulos.html?v=16.33.282&reinicio="+Date.now();
+    window.location.href="titulos.html?v=16.33.283&reinicio="+Date.now();
   },true);
 });
 </script>
-<script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.282"></script>
-<script type="module" src="js/tdj.js?v=16.33.282"></script>
-<script type="module" src="js/catalogo-beneficios.js?v=16.33.282"></script>
+<script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.283"></script>
+<script type="module" src="js/tdj.js?v=16.33.283"></script>
+<script type="module" src="js/catalogo-beneficios.js?v=16.33.283"></script>
 </body></html>

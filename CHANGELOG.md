@@ -1,3 +1,8 @@
+## 16.33.283 — Recuperación PDF sin código visible (2026-11-04)
+
+- Guardar como PDF desde Chromium conserva los datos de recuperación como referencias internas sin añadir páginas ni elementos visibles.
+- Se siguen leyendo los PDF previos con la matriz de recuperación y el Generador de Cuotas 1116.
+
 ## 16.33.282 — Recuperación desde PDF (2026-11-04)
 
 - Los soportes DIAN y TDJ incorporan páginas de recuperación con los datos de captura.
