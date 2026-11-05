@@ -50,7 +50,7 @@ export function interpretarGenerador(paginas){
 export async function leerPDF(file,leerRespaldo){
  if(!file||file.size>20*1024*1024)throw Error('Seleccione un PDF de hasta 20 MB.');
  const bytes=new Uint8Array(await file.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('El archivo adjunto no es un PDF válido.');
- const pdfjs=await import('../../vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('./pdf-worker.mjs?v=16.33.283',import.meta.url).href;
+ const pdfjs=await import('../../vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('./pdf-worker.mjs?v=16.33.284',import.meta.url).href;
  const task=pdfjs.getDocument({data:bytes,isEvalSupported:false,disableFontFace:true,useSystemFonts:false,enableXfa:false,stopAtErrors:true});
  try{
   const doc=await task.promise;if(doc.numPages>100)throw Error('El PDF supera el límite de 100 páginas.');

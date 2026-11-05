@@ -28,19 +28,22 @@ try{
   page.on('dialog',d=>d.accept());
   await page.goto(base+'/titulos.html',{waitUntil:'domcontentloaded'});
   const respaldo=await page.evaluate(async()=>{
-    const {crearRespaldo,referenciasRespaldo}=await import('/js/importacion-web-pdf/respaldo.js');
+    const {crearRespaldo,codigoRespaldoCompacto}=await import('/js/importacion-web-pdf/respaldo.js');
     const fecha='2025-05-28';
     const titulo={tdj:'4690000000001',fecha,valor:34_099_163};
     const pago={recibo:'4910000000001',fecha,valor:10_000_000,tipo:'TASA DIAN'};
     const obligaciones=[2023,2024].map(anio=>({
       concepto:'RENTA',anio,periodo:1,tipoTasa:'TASA DIAN',vencimientos:[{fecha,impuesto:12_000_000}],pagos:[pago]
     }));
-    return referenciasRespaldo(crearRespaldo('TDJ',{nit:'900123456',razonSocial:'PRUEBA'},obligaciones,[titulo,titulo]));
+    return codigoRespaldoCompacto(crearRespaldo('TDJ',{nit:'900123456',razonSocial:'PRUEBA'},obligaciones,[titulo,titulo]));
   });
   const preview=await context.newPage();
-  await preview.setContent('<style>.pdf-hoja{break-after:page}</style><p>Soporte de prueba</p>'+respaldo);
-  assert.equal(await preview.locator('body').innerText(),'Soporte de prueba');
-  assert.equal(await preview.locator('img,.pdf-hoja').count(),0);
+  await preview.setContent('<style>.pdf-hoja{break-after:page}</style><main class="pdf-soporte"><section class="pdf-hoja"><p>Resumen final de prueba</p></section></main>'+respaldo);
+  const codigo=preview.locator('.pdf-hoja:last-of-type > img#liq-codigo-a:last-child');
+  assert.equal(await codigo.count(),1);
+  assert.equal(await codigo.evaluate(el=>el.style.width),'12mm');
+  assert.equal(await preview.locator('a[id^="liq-respaldo-v1-"]').count(),0,'el respaldo visual se prueba sin referencias internas');
+  assert.equal(await preview.locator('.pdf-hoja').count(),1,'el código no añade una hoja');
   const generado=await preview.pdf({format:'A4',printBackground:true});
   const pdf=process.env.PDF_PRUEBA?await fs.readFile(process.env.PDF_PRUEBA):generado;
   if(process.env.GUARDAR_PDF_PRUEBA)await fs.writeFile(process.env.GUARDAR_PDF_PRUEBA,pdf);

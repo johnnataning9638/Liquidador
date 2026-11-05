@@ -1,5 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
-import {crearRespaldo,referenciasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.283";
+import {crearRespaldo,respaldoPDFExportable,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.284";
 import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
@@ -1559,7 +1559,7 @@ function bloquePdfSinPagos(d,r){
   </article>`;
 }
 
-function exportarPdf(){
+async function exportarPdf(){
   try{
     const {d,r}=construirDatosSoporte();
     const win=window.open("","_blank","width=1200,height=1000");
@@ -1581,7 +1581,7 @@ function exportarPdf(){
     const resumenEndoso=resumenEndosoTDJNormalPdf(d,r);
     const advertencias=(r.advertencias||[]).length?`<section class="pdf-hoja pdf-hoja-advertencias"><div class="pdf-pagina"><div class='pdf-alerta'><b>Advertencias:</b> ${escPdf([...new Set(r.advertencias)].join(" | "))}</div></div></section>`:"";
     const entradas={...d,vencimientos:obligacionVencimientos,numeroObligacion:contextoImportacionWebPDF273().numeroObligacion};
-    const respaldo=referenciasRespaldoSeguro(()=>crearRespaldo('DIAN',d,[entradas],d.pagos.filter(p=>p.tdj)));
+    const respaldo=await respaldoPDFExportable(()=>crearRespaldo('DIAN',d,[entradas],d.pagos.filter(p=>p.tdj)));
     win.document.open();
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main>${respaldo}</body></html>`);
     win.document.close();
