@@ -1000,18 +1000,22 @@ export class MotorLiquidacion{
       // La deuda de interés solo se genera sobre vencimientos ya exigibles.
       const intCalc=calcularInteresesAntesPago(pago);
       // REGLA DE IMPUTACIÓN DE SANCIÓN — SEPARACIÓN TRADICIONAL / SIMPLE.
-      // RÉGIMEN SIMPLE (4, 5 Y 6 CUOTAS): esta actualización NO modifica su
-      // lógica existente. Se conserva el comportamiento SIMPLE anterior.
-      // RÉGIMEN TRADICIONAL (1, 2 Y 3 CUOTAS): el único corte para decidir si
-      // el pago puede recibir sanción es la FECHA DE SANCIÓN/PRESENTACIÓN.
-      // La fecha de vencimiento NO participa en esta decisión.
+      // SIMPLE (4-6 cuotas): conservar íntegramente la regla preexistente.
+      // ORDINARIO (1-3 cuotas): un pago posterior al vencimiento de cualquier
+      // cuota exigible participa en la sanción declarada aunque se haya pagado
+      // antes de la fecha de presentación/sanción. Se conserva también el
+      // tratamiento previo de pagos desde la fecha de presentación.
+      // La causación/actualización de intereses y sanción no se modifica aquí.
+      const pagoPosteriorVencimientoOrdinario=saldosVto.some(v=>
+        Boolean(v.fecha) && pago.fecha>v.fecha
+      );
       const sancionHabilitadaPorFecha=esSimplePorAnticipos
         ? true
         : (
             datos.tieneSancion==="SI"
             && sancionBaseOriginal>0
             && Boolean(fechaSancionReal)
-            && pago.fecha>=fechaSancionReal
+            && (pago.fecha>=fechaSancionReal || pagoPosteriorVencimientoOrdinario)
           );
 
       // ACTUALIZACIÓN INDEPENDIENTE DE SANCIÓN (Art. 867-1 E.T.).
