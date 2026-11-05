@@ -1,5 +1,5 @@
 {
-  "version": "16.33.281",
+  "version": "16.33.282",
   "files": [
     "beneficios.css",
     "datos/beneficios.json",
@@ -25,6 +25,7 @@
     "js/favorabilidad-2010.js",
     "js/importacion-web-pdf/modelo.js",
     "js/importacion-web-pdf/pdf.js",
+    "js/importacion-web-pdf/respaldo.js",
     "js/importacion-web-pdf/ui.js",
     "js/importador-excel.js",
     "js/importador-obligacion.js",

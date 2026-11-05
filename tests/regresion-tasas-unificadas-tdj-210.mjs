@@ -1,3 +1,4 @@
+import {tasaArt45Reducida2021} from '../js/ley2155-art45-vista.js';
 import assert from 'node:assert/strict';
 import {favorabilidadAutomatica} from '../js/favorabilidad-2010.js';
 import {TIPO_688_50,tasaIBC68850} from '../js/decreto-688-50.js';
@@ -21,7 +22,7 @@ const tasasSupabaseSimuladas=[
 const fechas=vista.slice(vista.indexOf('  function fechaISOVisual('),vista.indexOf('  function obtenerObligaciones('));
 const fnTasa=vista.slice(vista.indexOf('  function tasaPorFechaLocal('),vista.indexOf('  function mostrarTasa('));
 assert.ok(fechas.includes('function fechaISOVisual')&&fnTasa.includes('function tasaPorFechaLocal'));
-const contexto={favorabilidadAutomatica,TIPO_688_50,tasaIBC68850,filaTimVisualTDJ,tasasMoratorias:tasasSupabaseSimuladas};
+const contexto={tasaArt45Reducida2021,favorabilidadAutomatica,TIPO_688_50,tasaIBC68850,filaTimVisualTDJ,tasasMoratorias:tasasSupabaseSimuladas};
 const prueba=`const upper=v=>String(v??"").trim().toUpperCase();${fechas}\n${fnTasa}\n[
  tasaPorFechaLocal('19/10/2026','TASA DIAN'),
  tasaPorFechaLocal('19/10/2026','ART. 45 LEY 2155'),
@@ -31,7 +32,8 @@ const prueba=`const upper=v=>String(v??"").trim().toUpperCase();${fechas}\n${fnT
 ]`;
 const [dian,art45,art48,art91,julio]=vm.runInNewContext(prueba,contexto);
 assert.equal(dian,0.2659);
-assert.ok(art45>0&&art48>0&&art91>0,'Los beneficios derivados recuperan su tasa de octubre');
+assert.equal(art45,null,'Art. 45 sin tasa parametrizada en octubre de 2026');
+assert.ok(art48>0&&art91>0,'Los beneficios derivados recuperan su tasa de octubre');
 assert.ok(Math.abs(julio-0.2679)<1e-10,'Excel o TDJ de julio conserva tasa anterior');
 assert.match(core,/window\.__tdjTasasEfectivas210=tasas\.map\(/);
 assert.match(core,/new CustomEvent\("tdj-tasas-actualizadas"/);

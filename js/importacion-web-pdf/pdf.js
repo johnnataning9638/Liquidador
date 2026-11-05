@@ -47,7 +47,7 @@ export function interpretarGenerador(paginas){
  if(sanciones.length)out.sancion=sanciones[0];
  return validarEntrada(out);
 }
-export async function leerPDF(file){
+export async function leerPDF(file,leerRespaldo){
  if(!file||file.size>20*1024*1024)throw Error('Seleccione un PDF de hasta 20 MB.');
  const bytes=new Uint8Array(await file.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('El archivo adjunto no es un PDF válido.');
  const pdfjs=await import('../../vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('../../vendor/pdfjs/pdf.worker.mjs',import.meta.url).href;
@@ -55,6 +55,10 @@ export async function leerPDF(file){
  try{
   const doc=await task.promise;if(doc.numPages>100)throw Error('El PDF supera el límite de 100 páginas.');
   const paginas=[];for(let n=1;n<=doc.numPages;n++){const page=await doc.getPage(n),text=await page.getTextContent();paginas.push({width:page.view[2]-page.view[0],height:page.view[3]-page.view[1],items:text.items.filter(t=>t.str?.trim()).map(t=>({s:t.str.trim(),x:t.transform[4],y:t.transform[5],h:t.height}))});}
+  if(leerRespaldo&&!paginas.some(pg=>pg.items.some(i=>normalizar(i.s).includes('GENERADOR DE CUOTAS')))){
+   const respaldo=await leerRespaldo(doc);
+   if(respaldo)return respaldo;
+  }
   return interpretarGenerador(paginas);
  }catch(e){if(e.name==='PasswordException')throw Error('El PDF está protegido con contraseña.');throw e;}
  finally{await task.destroy();}
