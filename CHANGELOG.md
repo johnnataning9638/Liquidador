@@ -1,3 +1,7 @@
+## 16.33.285 — Lectura del código compacto en Microsoft Print to PDF (2026-11-04)
+
+- Reconoce imágenes del código compacto reducidas y comprimidas por la impresora PDF de Windows. Verifica la firma y la integridad antes de recuperar los datos.
+
 ## 16.33.284 — Código compacto al final del PDF (2026-11-04)
 
 - Añade un código de recuperación de 12 mm a la derecha, después del último resumen de DIAN y TDJ, cuando los datos comprimidos caben en un código.
