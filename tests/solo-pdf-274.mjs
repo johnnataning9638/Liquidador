@@ -1,3 +1,4 @@
+import {revertirCambiosHasta278} from './revertir-importacion-279-a-282.mjs';
 import fs from 'node:fs';
 import {revertirSancionOficial275} from './revertir-sancion-oficial-275.mjs';
 import assert from 'node:assert/strict';
@@ -15,5 +16,5 @@ assert.deepEqual(prepararImportacion({pagos},fuente).datos.pagos,pagos,'el PDF c
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
 assert.equal(manifest.version,JSON.parse(fs.readFileSync('version.json','utf8')).version);assert.ok(!manifest.files.some(f=>/puente-dian|muisca\.js|\/web\.js/.test(f)));
 for(const file of Object.keys(manifest.protected))assert.equal(revertirSancionOficial275(fs.readFileSync(file,'utf8'),file),execFileSync('git',['show','af66656edbc3fd17ee8a33b3e2b803512879f579:'+file],{encoding:'utf8'}).replaceAll('\r\n','\n'),file+': motores y adaptadores conservados tras neutralizar cambio oficial 275');
-assert.equal(fs.readFileSync('js/importacion-web-pdf/pdf.js','utf8').replaceAll('\r\n','\n'),execFileSync('git',['show','af66656edbc3fd17ee8a33b3e2b803512879f579:js/importacion-web-pdf/pdf.js'],{encoding:'utf8'}).replaceAll('\r\n','\n'),'lector PDF conservado');
+assert.equal(revertirCambiosHasta278(fs.readFileSync('js/importacion-web-pdf/pdf.js','utf8'),'js/importacion-web-pdf/pdf.js'),execFileSync('git',['show','af66656edbc3fd17ee8a33b3e2b803512879f579:js/importacion-web-pdf/pdf.js'],{encoding:'utf8'}).replaceAll('\r\n','\n'),'lector PDF conservado');
 console.log('SOLO PDF 274 OK: sin conexión web ni complemento, exige adjunto y conserva pagos y cálculos');

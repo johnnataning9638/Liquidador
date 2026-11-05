@@ -1,4 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
+import {crearRespaldo,paginasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.282";
 import {favorabilidadAutomatica} from "./favorabilidad-2010.js?v=16.33.268";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
@@ -1579,8 +1580,10 @@ function exportarPdf(){
     const resumenExcedentes=resumenExcedentesPagosPdf(r);
     const resumenEndoso=resumenEndosoTDJNormalPdf(d,r);
     const advertencias=(r.advertencias||[]).length?`<section class="pdf-hoja pdf-hoja-advertencias"><div class="pdf-pagina"><div class='pdf-alerta'><b>Advertencias:</b> ${escPdf([...new Set(r.advertencias)].join(" | "))}</div></div></section>`:"";
+    const entradas={...d,vencimientos:obligacionVencimientos,numeroObligacion:contextoImportacionWebPDF273().numeroObligacion};
+    const respaldo=paginasRespaldoSeguro(()=>crearRespaldo('DIAN',d,[entradas],d.pagos.filter(p=>p.tdj)));
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}${respaldo}</main></body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
@@ -2378,3 +2381,33 @@ export function aplicarImportacionWebPDF273(fuente){
  return resumen;
 }
 // END IMPORTACION WEB PDF 273
+
+export function aplicarRespaldoPDF(fuente,confirmar){
+  if(!motor||!calendarioMotor)throw Error('Espere a que termine la carga de parámetros antes de importar.');
+  const respaldo=prepararRespaldo(fuente,false);
+  const [o]=respaldo.obligaciones;
+  if(![...$("concepto").options].some(op=>op.value===o.concepto))throw Error('Este impuesto no está disponible en el liquidador.');
+  sincronizarPagosDesdeDOM();
+  if(($("nit").value||$("razonSocial").value||obligacionVencimientos.some(v=>v.impuesto)||
+      pagos.some(p=>p.fecha||p.valor)||numeroDesdeTexto($("valorSancion").value))&&!confirmar())return null;
+
+  for(const k of ['nit','razonSocial'])$(k).value=respaldo[k];
+  for(const k of ['concepto','anio','periodo','tipoLiquidacion','perfilContribuyente','periodicidadObligacion','tieneSancion','beneficioTributario']){
+    if($(k))$(k).value=o[k]||(k==='beneficioTributario'?'NINGUNO':'');
+  }
+  for(const k of ['fechaSancion','fechaAutoAdmisorio','fechaProvidenciaDefinitiva','fechaActuacionBeneficio','fechaDeclaracionOriginal']){
+    if($(k))$(k).value=fechaVisible(o[k]);
+    if($(k+'Picker'))$(k+'Picker').value=o[k];
+  }
+  for(const k of ['obligacionFormalCumplida','aceptaGlosas','informaDian','resolucionReconsideracion']){
+    if($(k))$(k).value=o[k]?'SI':'NO';
+  }
+  $("valorSancion").value=o.valorSancion?dinero(o.valorSancion):'';
+  obligacionVencimientos=o.vencimientos.map(v=>({...v,id:crypto.randomUUID()}));
+  pagos=[...o.pagos,...respaldo.titulos.map(t=>({...t,tipo:t.tiposObligacion[0]||t.tipo||o.tipoTasa||'TASA DIAN'}))]
+    .map(p=>({...p,id:crypto.randomUUID(),tipo:p.tipo||'TASA DIAN'}));
+  procedenciaWebPDF273={vencimientos:obligacionVencimientos,numeroObligacion:o.numeroObligacion};
+  ultimaLiquidacion=null;
+  renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();
+  return {obligaciones:1,pagos:o.pagos.filter(p=>p.valor).length,titulos:respaldo.titulos.length,omitidas:respaldo.omitidas};
+}

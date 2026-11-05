@@ -1,4 +1,5 @@
-import {leerPDF} from './pdf.js';
+import {leerPDF} from './pdf.js?v=16.33.282';
+import {leerRespaldoPDF} from './respaldo.js?v=16.33.282';
 
 // Archivo transitorio compartido entre pestañas. Nunca se escribe en almacenamiento.
 let adjunto=null, revision=0,ocupado=false;
@@ -21,7 +22,7 @@ function soltar(){
  document.querySelectorAll('.wpdf-quitar').forEach(b=>b.hidden=true);
 }
 function adjuntar(file,campo){
- if(!file||!(/\.pdf$/i.test(file.name)||file.type==='application/pdf')){estado('Arrastre un Generador de Cuotas en PDF.',true);return;}
+ if(!file||!(/\.pdf$/i.test(file.name)||file.type==='application/pdf')){estado('Arrastre un archivo PDF.',true);return;}
  if(file.size>20*1024*1024){estado('El PDF debe pesar como máximo 20 MB.',true);return;}
  soltar();adjunto={file,campo};campo.value='PDF adjunto: '+file.name+'\nPulse Importar PDF para leerlo.';campo.readOnly=true;campo.dataset.pdfAdjunto='true';
  document.querySelectorAll('.wpdf-quitar').forEach(b=>b.hidden=false);
@@ -29,21 +30,28 @@ function adjuntar(file,campo){
 }
 async function importar(){
  if(ocupado)return;
- if(esTDJ){
-  const pane=document.querySelector('.tab-pane.active')?.dataset.pane;
-  const id=pane==='pagos'?'destinoImportacionPagos':pane==='datos'?'destinoImportacionObligacion':'destinoImportacionPDFTitulos';
-  if(pane==='titulos')actualizarDestinosPDFTitulos();
-  const cantidad=document.getElementById('destinoImportacionObligacion')?.options.length-1||0;
-  if(cantidad>1&&!document.getElementById(id)?.value){estado('Seleccione la obligación de destino antes de importar el PDF.',true);document.getElementById(id)?.focus();return;}
- }
  const turno=revision,archivo=adjunto?.file;
- if(!archivo){estado('Arrastre o pegue primero el PDF del Generador de Cuotas en «Pegue aquí».',true);return;}
+ if(!archivo){estado('Arrastre o pegue primero el PDF del Generador de Cuotas o del Liquidador en «Pegue aquí».',true);return;}
  ocupado=true;document.querySelectorAll('.wpdf-trigger').forEach(b=>b.disabled=true);
  estado('Leyendo PDF en este equipo…');
  try{
-  const fuente=await leerPDF(archivo);
+  const fuente=await leerPDF(archivo,leerRespaldoPDF);
   if(turno!==revision)return;
   const api=await bridge();if(turno!==revision)return;
+  if(fuente.fuente==='PDF_LIQUIDADOR_V1'){
+   const resumen=api.aplicarRespaldoPDF(fuente,()=>window.confirm('Este PDF reemplazará los datos, pagos y títulos de la liquidación abierta. ¿Desea continuar?'));
+   if(!resumen){estado('Importación cancelada.');return;}
+   soltar();
+   estado(`Importación lista. Obligaciones: ${resumen.obligaciones}. Pagos: ${resumen.pagos}. Títulos: ${resumen.titulos}.${resumen.omitidas?' En DIAN se cargó la primera obligación.':''} Revise los datos antes de calcular.`);
+   return;
+  }
+  if(esTDJ){
+   const pane=document.querySelector('.tab-pane.active')?.dataset.pane;
+   const id=pane==='pagos'?'destinoImportacionPagos':pane==='datos'?'destinoImportacionObligacion':'destinoImportacionPDFTitulos';
+   if(pane==='titulos')actualizarDestinosPDFTitulos();
+   const cantidad=document.getElementById('destinoImportacionObligacion')?.options.length-1||0;
+   if(cantidad>1&&!document.getElementById(id)?.value){estado('Seleccione la obligación de destino antes de importar el PDF.',true);document.getElementById(id)?.focus();return;}
+  }
   const pane=document.querySelector('.tab-pane.active')?.dataset.pane;
   const selector=pane==='pagos'?'destinoImportacionPagos':pane==='datos'?'destinoImportacionObligacion':'destinoImportacionPDFTitulos';
   const destino=esTDJ?(document.getElementById(selector)?.value||''):'';
@@ -78,7 +86,7 @@ if(esTDJ){
 campos.forEach(campo=>{
  campo.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('Files'))e.preventDefault();});
  campo.addEventListener('drop',e=>{if(!e.dataTransfer.files.length)return;e.preventDefault();e.stopImmediatePropagation();if(e.dataTransfer.files.length!==1){estado('Adjunte un PDF a la vez.',true);return;}adjuntar(e.dataTransfer.files[0],campo);},true);
- campo.placeholder+=' También puede arrastrar aquí el PDF del Generador de Cuotas y pulsar Importar PDF.';
+ campo.placeholder+=' También puede arrastrar aquí el PDF del Generador de Cuotas o del Liquidador y pulsar Importar PDF.';
 });
 // Captura única: archivo PDF o texto tabulado, sin interferir con los importadores.
 window.addEventListener('paste',e=>{
@@ -106,7 +114,7 @@ document.querySelectorAll('.tab-pane').forEach(pane=>{
  const barra=pane.querySelector('.botonera');if(!barra)return;
  const boton=document.createElement('button');boton.type='button';boton.className='secundario grande wpdf-trigger';boton.textContent='Importar PDF';boton.addEventListener('click',importar);barra.prepend(boton);
  const ayuda=document.createElement('div');ayuda.className='wpdf-ayuda';
- const mensaje=document.createElement('span');mensaje.className='wpdf-estado';mensaje.setAttribute('role','status');mensaje.setAttribute('aria-live','polite');mensaje.textContent='Arrastre o pegue el PDF del Generador de Cuotas en «Pegue aquí» y pulse Importar PDF.';
+ const mensaje=document.createElement('span');mensaje.className='wpdf-estado';mensaje.setAttribute('role','status');mensaje.setAttribute('aria-live','polite');mensaje.textContent='Arrastre o pegue el PDF del Generador de Cuotas o del Liquidador en «Pegue aquí» y pulse Importar PDF.';
  const quitar=document.createElement('button');quitar.type='button';quitar.className='secundario wpdf-quitar';quitar.textContent='Quitar PDF';quitar.hidden=true;quitar.addEventListener('click',()=>{soltar();estado('PDF retirado.');});
  ayuda.append(mensaje,quitar);barra.before(ayuda);
 });

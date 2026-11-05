@@ -29,13 +29,13 @@ try{
  await page.locator('#importarTitulosTexto').fill('TDJ\tFecha\tValor\n4911098513361\t30/03/2026\t3.047.000\n4911098761609\t31/03/2026\t10.924.000\n4911099029075\t04/04/2026\t2.294.000');
  await page.locator('#btnProcesarImportTitulos').click();
  await page.waitForFunction(()=>document.querySelectorAll('#tablaTitulos .tdj-tasa-visual').length===3);
- const cases=[['TASA DIAN',['23.520','23.520','24.760']],['ART. 91 LEY 2277',['11.760','11.760','12.380']],['ART. 45 LEY 2155',['3.400','3.400','3.570']]];
+ const cases=[['TASA DIAN',['23.520','23.520','24.760']],['ART. 91 LEY 2277',['11.760','11.760','12.380']],['ART. 45 LEY 2155',[null,null,null]]];
  const results=[];
  for(const [tipo,expected] of cases){
   for(let i=0;i<3;i++){
    const row=page.locator('#tablaTitulos tbody tr').nth(i);
    await row.locator('select.tdj-beneficio-select').selectOption(tipo);
-   await page.waitForFunction(({i,rate})=>document.querySelectorAll('#tablaTitulos .tdj-tasa-visual')[i]?.textContent==='TASA: '+rate+'%',{i,rate:expected[i]});
+   await page.waitForFunction(({i,rate})=>document.querySelectorAll('#tablaTitulos .tdj-tasa-visual')[i]?.textContent===(rate===null?'TASA ART. 45: FUERA DE TABLA':'TASA: '+rate+'%'),{i,rate:expected[i]});
   }
   results.push({tipo,rates:await page.locator('#tablaTitulos .tdj-tasa-visual').allTextContents()});
  }

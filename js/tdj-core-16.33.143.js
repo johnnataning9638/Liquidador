@@ -1,4 +1,5 @@
 import {esConsultaBeneficio} from './proyeccion-beneficio-276.js?v=16.33.277';
+import {crearRespaldo,paginasRespaldoSeguro,prepararRespaldo} from "./importacion-web-pdf/respaldo.js?v=16.33.282";
 import {TIPO_688_50} from "./decreto-688-50.js?v=16.33.266";
 import {cargarUVTConRespaldo,protegerMinimaUVT} from "./uvt-parametros.js?v=16.33.263";
 import {crearRenderSancionTDJ,esSoloSancionSinPagosTDJ,estilosSancionTDJ} from "./tdj-soporte-sancion-255.js?v=16.33.278";
@@ -2488,11 +2489,16 @@ async function exportarPdfTDJ(){
     if(!paginas.length)throw new Error("NO HAY CONTENIDO PARA GENERAR EL SOPORTE PDF. VERIFIQUE LA OBLIGACIÓN, LA FECHA DE CORTE O LOS MOVIMIENTOS REGISTRADOS.");
     const win=window.open("","_blank","width=1200,height=1000");
     if(!win)throw new Error("El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.");
+    const identidad={nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:$("razonGlobal").value};
+    const respaldo=paginasRespaldoSeguro(()=>crearRespaldo('TDJ',identidad,obligaciones,[
+      ...titulos.map(t=>({...t,tiposObligacion:obligaciones.map(o=>t.tasasPorObligacion?.[o.id]||o.tipoTasa)})),
+      ...obligaciones.flatMap(o=>o.pagos.filter(p=>p.tdj&&!titulos.some(t=>t.tdj===p.tdj)))
+    ]));
     win.document.open();
     // Metadatos de presentación: conservar los saldos del resultado sin exigir
     // la existencia de páginas de pago o de soporte de títulos.
     const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main></body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}${respaldo}</main></body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
@@ -3241,3 +3247,33 @@ export function aplicarImportacionWebPDF273(entrada,preferido=''){
  return resumen;
 }
 // END IMPORTACION WEB PDF 273
+
+export function aplicarRespaldoPDF(fuente,confirmar){
+  if(!motor)throw Error('Espere a que termine la carga de parámetros antes de importar.');
+  const respaldo=prepararRespaldo(fuente,true);
+  if(respaldo.obligaciones.some(o=>!CONCEPTOS.includes(o.concepto))){
+    throw Error('Una obligación contiene un impuesto que no está disponible en TDJ.');
+  }
+  if(($("nitGlobal").value||$("razonGlobal").value||titulos.some(t=>t.tdj||t.valor)||
+      obligaciones.some(o=>o.concepto||o.pagos.length||o.valorSancion))&&!confirmar())return null;
+
+  const nuevas=respaldo.obligaciones.map((o,i)=>({
+    ...nuevaObligacion(i+1),...o,anio:Number(o.anio)||'',tipoLiquidacion:'PRIVADA',
+    tipoTasa:o.tipoTasa||'TASA DIAN',tipoTasaConfirmada:Boolean(o.tipoTasa),
+    vencimientos:o.vencimientos.map(v=>({...v,id:uid('VTO')})),
+    pagos:o.pagos.map(p=>({...p,id:uid('PAGO'),tipo:p.tipo||'TASA DIAN'}))
+  }));
+  const nuevosTitulos=respaldo.titulos.map((t,i)=>({
+    ...nuevoTitulo(i+1),tdj:t.tdj,fecha:t.fecha,valor:t.valor,observacion:t.observacion,
+    tasasPorObligacion:Object.fromEntries(nuevas.map((o,j)=>[o.id,t.tiposObligacion[j]||t.tipo||o.tipoTasa]))
+  }));
+  obligaciones=nuevas;
+  titulos=nuevosTitulos;
+  window.__tdjTiposCanonicos203=new Map(titulos.flatMap(t=>obligaciones.map(o=>[claveTasaTDJ(t.id,o.id),tipoTasaTDJ(t,o)])));
+  $("nitGlobal").value=respaldo.nit;
+  $("razonGlobal").value=respaldo.razonSocial;
+  resultado=null;
+  $("resultadoTDJ").hidden=true;
+  invalidarResultadoTDJ();renderObligaciones();renderTitulos();actualizarSelectoresImportacion();
+  return {obligaciones:nuevas.length,pagos:nuevas.reduce((n,o)=>n+o.pagos.filter(p=>p.valor).length,0),titulos:titulos.length};
+}

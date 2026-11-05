@@ -1,3 +1,9 @@
+## 16.33.282 — Recuperación desde PDF (2026-11-04)
+
+- Los soportes DIAN y TDJ incorporan páginas de recuperación con los datos de captura.
+- Importar PDF recupera la primera obligación en DIAN y todas en TDJ, con los títulos originales.
+- El Generador de Cuotas mantiene su reconocimiento y destino habitual. Los PDF anteriores sin bloque de recuperación no se restauran por esta ruta.
+
 ## 16.33.281 — Art. 45 Ley 2155: tasa visible TDJ (2026-11-03)
 
 - Títulos TDJ muestran la tasa final exacta de la tabla reducida de 2021 que ya usa el motor, con dos decimales y sin recalcularla desde TIM.

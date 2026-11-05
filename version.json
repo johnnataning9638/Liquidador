@@ -1,7 +1,7 @@
 {
-  "version": "16.33.281",
-  "previousVersion": "16.33.280",
-  "baseCommit": "366396b0311e631ff642c215f95de6117bc2eecc",
-  "date": "2026-11-03",
-  "change": "Sincronizar visual de tasa TDJ Art. 45 Ley 2155 con tabla reducida del motor y distinguir falta de fecha"
+  "version": "16.33.282",
+  "previousVersion": "16.33.281",
+  "baseCommit": "1eb8afb5ca3ed8cde6088a9f169520c87ca3f106",
+  "date": "2026-11-04",
+  "change": "Recuperacion de datos en PDF DIAN y TDJ"
 }

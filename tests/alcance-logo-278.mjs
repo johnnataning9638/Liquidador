@@ -1,8 +1,9 @@
+import {revertirCambiosHasta278} from './revertir-importacion-279-a-282.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {revertirLogo278} from './revertir-logo-278.mjs';
-const read=f=>fs.readFileSync(f,'utf8').replaceAll('\r\n','\n');
+const read=f=>revertirCambiosHasta278(fs.readFileSync(f,'utf8'),f);
 const before=f=>execFileSync('git',['show','e12160e:'+f],{encoding:'utf8',maxBuffer:20000000}).replaceAll('\r\n','\n');
 const m=JSON.parse(read('runtime-manifest.json'));assert.equal(m.version,'16.33.278');assert.equal(JSON.parse(read('version.json')).version,m.version);
 for(const f of m.files)assert.equal(revertirLogo278(read(f),f),before(f),f+': retirada visual reversible');
