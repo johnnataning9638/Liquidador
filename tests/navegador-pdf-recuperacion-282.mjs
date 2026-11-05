@@ -8,6 +8,7 @@ const browser=await chromium.launch({headless:true,...(process.env.CHROME_CHANNE
 const base='http://127.0.0.1:27500';
 try{
   const context=await browser.newContext();
+  await context.addInitScript(()=>{delete Map.prototype.getOrInsertComputed;});
   await context.route('**/*',async route=>{
     const url=new URL(route.request().url());
     if(url.origin!==base)return route.abort();
