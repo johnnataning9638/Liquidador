@@ -1130,7 +1130,8 @@ function resumenEndosoTDJNormalPdf(d,r){
 function exportarExcel(){
   try{
     const {d,r}=construirDatosSoporte();
-    const nombreBase=`Liquidacion_DIAN_${d.nit||"SIN_NIT"}_${new Date().toISOString().slice(0,10)}`;
+    const nitArchivo=String(d.nit||"").replace(/\D/g,"");
+    const nombreBase=`${nitArchivo?nitArchivo+" ":""}Liquidacion_DIAN_${new Date().toISOString().slice(0,10)}`;
     // Excel se entrega como UN SOLO libro con UNA SOLA HOJA. Todas las secciones
     // quedan apiladas verticalmente para facilitar revisión, impresión y archivo.
     const rows=[];
@@ -1562,6 +1563,7 @@ function bloquePdfSinPagos(d,r){
 async function exportarPdf(){
   try{
     const {d,r}=construirDatosSoporte();
+    const nitArchivo=String(d.nit||"").replace(/\D/g,"");
     const win=window.open("","_blank","width=1200,height=1000");
     if(!win)throw new Error("El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.");
     const bloques=r.detalle||[];
@@ -1583,7 +1585,7 @@ async function exportarPdf(){
     const entradas={...d,vencimientos:obligacionVencimientos,numeroObligacion:contextoImportacionWebPDF273().numeroObligacion};
     const respaldo=await respaldoPDFExportable(()=>crearRespaldo('DIAN',d,[entradas],d.pagos.filter(p=>p.tdj)));
     win.document.open();
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main>${respaldo}</body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${nitArchivo?nitArchivo+" ":""}Soporte Liquidación DIAN</title><style>${estilosPdf()}</style></head><body><main class="pdf-soporte">${paginas.join("")||"<div class='pdf-alerta'>No hay pagos procesados.</div>"}${resumenFinal}${resumenExcedentes}${resumenEndoso}${advertencias}</main>${respaldo}</body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
