@@ -1,3 +1,7 @@
+## 16.33.286 — 2026-11-06
+- Exportaciones PDF y Excel de liquidación individual y múltiple: NIT registrado al inicio del nombre, sin duplicación y sin marcador SIN_NIT cuando falta.
+- Se conservan las liquidaciones, datos, cálculos y formato de los documentos; el PDF utiliza el título de impresión para sugerir el nombre de archivo.
+
 ## 16.33.285 — Lectura del código compacto en Microsoft Print to PDF (2026-11-04)
 
 - Reconoce imágenes del código compacto reducidas y comprimidas por la impresora PDF de Windows. Verifica la firma y la integridad antes de recuperar los datos.
