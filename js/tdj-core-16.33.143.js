@@ -1833,7 +1833,8 @@ function exportarExcelTDJ(){
     ];
     const blob=zipStoreTDJ(files);
     if(!blob||blob.size<5000)throw new Error("Excel no generó un libro XLSX válido.");
-    descargarTDJ(blob,`Liquidacion_TDJ_${nit||"SIN_NIT"}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    const nitArchivo=String(nit||"").replace(/\D/g,"");
+    descargarTDJ(blob,`${nitArchivo?nitArchivo+" ":""}Liquidacion_TDJ_${new Date().toISOString().slice(0,10)}.xlsx`);
     const estado=$("estadoExportacionTDJ");if(estado){estado.hidden=false;estado.textContent="EXCEL GENERADO CORRECTAMENTE: UNA SOLA HOJA CON LIQUIDACIÓN NORMAL, PAGOS, INTERESES, ACTUALIZACIÓN DE SANCIÓN, IMPUTACIÓN TDJ, SALDOS Y ENDOSO.";}
   }catch(e){console.error("EXPORTACIÓN EXCEL TDJ",e);alert(`No fue posible exportar el Excel TDJ. ${e.message||"Error desconocido"}`);}
 }
@@ -2490,6 +2491,7 @@ async function exportarPdfTDJ(){
     const win=window.open("","_blank","width=1200,height=1000");
     if(!win)throw new Error("El navegador bloqueó la ventana del soporte PDF. Permita ventanas emergentes para este formulario.");
     const identidad={nit:$("nitGlobal").value.replace(/\D/g,""),razonSocial:$("razonGlobal").value};
+    const nitArchivo=identidad.nit;
     const respaldo=await respaldoPDFExportable(()=>crearRespaldo('TDJ',identidad,obligaciones,[
       ...titulos.map(t=>({...t,tiposObligacion:obligaciones.map(o=>t.tasasPorObligacion?.[o.id]||o.tipoTasa)})),
       ...obligaciones.flatMap(o=>o.pagos.filter(p=>p.tdj&&!titulos.some(t=>t.tdj===p.tdj)))
@@ -2498,7 +2500,7 @@ async function exportarPdfTDJ(){
     // Metadatos de presentación: conservar los saldos del resultado sin exigir
     // la existencia de páginas de pago o de soporte de títulos.
     const saldoSancionPDF=resultado.resumenObligaciones.reduce((sum,x)=>sum+Math.max(0,Number((x.estadoFinal||x.liquidacionBase)?.sancion||0)),0);
-    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Soporte Liquidación TDJ / Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main>${respaldo}</body></html>`);
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${nitArchivo?nitArchivo+" ":""}Soporte Liquidación TDJ - Títulos</title><style>${css}${resultado.resumenObligaciones.some(x=>esSoloSancionSinPagosTDJ(x)||fechaCorteProyeccionPDFTDJ(x))?estilosSancionTDJ():""}</style></head><body><main class="pdf-soporte" data-saldo-obligaciones="${saldoPendientePDF}" data-saldo-sancion="${saldoSancionPDF}">${paginas.join("")}</main>${respaldo}</body></html>`);
     win.document.close();
     const imprimir=()=>setTimeout(()=>{try{win.focus();win.print();}catch(e){console.error(e);}},700);
     if(win.document.readyState==="complete")imprimir();else win.addEventListener("load",imprimir,{once:true});
