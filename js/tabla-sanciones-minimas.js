@@ -23,7 +23,7 @@ function pintar(filas,estado){
     tbody.innerHTML="";
     for(const x of filas){
       const tr=document.createElement("tr");
-      const fuente=x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.norma)}</a>`:esc(x.norma);
+      const fuente=esc(x.norma);
       tr.innerHTML=`<td>${x.anio}</td><td>${fecha(x.desde)}</td><td>${fecha(x.hasta)}</td><td>${moneda(x.minima)}</td><td>${fuente}</td><td>${esc(x.origen)}</td>`;
       tbody.appendChild(tr);
     }
