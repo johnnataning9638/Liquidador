@@ -24,8 +24,8 @@
   try{
     var u=new URL(window.location.href);
     var v=u.searchParams.get("v");
-    if(v && v!=="16.33.286"){
-      u.searchParams.set("v","16.33.286");
+    if(v && v!=="16.33.293"){
+      u.searchParams.set("v","16.33.293");
       window.location.replace(u.toString());
     }
   }catch(e){}
@@ -256,7 +256,8 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
   </section>
 
 </main>
-<footer>Liquidador — módulo de Liquidación de Títulos / TDJ · v16.33.286</footer>
+<style>/* Solo aproximar el pie a la barra inferior TDJ. */ main.tdj-wrap{padding-bottom:6px}body>footer{margin:0;padding:3px 12px 9px;text-align:center;color:#687783}</style>
+<footer>Liquidador — módulo de liquidación de múltiples obligaciones · v16.33.293</footer>
 <script id="tdj-global-clear-143">
 document.addEventListener("DOMContentLoaded",function(){
   const b=document.getElementById("btnLimpiarTitulosGlobal");
