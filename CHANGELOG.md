@@ -1,3 +1,8 @@
+## 16.33.296 — 2026-11-12
+- Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
+- Sin cambios en cálculos, importaciones, exportaciones, reglas ni funcionalidad.
+- Versión anterior de referencia: 16.33.295; revisión base: fddb9fe9735aeed5779f2eb4bde9a9af7e031345.
+
 ## 16.33.286 — 2026-11-06
 - Exportaciones PDF y Excel de liquidación individual y múltiple: NIT registrado al inicio del nombre, sin duplicación y sin marcador SIN_NIT cuando falta.
 - Se conservan las liquidaciones, datos, cálculos y formato de los documentos; el PDF utiliza el título de impresión para sugerir el nombre de archivo.

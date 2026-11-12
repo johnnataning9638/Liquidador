@@ -1,7 +1,7 @@
 {
-  "version": "16.33.286",
-  "previousVersion": "16.33.285",
-  "baseCommit": "686ffcaf2333ec9adc36d8e1f9c62c542b9042a2",
-  "date": "2026-11-06",
-  "change": "Prefijo NIT en nombre de PDF y Excel individual y múltiple; omitir prefijo si no hay NIT"
+  "version": "16.33.296",
+  "previousVersion": "16.33.295",
+  "baseCommit": "fddb9fe9735aeed5779f2eb4bde9a9af7e031345",
+  "date": "2026-11-12",
+  "change": "Sincronización exclusiva de versiones visibles, referencias de caché y metadatos de ambos liquidadores; sin cambios funcionales"
 }
