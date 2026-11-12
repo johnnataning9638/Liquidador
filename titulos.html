@@ -270,6 +270,22 @@ document.addEventListener("DOMContentLoaded",function(){
 </script>
 <script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.286"></script>
 <script type="module" src="js/tabla-sanciones-minimas.js?v=16.33.290"></script>
+<script>
+// Mantiene el botón de agregar obligación en su posición visual tras insertar una nueva tarjeta.
+// No interviene en la creación de obligaciones, su información ni el motor de liquidación.
+(function(){
+  const boton=document.getElementById("btnAgregarObligacion");
+  if(!boton)return;
+  boton.addEventListener("click",function(){
+    const posicionAntes=boton.getBoundingClientRect().top;
+    requestAnimationFrame(function(){
+      if(!boton.isConnected)return;
+      const desplazamiento=boton.getBoundingClientRect().top-posicionAntes;
+      if(Math.abs(desplazamiento)>1)window.scrollBy({top:desplazamiento,behavior:"instant"});
+    });
+  },{capture:true});
+})();
+</script>
 <script type="module" src="js/tdj.js?v=16.33.286"></script>
 <script type="module" src="js/catalogo-beneficios.js?v=16.33.286"></script>
 </body></html>
