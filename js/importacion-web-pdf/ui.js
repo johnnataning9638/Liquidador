@@ -1,4 +1,4 @@
-import {leerPDF} from './pdf.js?v=16.33.285';
+import {leerPDF} from './pdf.js?v=16.33.287';
 import {leerRespaldoPDF} from './respaldo.js?v=16.33.285';
 
 // Archivo transitorio compartido entre pestañas. Nunca se escribe en almacenamiento.
