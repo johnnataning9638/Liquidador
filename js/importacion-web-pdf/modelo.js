@@ -21,7 +21,7 @@ export function conceptoDIAN(v){
  if(s==='RENTA'||s.includes('RENTA Y COMPLEMENT'))return 'RENTA';
  if(s==='IVA'||s==='VENTAS'||s.includes('IMPUESTO SOBRE LAS VENTAS'))return 'VENTAS';
  if(s==='CONSUMO'||s.includes('IMPUESTO NACIONAL AL CONSUMO'))return 'CONSUMO';
- for(const k of ['PATRIMONIO','RIQUEZA','GMF','SIMPLE','SANCION'])if(s===k||s.includes('IMPUESTO AL '+k))return k==='SANCION'?'SANCION':k;
+ for(const k of ['PATRIMONIO','RIQUEZA','GMF','SIMPLE','SANCION'])if(s===k||s.includes('IMPUESTO AL '+k)||(k==='PATRIMONIO'&&s.startsWith('IMPUESTO PATRIMONIO')))return k==='SANCION'?'SANCION':k;
  throw Error('El tipo de impuesto no tiene una equivalencia definida: '+String(v).slice(0,120));
 }
 export function validarEntrada(data){
