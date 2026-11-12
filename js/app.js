@@ -538,14 +538,7 @@ function renderCalendario(){
   if(!d.nit||!d.anio||!d.concepto){box.innerHTML="Complete NIT, año y concepto para consultar el calendario.";return;}
   const r=calendarioMotor.fechaVencimiento(d);
   if(r.disponible){
-    box.innerHTML=`<div class="cal-grid"><div><span>Fecha DIAN</span><strong>${fechaVisible(r.fecha)}</strong></div><div><span>Regla</span><strong>${esc(r.clave)}</strong></div></div><div class="nota">${esc(r.detalle)} · ${esc(r.fuente)}</div><button type="button" id="btnAplicarVencimiento" class="primario">Aplicar al vencimiento ${esc(d.periodo||"1")}</button>`;
-    $("btnAplicarVencimiento").addEventListener("click",()=>{
-      const n=Math.max(1,Number(d.periodo||1));
-      let x=obligacionVencimientos.find(v=>Number(v.numero)===n);
-      if(!x){x={id:`VTO-${n}`,numero:n,periodo:n,impuesto:0,fecha:""};obligacionVencimientos.push(x);}
-      x.fecha=r.fecha;
-      renderVencimientos();
-    });
+    box.innerHTML=`<div class="cal-grid"><div><span>Fecha DIAN</span><strong>${fechaVisible(r.fecha)}</strong></div><div><span>Regla</span><strong>${esc(r.clave)}</strong></div></div><div class="nota">${esc(r.detalle)} · ${esc(r.fuente)}</div>`;
   }else box.innerHTML=`<div class="detalle-alerta">⚠ ${esc((r.advertencias||[]).join(" "))}</div>`;
 }
 
