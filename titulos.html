@@ -129,6 +129,8 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
 @media(min-width:1200px){.compact-grid{gap:6px;padding:7px 12px}.tdj-wrap{padding-left:12px;padding-right:12px}}
 @media(max-width:1050px){.compact-grid{grid-template-columns:repeat(2,1fr)}}
 @media print{body{background:#fff}.topbar,#btnAgregarObligacion,#btnAgregarTitulo,.import-box,.tdj-import,.tdj-sheet-actions,.card-actions button,#btnLimpiarTDJ,#btnExportarExcelTDJ,#btnExportarPdfTDJ{display:none!important}.tdj-wrap{max-width:none;padding:0}.card{box-shadow:none;break-inside:avoid}.obligacion-card{break-inside:auto}.resultado-head{break-after:avoid}}
+/* El botón permanece bajo la última obligación, encima de la importación. */
+.tdj-global-import .tdj-agregar-obligacion-inferior{display:flex;justify-content:flex-end;align-items:center;min-height:35px;margin:0 0 9px;padding:0 2px 2px}
 </style>
 <link rel="stylesheet" href="beneficios.css?v=16.33.286">
 <link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.286">
@@ -157,11 +159,12 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
         <div class="compact-grid"><label>NIT<input id="nitGlobal" inputmode="numeric" placeholder="NIT"></label><label>RAZÓN SOCIAL<input id="razonGlobal" placeholder="RAZÓN SOCIAL"></label></div>
       </section>
 
-      <section class="card"><div class="card-head"><div><span class="kicker">1 · OBLIGACIONES</span><h3>Obligaciones independientes — liquidación privada</h3></div><button id="btnAgregarObligacion" class="primario">+ AGREGAR OBLIGACIÓN</button></div>
+      <section class="card"><div class="card-head"><div><span class="kicker">1 · OBLIGACIONES</span><h3>Obligaciones independientes — liquidación privada</h3></div></div>
         <div id="listaObligaciones"></div>
       </section>
 
       <section class="import-box tdj-global-import">
+        <div class="tdj-agregar-obligacion-inferior"><button id="btnAgregarObligacion" type="button" class="primario">+ AGREGAR OBLIGACIÓN</button></div>
         <div class="panel-title fila-titulo"><span>Importación inteligente — Datos y vencimientos</span><span class="mini-badge">SELECCIONE OBLIGACIÓN</span></div>
         <div class="tdj-import-grid">
           <select id="destinoImportacionObligacion" class="import-destino" aria-label="Obligación destino"><option value="">SELECCIONE LA OBLIGACIÓN DESTINO...</option></select>
