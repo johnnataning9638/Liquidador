@@ -1562,7 +1562,7 @@ function xlsxSheetTDJ(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPerce
   let enBloquePagosVerde=false;
   const body=safeRows.map((r,i)=>{
     const etiqueta=String(Array.isArray(r)?r[0]??"": "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
-    if(/^DETALLE TDJ\b.*\bAPLICACION\b/.test(etiqueta))enBloquePagosVerde=true;
+    if(/^DETALLE TDJ\b.*\bAPLICACION\b/.test(etiqueta)||/^TRAZABILIDAD DE APLICACION DE TITULOS$/.test(etiqueta))enBloquePagosVerde=true;
     else if(!Array.isArray(r)||r.length===0||titleRows.includes(i))enBloquePagosVerde=false;
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
@@ -1804,6 +1804,22 @@ function construirFilasExcelTDJ(){
   push([]);
   push(["TÍTULOS / TDJ — CONTROL FINAL"],{title:true});push(["Nº","TDJ","FECHA","VALOR ORIGINAL","OBSERVACIÓN","APLICADO","SOBRANTE / ENDOSO"],{header:true});
   resultado.resumenTitulos.forEach((x,i)=>push([i+1,x.titulo.tdj||`TDJ ${i+1}`,x.titulo.fecha,x.titulo.valor||0,upper(x.titulo.observacion||""),x.trazabilidad.reduce((a,z)=>a+Number(z.aplicado||0),0)+Number(x.ajusteCierreRemanente||0),x.excedente||0],{money:[4,6,7]}));push([]);push(["TOTAL ENDOSO",resultado.endoso||0],{money:[2]});
+  // SECCIÓN FINAL INFORMATIVA: NO CAMBIAR LOS BLOQUES ANTERIORES, EN PARTICULAR
+  // RECUPERACIÓN COMPLETA, PUES DE ELLA DEPENDE LA REIMPORTACIÓN DEL EXCEL.
+  const trazabilidadAplicada=(resultado.resumenTitulos||[])
+    .flatMap(x=>Array.isArray(x.trazabilidad)?x.trazabilidad:[])
+    .filter(a=>Number(a.aplicado||0)>0);
+  if(trazabilidadAplicada.length){
+    push([]);
+    push(["TRAZABILIDAD DE APLICACIÓN DE TÍTULOS"],{title:true});
+    push(["TDJ","FECHA","OBLIGACIÓN","VALOR DISPONIBLE","IMPUESTO","INTERESES","SANCIÓN","APLICADO","SALDO TDJ","SALDO OBLIGACIÓN"],{header:true});
+    trazabilidadAplicada.forEach(a=>push([
+      a.titulo||"",fechaVisible(a.fecha||""),a.obligacion||"",
+      Number(a.valorAntes||0),Number(a.aplicadoImpuesto||0),Number(a.aplicadoIntereses||0),
+      Number(a.aplicadoSancion||0),Number(a.aplicado||0),
+      Number(a.saldoTitulo||0),Number(a.saldoDespuesSoporte?.total??a.saldoObligacion??0)
+    ],{money:[4,5,6,7,8,9,10]}));
+  }
   return {rows,titleRows,headerRows,rowMoneyCols,rowPercentCols,nit};
 }
 function exportarExcelTDJ(){
