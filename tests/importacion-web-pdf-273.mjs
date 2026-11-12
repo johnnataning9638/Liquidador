@@ -26,3 +26,15 @@ assert.equal(esFilaImpuestoGenerador('RENTA','RENTA'),false);
 assert.equal(esFilaImpuestoGenerador('SANCION','RETENCIÓN'),false);
 assert.equal(esFilaImpuestoGenerador('INTERESES','RETENCIÓN'),false);
 console.log('PDF RETENCIÓN 280 OK: IMPUESTO/RETENCIÓN reconocidos sin alterar otros conceptos');
+
+// Regresión Patrimonio formulario 1116: alias DIAN y cuotas sin afectar otros impuestos.
+for(const alias of ['Impuesto Patrimonio Personas Jurídicas y Soc','IMPUESTO PATRIMONIO','Impuesto al Patrimonio','PATRIMONIO']){
+ assert.equal(conceptoDIAN(alias),'PATRIMONIO');
+}
+const patrimonio=validarEntrada({...base,concepto:'Impuesto Patrimonio Personas Jurídicas y Soc',nit:'900009158',razonSocial:'MENDIOLA S.A.S.',anio:2026,periodo:1,numeroObligacion:'103926000097419',cuotas:[{numero:1,fecha:'2026-04-01',impuesto:22311000},{numero:2,fecha:'2026-05-04',impuesto:22311000}]});
+assert.equal(patrimonio.concepto,'PATRIMONIO');
+assert.deepEqual(patrimonio.cuotas.map(c=>[c.numero,c.fecha,c.impuesto]),[[1,'2026-04-01',22311000],[2,'2026-05-04',22311000]]);
+assert.equal(conceptoDIAN('Impuesto sobre la renta y complementarios'),'RENTA');
+assert.equal(conceptoDIAN('Retención en la fuente'),'RETENCIÓN');
+assert.equal(conceptoDIAN('Impuesto sobre las ventas'),'VENTAS');
+console.log('PATRIMONIO 1116 OK: equivalencia, dos cuotas y otros impuestos conservados');
