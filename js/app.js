@@ -661,6 +661,39 @@ function habilitarSancion(){
   capturarSancionUI();
 }
 
+// Vista informativa: conserva el motor y muestra únicamente aplicaciones reales de TDJ.
+function pintarTrazabilidadTitulosIndividual(r){
+  const seccion=$("trazabilidadTitulosIndividual"),cuerpo=$("filasTrazabilidadTitulosIndividual");
+  if(!seccion||!cuerpo)return;
+  const movimientos=(Array.isArray(r?.detalle)?r.detalle:[]).filter(x=>
+    String(x?.pago?.tdj||"").trim() && Number(x?.aplicado?.total||0)>0
+  );
+  cuerpo.replaceChildren();
+  seccion.hidden=!movimientos.length;
+  if(!movimientos.length)return;
+  const f=leerFormulario();
+  const obligacion=[upper(f.concepto||"OBLIGACIÓN"),f.anio||"",`P${f.periodo??"1"}`].filter(Boolean).join(" · ");
+  for(const x of movimientos){
+    const celdas=[
+      String(x.pago.tdj||""),fechaVisible(x.pago.fecha||""),obligacion,
+      dinero(Number(x.pago.valor||0)),
+      dinero(Number(x.aplicado.impuesto||0)),
+      dinero(Number(x.aplicado.intereses||0)),
+      dinero(Number(x.aplicado.sancion||0)),
+      dinero(Number(x.aplicado.total||0)),
+      dinero(Number(x.excedente??x.aplicado.excedente??0)),
+      dinero(Number(x.saldo?.total??r.total??0))
+    ];
+    const tr=document.createElement("tr");
+    for(const valor of celdas){
+      const td=document.createElement("td");
+      td.textContent=valor;
+      tr.appendChild(td);
+    }
+    cuerpo.appendChild(tr);
+  }
+}
+
 function pintarInforme(r){
   const u=r.ultimo||null;
   const d=u?.deudaAntes||{
@@ -689,6 +722,7 @@ function pintarInforme(r){
     :"";
   const adv=[...new Set(r.advertencias||[])].join(" | ");
   $("detalleCalculo").innerHTML=detalle+resumenSancion+(adv?`<div class="detalle-alerta">⚠ ${esc(adv)}</div>`:"")||"Sin pagos procesados.";
+  pintarTrazabilidadTitulosIndividual(r);
   renderResultadoBeneficio(r);
 }
 
@@ -1881,7 +1915,7 @@ async function limpiar(){
   });
   // Estado inicial: el funcionario puede elegir SI o NO. Al elegir SI,
   // habilitarSancion() sincroniza el bloqueo con la selección de sanción.
-  renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("detalleCalculo").innerHTML="";
+  renderMetadatosConcepto();renderVencimientos();renderPagos();habilitarSancion();renderCalendario();renderBeneficio();$("detalleCalculo").innerHTML="";const traza=$("trazabilidadTitulosIndividual");if(traza)traza.hidden=true;const trazaFilas=$("filasTrazabilidadTitulosIndividual");if(trazaFilas)trazaFilas.replaceChildren();
   ["rSaldoImpuestoIndicador","rSaldoSancionIndicador","rDeudaImpuesto","rDeudaIntereses","rDeudaSancion","rPropImpuesto","rPropIntereses","rPropSancion","rSaldoImpuesto","rSaldoIntereses","rSaldoSancion","rDeudaTotal","rPropTotal","rSaldoTotalFooter"].forEach(id=>{const el=$(id);if(el)el.textContent=dinero(0);});
   $("rFechaPago").textContent="—";$("rTasa").textContent="—";
   if($("rExcedenteBox")){$("rExcedenteBox").hidden=true;$("rExcedente").textContent=dinero(0);}
