@@ -1,17 +1,17 @@
-import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.249";
+import {instalarPegadoUnicoTitulosTDJ} from "./tdj-pegado-unico-209.js?v=16.33.296";
 instalarPegadoUnicoTitulosTDJ();
 // TDJ v16.33.212 — navegación TAB + tasa individual + restricciones + secuencia/reconciliación + cierre PDF + recuperación de beneficios Excel + identidad estable por obligación + resolución robusta de contexto + remanente antes de endoso + silencio de alerta falsa de endoso.
 // Las capas de secuencia se cargan de forma estática para eliminar la carrera
 // de módulos que podía dejar la trazabilidad en un estado diferente al PDF.
-import "./tdj-tasa-bridge-16.33.174.js?v=16.33.212";
-import "./tdj-secuencia-guard-16.33.185.js?v=16.33.185";
-import "./tdj-pdf-cierre-16.33.189.js?v=16.33.285";
-import "./tdj-import-beneficio-16.33.192.js?v=16.33.210";
-import "./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.193";
-import "./tdj-beneficio-contexto-16.33.194.js?v=16.33.194";
-import "./tdj-obligacion-identity-16.33.195.js?v=16.33.195";
-import "./tdj-obligacion-contexto-16.33.196.js?v=16.33.196";
-import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
+import "./tdj-tasa-bridge-16.33.174.js?v=16.33.296";
+import "./tdj-secuencia-guard-16.33.185.js?v=16.33.296";
+import "./tdj-pdf-cierre-16.33.189.js?v=16.33.296";
+import "./tdj-import-beneficio-16.33.192.js?v=16.33.296";
+import "./tdj-fecha-corte-sin-pagos-16.33.193.js?v=16.33.296";
+import "./tdj-beneficio-contexto-16.33.194.js?v=16.33.296";
+import "./tdj-obligacion-identity-16.33.195.js?v=16.33.296";
+import "./tdj-obligacion-contexto-16.33.196.js?v=16.33.296";
+import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.296";
 
 (function(){
   function omitirObservacion(){document.querySelectorAll('#tablaTitulos tbody [data-t="observacion"]').forEach(function(el){el.tabIndex=-1;});}
@@ -22,7 +22,7 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 })();
 (function(){
   document.addEventListener("DOMContentLoaded",function(){var footer=document.querySelector("footer");if(footer)footer.textContent=footer.textContent.replace(/v16\\.33\\.(163|164|165|166|167|168|169|170|171|172|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200)/g,"v16.33.210");},{once:true});
-  document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.242&reinicio="+Date.now());},true);
+  document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("#btnLimpiarTitulosGlobal"):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();if(!window.confirm("¿Desea iniciar una nueva liquidación de títulos? Se borrarán datos, pagos, títulos y resultados."))return;window.location.replace("titulos.html?v=16.33.296&reinicio="+Date.now());},true);
 })();
 
 // 16.33.255: conservar los cortes durante todo el cálculo; el núcleo
@@ -30,6 +30,6 @@ import "./tdj-obligacion-contexto-16.33.197.js?v=16.33.210";
 // Motor histórico protegido; su contenido no se modifica en esta capa.
 // v16.33.200: el cálculo neutraliza únicamente cortes informativos mientras
 // preserva los movimientos TDJ reales posteriores.
-import("./tdj-core-16.33.143.js?v=16.33.294");
+import("./tdj-core-16.33.143.js?v=16.33.296");
 // Capa visual TDJ × OBLIGACIÓN.
-import("./tdj-visual-beneficios.js?v=16.33.285");
+import("./tdj-visual-beneficios.js?v=16.33.296");
