@@ -1,4 +1,4 @@
-import {normalizar,fechaISO,pesos,validarEntrada,conceptoDIAN} from './modelo.js';
+import {normalizar,fechaISO,pesos,validarEntrada,conceptoDIAN} from './modelo.js?v=16.33.287';
 const texto=(items)=>items.slice().sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').trim();
 const digitos=items=>texto(items).replace(/\D/g,'');
 function etiqueta(pg,prefijo){return pg.items.find(i=>normalizar(i.s).startsWith(prefijo));}
