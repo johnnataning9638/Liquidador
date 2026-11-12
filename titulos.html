@@ -235,6 +235,12 @@ body{background:#eef3f7}.tdj-wrap{max-width:1500px;margin:0 auto;padding:20px 24
         <div class="tasas-admin-bar"><div><strong>Estado de IPC:</strong> <span id="estadoIPCConexionTDJ">Cargando...</span></div><div class="nota">Se registra el IPC del año de inflación; su aplicación inicia el 1 de enero del año siguiente.</div></div>
         <div class="tabla-scroll"><table id="tablaIPCTDJ"><thead><tr><th>AÑO IPC</th><th>IPC</th><th>APLICABLE DESDE</th><th>FUENTE</th></tr></thead><tbody></tbody></table></div>
       </details>
+
+<details class="panel tasas-panel ipc-panel tdj-parametros-panel">
+  <summary class="panel-title fila-titulo"><span>Actualización central de sanciones mínimas</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · SANCIÓN MÍNIMA</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+  <div class="tasas-admin-bar"><div><strong>Estado de sanciones mínimas:</strong> <span id="estadoSancionesMinimasTDJ">Consultando...</span></div><div class="nota">Valores anuales informativos del artículo 639 del Estatuto Tributario. La tabla consulta los registros centrales sin modificar la liquidación.</div></div>
+  <div class="tabla-scroll"><table id="tablaSancionesMinimasTDJ"><thead><tr><th>Año</th><th>Desde</th><th>Hasta</th><th>Sanción mínima (COP)</th><th>Fuente / Norma</th><th>Fuente de actualización</th></tr></thead><tbody></tbody></table></div>
+</details>
     </div>
 
       <div class="tdj-sheet-actions botonera" aria-label="Acciones de liquidación TDJ">
@@ -260,6 +266,7 @@ document.addEventListener("DOMContentLoaded",function(){
 });
 </script>
 <script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.286"></script>
+<script type="module" src="js/tabla-sanciones-minimas.js?v=16.33.288"></script>
 <script type="module" src="js/tdj.js?v=16.33.286"></script>
 <script type="module" src="js/catalogo-beneficios.js?v=16.33.286"></script>
 </body></html>

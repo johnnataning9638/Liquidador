@@ -168,6 +168,11 @@
   <div id="estadoIPC" class="resultado-calendario"></div><div class="tabla-scroll"><table id="tablaIPC"><thead><tr><th>Año IPC</th><th>IPC</th><th>Aplicable desde</th><th>Fuente</th><th>Norma / referencia</th></tr></thead><tbody></tbody></table></div>
 </details>
 
+<details class="panel tasas-panel ipc-panel">
+  <summary class="panel-title fila-titulo"><span>Actualización central de sanciones mínimas</span><span class="tasas-summary-meta"><span class="badge">SUPABASE · SANCIÓN MÍNIMA</span><span class="tasas-chevron" aria-hidden="true">▾</span></span></summary>
+  <div class="tasas-admin-bar"><div><strong>Estado de sanciones mínimas:</strong> <span id="estadoSancionesMinimas">Consultando...</span></div><div class="nota">Valores anuales informativos del artículo 639 del Estatuto Tributario. La tabla consulta los registros centrales sin modificar la liquidación.</div></div>
+  <div class="tabla-scroll"><table id="tablaSancionesMinimas"><thead><tr><th>Año</th><th>Desde</th><th>Hasta</th><th>Sanción mínima (COP)</th><th>Fuente / Norma</th><th>Fuente de actualización</th></tr></thead><tbody></tbody></table></div>
+</details>
 
 
 <div id="estadoExportacion" class="resultado-calendario" role="status" hidden></div>
@@ -306,6 +311,7 @@
   else configurarPestanas();
 })();
 </script>
+<script type="module" src="js/tabla-sanciones-minimas.js?v=16.33.288"></script>
 <script type="module" src="js/catalogo-beneficios.js?v=16.33.286"></script>
 </body>
 </html>
