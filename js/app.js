@@ -725,7 +725,7 @@ function xlsxCell(v,col,row,style=0){
   const preserve=/^\s|\s$/.test(String(v??""))?` xml:space="preserve"`:"";
   return `<c r="${ref}" s="${style}" t="inlineStr"><is><t${preserve}>${text}</t></is></c>`;
 }
-function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){
+function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentCols={},titleRows=[],headerRows=[],columnWidths=[],mergeRanges=[],greenRows=[],landscape=true,fitToWidth=1,fitToHeight=0}={}){
   const safeRows=Array.isArray(rows)?rows:[];
   const lastCol=Math.max(1,...safeRows.map(r=>Array.isArray(r)?r.length:0));
   const lastRow=Math.max(1,safeRows.length);
@@ -741,7 +741,7 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
   let enBloquePagosVerde=false;
   const body=safeRows.map((r,i)=>{
     const etiqueta=String(Array.isArray(r)?r[0]??"": "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
-    if(/^DETALLE TDJ\b.*\bAPLICACION\b/.test(etiqueta))enBloquePagosVerde=true;
+    if(/^DETALLE TDJ\b.*\bAPLICACION\b/.test(etiqueta)||/^TITULOS \/ TDJ — TITULOS REGISTRADOS$/.test(etiqueta)||/^TRAZABILIDAD DE APLICACION DE TITULOS$/.test(etiqueta))enBloquePagosVerde=true;
     else if(!Array.isArray(r)||r.length===0||titleRows.includes(i))enBloquePagosVerde=false;
     const row=Array.isArray(r)?r:[];
     const rm=Array.isArray(rowMoneyCols[i])?rowMoneyCols[i]:moneyCols;
@@ -756,7 +756,7 @@ function xlsxSheet(rows,{moneyCols=[],percentCols=[],rowMoneyCols={},rowPercentC
     const height=title?24:(header?Math.min(45,Math.max(20,18+(maxLines-1)*9)):Math.min(60,Math.max(18,18+(maxLines-1)*12)));
     return `<row r="${i+1}" ht="${height}" customHeight="1">${row.map((v,j)=>{
       let style=0;
-      if(enBloquePagosVerde)style=title?5:header?6:rm.includes(j+1)?8:rp.includes(j+1)?9:7;
+      if(enBloquePagosVerde||greenRows.includes(i))style=title?5:header?6:rm.includes(j+1)?8:rp.includes(j+1)?9:7;
       else if(title)style=1;
       else if(header)style=2;
       else if(rm.includes(j+1))style=3;
@@ -1129,13 +1129,14 @@ function exportarExcel(){
     // quedan apiladas verticalmente para facilitar revisión, impresión y archivo.
     const rows=[];
     const rowMoneyCols={}; const rowPercentCols={};
-    const titleRows=[]; const headerRows=[];
-    const push=(row,{money=[],percent=[],title=false,header=false}={})=>{
+    const titleRows=[]; const headerRows=[]; const greenRows=[];
+    const push=(row,{money=[],percent=[],title=false,header=false,green=false}={})=>{
       const i=rows.length; rows.push(row);
       if(money.length)rowMoneyCols[i]=money;
       if(percent.length)rowPercentCols[i]=percent;
       if(title)titleRows.push(i);
       if(header)headerRows.push(i);
+      if(green)greenRows.push(i);
     };
     push(["LIQUIDADOR DE OBLIGACIONES DIAN"],{title:true});
     push(["SOPORTE DE LIQUIDACIÓN — REAJUSTE 16.33.122"],{title:true});
@@ -1173,7 +1174,7 @@ function exportarExcel(){
     push(["PAGOS Y APLICACIÓN"],{title:true});
     push(["Nº","TDJ Nº","RECIBO Nº","FECHA PAGO / CORTE","VALOR PAGO","TIPO","TASA","OBSERVACIÓN","INTERÉS GENERADO","IMPUESTO APLICADO","INTERESES APLICADOS","SANCIÓN APLICADA","TOTAL APLICADO","EXCEDENTE"],{header:true});
     if((r.detalle||[]).length){
-      (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.tdj||"",x.pago?.recibo||"",x.pago?.fecha||"",x.pago?.valor||0,x.tipoAplicado||"TASA DIAN",x.tasaVisible??"",x.pago?.observacion||"",x.interesGenerado||0,x.aplicado?.impuesto||0,x.aplicado?.intereses||0,x.aplicado?.sancion||0,x.aplicado?.total||0,x.excedente||0],{money:[5,9,10,11,12,13,14],percent:[7]}));
+      (r.detalle||[]).forEach((x,i)=>push([i+1,x.pago?.tdj||"",x.pago?.recibo||"",x.pago?.fecha||"",x.pago?.valor||0,x.tipoAplicado||"TASA DIAN",x.tasaVisible??"",x.pago?.observacion||"",x.interesGenerado||0,x.aplicado?.impuesto||0,x.aplicado?.intereses||0,x.aplicado?.sancion||0,x.aplicado?.total||0,x.excedente||0],{money:[5,9,10,11,12,13,14],percent:[7],green:Boolean(String(x.pago?.tdj||"").trim())}));
     }else{
       push([0,"","",r.fechaCorte||d.fechaCorte||"",0,"TASA DIAN","","",r.intereses||0, r.impuesto||0, r.intereses||0, r.sancion||0, r.total||0,0],{money:[5,9,10,11,12,13,14],percent:[7]});
     }
@@ -1292,6 +1293,23 @@ function exportarExcel(){
     push(["FIN RECUPERACIÓN COMPLETA"],{title:true});
     push([]);
     push(["OBSERVACIÓN",d.tipoLiquidacion==="OFICIAL"?"La sanción oficial se actualiza cada 1 de enero: SA = VS × (1 + IPC/365)^n. Primer tramo desde Fecha sanción hasta 31 de diciembre; siguientes años completos. Los intereses se calculan sobre capital.":"Los intereses por cuota se calculan sobre capital; la sanción no interviene en este cálculo. La actualización de sanción se aplica el 1 de enero de cada vigencia que corresponda con el IPC anual del año anterior, sin prorrateo por días. Se muestra por pago y se consolida al final."]);
+    // Reporte de lectura al final del libro: se añade DESPUÉS del bloque canónico
+    // de recuperación y no altera los campos usados por los importadores.
+    const trazaTDJIndividual=(r.detalle||[]).filter(x=>
+      String(x.pago?.tdj||"").trim() && Number(x.aplicado?.total||0)>0
+    );
+    if(trazaTDJIndividual.length){
+      push([]);
+      push(["TRAZABILIDAD DE APLICACIÓN DE TÍTULOS"],{title:true});
+      push(["TDJ","FECHA","OBLIGACIÓN","VALOR DISPONIBLE","IMPUESTO","INTERESES","SANCIÓN","APLICADO","SALDO TDJ","SALDO OBLIGACIÓN"],{header:true});
+      const obligacionNombre=`${upper(d.concepto||"OBLIGACIÓN")} ${d.anio||""} · P${d.periodo??"1"}`.trim();
+      trazaTDJIndividual.forEach(x=>push([
+        x.pago.tdj||"",fechaVisible(x.pago?.fecha||""),obligacionNombre,
+        Number(x.pago?.valor||0),Number(x.aplicado?.impuesto||0),Number(x.aplicado?.intereses||0),
+        Number(x.aplicado?.sancion||0),Number(x.aplicado?.total||0),
+        Number(x.excedente??x.aplicado?.excedente??0),Number(x.saldo?.total??r.total??0)
+      ],{money:[4,5,6,7,8,9,10]}));
+    }
     const fechaGeneracion=new Date().toISOString();
     const files=[
       {name:"[Content_Types].xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`},
@@ -1301,7 +1319,7 @@ function exportarExcel(){
       {name:"xl/workbook.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><fileVersion appName="xl" lastEdited="7" lowestEdited="7" rupBuild="30626"/><workbookPr defaultThemeVersion="164011"/><bookViews><workbookView xWindow="0" yWindow="0" windowWidth="18000" windowHeight="12000"/></bookViews><sheets><sheet name="Liquidación completa" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>`},
       {name:"xl/_rels/workbook.xml.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
       {name:"xl/styles.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="[$$-es-CO] #,##0"/><numFmt numFmtId="165" formatCode="0.000%"/></numFmts><fonts count="3"><font><sz val="10"/><name val="Arial"/><family val="2"/><color rgb="17324D"/></font><font><b/><sz val="14"/><name val="Arial"/><family val="2"/><color rgb="FFFFFF"/></font><font><b/><sz val="10"/><name val="Arial"/><family val="2"/><color rgb="17324D"/></font></fonts><fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="DCEAF4"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="173F5F"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="A7D4AD"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="D5EAD7"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="EDF6EF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="A8BBC9"/></left><right style="thin"><color rgb="A8BBC9"/></right><top style="thin"><color rgb="A8BBC9"/></top><bottom style="thin"><color rgb="A8BBC9"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="4" borderId="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="2" fillId="5" borderId="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="6" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="6" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="165" fontId="0" fillId="6" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`},
-      {name:"xl/worksheets/sheet1.xml",data:xlsxSheet(rows,{titleRows,headerRows,rowMoneyCols,rowPercentCols,columnWidths:[10,18,30,18,18,12,14,24,20,20,20,20,20,20],landscape:true,fitToWidth:1,fitToHeight:0})}
+      {name:"xl/worksheets/sheet1.xml",data:xlsxSheet(rows,{titleRows,headerRows,rowMoneyCols,rowPercentCols,greenRows,columnWidths:[10,18,30,18,18,12,14,24,20,20,20,20,20,20],landscape:true,fitToWidth:1,fitToHeight:0})}
     ];
     descargarBlob(zipStore(files),nombreBase+".xlsx");
     mostrarEstadoExportacion("Excel generado correctamente: un solo libro y una sola hoja, con resumen, vencimientos, pagos y detalle de intereses por cuota y por cada pago. La sanción no interviene en el cálculo del interés.");
