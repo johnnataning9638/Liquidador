@@ -1,6 +1,6 @@
 import {esFilaImpuestoGenerador} from '../js/importacion-web-pdf/pdf.js';
 import assert from 'node:assert/strict';
-import {prepararImportacion,validarEntrada,elegirDestino,fechaISO,pesos} from '../js/importacion-web-pdf/modelo.js';
+import {prepararImportacion,validarEntrada,elegirDestino,fechaISO,pesos,conceptoDIAN} from '../js/importacion-web-pdf/modelo.js';
 const base={fuente:'PDF_1116',nit:'900123456',razonSocial:'PRUEBA S.A.S.',concepto:'Impuesto sobre la renta y complementarios',anio:2024,periodo:1,numeroObligacion:'100100000000001',cuotas:[{numero:1,fecha:'2025-09-19',impuesto:200000},{numero:2,fecha:'2025-10-19',impuesto:300000}]};
 const original={pagos:[],vencimientos:[]},before=JSON.stringify(original);
 const pdf=prepararImportacion(original,base).datos;
