@@ -14,7 +14,7 @@ function filasNormalizadas(registros,remoto){
     return {anio,minima,desde:`${anio}-01-01`,hasta:`${anio}-12-31`,
       norma:remoto?String(x.norma||"Art. 639 del Estatuto Tributario"):"Art. 639 del Estatuto Tributario",
       url:remoto?enlace(x.resolucion_url)||enlace(x.fuente_url):null,
-      origen:remoto?String(x.fuente_actualizacion||x.origen_actualizacion||"Supabase"):"Respaldo local"};
+      origen:remoto?String(x.fuente_actualizacion||x.origen_actualizacion||(x.resolucion_url?"DIAN · actualizador automático":"Supabase")):"Respaldo local"};
   }).filter(Boolean).sort((a,b)=>b.anio-a.anio);
 }
 function pintar(filas,estado){

@@ -1,5 +1,5 @@
 {
-  "version": "16.33.286",
+  "version": "16.33.289",
   "files": [
     "beneficios.css",
     "datos/beneficios.json",
@@ -63,6 +63,7 @@
     "js/tdj.js",
     "js/utilidades.js",
     "js/uvt-parametros.js",
+    "js/tabla-sanciones-minimas.js",
     "liquidacion.html",
     "runtime-manifest.json",
     "tdj-mobile.css",
