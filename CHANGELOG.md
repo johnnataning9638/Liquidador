@@ -1,3 +1,12 @@
+## 16.33.297 — 2026-11-18 (preparación; pendiente integración multimedia y despliegue)
+- Inicio: sección «INSTRUCCIONES DEL LIQUIDADOR» en el encabezado de MÓDULOS, con accesos al instructivo, Liquidación individual y Liquidación múltiple, cada uno en una pestaña independiente.
+- Nuevos visores `recursos/instructivo.html` y `recursos/video.html`, con diseño adaptable y reproductor HTML5. El visor PDF oculta controles de descarga, pero no puede impedir por completo guardar el recurso desde el navegador.
+- Videos derivados del tutorial original: individual 345,59 s; múltiple 441,75 s; ambos incluyen un cierre compartido sobre tasas/IPC/sanciones. PDF de 13 páginas.
+- Versión visible, parámetros de caché, `version.json` y `runtime-manifest.json` ajustados a 16.33.297. Sin modificaciones de los motores tributarios, pagos, TDJ, importaciones, exportaciones o configuración Supabase.
+- Auditoría de archivos locales: ambos MP4 contienen H.264 + AAC y decodifican sin errores con FFmpeg; PDF legible de 13 páginas; ZIP de 3 archivos sin errores CRC.
+- **Pendiente / bloqueo**: publicar en `recursos/` los binarios `instructivo-liquidador.pdf`, `tutorial-liquidacion-individual.mp4` y `tutorial-liquidacion-multiple.mp4` suministrados por separado. No fusionar ni desplegar mientras las rutas estén incompletas; pruebas HTTP y regresión en producción pendientes.
+- Supabase: el proyecto Liquidador figura ACTIVE_HEALTHY, sin migración necesaria. Render: despliegue pendiente de selección de workspace y de completar archivos.
+
 ## 16.33.296 — 2026-11-12
 - Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
 - Sin cambios en cálculos, importaciones, exportaciones, reglas ni funcionalidad.
