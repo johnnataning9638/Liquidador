@@ -23,7 +23,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidadores DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.296">
+<link rel="stylesheet" href="estilos.css?v=16.33.297">
 <style>
 /* INICIO UI 16.33.122 — FONDO FINANCE-TECH
    SOLO PRESENTACIÓN DEL MENÚ DE INICIO.
@@ -222,6 +222,17 @@
   .inicio-shell::after{font-size:18px;letter-spacing:4px;word-spacing:7px}
   .inicio-marca h1{font-size:32px}
 }
+
+/* Recursos de ayuda - encabezado del módulo de inicio */
+.inicio-ayudas{display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;min-width:0}
+.inicio-ayudas-titulo{font-size:13px;font-weight:800;color:white;letter-spacing:.04em;text-align:center;white-space:nowrap}
+.inicio-ayudas-botones{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.inicio-ayuda-enlace{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:9px 12px;border:1.5px solid #22d7fb;border-radius:30px;color:white;background:rgba(1,27,58,.38);box-shadow:0 0 8px rgba(28,211,255,.20);font-size:12px;font-weight:700;white-space:nowrap;text-decoration:none;transition:background .16s,box-shadow .16s}
+.inicio-ayuda-enlace:hover,.inicio-ayuda-enlace:focus-visible{background:rgba(0,159,212,.22);box-shadow:0 0 15px rgba(31,218,255,.52);color:#fff}
+.inicio-ayuda-enlace svg{width:17px;height:17px;flex:0 0 17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:1080px){.inicio-cabecera{flex-wrap:wrap}.inicio-ayudas{order:3;flex:1 1 100%}}
+@media(max-width:600px){.inicio-ayudas-titulo{white-space:normal}.inicio-ayudas-botones{width:100%}.inicio-ayuda-enlace{white-space:normal;font-size:12px}}
+
 </style>
 </head>
 <body>
@@ -237,6 +248,14 @@
   <section class="inicio-panel" aria-labelledby="tituloInicio">
     <div class="inicio-cabecera">
       <div><h2 id="tituloInicio">MÓDULOS</h2><p>Seleccione el módulo de trabajo que desea utilizar.</p></div>
+<nav class="inicio-ayudas" aria-label="Instrucciones del liquidador">
+        <div class="inicio-ayudas-titulo">INSTRUCCIONES DEL LIQUIDADOR</div>
+        <div class="inicio-ayudas-botones">
+          <a class="inicio-ayuda-enlace" href="recursos/instructivo.html" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 7c-3-3-7-3-10-2v14c3-1 7-1 10 2 3-3 7-3 10-2V5c-3-1-7-1-10 2Zm0 0v14"/></svg><span>Instructivo</span></a>
+          <a class="inicio-ayuda-enlace" href="recursos/video.html?tipo=individual" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg><span>Liquidación individual</span></a>
+          <a class="inicio-ayuda-enlace" href="recursos/video.html?tipo=multiple" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg><span>Liquidación múltiple</span></a>
+        </div>
+      </nav>
       <div class="estado-sistema"><span class="estado-punto" aria-hidden="true"></span>SISTEMA DISPONIBLE</div>
     </div>
     <div class="modulos">
@@ -247,7 +266,7 @@
           <h3>LIQUIDACIÓN INDIVIDUAL</h3>
                   </div>
         <span class="modulo-estado">MÓDULO 1</span>
-        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='liquidacion.html?v=16.33.296'">ABRIR LIQUIDACIÓN INDIVIDUAL →</button></div>
+        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='liquidacion.html?v=16.33.297'">ABRIR LIQUIDACIÓN INDIVIDUAL →</button></div>
       </article>
       <article class="modulo-item titulos">
         <div class="modulo-icono" aria-hidden="true">▣</div>
@@ -255,7 +274,7 @@
           <h3>LIQUIDACIÓN MÚLTIPLE</h3>
                   </div>
         <span class="modulo-estado">MÓDULO 2</span>
-        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='titulos.html?v=16.33.296'">ABRIR LIQUIDACIÓN MÚLTIPLE →</button></div>
+        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='titulos.html?v=16.33.297'">ABRIR LIQUIDACIÓN MÚLTIPLE →</button></div>
       </article>
 
     </div>

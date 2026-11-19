@@ -1,3 +1,32 @@
+## 16.33.297 — 2026-11-18 (preparación; pendiente integración multimedia y despliegue)
+- Inicio: sección «INSTRUCCIONES DEL LIQUIDADOR» en el encabezado de MÓDULOS, con accesos al instructivo, Liquidación individual y Liquidación múltiple, cada uno en una pestaña independiente.
+- Nuevos visores `recursos/instructivo.html` y `recursos/video.html`, con diseño adaptable y reproductor HTML5. El visor PDF oculta controles de descarga, pero no puede impedir por completo guardar el recurso desde el navegador.
+- Videos derivados del tutorial original: individual 389,57 s; múltiple 483,92 s. Cada tutorial presenta solo su modalidad, incluye un tercer ejercicio de proyección explicado con capturas originales del aplicativo y conserva un cierre específico sobre beneficios, TIM, IPC y sanciones. PDF de 13 páginas. Los nuevos tramos son demostraciones explicativas sobre capturas reales, no grabaciones de una nueva operación en vivo del aplicativo.
+- Versión visible, parámetros de caché, `version.json` y `runtime-manifest.json` ajustados a 16.33.297. Sin modificaciones de los motores tributarios, pagos, TDJ, importaciones, exportaciones o configuración Supabase.
+- Auditoría de archivos locales: ambos MP4 contienen H.264 + AAC y decodifican sin errores con FFmpeg; PDF legible de 13 páginas; ZIP de 3 archivos sin errores CRC.
+- Los tres recursos ya están incorporados al repositorio. Se deben verificar rutas, construcción y resultados de CI antes de la publicación.
+- Supabase: el proyecto Liquidador figura ACTIVE_HEALTHY, sin migración necesaria. Render: despliegue pendiente de selección de workspace y de completar archivos.
+
+### Auditoría complementaria (2026-11-18)
+- Workspace Render confirmado: `AI-Liquidador`; servicio `liquidador-de-obligaciones-tributarias`, publicación automática desde `main`, último despliegue LIVE de 16.33.296.
+- `runtime-manifest.json` exige los tres binarios; test `tests/recursos-ayuda-297.mjs` integrado al flujo `audit-estabilidad.yml` para comprobar presencia y firmas del PDF/MP4. Comprueba existencia, estructura y firmas de recursos.
+- GitHub Actions: regresión de limpieza global TDJ y de importadores decimales aprobadas; otras tres suites presentan fallos, dos de ellos ya presentes en `main` antes de esta rama. No se declaran aprobadas las regresiones globales.
+- Código de `js/tdj.js`: cambiaron exclusivamente los parámetros `?v=16.33.297` de las importaciones y la navegación de reinicio; no se modificó ningún algoritmo tributario.
+- La publicación en Render sigue sujeta a revisión de CI y pruebas web. No se actualizaron tablas, funciones ni otros objetos Supabase.
+
+### Validación de carga GitHub (2026-11-19)
+- Se recibieron videos llamados `Tutorial_liquidador_individual_25MB.mp4` y `Tutorial_liquidador_multiple_25MB.mp4` (23.206.326 y 22.949.736 bytes); sus blobs se asociaron a los nombres correctos requeridos por los visores, sin alterar los bytes.
+- El usuario confirmó expresamente que estos dos MP4 son los correctos y definitivos. La diferencia de tamaño respecto a una compresión previa no implica error.
+- El test verifica existencia, tamaño mínimo, firmas de archivo y concordancia de rutas, sin imponer huellas de un paquete distinto.
+- Las ejecuciones nuevas de GitHub confirman aprobadas las regresiones de limpieza TDJ e importadores decimales; el proceso de publicación debe evaluar los fallos históricos de CI.
+
+### Pruebas de integración de recursos confirmados (2026-11-19)
+- El usuario confirmó que los dos videos subidos al repositorio son los recursos definitivos. Los nombres se normalizaron sin alterar su contenido.
+- La validación `tests/recursos-ayuda-297.mjs` finalizó correctamente en GitHub Actions: archivos presentes, firmas y rutas coincidentes.
+- Validación sintáctica JavaScript y construcción de Render `node scripts/preparar-sitio.mjs`: **aprobadas**; los cinco archivos de visualización/media se copiaron correctamente a `dist/recursos/`.
+- Regresiones de limpieza global TDJ e importadores decimales: **aprobadas**.
+- Las suites de auditoría general e importación sin IA siguen fallando debido a pruebas de versiones heredadas, también identificadas en la rama `main`. Por política del repositorio, no se publica producción hasta aclarar estos bloqueos.
+
 ## 16.33.296 — 2026-11-12
 - Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
 - Sin cambios en cálculos, importaciones, exportaciones, reglas ni funcionalidad.
