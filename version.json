@@ -1,7 +1,7 @@
 {
   "version": "16.33.297",
   "previousVersion": "16.33.296",
-  "baseCommit": "pendiente-fusion-PR-108",
+  "baseCommit": "fddb9fe9735aeed5779f2eb4bde9a9af7e031345",
   "date": "2026-11-18",
   "change": "Agregar accesos de instructivo y videos individual/múltiple en menú de inicio; visores web independientes; sin cambios en motores de cálculo"
 }
