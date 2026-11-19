@@ -14,6 +14,12 @@
 - Código de `js/tdj.js`: cambiaron exclusivamente los parámetros `?v=16.33.297` de las importaciones y la navegación de reinicio; no se modificó ningún algoritmo tributario.
 - La publicación en Render sigue detenida hasta incorporar multimedia y comprobar CI. No se actualizaron tablas, funciones ni otros objetos Supabase.
 
+### Validación de carga GitHub (2026-11-19)
+- Se recibieron videos llamados `Tutorial_liquidador_individual_25MB.mp4` y `Tutorial_liquidador_multiple_25MB.mp4` (23.206.326 y 22.949.736 bytes); sus blobs se asociaron a los nombres correctos requeridos por los visores, sin alterar los bytes.
+- **No corresponden a los videos definitivos corregidos** del ZIP `recursos_liquidador_github_tamano_corregido.zip` (7.145.760 y 6.967.417 bytes). Se exige la sustitución antes de fusionar.
+- Test de integridad reforzado con SHA-256 del PDF y ambos MP4 originales del paquete corregido. El CI debe rechazar multimedia distinta a la versión revisada.
+- Las ejecuciones nuevas de GitHub confirman aprobadas las regresiones de limpieza TDJ e importadores decimales; la publicación permanece bloqueada por recursos audiovisuales incorrectos y otros fallos históricos de CI.
+
 ## 16.33.296 — 2026-11-12
 - Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
 - Sin cambios en cálculos, importaciones, exportaciones, reglas ni funcionalidad.
