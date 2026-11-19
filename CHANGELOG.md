@@ -20,6 +20,13 @@
 - El test verifica existencia, tamaño mínimo, firmas de archivo y concordancia de rutas, sin imponer huellas de un paquete distinto.
 - Las ejecuciones nuevas de GitHub confirman aprobadas las regresiones de limpieza TDJ e importadores decimales; el proceso de publicación debe evaluar los fallos históricos de CI.
 
+### Pruebas de integración de recursos confirmados (2026-11-19)
+- El usuario confirmó que los dos videos subidos al repositorio son los recursos definitivos. Los nombres se normalizaron sin alterar su contenido.
+- La validación `tests/recursos-ayuda-297.mjs` finalizó correctamente en GitHub Actions: archivos presentes, firmas y rutas coincidentes.
+- Validación sintáctica JavaScript y construcción de Render `node scripts/preparar-sitio.mjs`: **aprobadas**; los cinco archivos de visualización/media se copiaron correctamente a `dist/recursos/`.
+- Regresiones de limpieza global TDJ e importadores decimales: **aprobadas**.
+- Las suites de auditoría general e importación sin IA siguen fallando debido a pruebas de versiones heredadas, también identificadas en la rama `main`. Por política del repositorio, no se publica producción hasta aclarar estos bloqueos.
+
 ## 16.33.296 — 2026-11-12
 - Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
 - Sin cambios en cálculos, importaciones, exportaciones, reglas ni funcionalidad.
