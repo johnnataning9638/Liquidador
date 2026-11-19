@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Validar integridad de los recursos de ayuda 297
+        run: node tests/recursos-ayuda-297.mjs
       - name: Validar sintaxis JavaScript
         run: |
           set -e
