@@ -1,0 +1,14 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tutorial del liquidador</title><style>
+*{box-sizing:border-box}body{margin:0;background:#061b36;color:#eff9ff;font:15px system-ui,Segoe UI,Arial,sans-serif}
+header{padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #1c6a8a;background:#072b4d}
+h1{font-size:clamp(17px,2.5vw,25px);margin:0}header a{color:#80e9ff;text-decoration:none}
+main{max-width:1400px;margin:auto;padding:18px} .marco{border:1px solid #237b9b;border-radius:10px;overflow:hidden;background:#0b2440}
+video{width:100%;max-height:calc(100vh - 145px);background:black;display:block}
+iframe{height:calc(100vh - 145px);width:100%;border:0;background:#fff;display:block}
+p{color:#bbd8e7} @media(max-width:600px){main{padding:8px}header{padding:12px}}
+</style></head><body><header><h1 id="titulo">Tutorial del liquidador</h1><a href="../index.html">Volver al inicio</a></header><main><div class="marco"><video id="video" controls controlsList="nodownload" playsinline preload="metadata" disablePictureInPicture></video></div><p>El video incluye la explicación de beneficios tributarios, TIM, IPC y sanciones.</p></main><script>
+const multiple=new URLSearchParams(location.search).get('tipo')==='multiple';
+document.getElementById('titulo').textContent=multiple?'Tutorial de liquidación múltiple':'Tutorial de liquidación individual';
+document.title=document.getElementById('titulo').textContent;
+document.getElementById('video').src=multiple?'tutorial-liquidacion-multiple.mp4':'tutorial-liquidacion-individual.mp4';
+</script></body></html>
