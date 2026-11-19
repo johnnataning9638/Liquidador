@@ -22,6 +22,14 @@ jobs:
         run: |
           set -e
           find js -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Comprobar construcción del sitio estático Render
+        run: |
+          node scripts/preparar-sitio.mjs
+          test -s dist/recursos/instructivo-liquidador.pdf
+          test -s dist/recursos/tutorial-liquidacion-individual.mp4
+          test -s dist/recursos/tutorial-liquidacion-multiple.mp4
+          test -s dist/recursos/instructivo.html
+          test -s dist/recursos/video.html
       - name: Ejecutar regresiones vigentes
         run: |
           set -e
