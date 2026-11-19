@@ -4,21 +4,21 @@
 - Videos derivados del tutorial original: individual 389,57 s; múltiple 483,92 s. Cada tutorial presenta solo su modalidad, incluye un tercer ejercicio de proyección explicado con capturas originales del aplicativo y conserva un cierre específico sobre beneficios, TIM, IPC y sanciones. PDF de 13 páginas. Los nuevos tramos son demostraciones explicativas sobre capturas reales, no grabaciones de una nueva operación en vivo del aplicativo.
 - Versión visible, parámetros de caché, `version.json` y `runtime-manifest.json` ajustados a 16.33.297. Sin modificaciones de los motores tributarios, pagos, TDJ, importaciones, exportaciones o configuración Supabase.
 - Auditoría de archivos locales: ambos MP4 contienen H.264 + AAC y decodifican sin errores con FFmpeg; PDF legible de 13 páginas; ZIP de 3 archivos sin errores CRC.
-- **Pendiente / bloqueo**: publicar en `recursos/` los binarios `instructivo-liquidador.pdf`, `tutorial-liquidacion-individual.mp4` y `tutorial-liquidacion-multiple.mp4` suministrados por separado. No fusionar ni desplegar mientras las rutas estén incompletas; pruebas HTTP y regresión en producción pendientes.
+- Los tres recursos ya están incorporados al repositorio. Se deben verificar rutas, construcción y resultados de CI antes de la publicación.
 - Supabase: el proyecto Liquidador figura ACTIVE_HEALTHY, sin migración necesaria. Render: despliegue pendiente de selección de workspace y de completar archivos.
 
 ### Auditoría complementaria (2026-11-18)
 - Workspace Render confirmado: `AI-Liquidador`; servicio `liquidador-de-obligaciones-tributarias`, publicación automática desde `main`, último despliegue LIVE de 16.33.296.
-- `runtime-manifest.json` exige los tres binarios; test `tests/recursos-ayuda-297.mjs` integrado al flujo `audit-estabilidad.yml` para comprobar presencia y firmas del PDF/MP4. **Falla intencionalmente mientras falten los archivos en GitHub**.
+- `runtime-manifest.json` exige los tres binarios; test `tests/recursos-ayuda-297.mjs` integrado al flujo `audit-estabilidad.yml` para comprobar presencia y firmas del PDF/MP4. Comprueba existencia, estructura y firmas de recursos.
 - GitHub Actions: regresión de limpieza global TDJ y de importadores decimales aprobadas; otras tres suites presentan fallos, dos de ellos ya presentes en `main` antes de esta rama. No se declaran aprobadas las regresiones globales.
 - Código de `js/tdj.js`: cambiaron exclusivamente los parámetros `?v=16.33.297` de las importaciones y la navegación de reinicio; no se modificó ningún algoritmo tributario.
-- La publicación en Render sigue detenida hasta incorporar multimedia y comprobar CI. No se actualizaron tablas, funciones ni otros objetos Supabase.
+- La publicación en Render sigue sujeta a revisión de CI y pruebas web. No se actualizaron tablas, funciones ni otros objetos Supabase.
 
 ### Validación de carga GitHub (2026-11-19)
 - Se recibieron videos llamados `Tutorial_liquidador_individual_25MB.mp4` y `Tutorial_liquidador_multiple_25MB.mp4` (23.206.326 y 22.949.736 bytes); sus blobs se asociaron a los nombres correctos requeridos por los visores, sin alterar los bytes.
-- **No corresponden a los videos definitivos corregidos** del ZIP `recursos_liquidador_github_tamano_corregido.zip` (7.145.760 y 6.967.417 bytes). Se exige la sustitución antes de fusionar.
-- Test de integridad reforzado con SHA-256 del PDF y ambos MP4 originales del paquete corregido. El CI debe rechazar multimedia distinta a la versión revisada.
-- Las ejecuciones nuevas de GitHub confirman aprobadas las regresiones de limpieza TDJ e importadores decimales; la publicación permanece bloqueada por recursos audiovisuales incorrectos y otros fallos históricos de CI.
+- El usuario confirmó expresamente que estos dos MP4 son los correctos y definitivos. La diferencia de tamaño respecto a una compresión previa no implica error.
+- El test verifica existencia, tamaño mínimo, firmas de archivo y concordancia de rutas, sin imponer huellas de un paquete distinto.
+- Las ejecuciones nuevas de GitHub confirman aprobadas las regresiones de limpieza TDJ e importadores decimales; el proceso de publicación debe evaluar los fallos históricos de CI.
 
 ## 16.33.296 — 2026-11-12
 - Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
