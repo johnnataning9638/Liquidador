@@ -7,6 +7,13 @@
 - **Pendiente / bloqueo**: publicar en `recursos/` los binarios `instructivo-liquidador.pdf`, `tutorial-liquidacion-individual.mp4` y `tutorial-liquidacion-multiple.mp4` suministrados por separado. No fusionar ni desplegar mientras las rutas estén incompletas; pruebas HTTP y regresión en producción pendientes.
 - Supabase: el proyecto Liquidador figura ACTIVE_HEALTHY, sin migración necesaria. Render: despliegue pendiente de selección de workspace y de completar archivos.
 
+### Auditoría complementaria (2026-11-18)
+- Workspace Render confirmado: `AI-Liquidador`; servicio `liquidador-de-obligaciones-tributarias`, publicación automática desde `main`, último despliegue LIVE de 16.33.296.
+- `runtime-manifest.json` exige los tres binarios; test `tests/recursos-ayuda-297.mjs` integrado al flujo `audit-estabilidad.yml` para comprobar presencia y firmas del PDF/MP4. **Falla intencionalmente mientras falten los archivos en GitHub**.
+- GitHub Actions: regresión de limpieza global TDJ y de importadores decimales aprobadas; otras tres suites presentan fallos, dos de ellos ya presentes en `main` antes de esta rama. No se declaran aprobadas las regresiones globales.
+- Código de `js/tdj.js`: cambiaron exclusivamente los parámetros `?v=16.33.297` de las importaciones y la navegación de reinicio; no se modificó ningún algoritmo tributario.
+- La publicación en Render sigue detenida hasta incorporar multimedia y comprobar CI. No se actualizaron tablas, funciones ni otros objetos Supabase.
+
 ## 16.33.296 — 2026-11-12
 - Sincronización de versión de ambos módulos (individual y múltiple), sus referencias de caché y metadatos.
 - Sin cambios en cálculos, importaciones, exportaciones, reglas ni funcionalidad.
