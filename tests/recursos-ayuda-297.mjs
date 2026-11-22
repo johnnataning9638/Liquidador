@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const html=fs.readFileSync('index.html','utf8');
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
-assert.equal(manifest.version,'16.33.297');
+assert.equal(manifest.version,JSON.parse(fs.readFileSync('version.json','utf8')).version);
 assert.match(html,/INSTRUCCIONES DEL LIQUIDADOR/);
 const routes=[
  ['recursos/instructivo.html','recursos/instructivo-liquidador.pdf','pdf','%PDF'],
