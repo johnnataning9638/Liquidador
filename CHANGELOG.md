@@ -1,3 +1,7 @@
+## 16.33.298 — 2026-11-22
+- PDF individual y múltiple: el capital base explícito de una cuota cancelada permanece en cero; no se sustituye por el impuesto original. Cambio exclusivo de presentación, sin alterar motores, intereses, proporcionalidad ni Supabase.
+- Regresión específica de 1 a 6 cuotas para ambos módulos.
+
 ## 16.33.297 — 2026-11-18 (preparación; pendiente integración multimedia y despliegue)
 - Inicio: sección «INSTRUCCIONES DEL LIQUIDADOR» en el encabezado de MÓDULOS, con accesos al instructivo, Liquidación individual y Liquidación múltiple, cada uno en una pestaña independiente.
 - Nuevos visores `recursos/instructivo.html` y `recursos/video.html`, con diseño adaptable y reproductor HTML5. El visor PDF oculta controles de descarga, pero no puede impedir por completo guardar el recurso desde el navegador.
