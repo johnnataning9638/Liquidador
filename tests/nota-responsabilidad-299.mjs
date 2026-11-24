@@ -21,6 +21,14 @@ const version=JSON.parse(fs.readFileSync('version.json','utf8'));
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
 assert.equal(version.version,'16.33.299');
 assert.equal(manifest.version,version.version);
+const previousManifest=JSON.parse(execFileSync('git',['show',previous+':runtime-manifest.json'],{encoding:'utf8'}));
+assert.deepEqual(manifest.files,previousManifest.files,'Mismos recursos publicados');
+const exempt=new Set(['index.html','liquidacion.html','titulos.html','js/tdj.js','version.json','runtime-manifest.json']);
+for(const file of manifest.files.filter(f=>!exempt.has(f))){
+  const previousBlob=execFileSync('git',['rev-parse',previous+':'+file],{encoding:'utf8'}).trim();
+  const currentBlob=execFileSync('git',['hash-object',file],{encoding:'utf8'}).trim();
+  assert.equal(currentBlob,previousBlob,file+': idéntico byte a byte a producción');
+}
 const baselineTDJ=execFileSync('git',['show',previous+':js/tdj.js'],{encoding:'utf8'});
 assert.equal(fs.readFileSync('js/tdj.js','utf8').replaceAll('16.33.299','16.33.298'),baselineTDJ,'TDJ: solo versión');
 const changed=execFileSync('git',['diff','--name-only',previous,'HEAD','--','js/','datos/'],{encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);

@@ -1,6 +1,7 @@
 ## 16.33.299 — 2026-11-23
 - Nota de responsabilidad en el inicio, debajo de los módulos, y encima de las pestañas de DIAN y TDJ. Estilo oscuro en inicio y claro en ambos liquidadores; texto accesible y adaptable a móvil.
 - Cambio exclusivamente de presentación y versionado. Sin alteraciones de cálculos, parámetros, beneficios, importaciones, exportaciones o Supabase. Regresión de alcance y permanencia de la nota.
+- Auditoría: reconciliadas las huellas de app y core TDJ con el código de producción 16.33.298 (los valores anteriores correspondían a 16.33.286, commit 074c8a6); se conservan las referencias históricas. Los controles históricos revierten solo instantáneas exactas previamente aprobadas y los controles de caché leen la versión vigente. Ningún cambio operativo.
 
 ## 16.33.298 — 2026-11-22
 - PDF individual y múltiple: el capital base explícito de una cuota cancelada permanece en cero; no se sustituye por el impuesto original. Cambio exclusivo de presentación, sin alterar motores, intereses, proporcionalidad ni Supabase.
