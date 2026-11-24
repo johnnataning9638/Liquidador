@@ -58,6 +58,17 @@ def main():
     patches = json.loads((ROOT / 'tests/fixtures/cambios-688-manual-266.json').read_text(encoding='utf-8'))
     def historical(file):
         text = (ROOT / file).read_text(encoding='utf-8')
+        if file == 'js/motor-liquidacion-base.js':
+            # La proporcionalidad ordinaria se corrigió después de 285.
+            # Verificar primero el motor exacto desplegado en 298, sin
+            # aceptar cambios nuevos, y reconstruir solo la versión histórica.
+            approved = subprocess.check_output(
+                ['git', 'show', '7cdeafe0c02d137c03df3a226cc3bb4f0ce3aca8:' + file],
+                cwd=ROOT).decode('utf-8').replace('\r\n', '\n')
+            assert text == approved, file + ': motor vigente intacto'
+            text = subprocess.check_output(
+                ['git', 'show', '9b122a0ec236598e864d0f5d007d7c63cab242f7:' + file],
+                cwd=ROOT).decode('utf-8').replace('\r\n', '\n')
         patches278 = json.loads((ROOT / 'tests/fixtures/cambios-logo-278.json').read_text(encoding='utf-8'))
         for before, after in reversed(patches278.get(file, [])):
             assert text.count(after) == 1, file
