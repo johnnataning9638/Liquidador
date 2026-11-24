@@ -27,6 +27,7 @@ jobs:
           done
       - name: Existing mathematical regression
         run: |
+          node tests/nota-responsabilidad-299.mjs
           node tests/capital-base-cero-298.mjs
           node tests/pdf-sin-logo-278.mjs
           node tests/alcance-logo-278.mjs
