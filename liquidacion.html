@@ -21,13 +21,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidación de Obligaciones — DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.298">
+<link rel="stylesheet" href="estilos.css?v=16.33.299">
 <style>
 .topbar .ruta-modulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
 @media(max-width:650px){.topbar .ruta-modulo,.topbar .btn-inicio{width:100%}.topbar .btn-inicio{min-height:38px}}
 </style>
-<link rel="stylesheet" href="beneficios.css?v=16.33.298">
-<link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.298">
+<link rel="stylesheet" href="beneficios.css?v=16.33.299">
+<link rel="stylesheet" href="importacion-web-pdf.css?v=16.33.299">
 <style>
 /* Reporte de títulos aplicados: sección informativa del resultado individual. */
 .trazabilidad-titulos-individual{margin:14px 10px 10px;}
@@ -37,6 +37,17 @@
 .trazabilidad-titulos-individual table{width:100%;min-width:1100px;border-collapse:collapse}
 .trazabilidad-titulos-individual th{font-size:10px;white-space:nowrap}
 .trazabilidad-titulos-individual td{font-size:11px;white-space:nowrap}
+</style>
+<style id="estilos-nota-responsabilidad">
+/* Aviso informativo, aislado del contenido interactivo de las pestañas. */
+.nota-responsabilidad{position:relative;display:flex;align-items:center;gap:10px;min-height:66px;padding:7px 15px 7px 15px;border:1px solid #cbdce3;border-radius:7px;background:#f6fafb;color:#354c5a;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;line-height:15px;margin:-3px 0 13px;box-sizing:border-box}
+.nota-responsabilidad::before{content:"";position:absolute;left:2px;top:7px;bottom:7px;width:3px;border-radius:3px;background:#1685a0}
+.nota-responsabilidad-icono{display:block;width:22px;height:22px;flex:0 0 22px;color:#16809a}
+.nota-responsabilidad-texto{min-width:0}
+.nota-responsabilidad-texto strong{display:block;font-size:13.5px;line-height:17px;margin:0 0 3px;color:#07475d;font-weight:700}
+.nota-responsabilidad-texto p{margin:0;color:inherit;font-size:inherit;line-height:inherit}
+
+@media(max-width:650px){.nota-responsabilidad{margin-top:0;margin-bottom:10px;align-items:flex-start;padding:10px 12px 10px 14px;line-height:1.4}.nota-responsabilidad-texto p+p{margin-top:3px}}
 </style>
 </head>
 <body>
@@ -50,6 +61,13 @@
 </header>
 <main class="contenedor">
 
+<aside class="nota-responsabilidad" aria-labelledby="nota-responsabilidad-titulo">
+  <svg class="nota-responsabilidad-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="7.3" r="1.1" fill="currentColor"/><path d="M12 10.5v6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+  <div class="nota-responsabilidad-texto"><strong id="nota-responsabilidad-titulo">Nota de responsabilidad</strong>
+    <p>La presente herramienta constituye un instrumento de apoyo para la liquidación de obligaciones tributarias y no sustituye los aplicativos oficiales de la Entidad.</p>
+    <p>Su uso, así como la validación de los resultados obtenidos, es responsabilidad del funcionario que la utiliza.</p>
+  </div>
+</aside>
   <nav class="tabs-nav" aria-label="Secciones del liquidador">
     <button type="button" class="tab-btn active" data-tab="datos">1. Datos y vencimientos</button>
     <button type="button" class="tab-btn" data-tab="pagos">2. Pagos</button>
@@ -209,7 +227,7 @@
 
 </main>
 <style>/* Solo separación del pie de página individual. */ main.contenedor{margin-bottom:0;padding-bottom:0}body>footer{margin:0;padding:3px 12px 9px;text-align:center;color:#687783}</style>
-<footer>Liquidador — módulo liquidador de obligación individual · v16.33.298</footer>
+<footer>Liquidador — módulo liquidador de obligación individual · v16.33.299</footer>
 <script>
 // DIAN v16.33.228: saneamiento del texto pegado, independientemente del motor.
 (function(){
@@ -289,8 +307,8 @@
   else iniciar();
 })();
 </script>
-<script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.298"></script>
-<script type="module" src="js/app.js?v=16.33.298"></script>
+<script type="module" src="js/importacion-web-pdf/ui.js?v=16.33.299"></script>
+<script type="module" src="js/app.js?v=16.33.299"></script>
 <script>
 (function(){
   (function protegerEstadoFormulario(){
@@ -329,7 +347,7 @@
   else configurarPestanas();
 })();
 </script>
-<script type="module" src="js/tabla-sanciones-minimas.js?v=16.33.298"></script>
-<script type="module" src="js/catalogo-beneficios.js?v=16.33.298"></script>
+<script type="module" src="js/tabla-sanciones-minimas.js?v=16.33.299"></script>
+<script type="module" src="js/catalogo-beneficios.js?v=16.33.299"></script>
 </body>
 </html>
