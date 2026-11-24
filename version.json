@@ -1,7 +1,7 @@
 {
-  "version": "16.33.298",
-  "previousVersion": "16.33.297",
-  "baseCommit": "1b2757a7f80a9496aee2ad12c03844b8f0a1b05a",
-  "date": "2026-11-22",
-  "change": "Conservar el capital base cero de cuotas canceladas en PDF individual y múltiple, sin cambios de cálculo"
+  "version": "16.33.299",
+  "previousVersion": "16.33.298",
+  "baseCommit": "7cdeafe0c02d137c03df3a226cc3bb4f0ce3aca8",
+  "date": "2026-11-23",
+  "change": "Nota de responsabilidad informativa en inicio y ambos módulos, sin cambios de cálculo"
 }
