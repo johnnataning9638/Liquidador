@@ -195,7 +195,14 @@ try {
   for(const [width,reference] of [[1365,dianDesktop],[390,dianMobile]]){
     await page.setViewportSize({width,height:width===390?844:950});
     const navStyles=await buttonStyles('.topbar .ruta-modulo button');
-    assert.deepEqual(navStyles[1],navStyles[0],'Mismo diseño de ambos botones superiores');
+    // En móvil el texto largo autorizado para el enlace individual puede
+    // ocupar dos líneas. La altura natural varía, no el estilo del botón.
+    if(width===1365)assert.deepEqual(navStyles[1],navStyles[0],'Mismo diseño de ambos botones superiores');
+    else{
+      const [{height:h0,...style0},{height:h1,...style1}]=navStyles;
+      assert.deepEqual(style1,style0,'Mismo estilo de los botones superiores en móvil');
+      assert.ok(parseFloat(h0)>=38&&parseFloat(h1)>=38,'Ambos accesos conservan altura mínima táctil');
+    }
     const navBoxes=await page.locator('.topbar .ruta-modulo button').evaluateAll(buttons=>buttons.map(b=>{
       const r=b.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right};
     }));
