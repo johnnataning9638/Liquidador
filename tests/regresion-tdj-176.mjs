@@ -4,9 +4,9 @@ const guard=fs.readFileSync(new URL('../js/tdj-secuencia-guard-16.33.185.js',imp
 const tdj=fs.readFileSync(new URL('../js/tdj.js',import.meta.url),'utf8');
 const core=fs.readFileSync(new URL('../js/tdj-core-16.33.143.js',import.meta.url),'utf8');
 assert.match(guard,/esExcluidoPorCierreMismaFecha/);assert.match(guard,/detalleExclusion/);assert.match(guard,/esTDJExcluidoPorCierre:true/);assert.match(guard,/total:0/);
-assert.match(tdj,/import\s+"\.\/tdj-tasa-bridge-16\.33\.174\.js\?v=16\.33\.(?:210|212)"/);
-assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.185\.js\?v=16\.33\.185"/);
-assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.176\.js/);assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
 const {version}=JSON.parse(fs.readFileSync('version.json','utf8'));
+assert.ok(tdj.includes(`import "./tdj-tasa-bridge-16.33.174.js?v=${version}"`));
+assert.ok(tdj.includes(`import "./tdj-secuencia-guard-16.33.185.js?v=${version}"`));
+assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.176\.js/);assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
 assert.match(tdj,/tdj-core-16\.33\.143\.js/);assert.ok(tdj.includes(`tdj-core-16.33.143.js?v=${version}`));assert.ok(core.length>200000,'El core protegido debe permanecer presente y no sustituirse por una versión reducida.');
 console.log('REGRESION TDJ 16.33.176: OK — compatibilidad con guardia vigente 185');

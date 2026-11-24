@@ -6,7 +6,8 @@ const tdj=fs.readFileSync(new URL('../js/tdj.js',import.meta.url),'utf8');
 assert.match(guard,/esExcluidoPorCierreMismaFecha/);assert.match(guard,/detalleExclusion/);assert.match(guard,/esTDJExcluidoPorCierre:true/);assert.match(guard,/total:0/);
 assert.doesNotMatch(importer,/await\s+import\(/);assert.doesNotMatch(importer,/export-tdj-recovery-16\.33\.174/);assert.doesNotMatch(importer,/export-dian-guard/);
 // Contrato histórico: la guardia 175 fue evolucionada primero a 176 y ahora a 178.
-assert.match(tdj,/import\s+"\.\/tdj-secuencia-guard-16\.33\.185\.js\?v=16\.33\.185"/);
+const {version}=JSON.parse(fs.readFileSync('version.json','utf8'));
+assert.ok(tdj.includes(`import "./tdj-secuencia-guard-16.33.185.js?v=${version}"`));
 assert.doesNotMatch(tdj,/import\("\.\/tdj-secuencia-guard-16\.33\.175\.js/);
 assert.match(tdj,/tdj-core-16\.33\.143\.js/);
 console.log('REGRESION TDJ 16.33.175: OK — compatibilidad con guardia vigente 185');

@@ -23,7 +23,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidadores DIAN</title>
-<link rel="stylesheet" href="estilos.css?v=16.33.298">
+<link rel="stylesheet" href="estilos.css?v=16.33.299">
 <style>
 /* INICIO UI 16.33.122 — FONDO FINANCE-TECH
    SOLO PRESENTACIÓN DEL MENÚ DE INICIO.
@@ -234,6 +234,20 @@
 @media(max-width:600px){.inicio-ayudas-titulo{white-space:normal}.inicio-ayudas-botones{width:100%}.inicio-ayuda-enlace{white-space:normal;font-size:12px}}
 
 </style>
+<style id="estilos-nota-responsabilidad">
+/* Aviso informativo, aislado del contenido interactivo de las pestañas. */
+.nota-responsabilidad{position:relative;display:flex;align-items:center;gap:10px;min-height:66px;padding:7px 15px 7px 15px;border:1px solid #cbdce3;border-radius:7px;background:#f6fafb;color:#354c5a;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;line-height:15px;margin:16px auto 0;box-sizing:border-box}
+.nota-responsabilidad::before{content:"";position:absolute;left:2px;top:7px;bottom:7px;width:3px;border-radius:3px;background:#1685a0}
+.nota-responsabilidad-icono{display:block;width:22px;height:22px;flex:0 0 22px;color:#16809a}
+.nota-responsabilidad-texto{min-width:0}
+.nota-responsabilidad-texto strong{display:block;font-size:13.5px;line-height:17px;margin:0 0 3px;color:#07475d;font-weight:700}
+.nota-responsabilidad-texto p{margin:0;color:inherit;font-size:inherit;line-height:inherit}
+.nota-responsabilidad-inicio{max-width:1126px;width:calc(100% - 54px);min-height:76px;border-color:#2a5773;background:#0c2d4b;color:#d2e1ed;border-radius:8px}
+.nota-responsabilidad-inicio::before{background:#44b6d4;top:9px;bottom:9px}
+.nota-responsabilidad-inicio .nota-responsabilidad-icono{color:#70c6e3;width:24px;height:24px;flex-basis:24px}
+.nota-responsabilidad-inicio .nota-responsabilidad-texto strong{font-size:14px;color:#eaf6fc}
+@media(max-width:650px){.nota-responsabilidad{margin-top:0;margin-bottom:10px;align-items:flex-start;padding:10px 12px 10px 14px;line-height:1.4}.nota-responsabilidad-texto p+p{margin-top:3px}.nota-responsabilidad-inicio{width:100%;margin:16px auto 0}}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -266,7 +280,7 @@
           <h3>LIQUIDACIÓN INDIVIDUAL</h3>
                   </div>
         <span class="modulo-estado">MÓDULO 1</span>
-        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='liquidacion.html?v=16.33.298'">ABRIR LIQUIDACIÓN INDIVIDUAL →</button></div>
+        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='liquidacion.html?v=16.33.299'">ABRIR LIQUIDACIÓN INDIVIDUAL →</button></div>
       </article>
       <article class="modulo-item titulos">
         <div class="modulo-icono" aria-hidden="true">▣</div>
@@ -274,11 +288,18 @@
           <h3>LIQUIDACIÓN MÚLTIPLE</h3>
                   </div>
         <span class="modulo-estado">MÓDULO 2</span>
-        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='titulos.html?v=16.33.298'">ABRIR LIQUIDACIÓN MÚLTIPLE →</button></div>
+        <div class="modulo-accion"><button type="button" class="primario" onclick="window.location.href='titulos.html?v=16.33.299'">ABRIR LIQUIDACIÓN MÚLTIPLE →</button></div>
       </article>
 
     </div>
   </section>
+<aside class="nota-responsabilidad nota-responsabilidad-inicio" aria-labelledby="nota-responsabilidad-titulo">
+  <svg class="nota-responsabilidad-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="7.3" r="1.1" fill="currentColor"/><path d="M12 10.5v6.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+  <div class="nota-responsabilidad-texto"><strong id="nota-responsabilidad-titulo">Nota de responsabilidad</strong>
+    <p>La presente herramienta constituye un instrumento de apoyo para la liquidación de obligaciones tributarias y no sustituye los aplicativos oficiales de la Entidad.</p>
+    <p>Su uso, así como la validación de los resultados obtenidos, es responsabilidad del funcionario que la utiliza.</p>
+  </div>
+</aside>
 </main>
 <footer>Liquidador — módulo de inicio</footer>
 </body>

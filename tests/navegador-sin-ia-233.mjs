@@ -133,11 +133,12 @@ try {
   await captureExports(page.locator('#btnExportarPdf'),page.locator('#btnExportarExcel'),'dian',900000);
   const dianDesktop=await buttonStyles('[data-pane="resultados"] .botonera button');
   assert.deepEqual(await page.locator('.topbar .ruta-modulo button').allTextContents(),
-    ['← Módulo de inicio','Ir a liquidación de TDJ'],'Navegación DIAN con enlace TDJ');
+    ['← Módulo de inicio','Ir al liquidador de múltiples obligaciones'],'Navegación DIAN con enlace TDJ');
   const dianNav=await buttonStyles('.topbar .ruta-modulo button');
   assert.deepEqual(dianNav[1],dianNav[0],'Enlace TDJ con el diseño de Inicio');
   for(const pane of ['datos','pagos','resultados']){
     await page.locator(`[data-tab="${pane}"]`).click();
+    assert.ok(await page.locator('aside.nota-responsabilidad').isVisible(),'Nota DIAN visible');
     const bar=`[data-pane="${pane}"] .botonera`;
     assert.deepEqual(await page.locator(bar+' button').allTextContents(),
       ['Importar PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Seis acciones DIAN ${pane}`);
@@ -150,6 +151,7 @@ try {
   const dianMobile=await buttonStyles('[data-pane="resultados"] .botonera button');
   for(const pane of ['datos','pagos','resultados']){
     await page.locator(`[data-tab="${pane}"]`).click();
+    assert.ok(await page.locator('aside.nota-responsabilidad').isVisible(),'Nota DIAN móvil visible');
     assert.deepEqual(await buttonStyles(`[data-pane="${pane}"] .botonera button`),dianMobile,`Diseño DIAN móvil ${pane}`);
   }
   for(const id of ['btnExportarExcel','btnExportarPdf']){
@@ -189,11 +191,18 @@ try {
   await assertCenteredHeader('tdj');
   assert.equal(await page.locator('.nav-footer').count(),0,'TDJ elimina navegación inferior');
   assert.deepEqual(await page.locator('.topbar .ruta-modulo button').allTextContents(),
-    ['← Módulo de inicio','Ir a liquidación de obligaciones'],'Navegación TDJ agrupada arriba');
+    ['← Módulo de inicio','Ir al liquidador de obligación individual'],'Navegación TDJ agrupada arriba');
   for(const [width,reference] of [[1365,dianDesktop],[390,dianMobile]]){
     await page.setViewportSize({width,height:width===390?844:950});
     const navStyles=await buttonStyles('.topbar .ruta-modulo button');
-    assert.deepEqual(navStyles[1],navStyles[0],'Mismo diseño de ambos botones superiores');
+    // En móvil el texto largo autorizado para el enlace individual puede
+    // ocupar dos líneas. La altura natural varía, no el estilo del botón.
+    if(width===1365)assert.deepEqual(navStyles[1],navStyles[0],'Mismo diseño de ambos botones superiores');
+    else{
+      const [{height:h0,...style0},{height:h1,...style1}]=navStyles;
+      assert.deepEqual(style1,style0,'Mismo estilo de los botones superiores en móvil');
+      assert.ok(parseFloat(h0)>=38&&parseFloat(h1)>=38,'Ambos accesos conservan altura mínima táctil');
+    }
     const navBoxes=await page.locator('.topbar .ruta-modulo button').evaluateAll(buttons=>buttons.map(b=>{
       const r=b.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right};
     }));
@@ -202,6 +211,7 @@ try {
     await page.locator('.topbar').screenshot({path:path.join(output,`tdj-navegacion-${width}.png`)});
     for(const pane of ['datos','pagos','titulos']){
       await page.locator(`[data-tab="${pane}"]`).click();
+      assert.ok(await page.locator('aside.nota-responsabilidad').isVisible(),'Nota TDJ visible');
       const bar=`[data-pane="${pane}"] .tdj-sheet-actions`;
       assert.deepEqual(await page.locator(bar+' button').allTextContents(),
         ['Importar PDF','Importar Excel','Exportar Excel','Exportar PDF','Limpiar','Calcular liquidación'],`Orden TDJ ${pane}`);
@@ -251,6 +261,7 @@ try {
   await page.goto(`${baseURL}/titulos.html`,{waitUntil:'networkidle'});
   await page.locator('.topbar .ruta-modulo button').first().click();
   await page.waitForURL('**/index.html');
+  assert.ok(await page.locator('aside.nota-responsabilidad-inicio').isVisible(),'Nota Inicio visible');
   const iaRequests = requests.filter(x=>/ai-bridge|ai-liquidador|\/interpret\/|\/feedback|\/health.*ia/i.test(x));
   assert.deepEqual(iaRequests, []);
   assert.deepEqual(errors, []);
