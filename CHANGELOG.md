@@ -1,3 +1,7 @@
+## 16.33.299 — 2026-11-23
+- Nota de responsabilidad en el inicio, debajo de los módulos, y encima de las pestañas de DIAN y TDJ. Estilo oscuro en inicio y claro en ambos liquidadores; texto accesible y adaptable a móvil.
+- Cambio exclusivamente de presentación y versionado. Sin alteraciones de cálculos, parámetros, beneficios, importaciones, exportaciones o Supabase. Regresión de alcance y permanencia de la nota.
+
 ## 16.33.298 — 2026-11-22
 - PDF individual y múltiple: el capital base explícito de una cuota cancelada permanece en cero; no se sustituye por el impuesto original. Cambio exclusivo de presentación, sin alterar motores, intereses, proporcionalidad ni Supabase.
 - Regresión específica de 1 a 6 cuotas para ambos módulos.
