@@ -1,3 +1,7 @@
+## 16.33.300 — 2026-11-27
+- Importación PDF 1116: reconoce PRODUCTOS PLASTICOS y el concepto de saldo IMPUESTO NACIONAL P (111), exclusivamente para dicho impuesto. Ambos módulos comparten el lector. Sin cambios de cálculo, reglas tributarias ni Supabase.
+- Regresión de identificación, capital, fecha y rechazo de conceptos ajenos; reversión mediante el commit base 00ec5b9.
+
 ## 16.33.299 — 2026-11-23
 - Nota de responsabilidad en el inicio, debajo de los módulos, y encima de las pestañas de DIAN y TDJ. Estilo oscuro en inicio y claro en ambos liquidadores; texto accesible y adaptable a móvil.
 - Cambio exclusivamente de presentación y versionado. Sin alteraciones de cálculos, parámetros, beneficios, importaciones, exportaciones o Supabase. Regresión de alcance y permanencia de la nota.
