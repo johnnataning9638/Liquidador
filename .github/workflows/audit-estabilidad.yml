@@ -42,6 +42,7 @@ jobs:
           node tests/alcance-sancion-oficial-275.mjs
           node tests/catalogo-beneficios-269.mjs
           node tests/importacion-web-pdf-273.mjs
+          node tests/pdf-plasticos-300.mjs
           node tests/solo-pdf-274.mjs
           node tests/pdf-recuperacion-282.mjs
           node tests/alcance-importacion-273.mjs

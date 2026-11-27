@@ -1,7 +1,7 @@
 {
-  "version": "16.33.299",
-  "previousVersion": "16.33.298",
-  "baseCommit": "7cdeafe0c02d137c03df3a226cc3bb4f0ce3aca8",
-  "date": "2026-11-23",
-  "change": "Nota de responsabilidad informativa en inicio y ambos módulos, sin cambios de cálculo"
+  "version": "16.33.300",
+  "previousVersion": "16.33.299",
+  "baseCommit": "00ec5b92eb77a2356c588024bd898353d92c11ae",
+  "date": "2026-11-27",
+  "change": "Importación del Generador de Cuotas 1116 para Productos Plásticos en DIAN y TDJ"
 }
